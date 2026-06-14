@@ -4,6 +4,15 @@ import { useWizardStore, type WizardProduct } from '../wizardStore';
 import { useApi } from '../../lib/api';
 import PriceInput from '../../components/shared/PriceInput';
 
+const STYLE_SWATCHES: Record<string, string> = {
+  studio: 'linear-gradient(135deg, #f5f5f5, #d4d4d4)',
+  lifestyle: 'linear-gradient(135deg, #d6c2a3, #8b6f4e)',
+  outdoor: 'linear-gradient(135deg, #8bc48a, #3f6b3a)',
+  marble: 'linear-gradient(135deg, #e8e8e8, #b8b8c0)',
+  gradient: 'linear-gradient(135deg, #ff7eb3, #6a82fb)',
+  wood: 'linear-gradient(135deg, #c89b6d, #6b4423)',
+};
+
 interface UploadResponse {
   key: string;
   url: string;
@@ -353,11 +362,12 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <img
-                  src={style.thumbnailUrl}
-                  alt={style.name}
-                  className="h-14 w-full rounded object-cover"
-                />
+                <div
+                  className="flex h-14 w-full items-center justify-center rounded text-[10px] font-medium uppercase tracking-wide text-white"
+                  style={{ background: STYLE_SWATCHES[style.id] ?? '#6b7280' }}
+                >
+                  {style.name}
+                </div>
                 <span className="text-gray-700">{style.name}</span>
               </button>
             ))}
