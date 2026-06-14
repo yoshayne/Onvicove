@@ -87,7 +87,7 @@ export default function Wizard() {
     api.post('/wizard/save', {
       wizard_step: currentStep,
       wizard_data: buildWizardData(state),
-    }).catch(() => {});
+    }).catch((err) => console.error('wizard/save failed:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
