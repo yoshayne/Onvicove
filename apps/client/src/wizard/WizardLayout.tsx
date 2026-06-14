@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import WizardPreview from './WizardPreview';
 import { useWizardStore } from './wizardStore';
 
-const TOTAL_STEPS = 10;
+const TOTAL_STEPS = 11;
 
 const STEP_LABELS: Record<number, string> = {
   1: 'Business name',
@@ -11,10 +11,11 @@ const STEP_LABELS: Record<number, string> = {
   4: 'Brand info',
   5: 'Hero photo',
   6: 'Products',
-  7: 'Availability',
-  8: 'Payments',
-  9: 'Plan',
-  10: 'Launch',
+  7: 'Services',
+  8: 'Availability',
+  9: 'Payments',
+  10: 'Plan',
+  11: 'Launch',
 };
 
 interface WizardLayoutProps {

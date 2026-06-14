@@ -10,6 +10,7 @@ import Step3_Theme from './steps/Step3_Theme';
 import Step4_BrandInfo from './steps/Step4_BrandInfo';
 import Step5_HeroPhoto from './steps/Step5_HeroPhoto';
 import Step6_Products from './steps/Step6_Products';
+import Step6b_Services from './steps/Step6b_Services';
 import Step7_Availability from './steps/Step7_Availability';
 import Step8_Payments from './steps/Step8_Payments';
 import Step9_Plan from './steps/Step9_Plan';
@@ -22,10 +23,11 @@ const STEP_COMPONENTS: Record<number, React.ComponentType> = {
   4: Step4_BrandInfo,
   5: Step5_HeroPhoto,
   6: Step6_Products,
-  7: Step7_Availability,
-  8: Step8_Payments,
-  9: Step9_Plan,
-  10: Step10_Launch,
+  7: Step6b_Services,
+  8: Step7_Availability,
+  9: Step8_Payments,
+  10: Step9_Plan,
+  11: Step10_Launch,
 };
 
 export interface WizardCompleteResponse {
@@ -110,12 +112,12 @@ export default function Wizard() {
   }
 
   function handleNext() {
-    if (currentStep === 10) return;
+    if (currentStep === 11) return;
     nextStep();
   }
 
   const completeness = selectWizardCompleteness(state);
-  const isLastStep = currentStep === 10;
+  const isLastStep = currentStep === 11;
 
   return (
     <WizardLayout

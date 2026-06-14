@@ -170,7 +170,7 @@ export const useWizardStore = create<WizardState>()(
       ...initialState,
 
       setStep: (step) => set({ currentStep: step }),
-      nextStep: () => set((s) => ({ currentStep: Math.min(10, s.currentStep + 1) })),
+      nextStep: () => set((s) => ({ currentStep: Math.min(11, s.currentStep + 1) })),
       prevStep: () => set((s) => ({ currentStep: Math.max(1, s.currentStep - 1) })),
 
       setBusinessName: (name) => set({ businessName: name }),
