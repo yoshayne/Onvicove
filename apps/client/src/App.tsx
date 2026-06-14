@@ -1,10 +1,11 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ClerkProvider, SignedIn, RedirectToSignIn } from '@clerk/clerk-react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ClerkProvider, SignedIn } from '@clerk/clerk-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Spinner from './components/shared/Spinner';
 
 import Landing from './marketing/Landing';
+import AuthPage from './marketing/AuthPage';
 import DashboardLayout from './dashboard/Layout';
 import Overview from './dashboard/Overview';
 import Orders from './dashboard/Orders';
@@ -28,6 +29,11 @@ const queryClient = new QueryClient();
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
 
+function RedirectToSignIn() {
+  const location = useLocation();
+  return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
+}
+
 function PageFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center">
@@ -44,6 +50,9 @@ export default function App() {
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/" element={<Landing />} />
+
+              <Route path="/sign-in/*" element={<AuthPage mode="sign-in" />} />
+              <Route path="/sign-up/*" element={<AuthPage mode="sign-up" />} />
 
               <Route
                 path="/onboarding/*"

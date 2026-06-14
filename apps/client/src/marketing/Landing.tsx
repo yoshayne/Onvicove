@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { ArrowRight, Sparkles, Calendar, ShoppingBag, Palette, Zap } from 'lucide-react';
 
 const themes = [
@@ -47,11 +47,9 @@ export default function Landing() {
           <span className="text-xl font-bold tracking-tight">Onvicove</span>
           <div className="flex items-center gap-4">
             <SignedOut>
-              <SignInButton mode="modal">
-                <button className="text-sm font-medium text-slate-700 hover:text-slate-900">
+              <Link to="/sign-in" className="text-sm font-medium text-slate-700 hover:text-slate-900">
                   Sign in
-                </button>
-              </SignInButton>
+                </Link>
             </SignedOut>
             <SignedIn>
               <Link to="/dashboard" className="text-sm font-medium text-slate-700 hover:text-slate-900">
@@ -89,11 +87,9 @@ export default function Landing() {
             Build my site <ArrowRight size={18} />
           </Link>
           <SignedOut>
-            <SignInButton mode="modal">
-              <button className="rounded-lg border border-slate-300 px-6 py-3 text-base font-semibold text-slate-900 hover:bg-slate-50">
-                Sign in
-              </button>
-            </SignInButton>
+            <Link to="/sign-in" className="rounded-lg border border-slate-300 px-6 py-3 text-base font-semibold text-slate-900 hover:bg-slate-50">
+                  Sign in
+                </Link>
           </SignedOut>
         </div>
       </section>
@@ -148,11 +144,9 @@ export default function Landing() {
             Start building <ArrowRight size={18} />
           </Link>
           <SignedOut>
-            <SignInButton mode="modal">
-              <button className="rounded-lg border border-slate-300 px-6 py-3 text-base font-semibold text-slate-900 hover:bg-slate-50">
-                Sign in
-              </button>
-            </SignInButton>
+            <Link to="/sign-in" className="rounded-lg border border-slate-300 px-6 py-3 text-base font-semibold text-slate-900 hover:bg-slate-50">
+                  Sign in
+                </Link>
           </SignedOut>
         </div>
       </section>
