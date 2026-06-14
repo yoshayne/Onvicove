@@ -1,0 +1,37 @@
+{
+  "name": "@onvicove/server",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "migrate": "tsx src/db/migrate.ts"
+  },
+  "dependencies": {
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.0.0",
+    "postgres": "^3.4.0",
+    "ioredis": "^5.3.0",
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.0.0",
+    "@clerk/backend": "^1.0.0",
+    "stripe": "^14.0.0",
+    "@sendinblue/client": "^3.0.0",
+    "sharp": "^0.33.0",
+    "zod": "^3.22.0",
+    "uuid": "^9.0.0",
+    "node-fetch": "^3.3.0",
+    "form-data": "^4.0.0",
+    "date-fns": "^3.0.0",
+    "date-fns-tz": "^3.0.0",
+    "node-cron": "^3.0.0",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "tsx": "^4.0.0",
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0",
+    "@types/node-cron": "^3.0.0"
+  }
+}

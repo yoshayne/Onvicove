@@ -1,0 +1,20 @@
+{
+  "name": "onvicove",
+  "private": true,
+  "workspaces": [
+    "apps/server",
+    "apps/client"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w apps/server\" \"npm run dev -w apps/client\"",
+    "build": "npm run build -w apps/server && npm run build -w apps/client",
+    "start": "npm run start -w apps/server",
+    "migrate": "npm run migrate -w apps/server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
