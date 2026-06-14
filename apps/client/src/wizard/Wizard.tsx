@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import WizardLayout from './WizardLayout';
 import { useWizardStore, selectWizardCompleteness, type WizardState } from './wizardStore';
 import { useApi } from '../lib/api';
@@ -68,6 +69,59 @@ function buildWizardData(state: WizardState) {
   };
 }
 
+interface WizardProgressResponse {
+  wizard_step: number;
+  wizard_data: Record<string, unknown>;
+  wizard_completed: boolean;
+  slug?: string;
+}
+
+function applyWizardData(state: WizardState, data: Record<string, unknown>, slug?: string) {
+  const d = data as Record<string, any>;
+  if (typeof d.businessName === 'string') state.setBusinessName(d.businessName);
+  if (slug) state.setSlug(slug);
+  if (typeof d.tagline === 'string') state.setTagline(d.tagline);
+  if (d.mode) state.setMode(d.mode);
+  if (d.themeId) state.setThemeId(d.themeId);
+  if (typeof d.brandColor === 'string') state.setBrandColor(d.brandColor);
+  if (typeof d.city === 'string') state.setCity(d.city);
+  if (typeof d.industry === 'string') state.setIndustry(d.industry);
+  if (typeof d.logoKey === 'string') state.setLogo(d.logoKey, undefined);
+  if (typeof d.heroImageKey === 'string') state.setHeroImage(d.heroImageKey, undefined);
+  if (d.plan) state.setPlan(d.plan);
+
+  if (Array.isArray(d.products)) {
+    for (const p of d.products) {
+      state.addProduct({
+        id: uuidv4(),
+        name: p.name ?? '',
+        description: p.description ?? '',
+        priceCents: p.priceCents ?? 0,
+        imageKey: Array.isArray(p.imageKeys) ? p.imageKeys[0] : undefined,
+      });
+    }
+  }
+
+  if (Array.isArray(d.services)) {
+    for (const s of d.services) {
+      state.addService({
+        id: uuidv4(),
+        name: s.name ?? '',
+        description: s.description ?? '',
+        priceCents: s.priceCents ?? 0,
+        durationMinutes: s.durationMinutes ?? 30,
+      });
+    }
+  }
+
+  if (Array.isArray(d.staff)) {
+    for (const st of d.staff) {
+      if (st.availability) state.setAvailability(st.availability);
+      state.addStaff({ id: uuidv4(), name: st.name ?? '', email: st.email });
+    }
+  }
+}
+
 export default function Wizard() {
   const navigate = useNavigate();
   const currentStep = useWizardStore((s) => s.currentStep);
@@ -80,18 +134,41 @@ export default function Wizard() {
   const [isLaunching, setIsLaunching] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [launchedSlug, setLaunchedSlug] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   const StepComponent = STEP_COMPONENTS[currentStep] ?? Step1_BusinessName;
+
+  // On first load, restore any progress saved to the server so the wizard
+  // can pick up where the user left off (e.g. on a new device or after
+  // clearing local storage). Only applies if local state looks empty.
+  useEffect(() => {
+    if (state.businessName.trim().length > 0) {
+      setHydrated(true);
+      return;
+    }
+    api
+      .get<WizardProgressResponse>('/wizard/progress')
+      .then((progress) => {
+        if (progress.wizard_step > 0) {
+          applyWizardData(state, progress.wizard_data, progress.slug);
+          useWizardStore.getState().setStep(Math.min(11, Math.max(1, progress.wizard_step)));
+        }
+      })
+      .catch((err) => console.error('wizard/progress failed:', err))
+      .finally(() => setHydrated(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Persist progress as a draft tenant so uploads and other authenticated
   // wizard actions have a tenant row to attach to from step 1 onward.
   useEffect(() => {
+    if (!hydrated) return;
     api.post('/wizard/save', {
       wizard_step: currentStep,
       wizard_data: buildWizardData(state),
     }).catch((err) => console.error('wizard/save failed:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep]);
+  }, [currentStep, hydrated]);
 
   async function handleLaunch() {
     setIsLaunching(true);

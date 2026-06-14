@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, Link } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -117,6 +117,19 @@ export default function Layout() {
           <UserButton afterSignOutUrl="/" />
         </header>
         <main className="flex-1 p-4 lg:p-6">
+          {tenant && !tenant.wizard_completed && (
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-sm text-amber-800">
+                Your store setup isn't finished yet — your site isn't live until you complete it.
+              </p>
+              <Link
+                to="/onboarding"
+                className="shrink-0 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+              >
+                Finish setup
+              </Link>
+            </div>
+          )}
           <Outlet />
         </main>
       </div>
