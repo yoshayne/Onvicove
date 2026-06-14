@@ -33,11 +33,6 @@ interface AiPhotoUnlockResponse {
   fullImageUrl: string;
 }
 
-interface AiPhotoUnlockError {
-  error: string;
-  costCents?: number;
-}
-
 export default function Step6_Products() {
   const products = useWizardStore((s) => s.products);
   const addProduct = useWizardStore((s) => s.addProduct);
@@ -233,13 +228,7 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
     setError(null);
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const result = await apiUploadMultipart<AiPhotoSessionResponse>(
-        '/ai-photos/sessions',
-        formData,
-        api
-      );
+      const result = await api.upload<AiPhotoSessionResponse>('/ai-photos/sessions', file);
       setSessionId(result.sessionId);
       setCutoutImageUrl(result.cutoutImageUrl);
       setIsFree(result.isFree);
@@ -456,15 +445,4 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
       )}
     </div>
   );
-}
-
-// ai-photos/sessions expects multipart with the original photo — apiUpload's
-// helper only sends a `file` field, so build the request directly here using
-// the same auth + base path conventions as the shared api client.
-async function apiUploadMultipart<T>(
-  path: string,
-  formData: FormData,
-  api: ReturnType<typeof useApi>
-): Promise<T> {
-  return api.upload<T>(path, formData.get('file') as File);
 }
