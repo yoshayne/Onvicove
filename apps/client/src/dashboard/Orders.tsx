@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
 import type { Order, OrderItem, OrderStatus, FulfillmentStatus } from '../types';
@@ -94,7 +94,7 @@ export default function Orders() {
             </thead>
             <tbody>
               {data.orders.map((order) => (
-                <>
+                <Fragment key={order.id}>
                   <tr
                     key={order.id}
                     onClick={() => toggleExpand(order)}
@@ -178,7 +178,7 @@ export default function Orders() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
