@@ -16,7 +16,13 @@ app.use('*', requireAuth, requireTenant);
 
 // GET /api/ai-photos/styles
 app.get('/styles', async (c) => {
-  return c.json({ styles: AI_PHOTO_STYLES });
+  return c.json({
+    styles: AI_PHOTO_STYLES.map((s) => ({
+      id: s.id,
+      name: s.label,
+      thumbnailUrl: `/styles/${s.id}.jpg`,
+    })),
+  });
 });
 
 // POST /api/ai-photos/sessions — multipart "image", optional product_id
@@ -46,11 +52,21 @@ app.post('/sessions', async (c) => {
     RETURNING *
   `;
 
-  return c.json({ session: await enrichWithUrls(rows[0]) }, 201);
+  const session = await enrichWithUrls(rows[0]);
+
+  const freeUsed = await db`
+    SELECT id FROM ai_photo_sessions WHERE tenant_id = ${tenant.id} AND is_free = TRUE LIMIT 1
+  `;
+
+  return c.json({
+    sessionId: session.id,
+    cutoutImageUrl: session.cutout_image_url,
+    isFree: freeUsed.length === 0,
+  }, 201);
 });
 
 const generateSchema = z.object({
-  session_id: z.string().uuid(),
+  sessionId: z.string().uuid(),
   style: z.string().min(1),
   feedback: z.string().nullable().optional(),
 });
@@ -63,10 +79,10 @@ app.post('/generate', async (c) => {
   if (!parsed.success) {
     return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   }
-  const { session_id, style, feedback } = parsed.data;
+  const { sessionId, style, feedback } = parsed.data;
 
   const sessions = await db`
-    SELECT * FROM ai_photo_sessions WHERE id = ${session_id} AND tenant_id = ${tenant.id} LIMIT 1
+    SELECT * FROM ai_photo_sessions WHERE id = ${sessionId} AND tenant_id = ${tenant.id} LIMIT 1
   `;
   const session = sessions[0];
   if (!session) return c.json({ error: 'Session not found' }, 404);
@@ -78,7 +94,7 @@ app.post('/generate', async (c) => {
 
   const genRows = await db`
     INSERT INTO ai_photo_generations (session_id, style, feedback, prompt_used, status)
-    VALUES (${session_id}, ${style}, ${feedback ?? null}, ${prompt}, 'processing')
+    VALUES (${sessionId}, ${style}, ${feedback ?? null}, ${prompt}, 'processing')
     RETURNING *
   `;
   const generation = genRows[0];
@@ -105,7 +121,11 @@ app.post('/generate', async (c) => {
       RETURNING *
     `;
 
-    return c.json({ generation: await enrichWithUrls(updated[0]) });
+    const enriched = await enrichWithUrls(updated[0]);
+    return c.json({
+      generationId: enriched.id,
+      previewImageUrl: enriched.preview_image_url,
+    });
   } catch (err) {
     await db`
       UPDATE ai_photo_generations SET status = 'failed' WHERE id = ${generation.id}
@@ -115,9 +135,8 @@ app.post('/generate', async (c) => {
 });
 
 const unlockSchema = z.object({
-  session_id: z.string().uuid(),
-  generation_id: z.string().uuid(),
-  payment_method_id: z.string().optional(),
+  sessionId: z.string().uuid(),
+  generationId: z.string().uuid(),
 });
 
 // POST /api/ai-photos/unlock — first product free per tenant, otherwise charge AI_PHOTO_COST_CENTS
@@ -128,7 +147,9 @@ app.post('/unlock', async (c) => {
   if (!parsed.success) {
     return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   }
-  const { session_id, generation_id, payment_method_id } = parsed.data;
+  const { sessionId, generationId } = parsed.data;
+  const session_id = sessionId;
+  const generation_id = generationId;
 
   const sessions = await db`
     SELECT * FROM ai_photo_sessions WHERE id = ${session_id} AND tenant_id = ${tenant.id} LIMIT 1
@@ -153,6 +174,14 @@ app.post('/unlock', async (c) => {
   let chargeId: string | null = null;
 
   if (!isFree) {
+    let payment_method_id: string | undefined;
+    if (tenant.stripe_customer_id) {
+      const customer = await stripe.customers.retrieve(tenant.stripe_customer_id);
+      if (!('deleted' in customer)) {
+        const defaultPm = customer.invoice_settings?.default_payment_method;
+        payment_method_id = typeof defaultPm === 'string' ? defaultPm : defaultPm?.id;
+      }
+    }
     if (!payment_method_id) {
       return c.json({ error: 'Payment method required', cost_cents: costCents }, 402);
     }
@@ -203,9 +232,8 @@ app.post('/unlock', async (c) => {
 
   return c.json({
     unlocked: true,
-    is_free: isFree,
-    full_image_key: generation.full_image_key,
-    full_image_url: generation.full_image_key
+    isFree,
+    fullImageUrl: generation.full_image_key
       ? await (await import('../services/storage')).getSignedFileUrl(generation.full_image_key as string)
       : null,
   });

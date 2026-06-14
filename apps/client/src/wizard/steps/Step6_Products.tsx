@@ -213,6 +213,7 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
   const [isLoadingStyles, setIsLoadingStyles] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
 
+  const [generationId, setGenerationId] = useState<string | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -265,6 +266,7 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
         style: selectedStyle,
         feedback: withFeedback || undefined,
       });
+      setGenerationId(result.generationId);
       setPreviewImageUrl(result.previewImageUrl);
       setStage('preview');
     } catch (err) {
@@ -276,12 +278,13 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
   }
 
   async function handleUnlock() {
-    if (!sessionId) return;
+    if (!sessionId || !generationId) return;
     setError(null);
     setIsUnlocking(true);
     try {
       const result = await api.post<AiPhotoUnlockResponse>('/ai-photos/unlock', {
         sessionId,
+        generationId,
       });
       onApply(result.fullImageUrl);
       setUnlocked(true);
