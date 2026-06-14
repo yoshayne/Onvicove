@@ -86,13 +86,8 @@ export default function WizardLayout({
         )}
       </div>
 
-      {/* Right: live preview (60%) */}
+      {/* Right: live preview (60%) - desktop/tablet only */}
       <div className="hidden h-full w-[60%] border-l border-gray-200 md:block">
-        <WizardPreview />
-      </div>
-
-      {/* Mobile preview (collapsed below content) */}
-      <div className="block h-[50vh] w-full border-t border-gray-200 md:hidden">
         <WizardPreview />
       </div>
     </div>
