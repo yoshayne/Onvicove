@@ -28,6 +28,11 @@ import webhookRoutes from './routes/webhooks';
 
 const app = new Hono();
 
+app.onError((err, c) => {
+  console.error('Unhandled error:', err);
+  return c.json({ error: 'Internal server error' }, 500);
+});
+
 // Middleware
 app.use('*', logger());
 app.use('/api/*', cors({

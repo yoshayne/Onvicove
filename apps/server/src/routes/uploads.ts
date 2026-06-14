@@ -30,20 +30,25 @@ app.post('/', async (c) => {
   const arrayBuffer = await file.arrayBuffer();
   const inputBuffer = Buffer.from(arrayBuffer);
 
-  const processed = await sharp(inputBuffer)
-    .resize({
-      width: MAX_DIMENSION,
-      height: MAX_DIMENSION,
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
-    .webp({ quality: 85 })
-    .toBuffer();
+  try {
+    const processed = await sharp(inputBuffer)
+      .resize({
+        width: MAX_DIMENSION,
+        height: MAX_DIMENSION,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 85 })
+      .toBuffer();
 
-  const key = `tenants/${tenant.id}/uploads/${uuidv4()}.webp`;
-  await uploadFile(key, processed, 'image/webp');
+    const key = `tenants/${tenant.id}/uploads/${uuidv4()}.webp`;
+    await uploadFile(key, processed, 'image/webp');
 
-  return c.json({ key, url: await getSignedFileUrl(key) }, 201);
+    return c.json({ key, url: await getSignedFileUrl(key) }, 201);
+  } catch (err) {
+    console.error('Upload failed:', err);
+    return c.json({ error: `Upload failed: ${String(err)}` }, 500);
+  }
 });
 
 export default app;
