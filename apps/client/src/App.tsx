@@ -1,0 +1,84 @@
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ClerkProvider, SignedIn, RedirectToSignIn } from '@clerk/clerk-react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Spinner from './components/shared/Spinner';
+
+import Landing from './marketing/Landing';
+import DashboardLayout from './dashboard/Layout';
+import Overview from './dashboard/Overview';
+import Orders from './dashboard/Orders';
+import Bookings from './dashboard/Bookings';
+import Products from './dashboard/Products';
+import Services from './dashboard/Services';
+import Staff from './dashboard/Staff';
+import Customers from './dashboard/Customers';
+import Analytics from './dashboard/Analytics';
+import Themes from './dashboard/Themes';
+import PageBuilder from './dashboard/PageBuilder';
+import AIPhotos from './dashboard/AIPhotos';
+import Discounts from './dashboard/Discounts';
+import Settings from './dashboard/Settings';
+import Payouts from './dashboard/Payouts';
+
+const Wizard = lazy(() => import('./wizard/Wizard'));
+const StorefrontRouter = lazy(() => import('./storefront/StorefrontRouter'));
+
+const queryClient = new QueryClient();
+
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
+
+function PageFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <Spinner size="lg" />
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+
+              <Route path="/onboarding/*" element={<Wizard />} />
+
+              <Route
+                path="/dashboard/*"
+                element={
+                  <>
+                    <SignedIn>
+                      <DashboardLayout />
+                    </SignedIn>
+                    <RedirectToSignIn />
+                  </>
+                }
+              >
+                <Route index element={<Overview />} />
+                <Route path="orders" element={<Orders />} />
+                <Route path="bookings" element={<Bookings />} />
+                <Route path="products" element={<Products />} />
+                <Route path="services" element={<Services />} />
+                <Route path="staff" element={<Staff />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="themes" element={<Themes />} />
+                <Route path="page-builder" element={<PageBuilder />} />
+                <Route path="ai-photos" element={<AIPhotos />} />
+                <Route path="discounts" element={<Discounts />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="payouts" element={<Payouts />} />
+              </Route>
+
+              <Route path="/:slug/*" element={<StorefrontRouter />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ClerkProvider>
+  );
+}
