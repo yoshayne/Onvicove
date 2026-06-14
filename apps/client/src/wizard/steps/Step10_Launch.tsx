@@ -1,4 +1,4 @@
-import { useWizardStore } from '../wizardStore';
+import { useWizardStore, selectWizardCompleteness } from '../wizardStore';
 
 const MODE_LABELS: Record<string, string> = {
   store: 'Online store',
@@ -21,6 +21,20 @@ export default function Step10_Launch() {
   const services = useWizardStore((s) => s.services);
   const plan = useWizardStore((s) => s.plan);
   const stripeConnected = useWizardStore((s) => s.stripeConnected);
+  const setStep = useWizardStore((s) => s.setStep);
+  const completeness = useWizardStore(selectWizardCompleteness);
+
+  const missing: { label: string; step: number }[] = [];
+  if (!completeness.businessNameDone) missing.push({ label: 'Business name', step: 1 });
+  if (!completeness.modeDone) missing.push({ label: 'Store type', step: 2 });
+  if (!completeness.themeDone) missing.push({ label: 'Theme', step: 3 });
+  if (!completeness.brandInfoDone) missing.push({ label: 'Tagline and city', step: 4 });
+  if (!completeness.heroPhotoDone) missing.push({ label: 'Hero photo', step: 5 });
+  if (!completeness.catalogDone) {
+    missing.push({ label: mode === 'book' ? 'Services' : mode === 'store' ? 'Products' : 'Products or services', step: mode === 'book' ? 7 : 6 });
+  }
+  if (!completeness.availabilityDone) missing.push({ label: 'Availability', step: 8 });
+  if (!completeness.planDone) missing.push({ label: 'Plan', step: 10 });
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,10 +59,31 @@ export default function Step10_Launch() {
         <SummaryRow label="Plan" value={PLAN_LABELS[plan] ?? plan} />
       </div>
 
-      <p className="text-sm text-gray-500">
-        When you're ready, click "Launch my site" below. We'll create your storefront and you'll
-        get a link to share right away.
-      </p>
+      {missing.length > 0 ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p className="mb-2 text-sm font-medium text-amber-800">
+            A few things need attention before you can launch:
+          </p>
+          <ul className="flex flex-col gap-1">
+            {missing.map((m) => (
+              <li key={m.label}>
+                <button
+                  type="button"
+                  onClick={() => setStep(m.step)}
+                  className="text-sm text-amber-700 underline hover:text-amber-900"
+                >
+                  {m.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500">
+          When you're ready, click "Launch my site" below. We'll create your storefront and
+          you'll get a link to share right away.
+        </p>
+      )}
     </div>
   );
 }
