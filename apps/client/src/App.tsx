@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ClerkProvider, SignedIn } from '@clerk/clerk-react';
+import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Spinner from './components/shared/Spinner';
 
@@ -61,7 +61,9 @@ export default function App() {
                     <SignedIn>
                       <Wizard />
                     </SignedIn>
-                    <RedirectToSignIn />
+                    <SignedOut>
+                      <RedirectToSignIn />
+                    </SignedOut>
                   </>
                 }
               />
@@ -73,7 +75,9 @@ export default function App() {
                     <SignedIn>
                       <DashboardLayout />
                     </SignedIn>
-                    <RedirectToSignIn />
+                    <SignedOut>
+                      <RedirectToSignIn />
+                    </SignedOut>
                   </>
                 }
               >
