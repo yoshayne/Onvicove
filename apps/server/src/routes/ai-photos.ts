@@ -41,7 +41,13 @@ app.post('/sessions', async (c) => {
   const originalKey = `tenants/${tenant.id}/ai-photos/${uuidv4()}-original.png`;
   await uploadFile(originalKey, originalBuffer, 'image/png');
 
-  const cutoutBuffer = await removeBackground(originalBuffer);
+  let cutoutBuffer: Buffer;
+  try {
+    cutoutBuffer = await removeBackground(originalBuffer);
+  } catch (err) {
+    console.error('AI photo background removal failed:', err);
+    return c.json({ error: 'AI Photo Studio is temporarily unavailable. Please try again later.' }, 503);
+  }
   const cutoutKey = `tenants/${tenant.id}/ai-photos/${uuidv4()}-cutout.png`;
   await uploadFile(cutoutKey, cutoutBuffer, 'image/png');
 
@@ -126,10 +132,11 @@ app.post('/generate', async (c) => {
       previewImageUrl: enriched.preview_image_url,
     });
   } catch (err) {
+    console.error('AI photo generation failed:', err);
     await db`
       UPDATE ai_photo_generations SET status = 'failed' WHERE id = ${generation.id}
     `;
-    return c.json({ error: `Generation failed: ${String(err)}` }, 500);
+    return c.json({ error: 'AI Photo Studio is temporarily unavailable. Please try again later.' }, 503);
   }
 });
 

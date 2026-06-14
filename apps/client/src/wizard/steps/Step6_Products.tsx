@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useWizardStore, type WizardProduct } from '../wizardStore';
 import { useApi } from '../../lib/api';
+import PriceInput from '../../components/shared/PriceInput';
 
 interface UploadResponse {
   key: string;
@@ -129,15 +130,9 @@ function ProductCard({ product, index, onUpdate, onRemove }: ProductCardProps) {
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-500">Price (USD)</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={product.priceCents ? (product.priceCents / 100).toFixed(2) : ''}
-            onChange={(e) =>
-              onUpdate({ priceCents: Math.round(parseFloat(e.target.value || '0') * 100) })
-            }
-            placeholder="0.00"
+          <PriceInput
+            priceCents={product.priceCents}
+            onChange={(priceCents) => onUpdate({ priceCents })}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
           />
         </div>
