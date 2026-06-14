@@ -45,7 +45,17 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Landing />} />
 
-              <Route path="/onboarding/*" element={<Wizard />} />
+              <Route
+                path="/onboarding/*"
+                element={
+                  <>
+                    <SignedIn>
+                      <Wizard />
+                    </SignedIn>
+                    <RedirectToSignIn />
+                  </>
+                }
+              />
 
               <Route
                 path="/dashboard/*"
