@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import WizardLayout from './WizardLayout';
-import { useWizardStore, selectWizardCompleteness } from './wizardStore';
-import { apiPost } from '../lib/api';
+import { useWizardStore, selectWizardCompleteness, type WizardState } from './wizardStore';
+import { useApi } from '../lib/api';
 
 import Step1_BusinessName from './steps/Step1_BusinessName';
 import Step2_Mode from './steps/Step2_Mode';
@@ -29,7 +29,41 @@ const STEP_COMPONENTS: Record<number, React.ComponentType> = {
 };
 
 export interface WizardCompleteResponse {
-  slug: string;
+  tenant: { slug: string };
+}
+
+function buildWizardData(state: WizardState) {
+  return {
+    businessName: state.businessName,
+    tagline: state.tagline,
+    mode: state.mode,
+    themeId: state.themeId,
+    brandColor: state.brandColor,
+    city: state.city,
+    industry: state.industry,
+    logoKey: state.logoFileKey,
+    heroImageKey: state.heroImageFileKey,
+    plan: state.plan,
+    products: state.products.map((p) => ({
+      name: p.name,
+      description: p.description,
+      priceCents: p.priceCents,
+      imageKeys: p.imageKey ? [p.imageKey] : [],
+      type: 'physical',
+    })),
+    services: state.services.map((s) => ({
+      name: s.name,
+      description: s.description,
+      priceCents: s.priceCents,
+      durationMinutes: s.durationMinutes,
+      imageKeys: [],
+    })),
+    staff: state.staff.map((st) => ({
+      name: st.name,
+      email: st.email,
+      availability: state.availability,
+    })),
+  };
 }
 
 export default function Wizard() {
@@ -39,6 +73,7 @@ export default function Wizard() {
   const prevStep = useWizardStore((s) => s.prevStep);
   const reset = useWizardStore((s) => s.reset);
   const state = useWizardStore();
+  const api = useApi();
 
   const [isLaunching, setIsLaunching] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
@@ -46,28 +81,26 @@ export default function Wizard() {
 
   const StepComponent = STEP_COMPONENTS[currentStep] ?? Step1_BusinessName;
 
+  // Persist progress as a draft tenant so uploads and other authenticated
+  // wizard actions have a tenant row to attach to from step 1 onward.
+  useEffect(() => {
+    api.post('/wizard/save', {
+      wizard_step: currentStep,
+      wizard_data: buildWizardData(state),
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep]);
+
   async function handleLaunch() {
     setIsLaunching(true);
     setLaunchError(null);
     try {
-      const result = await apiPost<WizardCompleteResponse>('/api/wizard/complete', {
-        businessName: state.businessName,
-        slug: state.slug,
-        mode: state.mode,
-        themeId: state.themeId,
-        tagline: state.tagline,
-        brandColor: state.brandColor,
-        city: state.city,
-        industry: state.industry,
-        logoFileKey: state.logoFileKey,
-        heroImageFileKey: state.heroImageFileKey,
-        products: state.products,
-        services: state.services,
-        availability: state.availability,
-        staff: state.staff,
-        plan: state.plan,
+      await api.post('/wizard/save', {
+        wizard_step: currentStep,
+        wizard_data: buildWizardData(state),
       });
-      setLaunchedSlug(result.slug || state.slug);
+      const result = await api.post<WizardCompleteResponse>('/wizard/complete');
+      setLaunchedSlug(result.tenant.slug || state.slug);
       reset();
     } catch (err) {
       setLaunchError(err instanceof Error ? err.message : 'Failed to launch site');
