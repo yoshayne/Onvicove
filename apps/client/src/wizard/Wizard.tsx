@@ -180,7 +180,6 @@ export default function Wizard() {
       });
       const result = await api.post<WizardCompleteResponse>('/wizard/complete');
       setLaunchedSlug(result.tenant.slug || state.slug);
-      reset();
     } catch (err) {
       setLaunchError(err instanceof Error ? err.message : 'Failed to launch site');
     } finally {
@@ -216,7 +215,14 @@ export default function Wizard() {
           launchedSlug={launchedSlug}
           canLaunch={completeness.isReadyToLaunch}
           onBack={prevStep}
-          onGoToSite={(slug) => navigate(`/${slug}`)}
+          onGoToSite={(slug) => {
+            reset();
+            navigate(`/${slug}`);
+          }}
+          onGoToDashboard={() => {
+            reset();
+            navigate('/dashboard');
+          }}
         />
       )}
     </WizardLayout>
@@ -231,6 +237,7 @@ interface Step10LaunchControlsProps {
   canLaunch: boolean;
   onBack: () => void;
   onGoToSite: (slug: string) => void;
+  onGoToDashboard: () => void;
 }
 
 // Step10 renders its own review UI; this small block wires the actual
@@ -243,6 +250,7 @@ function Step10LaunchControls({
   canLaunch,
   onBack,
   onGoToSite,
+  onGoToDashboard,
 }: Step10LaunchControlsProps) {
   if (launchedSlug) {
     return (
@@ -250,13 +258,22 @@ function Step10LaunchControls({
         <p className="mb-2 text-sm font-medium text-green-800">
           🎉 Your site is live!
         </p>
-        <button
-          type="button"
-          onClick={() => onGoToSite(launchedSlug)}
-          className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-        >
-          View your site /{launchedSlug}
-        </button>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => onGoToSite(launchedSlug)}
+            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+          >
+            View your site /{launchedSlug}
+          </button>
+          <button
+            type="button"
+            onClick={() => onGoToDashboard()}
+            className="rounded-lg border border-green-300 bg-white px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-100"
+          >
+            Go to dashboard
+          </button>
+        </div>
       </div>
     );
   }
