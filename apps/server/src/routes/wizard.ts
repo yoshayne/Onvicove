@@ -45,7 +45,7 @@ app.post('/save', async (c) => {
   if (existing[0]) {
     const rows = await db`
       UPDATE tenants
-      SET wizard_data = wizard_data || ${db.json(wizard_data)},
+      SET wizard_data = wizard_data || ${db.json(JSON.parse(JSON.stringify(wizard_data)))},
           wizard_step = COALESCE(${wizard_step ?? null}, wizard_step),
           updated_at = NOW()
       WHERE id = ${existing[0].id}
@@ -59,7 +59,7 @@ app.post('/save', async (c) => {
 
   const rows = await db`
     INSERT INTO tenants (clerk_user_id, slug, company_name, wizard_step, wizard_data)
-    VALUES (${clerkUserId}, ${slug}, ${companyName}, ${wizard_step ?? 0}, ${db.json(wizard_data)})
+    VALUES (${clerkUserId}, ${slug}, ${companyName}, ${wizard_step ?? 0}, ${db.json(JSON.parse(JSON.stringify(wizard_data)))})
     RETURNING wizard_step, wizard_data, wizard_completed
   `;
   return c.json(rows[0], 201);

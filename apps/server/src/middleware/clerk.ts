@@ -1,9 +1,5 @@
-import { createClerkClient } from '@clerk/backend';
+import { verifyToken } from '@clerk/backend';
 import type { Context, Next } from 'hono';
-
-const clerk = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY!,
-});
 
 export async function requireAuth(c: Context, next: Next) {
   const authHeader = c.req.header('Authorization');
@@ -14,7 +10,9 @@ export async function requireAuth(c: Context, next: Next) {
   }
 
   try {
-    const payload = await clerk.verifyToken(token);
+    const payload = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY!,
+    });
     c.set('clerkUserId', payload.sub);
     await next();
   } catch {

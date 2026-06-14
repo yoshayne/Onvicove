@@ -225,7 +225,7 @@ app.post('/:slug/orders', async (c) => {
     ) VALUES (
       ${tenant.id}, ${customer.id}, ${orderNumber}, ${d.customer_name}, ${d.customer_email}, ${d.customer_phone ?? null},
       ${subtotal}, ${shippingCents}, ${discountCents}, ${totalCents}, ${platformFee},
-      ${d.shipping_address ? db.json(d.shipping_address) : null}, ${d.billing_address ? db.json(d.billing_address) : null}, ${d.notes ?? null}
+      ${d.shipping_address ? db.json(JSON.parse(JSON.stringify(d.shipping_address))) : null}, ${d.billing_address ? db.json(JSON.parse(JSON.stringify(d.billing_address))) : null}, ${d.notes ?? null}
     )
     RETURNING *
   `;
