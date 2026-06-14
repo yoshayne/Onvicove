@@ -24,6 +24,7 @@ import wizardRoutes from './routes/wizard';
 import aiPhotoRoutes from './routes/ai-photos';
 import discountRoutes from './routes/discounts';
 import publicRoutes from './routes/public';
+import webhookRoutes from './routes/webhooks';
 
 const app = new Hono();
 
@@ -68,6 +69,7 @@ app.route('/api/wizard', wizardRoutes);
 app.route('/api/ai-photos', aiPhotoRoutes);
 app.route('/api/discounts', discountRoutes);
 app.route('/api/public', publicRoutes);
+app.route('/api/webhooks', webhookRoutes);
 
 // Serve React client for all non-API routes
 // The Vite build outputs to dist/client relative to repo root

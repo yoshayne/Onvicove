@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
-import { uploadFile } from '../services/storage';
+import { uploadFile, getSignedFileUrl } from '../services/storage';
 
 const app = new Hono();
 
@@ -43,7 +43,7 @@ app.post('/', async (c) => {
   const key = `tenants/${tenant.id}/uploads/${uuidv4()}.webp`;
   await uploadFile(key, processed, 'image/webp');
 
-  return c.json({ key }, 201);
+  return c.json({ key, url: await getSignedFileUrl(key) }, 201);
 });
 
 export default app;

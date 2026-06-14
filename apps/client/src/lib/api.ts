@@ -73,7 +73,7 @@ export function apiDelete<T>(path: string, getToken?: TokenGetter): Promise<T> {
 
 export function apiUpload<T>(path: string, file: File, getToken?: TokenGetter): Promise<T> {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('image', file);
   return request<T>('POST', path, formData, getToken);
 }
 
