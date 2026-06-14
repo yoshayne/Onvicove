@@ -2,6 +2,11 @@ import { ShoppingCart, Calendar as CalendarIcon } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import { formatPrice } from '../types';
 import { config, defaults } from './config';
+import CartDrawer from './CartDrawer';
+import BookingModal from './BookingModal';
+import CheckoutModal from '../shared/CheckoutModal';
+import BookingStatusOverlay from '../shared/BookingStatusOverlay';
+import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 
 // Heading font "Merriweather" requires loading Google Fonts in index.html.
 // Body font "Georgia" is a system font (font-serif fallback is fine).
@@ -11,9 +16,14 @@ export default function Storefront({
   products,
   services,
   staff,
-  onAddToCart,
-  onBookService,
 }: ThemeProps) {
+  const {
+    cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
+    checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
+    bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
+    availableSlots, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
+    confirmBooking, dismissBookingStatus,
+  } = useStorefrontCommerce(theme.slug);
   const showProducts = (theme.mode === 'store' || theme.mode === 'both');
   const showServices = (theme.mode === 'book' || theme.mode === 'both');
 
@@ -31,11 +41,23 @@ export default function Storefront({
           <span className="font-['Merriweather'] text-xl font-bold text-[#1a3a5c]">
             {theme.companyName}
           </span>
-          <nav className="hidden gap-8 font-['Merriweather'] text-sm font-bold uppercase tracking-wide text-[#1a3a5c] md:flex">
-            {showProducts && <a href="#products" className="hover:text-[var(--brand-color,#c8a850)]">Shop</a>}
-            {showServices && <a href="#services" className="hover:text-[var(--brand-color,#c8a850)]">Services</a>}
-            <a href="#about" className="hover:text-[var(--brand-color,#c8a850)]">About</a>
-          </nav>
+          <div className="flex items-center gap-8">
+            <nav className="hidden gap-8 font-['Merriweather'] text-sm font-bold uppercase tracking-wide text-[#1a3a5c] md:flex">
+              {showProducts && <a href="#products" className="hover:text-[var(--brand-color,#c8a850)]">Shop</a>}
+              {showServices && <a href="#services" className="hover:text-[var(--brand-color,#c8a850)]">Services</a>}
+              <a href="#about" className="hover:text-[var(--brand-color,#c8a850)]">About</a>
+            </nav>
+            {showProducts && (
+              <button
+                type="button"
+                aria-label="Open cart"
+                onClick={() => setCartOpen(true)}
+                className="text-[#1a3a5c] hover:text-[var(--brand-color,#c8a850)] transition-colors"
+              >
+                <ShoppingCart size={20} />
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -89,7 +111,7 @@ export default function Storefront({
                   </span>
                   <button
                     type="button"
-                    onClick={() => onAddToCart?.(product)}
+                    onClick={() => addToCart(product)}
                     className="flex items-center gap-2 border border-[#1a3a5c] px-4 py-2 text-sm font-bold uppercase tracking-wide text-[#1a3a5c] transition hover:bg-[#1a3a5c] hover:text-white"
                   >
                     <ShoppingCart size={16} />
@@ -137,7 +159,7 @@ export default function Storefront({
                 </div>
                 <button
                   type="button"
-                  onClick={() => onBookService?.(service)}
+                  onClick={() => openBooking(service)}
                   className="mt-4 flex items-center gap-2 self-start bg-[#1a3a5c] px-4 py-2 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-[#142e49] sm:mt-0 sm:self-center"
                 >
                   <CalendarIcon size={16} />
@@ -181,6 +203,46 @@ export default function Storefront({
           </p>
         </div>
       </footer>
+
+      {showProducts && (
+        <CartDrawer
+          isOpen={cartOpen}
+          onClose={() => setCartOpen(false)}
+          items={cart}
+          onUpdateQuantity={updateCartQuantity}
+          onRemove={removeFromCart}
+          onCheckout={openCheckout}
+        />
+      )}
+
+      <CheckoutModal
+        isOpen={checkoutOpen}
+        onClose={closeCheckout}
+        items={cart}
+        status={orderStatus}
+        error={orderError}
+        orderNumber={orderNumber}
+        onSubmit={submitOrder}
+      />
+
+      <BookingModal
+        isOpen={bookingOpen}
+        onClose={closeBooking}
+        service={bookingService}
+        selectedDate={selectedDate}
+        selectedSlot={selectedSlot}
+        availableSlots={availableSlots}
+        onSelectDate={selectBookingDate}
+        onSelectSlot={selectBookingSlot}
+        onConfirm={confirmBooking}
+      />
+
+      <BookingStatusOverlay
+        status={bookingStatus}
+        error={bookingError}
+        onClose={closeBooking}
+        onDismiss={dismissBookingStatus}
+      />
     </div>
   );
 }

@@ -16,6 +16,7 @@ export interface ThemeData {
   city?: string;
   industry?: string;
   themeId?: ThemeId;
+  slug?: string;
 }
 
 export interface ProductImage {

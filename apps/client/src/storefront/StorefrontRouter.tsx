@@ -18,6 +18,7 @@ function mapTenant(tenant: Tenant): ThemeData {
     city: tenant.city ?? undefined,
     industry: tenant.industry ?? undefined,
     themeId: tenant.theme_id,
+    slug: tenant.slug,
   };
 }
 

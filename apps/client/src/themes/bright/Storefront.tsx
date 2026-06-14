@@ -1,14 +1,23 @@
 // NOTE: This theme expects 'Poppins' to be loaded via Google Fonts in index.html, e.g.:
 // <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-import { useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import { formatPrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
+import BookingModal from './BookingModal';
+import CheckoutModal from '../shared/CheckoutModal';
+import BookingStatusOverlay from '../shared/BookingStatusOverlay';
+import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 
-export default function Storefront({ theme, products, services, staff, onAddToCart, onBookService }: ThemeProps) {
-  const [cartOpen, setCartOpen] = useState(false);
+export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+  const {
+    cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
+    checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
+    bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
+    availableSlots, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
+    confirmBooking, dismissBookingStatus,
+  } = useStorefrontCommerce(theme.slug);
 
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
@@ -79,7 +88,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                 <p className="text-sm text-[#111111]/60 mb-3 flex-1">{formatPrice(product.priceCents, theme.currency)}</p>
                 <button
                   type="button"
-                  onClick={() => onAddToCart?.(product)}
+                  onClick={() => addToCart(product)}
                   className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-2 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors"
                 >
                   Add to Cart
@@ -115,7 +124,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                   </div>
                   <button
                     type="button"
-                    onClick={() => onBookService?.(service)}
+                    onClick={() => openBooking(service)}
                     className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-3 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors"
                   >
                     Book Now
@@ -160,12 +169,41 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
         <CartDrawer
           isOpen={cartOpen}
           onClose={() => setCartOpen(false)}
-          items={[]}
-          onUpdateQuantity={() => {}}
-          onRemove={() => {}}
-          onCheckout={() => {}}
+          items={cart}
+          onUpdateQuantity={updateCartQuantity}
+          onRemove={removeFromCart}
+          onCheckout={openCheckout}
         />
       )}
+
+      <CheckoutModal
+        isOpen={checkoutOpen}
+        onClose={closeCheckout}
+        items={cart}
+        status={orderStatus}
+        error={orderError}
+        orderNumber={orderNumber}
+        onSubmit={submitOrder}
+      />
+
+      <BookingModal
+        isOpen={bookingOpen}
+        onClose={closeBooking}
+        service={bookingService}
+        selectedDate={selectedDate}
+        selectedSlot={selectedSlot}
+        availableSlots={availableSlots}
+        onSelectDate={selectBookingDate}
+        onSelectSlot={selectBookingSlot}
+        onConfirm={confirmBooking}
+      />
+
+      <BookingStatusOverlay
+        status={bookingStatus}
+        error={bookingError}
+        onClose={closeBooking}
+        onDismiss={dismissBookingStatus}
+      />
     </div>
   );
 }
