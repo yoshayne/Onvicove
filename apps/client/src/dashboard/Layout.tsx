@@ -18,6 +18,8 @@ import {
   Wallet,
   Menu,
   X,
+  ExternalLink,
+  Share2,
 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import type { Tenant } from '../types';
@@ -43,6 +45,7 @@ const navItems = [
 export default function Layout() {
   const api = useApi();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['tenant', 'me'],
@@ -50,6 +53,25 @@ export default function Layout() {
   });
 
   const tenant = data?.tenant;
+
+  async function handleShare(slug: string) {
+    const url = `${window.location.origin}/${slug}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ url, title: tenant?.company_name });
+        return;
+      }
+    } catch {
+      // fall through to clipboard copy
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  }
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -114,7 +136,30 @@ export default function Layout() {
               {isLoading ? <Spinner size="sm" /> : tenant?.company_name || 'Dashboard'}
             </div>
           </div>
-          <UserButton afterSignOutUrl="/" />
+          <div className="flex items-center gap-2">
+            {tenant?.slug && (
+              <>
+                <a
+                  href={`/${tenant.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                >
+                  <ExternalLink size={16} />
+                  <span className="hidden sm:inline">Visit site</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => handleShare(tenant.slug)}
+                  className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                >
+                  <Share2 size={16} />
+                  <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
+                </button>
+              </>
+            )}
+            <UserButton afterSignOutUrl="/" />
+          </div>
         </header>
         <main className="flex-1 p-4 lg:p-6">
           {tenant && !tenant.wizard_completed && (
