@@ -5,8 +5,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { uploadFile, enrichWithUrls } from '../services/storage';
-import { removeBackground } from '../services/photoroom';
-import { generateStyledPhoto, AI_PHOTO_STYLES } from '../services/stabilityai';
+import { removeBackground, generateStyledPhoto, AI_PHOTO_STYLES } from '../services/gemini';
 import { applyWatermark } from '../services/watermark';
 import { stripe, computePlatformFee } from '../services/stripe';
 
@@ -100,7 +99,7 @@ app.post('/generate', async (c) => {
   const generation = genRows[0];
 
   try {
-    // Download cutout image to feed into Stability AI
+    // Download cutout image to feed into Gemini
     const { getSignedFileUrl } = await import('../services/storage');
     const cutoutUrl = await getSignedFileUrl(session.cutout_image_key as string);
     const fetchRes = await fetch(cutoutUrl);
