@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import WizardPreview from './WizardPreview';
 import { useWizardStore } from './wizardStore';
 
@@ -38,6 +38,7 @@ export default function WizardLayout({
   hideNav = false,
 }: WizardLayoutProps) {
   const currentStep = useWizardStore((s) => s.currentStep);
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
 
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-gray-50 md:flex-row">
@@ -64,6 +65,16 @@ export default function WizardLayout({
 
         <div className="flex-1 overflow-y-auto px-6 py-6">{children}</div>
 
+        <div className="border-t border-gray-200 bg-white px-6 py-3 md:hidden">
+          <button
+            type="button"
+            onClick={() => setMobilePreviewOpen(true)}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+          >
+            Preview your site
+          </button>
+        </div>
+
         {!hideNav && (
           <div className="flex items-center justify-between gap-3 border-t border-gray-200 bg-white px-6 py-4">
             <button
@@ -89,6 +100,27 @@ export default function WizardLayout({
       {/* Right: live preview (60%) - desktop/tablet only */}
       <div className="hidden h-full w-[60%] border-l border-gray-200 md:block">
         <WizardPreview />
+      </div>
+
+      {/* Mobile: slide-up live preview overlay */}
+      <div
+        className={`fixed inset-0 z-50 flex flex-col bg-white transition-transform duration-300 md:hidden ${
+          mobilePreviewOpen ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <span className="text-sm font-medium text-gray-700">Live preview</span>
+          <button
+            type="button"
+            onClick={() => setMobilePreviewOpen(false)}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+          >
+            Close
+          </button>
+        </div>
+        <div className="flex-1">
+          <WizardPreview />
+        </div>
       </div>
     </div>
   );
