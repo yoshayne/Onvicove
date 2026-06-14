@@ -59,6 +59,8 @@ function buildWizardData(state: WizardState) {
       description: s.description,
       priceCents: s.priceCents,
       durationMinutes: s.durationMinutes,
+      requiresDeposit: s.requiresDeposit ?? false,
+      depositCents: s.requiresDeposit ? s.depositCents ?? 0 : null,
       imageKeys: [],
     })),
     staff: state.staff.map((st) => ({
@@ -110,6 +112,8 @@ function applyWizardData(state: WizardState, data: Record<string, unknown>, slug
         description: s.description ?? '',
         priceCents: s.priceCents ?? 0,
         durationMinutes: s.durationMinutes ?? 30,
+        requiresDeposit: s.requiresDeposit ?? false,
+        depositCents: s.depositCents ?? null,
       });
     }
   }

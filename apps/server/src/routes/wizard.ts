@@ -114,10 +114,11 @@ app.post('/complete', async (c) => {
   if (Array.isArray(data.services)) {
     for (const s of data.services) {
       await db`
-        INSERT INTO services (tenant_id, name, description, price_cents, duration_minutes, image_keys)
+        INSERT INTO services (tenant_id, name, description, price_cents, duration_minutes, image_keys, requires_deposit, deposit_cents)
         VALUES (
           ${result.id}, ${s.name}, ${s.description ?? null}, ${s.priceCents ?? 0},
-          ${s.durationMinutes ?? 30}, ${db.json(s.imageKeys ?? [])}
+          ${s.durationMinutes ?? 30}, ${db.json(s.imageKeys ?? [])},
+          ${s.requiresDeposit ?? false}, ${s.requiresDeposit ? s.depositCents ?? 0 : null}
         )
       `;
     }

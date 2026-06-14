@@ -105,6 +105,31 @@ function ServiceCard({ service, onUpdate, onRemove }: ServiceCardProps) {
           />
         </div>
       </div>
+
+      <div className="mt-3 flex items-center gap-4">
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={service.requiresDeposit ?? false}
+            onChange={(e) =>
+              onUpdate({
+                requiresDeposit: e.target.checked,
+                depositCents: e.target.checked ? service.depositCents ?? 0 : null,
+              })
+            }
+          />
+          Require a deposit to book
+        </label>
+        {service.requiresDeposit && (
+          <div className="w-32">
+            <PriceInput
+              priceCents={service.depositCents ?? 0}
+              onChange={(depositCents) => onUpdate({ depositCents })}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

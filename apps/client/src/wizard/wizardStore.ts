@@ -17,6 +17,8 @@ export interface WizardService {
   priceCents: number;
   durationMinutes: number;
   description?: string;
+  requiresDeposit?: boolean;
+  depositCents?: number | null;
 }
 
 export interface WizardStaffMember {
