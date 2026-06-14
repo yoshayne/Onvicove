@@ -15,7 +15,8 @@ export async function requireAuth(c: Context, next: Next) {
     });
     c.set('clerkUserId', payload.sub);
     await next();
-  } catch {
+  } catch (err) {
+    console.error('Clerk token verification failed:', err);
     return c.json({ error: 'Unauthorized — invalid token' }, 401);
   }
 }
