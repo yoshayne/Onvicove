@@ -59,6 +59,18 @@ app.get('/:slug/services', async (c) => {
   return c.json({ services: await Promise.all(services.map(enrichWithUrls)) });
 });
 
+// GET /api/public/:slug/staff
+app.get('/:slug/staff', async (c) => {
+  const slug = c.req.param('slug');
+  const tenants = await db`SELECT id FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
+  if (!tenants[0]) return c.json({ error: 'Store not found' }, 404);
+
+  const staff = await db`
+    SELECT * FROM staff WHERE tenant_id = ${tenants[0].id} AND is_active = TRUE ORDER BY created_at ASC
+  `;
+  return c.json({ staff: await Promise.all(staff.map(enrichWithUrls)) });
+});
+
 // GET /api/public/:slug/services/:id
 app.get('/:slug/services/:id', async (c) => {
   const slug = c.req.param('slug');

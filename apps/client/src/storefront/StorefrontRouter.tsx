@@ -65,26 +65,31 @@ export default function StorefrontRouter() {
 
   const tenantQuery = useQuery({
     queryKey: ['public-tenant', slug],
-    queryFn: () => apiGet<Tenant>(`/api/public/${slug}`),
+    queryFn: () => apiGet<{ tenant: Tenant }>(`/api/public/${slug}`).then((r) => r.tenant),
     enabled: !!slug,
     retry: false,
   });
 
   const productsQuery = useQuery({
     queryKey: ['public-products', slug],
-    queryFn: () => apiGet<Product[]>(`/api/public/${slug}/products`),
+    queryFn: () =>
+      apiGet<{ products: Product[] }>(`/api/public/${slug}/products`).then((r) => r.products),
     enabled: !!slug && !!tenantQuery.data,
   });
 
   const servicesQuery = useQuery({
     queryKey: ['public-services', slug],
-    queryFn: () => apiGet<Service[]>(`/api/public/${slug}/services`),
+    queryFn: () =>
+      apiGet<{ services: Service[] }>(`/api/public/${slug}/services`).then((r) => r.services),
     enabled: !!slug && !!tenantQuery.data,
   });
 
   const staffQuery = useQuery({
     queryKey: ['public-staff', slug],
-    queryFn: () => apiGet<Staff[]>(`/api/public/${slug}/staff`),
+    queryFn: () =>
+      apiGet<{ staff: Staff[] }>(`/api/public/${slug}/staff`)
+        .then((r) => r.staff)
+        .catch(() => []),
     enabled: !!slug && !!tenantQuery.data,
   });
 
