@@ -19,6 +19,7 @@ function mapTenant(tenant: Tenant): ThemeData {
     industry: tenant.industry ?? undefined,
     themeId: tenant.theme_id,
     slug: tenant.slug,
+    paymentsEnabled: tenant.stripe_onboarded,
   };
 }
 

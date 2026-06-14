@@ -112,10 +112,11 @@ export default function Storefront({
                   <button
                     type="button"
                     onClick={() => addToCart(product)}
-                    className="flex items-center gap-2 border border-[#1a3a5c] px-4 py-2 text-sm font-bold uppercase tracking-wide text-[#1a3a5c] transition hover:bg-[#1a3a5c] hover:text-white"
+                    disabled={!theme.paymentsEnabled}
+                    className="flex items-center gap-2 border border-[#1a3a5c] px-4 py-2 text-sm font-bold uppercase tracking-wide text-[#1a3a5c] transition hover:bg-[#1a3a5c] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#1a3a5c]"
                   >
                     <ShoppingCart size={16} />
-                    Add to Cart
+                    {theme.paymentsEnabled ? 'Add to Cart' : 'Coming Soon'}
                   </button>
                 </div>
               </div>
@@ -160,10 +161,11 @@ export default function Storefront({
                 <button
                   type="button"
                   onClick={() => openBooking(service)}
-                  className="mt-4 flex items-center gap-2 self-start bg-[#1a3a5c] px-4 py-2 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-[#142e49] sm:mt-0 sm:self-center"
+                  disabled={!theme.paymentsEnabled}
+                  className="mt-4 flex items-center gap-2 self-start bg-[#1a3a5c] px-4 py-2 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-[#142e49] sm:mt-0 sm:self-center disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#1a3a5c]"
                 >
                   <CalendarIcon size={16} />
-                  Book Now
+                  {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
                 </button>
               </div>
             ))}

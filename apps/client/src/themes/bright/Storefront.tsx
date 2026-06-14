@@ -89,9 +89,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                 <button
                   type="button"
                   onClick={() => addToCart(product)}
-                  className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-2 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors"
+                  disabled={!theme.paymentsEnabled}
+                  className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-2 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--brand-color,#ff3cac)]"
                 >
-                  Add to Cart
+                  {theme.paymentsEnabled ? 'Add to Cart' : 'Coming Soon'}
                 </button>
               </div>
             ))}
@@ -125,9 +126,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                   <button
                     type="button"
                     onClick={() => openBooking(service)}
-                    className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-3 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors"
+                    disabled={!theme.paymentsEnabled}
+                    className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-3 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--brand-color,#ff3cac)]"
                   >
-                    Book Now
+                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
                   </button>
                 </div>
               ))}

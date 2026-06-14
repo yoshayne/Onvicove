@@ -83,9 +83,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                 <button
                   type="button"
                   onClick={() => addToCart(product)}
-                  className="text-xs uppercase tracking-[0.2em] font-medium text-[#111111] hover:text-[#111111]/60 transition-colors"
+                  disabled={!theme.paymentsEnabled}
+                  className="text-xs uppercase tracking-[0.2em] font-medium text-[#111111] hover:text-[#111111]/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Add to Cart
+                  {theme.paymentsEnabled ? 'Add to Cart' : 'Coming Soon'}
                 </button>
               </div>
             ))}
@@ -117,9 +118,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                   <button
                     type="button"
                     onClick={() => openBooking(service)}
-                    className="uppercase tracking-[0.2em] text-xs font-medium bg-[var(--brand-color,#111111)] text-white py-3 hover:bg-[#333333] transition-colors"
+                    disabled={!theme.paymentsEnabled}
+                    className="uppercase tracking-[0.2em] text-xs font-medium bg-[var(--brand-color,#111111)] text-white py-3 hover:bg-[#333333] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--brand-color,#111111)]"
                   >
-                    Book Now
+                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
                   </button>
                 </div>
               ))}

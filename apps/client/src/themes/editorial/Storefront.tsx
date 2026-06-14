@@ -87,9 +87,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                 <button
                   type="button"
                   onClick={() => addToCart(product)}
-                  className="text-xs uppercase tracking-[0.2em] border-b border-[#111111] pb-1 hover:text-[var(--brand-color,#d4a96a)] hover:border-[var(--brand-color,#d4a96a)] transition-colors"
+                  disabled={!theme.paymentsEnabled}
+                  className="text-xs uppercase tracking-[0.2em] border-b border-[#111111] pb-1 hover:text-[var(--brand-color,#d4a96a)] hover:border-[var(--brand-color,#d4a96a)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[#111111] disabled:hover:border-[#111111]"
                 >
-                  Add to Cart
+                  {theme.paymentsEnabled ? 'Add to Cart' : 'Coming Soon'}
                 </button>
               </div>
             ))}
@@ -121,9 +122,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                   <button
                     type="button"
                     onClick={() => openBooking(service)}
-                    className="uppercase tracking-[0.2em] text-xs bg-[#1a1a1a] text-white py-3 hover:bg-[var(--brand-color,#d4a96a)] hover:text-[#111111] transition-colors"
+                    disabled={!theme.paymentsEnabled}
+                    className="uppercase tracking-[0.2em] text-xs bg-[#1a1a1a] text-white py-3 hover:bg-[var(--brand-color,#d4a96a)] hover:text-[#111111] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#1a1a1a] disabled:hover:text-white"
                   >
-                    Book Now
+                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
                   </button>
                 </div>
               ))}

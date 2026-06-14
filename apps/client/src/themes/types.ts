@@ -17,6 +17,7 @@ export interface ThemeData {
   industry?: string;
   themeId?: ThemeId;
   slug?: string;
+  paymentsEnabled?: boolean;
 }
 
 export interface ProductImage {
