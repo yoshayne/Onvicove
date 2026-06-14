@@ -50,7 +50,7 @@ export default function Calendar({
           type="button"
           aria-label="Previous month"
           onClick={() => setViewDate(new Date(year, month - 1, 1))}
-          className="rounded-full p-2 text-[#8b5e3c] hover:bg-[#f5e8d8]"
+          className="rounded-full p-2 text-[var(--brand-color,#8b5e3c)] hover:bg-[#f5e8d8]"
         >
           <ChevronLeft size={18} />
         </button>
@@ -59,13 +59,13 @@ export default function Calendar({
           type="button"
           aria-label="Next month"
           onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="rounded-full p-2 text-[#8b5e3c] hover:bg-[#f5e8d8]"
+          className="rounded-full p-2 text-[var(--brand-color,#8b5e3c)] hover:bg-[#f5e8d8]"
         >
           <ChevronRight size={18} />
         </button>
       </div>
 
-      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs font-medium text-[#8b5e3c]/70">
+      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs font-medium text-[var(--brand-color,#8b5e3c)]/70">
         {WEEKDAYS.map((w) => (
           <div key={w}>{w}</div>
         ))}
@@ -84,7 +84,7 @@ export default function Calendar({
               onClick={() => onSelectDate(d)}
               className={`flex aspect-square items-center justify-center rounded-full text-sm transition ${
                 selected
-                  ? 'bg-[#8b5e3c] text-white'
+                  ? 'bg-[var(--brand-color,#8b5e3c)] text-white'
                   : disabled
                     ? 'cursor-not-allowed text-[#3d2314]/20'
                     : 'text-[#3d2314] hover:bg-[#f5e8d8]'
@@ -112,9 +112,9 @@ export default function Calendar({
                   onClick={() => onSelectSlot(slot.time)}
                   className={`rounded-full px-3 py-2 text-xs transition ${
                     selected
-                      ? 'bg-[#8b5e3c] text-white'
+                      ? 'bg-[var(--brand-color,#8b5e3c)] text-white'
                       : slot.available
-                        ? 'bg-[#f5e8d8] text-[#3d2314] hover:bg-[#8b5e3c] hover:text-white'
+                        ? 'bg-[#f5e8d8] text-[#3d2314] hover:bg-[var(--brand-color,#8b5e3c)] hover:text-white'
                         : 'cursor-not-allowed bg-[#f5e8d8]/40 text-[#3d2314]/30 line-through'
                   }`}
                 >

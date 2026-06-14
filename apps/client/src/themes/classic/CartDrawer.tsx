@@ -39,7 +39,7 @@ export default function CartDrawer({
           <h2 className="font-['Merriweather'] text-2xl font-bold uppercase tracking-wide text-[#1a3a5c]">
             Your Cart
           </h2>
-          <button type="button" aria-label="Close cart" onClick={onClose} className="text-[#1a3a5c]/60 hover:text-[#c8a850]">
+          <button type="button" aria-label="Close cart" onClick={onClose} className="text-[#1a3a5c]/60 hover:text-[var(--brand-color,#c8a850)]">
             <X size={22} />
           </button>
         </div>
@@ -60,18 +60,18 @@ export default function CartDrawer({
                       type="button"
                       aria-label={`Remove ${item.name}`}
                       onClick={() => onRemove(item.productId)}
-                      className="text-[#1a3a5c]/40 hover:text-[#c8a850]"
+                      className="text-[#1a3a5c]/40 hover:text-[var(--brand-color,#c8a850)]"
                     >
                       <X size={16} />
                     </button>
                   </div>
-                  <span className="text-[#c8a850] text-sm font-bold mt-1">{formatPrice(item.priceCents)}</span>
+                  <span className="text-[var(--brand-color,#c8a850)] text-sm font-bold mt-1">{formatPrice(item.priceCents)}</span>
                   <div className="flex items-center gap-3 mt-auto">
                     <button
                       type="button"
                       aria-label="Decrease quantity"
                       onClick={() => onUpdateQuantity(item.productId, Math.max(1, item.quantity - 1))}
-                      className="p-1 border border-[#1a3a5c]/30 hover:border-[#c8a850]"
+                      className="p-1 border border-[#1a3a5c]/30 hover:border-[var(--brand-color,#c8a850)]"
                     >
                       <Minus size={12} />
                     </button>
@@ -80,7 +80,7 @@ export default function CartDrawer({
                       type="button"
                       aria-label="Increase quantity"
                       onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
-                      className="p-1 border border-[#1a3a5c]/30 hover:border-[#c8a850]"
+                      className="p-1 border border-[#1a3a5c]/30 hover:border-[var(--brand-color,#c8a850)]"
                     >
                       <Plus size={12} />
                     </button>
@@ -94,13 +94,13 @@ export default function CartDrawer({
         <div className="p-6 border-t-2 border-[#1a3a5c]">
           <div className="flex justify-between text-sm font-bold uppercase tracking-wide mb-4">
             <span>Subtotal</span>
-            <span className="font-['Merriweather'] text-lg text-[#c8a850]">{formatPrice(subtotal)}</span>
+            <span className="font-['Merriweather'] text-lg text-[var(--brand-color,#c8a850)]">{formatPrice(subtotal)}</span>
           </div>
           <button
             type="button"
             disabled={items.length === 0}
             onClick={onCheckout}
-            className="w-full bg-[#1a3a5c] text-white uppercase tracking-wide text-sm font-bold py-3 hover:bg-[#c8a850] hover:text-[#1a3a5c] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-[#1a3a5c] text-white uppercase tracking-wide text-sm font-bold py-3 hover:bg-[var(--brand-color,#c8a850)] hover:text-[#1a3a5c] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Checkout
           </button>

@@ -21,24 +21,24 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
   return (
     <div className="min-h-screen bg-white text-[#111111] font-['Poppins']">
       {/* Nav */}
-      <nav className="sticky top-0 z-40 bg-white border-b-4 border-[#ff3cac]">
+      <nav className="sticky top-0 z-40 bg-white border-b-4 border-[var(--brand-color,#ff3cac)]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="w-10" />
-          <span className="font-['Poppins'] font-extrabold text-2xl tracking-wide text-[#ff3cac]">
+          <span className="font-['Poppins'] font-extrabold text-2xl tracking-wide text-[var(--brand-color,#ff3cac)]">
             {theme.companyName}
           </span>
           <div className="flex items-center gap-8">
             <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-[#111111]/70">
-              {showProducts && <a href="#products" className="hover:text-[#ff3cac] transition-colors">Shop</a>}
-              {showServices && <a href="#services" className="hover:text-[#ff3cac] transition-colors">Book</a>}
-              <a href="#footer" className="hover:text-[#ff3cac] transition-colors">Contact</a>
+              {showProducts && <a href="#products" className="hover:text-[var(--brand-color,#ff3cac)] transition-colors">Shop</a>}
+              {showServices && <a href="#services" className="hover:text-[var(--brand-color,#ff3cac)] transition-colors">Book</a>}
+              <a href="#footer" className="hover:text-[var(--brand-color,#ff3cac)] transition-colors">Contact</a>
             </div>
             {showProducts && (
               <button
                 type="button"
                 aria-label="Open cart"
                 onClick={() => setCartOpen(true)}
-                className="text-[#111111] hover:text-[#ff3cac] transition-colors"
+                className="text-[#111111] hover:text-[var(--brand-color,#ff3cac)] transition-colors"
               >
                 <ShoppingCart size={20} />
               </button>
@@ -49,10 +49,10 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
 
       {/* Hero */}
       <section className="relative min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-gradient-to-br from-[#f0f0ff] to-[#ffe0f0] py-24">
-        <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full bg-[#ff3cac]/10" />
+        <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full bg-[var(--brand-color,#ff3cac)]/10" />
         <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-[#f0f0ff]/60 translate-x-1/3 translate-y-1/3" />
         <div className="relative z-10 px-6 max-w-3xl">
-          <h1 className="font-['Poppins'] font-extrabold text-5xl md:text-7xl text-[#ff3cac] mb-6 leading-tight">
+          <h1 className="font-['Poppins'] font-extrabold text-5xl md:text-7xl text-[var(--brand-color,#ff3cac)] mb-6 leading-tight">
             {theme.companyName}
           </h1>
           <p className="text-[#111111]/70 text-lg md:text-xl font-medium">{tagline}</p>
@@ -62,7 +62,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
       {/* Products */}
       {showProducts && (
         <section id="products" className="max-w-7xl mx-auto px-6 py-20">
-          <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[#ff3cac]">
+          <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[var(--brand-color,#ff3cac)]">
             Shop Our Faves
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -80,7 +80,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                 <button
                   type="button"
                   onClick={() => onAddToCart?.(product)}
-                  className="bg-[#ff3cac] text-white font-bold text-sm rounded-full py-2 hover:bg-[#ff3cac]/90 transition-colors"
+                  className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-2 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors"
                 >
                   Add to Cart
                 </button>
@@ -94,7 +94,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
       {showServices && (
         <section id="services" className="bg-[#f0f0ff] py-20">
           <div className="max-w-7xl mx-auto px-6">
-            <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[#ff3cac]">
+            <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[var(--brand-color,#ff3cac)]">
               Book a Session
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -111,12 +111,12 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                   )}
                   <div className="flex items-center justify-between text-sm mb-4">
                     <span className="text-[#111111]/50 font-medium">{service.durationMinutes} min</span>
-                    <span className="text-[#ff3cac] font-bold">{formatPrice(service.priceCents, theme.currency)}</span>
+                    <span className="text-[var(--brand-color,#ff3cac)] font-bold">{formatPrice(service.priceCents, theme.currency)}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => onBookService?.(service)}
-                    className="bg-[#ff3cac] text-white font-bold text-sm rounded-full py-3 hover:bg-[#ff3cac]/90 transition-colors"
+                    className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-3 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors"
                   >
                     Book Now
                   </button>
@@ -132,7 +132,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                       <img
                         src={member.avatarUrl}
                         alt={member.name}
-                        className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-[#ff3cac]"
+                        className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-[var(--brand-color,#ff3cac)]"
                       />
                     )}
                     <h4 className="font-['Poppins'] font-semibold text-lg">{member.name}</h4>
@@ -146,9 +146,9 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
       )}
 
       {/* Footer */}
-      <footer id="footer" className="bg-white border-t-4 border-[#ff3cac] py-12">
+      <footer id="footer" className="bg-white border-t-4 border-[var(--brand-color,#ff3cac)] py-12">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="font-['Poppins'] font-extrabold text-2xl text-[#ff3cac] mb-2">{theme.companyName}</p>
+          <p className="font-['Poppins'] font-extrabold text-2xl text-[var(--brand-color,#ff3cac)] mb-2">{theme.companyName}</p>
           {theme.city && <p className="text-[#111111]/60 text-sm">{theme.city}</p>}
           <p className="text-[#111111]/40 text-xs mt-6">
             &copy; {new Date().getFullYear()} {theme.companyName}. All rights reserved.

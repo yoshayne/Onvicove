@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import type { ComponentType } from 'react';
+import type { ComponentType, CSSProperties } from 'react';
 import type { ThemeId, ThemeProps } from './types';
 
 const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
@@ -19,9 +19,15 @@ export default function ThemeRenderer({ themeId, ...props }: ThemeRendererProps)
   const loader = themeMap[themeId] ?? themeMap.editorial;
   const Storefront = lazy(loader);
 
+  const style = props.theme.brandColor
+    ? ({ '--brand-color': props.theme.brandColor } as CSSProperties)
+    : undefined;
+
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
-      <Storefront {...props} />
-    </Suspense>
+    <div style={style}>
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
+        <Storefront {...props} />
+      </Suspense>
+    </div>
   );
 }

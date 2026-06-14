@@ -32,9 +32,9 @@ export default function Storefront({
             {theme.companyName}
           </span>
           <nav className="hidden gap-8 font-['Merriweather'] text-sm font-bold uppercase tracking-wide text-[#1a3a5c] md:flex">
-            {showProducts && <a href="#products" className="hover:text-[#c8a850]">Shop</a>}
-            {showServices && <a href="#services" className="hover:text-[#c8a850]">Services</a>}
-            <a href="#about" className="hover:text-[#c8a850]">About</a>
+            {showProducts && <a href="#products" className="hover:text-[var(--brand-color,#c8a850)]">Shop</a>}
+            {showServices && <a href="#services" className="hover:text-[var(--brand-color,#c8a850)]">Services</a>}
+            <a href="#about" className="hover:text-[var(--brand-color,#c8a850)]">About</a>
           </nav>
         </div>
       </header>
@@ -51,7 +51,7 @@ export default function Storefront({
           <p className="mx-auto mt-4 max-w-xl font-serif text-lg text-white/90">{tagline}</p>
           <a
             href={showProducts ? '#products' : '#services'}
-            className="mt-8 inline-block rounded-sm bg-[#c8a850] px-8 py-3 font-['Merriweather'] text-sm font-bold uppercase tracking-widest text-[#1a3a5c] transition hover:bg-[#b8983f]"
+            className="mt-8 inline-block rounded-sm bg-[var(--brand-color,#c8a850)] px-8 py-3 font-['Merriweather'] text-sm font-bold uppercase tracking-widest text-[#1a3a5c] transition hover:bg-[#b8983f]"
           >
             {showProducts ? 'Shop the Collection' : 'Book an Appointment'}
           </a>
@@ -64,7 +64,7 @@ export default function Storefront({
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Our Collection
           </h2>
-          <div className="mx-auto mt-2 h-1 w-16 bg-[#c8a850]" />
+          <div className="mx-auto mt-2 h-1 w-16 bg-[var(--brand-color,#c8a850)]" />
           <div className="mt-10 grid grid-cols-1 gap-px border border-gray-200 bg-gray-200 sm:grid-cols-2 md:grid-cols-3">
             {displayProducts.map((product) => (
               <div key={product.id} className="flex flex-col bg-white p-6">
@@ -108,7 +108,7 @@ export default function Storefront({
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Our Services
           </h2>
-          <div className="mx-auto mt-2 h-1 w-16 bg-[#c8a850]" />
+          <div className="mx-auto mt-2 h-1 w-16 bg-[var(--brand-color,#c8a850)]" />
           <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
             {displayServices.map((service) => (
               <div

@@ -43,7 +43,7 @@ export default function Calendar({
           type="button"
           aria-label="Previous month"
           onClick={() => setViewDate(new Date(year, month - 1, 1))}
-          className="p-2 text-[#1a3a5c] hover:text-[#c8a850] transition-colors"
+          className="p-2 text-[#1a3a5c] hover:text-[var(--brand-color,#c8a850)] transition-colors"
         >
           <ChevronLeft size={18} />
         </button>
@@ -52,7 +52,7 @@ export default function Calendar({
           type="button"
           aria-label="Next month"
           onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="p-2 text-[#1a3a5c] hover:text-[#c8a850] transition-colors"
+          className="p-2 text-[#1a3a5c] hover:text-[var(--brand-color,#c8a850)] transition-colors"
         >
           <ChevronRight size={18} />
         </button>
@@ -84,7 +84,7 @@ export default function Calendar({
                   : isPast
                     ? 'bg-white text-[#1a3a5c]/30 cursor-not-allowed'
                     : isToday
-                      ? 'bg-white text-[#c8a850] font-bold border-2 border-[#c8a850]'
+                      ? 'bg-white text-[var(--brand-color,#c8a850)] font-bold border-2 border-[var(--brand-color,#c8a850)]'
                       : 'bg-white text-[#1a3a5c] hover:bg-[#f5f5f5]'
               }`}
             >
@@ -112,7 +112,7 @@ export default function Calendar({
                   selectedSlot === slot.time
                     ? 'bg-[#1a3a5c] border-[#1a3a5c] text-white font-bold'
                     : slot.available
-                      ? 'border-[#1a3a5c]/30 text-[#1a3a5c] hover:border-[#c8a850] hover:text-[#c8a850]'
+                      ? 'border-[#1a3a5c]/30 text-[#1a3a5c] hover:border-[var(--brand-color,#c8a850)] hover:text-[var(--brand-color,#c8a850)]'
                       : 'border-[#1a3a5c]/10 text-[#1a3a5c]/30 cursor-not-allowed line-through'
                 }`}
               >

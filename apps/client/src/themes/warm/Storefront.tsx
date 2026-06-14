@@ -28,16 +28,16 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
           <span className="font-['Lora'] text-2xl text-[#3d2314]">{theme.companyName}</span>
           <div className="flex items-center gap-8">
             <div className="hidden md:flex items-center gap-8 text-sm text-[#3d2314]/70">
-              {showProducts && <a href="#products" className="hover:text-[#8b5e3c] transition-colors">Shop</a>}
-              {showServices && <a href="#services" className="hover:text-[#8b5e3c] transition-colors">Book</a>}
-              <a href="#footer" className="hover:text-[#8b5e3c] transition-colors">Contact</a>
+              {showProducts && <a href="#products" className="hover:text-[var(--brand-color,#8b5e3c)] transition-colors">Shop</a>}
+              {showServices && <a href="#services" className="hover:text-[var(--brand-color,#8b5e3c)] transition-colors">Book</a>}
+              <a href="#footer" className="hover:text-[var(--brand-color,#8b5e3c)] transition-colors">Contact</a>
             </div>
             {showProducts && (
               <button
                 type="button"
                 aria-label="Open cart"
                 onClick={() => setCartOpen(true)}
-                className="text-[#3d2314] hover:text-[#8b5e3c] transition-colors"
+                className="text-[#3d2314] hover:text-[var(--brand-color,#8b5e3c)] transition-colors"
               >
                 <ShoppingBag size={20} />
               </button>
@@ -81,7 +81,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                   <button
                     type="button"
                     onClick={() => onAddToCart?.(product)}
-                    className="mt-auto rounded-full bg-[#8b5e3c] text-white text-sm py-2 hover:bg-[#3d2314] transition-colors"
+                    className="mt-auto rounded-full bg-[var(--brand-color,#8b5e3c)] text-white text-sm py-2 hover:bg-[#3d2314] transition-colors"
                   >
                     Add to Cart
                   </button>
@@ -111,12 +111,12 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                   )}
                   <div className="flex items-center justify-between text-sm mb-4">
                     <span className="text-[#3d2314]/50">{service.durationMinutes} min</span>
-                    <span className="text-[#8b5e3c] font-medium">{formatPrice(service.priceCents, theme.currency)}</span>
+                    <span className="text-[var(--brand-color,#8b5e3c)] font-medium">{formatPrice(service.priceCents, theme.currency)}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => onBookService?.(service)}
-                    className="rounded-full bg-[#8b5e3c] text-white text-sm py-3 hover:bg-[#3d2314] transition-colors"
+                    className="rounded-full bg-[var(--brand-color,#8b5e3c)] text-white text-sm py-3 hover:bg-[#3d2314] transition-colors"
                   >
                     Book Now
                   </button>

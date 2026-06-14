@@ -42,7 +42,7 @@ export default function BookingModal({
           <h2 className="font-['Merriweather'] text-2xl font-bold text-[#1a3a5c]">
             Reserve: {service.name}
           </h2>
-          <button type="button" aria-label="Close" onClick={onClose} className="text-[#1a3a5c]/60 hover:text-[#c8a850]">
+          <button type="button" aria-label="Close" onClick={onClose} className="text-[#1a3a5c]/60 hover:text-[var(--brand-color,#c8a850)]">
             <X size={22} />
           </button>
         </div>
@@ -69,7 +69,7 @@ export default function BookingModal({
               </div>
               <div className="flex justify-between text-sm font-serif mt-1">
                 <span className="font-bold uppercase tracking-wide text-[#1a3a5c]/70">Price</span>
-                <span className="font-['Merriweather'] text-lg font-bold text-[#c8a850]">
+                <span className="font-['Merriweather'] text-lg font-bold text-[var(--brand-color,#c8a850)]">
                   {formatPrice(service.priceCents)}
                 </span>
               </div>
@@ -92,7 +92,7 @@ export default function BookingModal({
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full border border-[#1a3a5c]/30 px-3 py-2 text-sm font-serif focus:outline-none focus:border-[#c8a850]"
+                  className="w-full border border-[#1a3a5c]/30 px-3 py-2 text-sm font-serif focus:outline-none focus:border-[var(--brand-color,#c8a850)]"
                 />
               </div>
               <div>
@@ -105,7 +105,7 @@ export default function BookingModal({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-[#1a3a5c]/30 px-3 py-2 text-sm font-serif focus:outline-none focus:border-[#c8a850]"
+                  className="w-full border border-[#1a3a5c]/30 px-3 py-2 text-sm font-serif focus:outline-none focus:border-[var(--brand-color,#c8a850)]"
                 />
               </div>
               <div>
@@ -117,14 +117,14 @@ export default function BookingModal({
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full border border-[#1a3a5c]/30 px-3 py-2 text-sm font-serif focus:outline-none focus:border-[#c8a850]"
+                  className="w-full border border-[#1a3a5c]/30 px-3 py-2 text-sm font-serif focus:outline-none focus:border-[var(--brand-color,#c8a850)]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={!canConfirm}
-                className="mt-2 bg-[#1a3a5c] text-white uppercase tracking-wide text-sm font-bold py-3 hover:bg-[#c8a850] hover:text-[#1a3a5c] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="mt-2 bg-[#1a3a5c] text-white uppercase tracking-wide text-sm font-bold py-3 hover:bg-[var(--brand-color,#c8a850)] hover:text-[#1a3a5c] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirm Reservation
               </button>

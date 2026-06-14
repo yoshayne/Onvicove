@@ -25,16 +25,16 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
           <span className="font-black text-2xl tracking-widest uppercase">{theme.companyName}</span>
           <div className="flex items-center gap-8">
             <div className="hidden md:flex items-center gap-8 text-xs font-black uppercase tracking-[0.2em] text-white/70">
-              {showProducts && <a href="#products" className="hover:text-[#e8ff00] transition-colors">Shop</a>}
-              {showServices && <a href="#services" className="hover:text-[#e8ff00] transition-colors">Book</a>}
-              <a href="#footer" className="hover:text-[#e8ff00] transition-colors">Contact</a>
+              {showProducts && <a href="#products" className="hover:text-[var(--brand-color,#e8ff00)] transition-colors">Shop</a>}
+              {showServices && <a href="#services" className="hover:text-[var(--brand-color,#e8ff00)] transition-colors">Book</a>}
+              <a href="#footer" className="hover:text-[var(--brand-color,#e8ff00)] transition-colors">Contact</a>
             </div>
             {showProducts && (
               <button
                 type="button"
                 aria-label="Open cart"
                 onClick={() => setCartOpen(true)}
-                className="text-white hover:text-[#e8ff00] transition-colors"
+                className="text-white hover:text-[var(--brand-color,#e8ff00)] transition-colors"
               >
                 <ShoppingCart size={20} />
               </button>
@@ -51,7 +51,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
           <h1 className="font-black text-6xl md:text-8xl text-white mb-6 leading-tight uppercase tracking-tight">
             {theme.companyName}
           </h1>
-          <p className="text-[#e8ff00] text-lg md:text-2xl font-bold uppercase tracking-widest">{tagline}</p>
+          <p className="text-[var(--brand-color,#e8ff00)] text-lg md:text-2xl font-bold uppercase tracking-widest">{tagline}</p>
         </div>
       </section>
 
@@ -63,7 +63,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {displayProducts.map((product) => (
-              <div key={product.id} className="group bg-[#161616] border border-white/10 hover:border-[#e8ff00] transition-colors p-4">
+              <div key={product.id} className="group bg-[#161616] border border-white/10 hover:border-[var(--brand-color,#e8ff00)] transition-colors p-4">
                 <div className="aspect-[3/4] overflow-hidden bg-[#0a0a0a] mb-4">
                   <img
                     src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
@@ -72,11 +72,11 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                   />
                 </div>
                 <h3 className="font-black text-lg mb-1 uppercase tracking-wide">{product.name}</h3>
-                <p className="text-sm text-[#e8ff00] font-bold mb-3">{formatPrice(product.priceCents, theme.currency)}</p>
+                <p className="text-sm text-[var(--brand-color,#e8ff00)] font-bold mb-3">{formatPrice(product.priceCents, theme.currency)}</p>
                 <button
                   type="button"
                   onClick={() => onAddToCart?.(product)}
-                  className="w-full bg-[#e8ff00] text-[#0a0a0a] text-xs font-black uppercase tracking-[0.2em] py-3 hover:bg-white transition-colors"
+                  className="w-full bg-[var(--brand-color,#e8ff00)] text-[#0a0a0a] text-xs font-black uppercase tracking-[0.2em] py-3 hover:bg-white transition-colors"
                 >
                   Add to Cart
                 </button>
@@ -95,7 +95,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {displayServices.map((service) => (
-                <div key={service.id} className="bg-[#0a0a0a] border border-white/10 hover:border-[#e8ff00] transition-colors p-6 flex flex-col">
+                <div key={service.id} className="bg-[#0a0a0a] border border-white/10 hover:border-[var(--brand-color,#e8ff00)] transition-colors p-6 flex flex-col">
                   {service.imageUrls?.[0] && (
                     <div className="aspect-[4/3] overflow-hidden mb-4">
                       <img src={service.imageUrls[0]} alt={service.name} className="w-full h-full object-cover" />
@@ -107,12 +107,12 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                   )}
                   <div className="flex items-center justify-between text-sm mb-4 font-bold">
                     <span className="text-white/50 uppercase tracking-wide">{service.durationMinutes} min</span>
-                    <span className="text-[#e8ff00]">{formatPrice(service.priceCents, theme.currency)}</span>
+                    <span className="text-[var(--brand-color,#e8ff00)]">{formatPrice(service.priceCents, theme.currency)}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => onBookService?.(service)}
-                    className="uppercase tracking-[0.2em] text-xs font-black bg-[#e8ff00] text-[#0a0a0a] py-3 hover:bg-white transition-colors"
+                    className="uppercase tracking-[0.2em] text-xs font-black bg-[var(--brand-color,#e8ff00)] text-[#0a0a0a] py-3 hover:bg-white transition-colors"
                   >
                     Book Now
                   </button>
@@ -128,7 +128,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                       <img
                         src={member.avatarUrl}
                         alt={member.name}
-                        className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-2 border-[#e8ff00]"
+                        className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-2 border-[var(--brand-color,#e8ff00)]"
                       />
                     )}
                     <h4 className="font-black text-lg uppercase tracking-wide">{member.name}</h4>

@@ -65,7 +65,7 @@ export default function BookingModal({
               </div>
               <div className="flex justify-between text-sm mt-1">
                 <span className="uppercase tracking-widest text-[#111111]/50">Price</span>
-                <span className="font-['Playfair_Display'] text-lg text-[#d4a96a]">
+                <span className="font-['Playfair_Display'] text-lg text-[var(--brand-color,#d4a96a)]">
                   {formatPrice(service.priceCents)}
                 </span>
               </div>
@@ -88,7 +88,7 @@ export default function BookingModal({
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full border border-[#111111]/20 px-3 py-2 text-sm focus:outline-none focus:border-[#d4a96a]"
+                  className="w-full border border-[#111111]/20 px-3 py-2 text-sm focus:outline-none focus:border-[var(--brand-color,#d4a96a)]"
                 />
               </div>
               <div>
@@ -101,7 +101,7 @@ export default function BookingModal({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-[#111111]/20 px-3 py-2 text-sm focus:outline-none focus:border-[#d4a96a]"
+                  className="w-full border border-[#111111]/20 px-3 py-2 text-sm focus:outline-none focus:border-[var(--brand-color,#d4a96a)]"
                 />
               </div>
               <div>
@@ -113,14 +113,14 @@ export default function BookingModal({
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full border border-[#111111]/20 px-3 py-2 text-sm focus:outline-none focus:border-[#d4a96a]"
+                  className="w-full border border-[#111111]/20 px-3 py-2 text-sm focus:outline-none focus:border-[var(--brand-color,#d4a96a)]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={!canConfirm}
-                className="mt-2 bg-[#1a1a1a] text-white uppercase tracking-widest text-sm py-3 hover:bg-[#d4a96a] hover:text-[#111111] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="mt-2 bg-[#1a1a1a] text-white uppercase tracking-widest text-sm py-3 hover:bg-[var(--brand-color,#d4a96a)] hover:text-[#111111] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirm Reservation
               </button>

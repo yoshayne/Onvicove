@@ -267,6 +267,19 @@ export function selectWizardCompleteness(state: WizardState): {
     (checks.filter(Boolean).length / checks.length) * 100
   );
 
+  // Stripe connection is optional — merchants can connect payments later
+  // from the dashboard, so it shouldn't block launching the site.
+  const requiredChecks = [
+    businessNameDone,
+    modeDone,
+    themeDone,
+    brandInfoDone,
+    heroPhotoDone,
+    catalogDone,
+    availabilityDone,
+    planDone,
+  ];
+
   return {
     businessNameDone,
     modeDone,
@@ -278,6 +291,6 @@ export function selectWizardCompleteness(state: WizardState): {
     paymentsDone,
     planDone,
     percentComplete,
-    isReadyToLaunch: percentComplete === 100,
+    isReadyToLaunch: requiredChecks.every(Boolean),
   };
 }

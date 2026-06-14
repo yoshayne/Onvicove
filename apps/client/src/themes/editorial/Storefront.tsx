@@ -28,16 +28,16 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
           <span className="font-['Playfair_Display'] text-2xl tracking-wide uppercase">{theme.companyName}</span>
           <div className="flex items-center gap-8">
             <div className="hidden md:flex items-center gap-8 text-xs uppercase tracking-[0.2em] text-white/70">
-              {showProducts && <a href="#products" className="hover:text-[#d4a96a] transition-colors">Shop</a>}
-              {showServices && <a href="#services" className="hover:text-[#d4a96a] transition-colors">Book</a>}
-              <a href="#footer" className="hover:text-[#d4a96a] transition-colors">Contact</a>
+              {showProducts && <a href="#products" className="hover:text-[var(--brand-color,#d4a96a)] transition-colors">Shop</a>}
+              {showServices && <a href="#services" className="hover:text-[var(--brand-color,#d4a96a)] transition-colors">Book</a>}
+              <a href="#footer" className="hover:text-[var(--brand-color,#d4a96a)] transition-colors">Contact</a>
             </div>
             {showProducts && (
               <button
                 type="button"
                 aria-label="Open cart"
                 onClick={() => setCartOpen(true)}
-                className="text-white hover:text-[#d4a96a] transition-colors"
+                className="text-white hover:text-[var(--brand-color,#d4a96a)] transition-colors"
               >
                 <ShoppingCart size={20} />
               </button>
@@ -77,7 +77,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                 <button
                   type="button"
                   onClick={() => onAddToCart?.(product)}
-                  className="text-xs uppercase tracking-[0.2em] border-b border-[#111111] pb-1 hover:text-[#d4a96a] hover:border-[#d4a96a] transition-colors"
+                  className="text-xs uppercase tracking-[0.2em] border-b border-[#111111] pb-1 hover:text-[var(--brand-color,#d4a96a)] hover:border-[var(--brand-color,#d4a96a)] transition-colors"
                 >
                   Add to Cart
                 </button>
@@ -106,12 +106,12 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                   )}
                   <div className="flex items-center justify-between text-sm mb-4">
                     <span className="text-[#111111]/50">{service.durationMinutes} min</span>
-                    <span className="text-[#d4a96a] font-medium">{formatPrice(service.priceCents, theme.currency)}</span>
+                    <span className="text-[var(--brand-color,#d4a96a)] font-medium">{formatPrice(service.priceCents, theme.currency)}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => onBookService?.(service)}
-                    className="uppercase tracking-[0.2em] text-xs bg-[#1a1a1a] text-white py-3 hover:bg-[#d4a96a] hover:text-[#111111] transition-colors"
+                    className="uppercase tracking-[0.2em] text-xs bg-[#1a1a1a] text-white py-3 hover:bg-[var(--brand-color,#d4a96a)] hover:text-[#111111] transition-colors"
                   >
                     Book Now
                   </button>

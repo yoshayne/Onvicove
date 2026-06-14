@@ -58,18 +58,18 @@ export default function CartDrawer({
                       type="button"
                       aria-label={`Remove ${item.name}`}
                       onClick={() => onRemove(item.productId)}
-                      className="text-white/40 hover:text-[#d4a96a]"
+                      className="text-white/40 hover:text-[var(--brand-color,#d4a96a)]"
                     >
                       <X size={16} />
                     </button>
                   </div>
-                  <span className="text-[#d4a96a] text-sm mt-1">{formatPrice(item.priceCents)}</span>
+                  <span className="text-[var(--brand-color,#d4a96a)] text-sm mt-1">{formatPrice(item.priceCents)}</span>
                   <div className="flex items-center gap-3 mt-auto">
                     <button
                       type="button"
                       aria-label="Decrease quantity"
                       onClick={() => onUpdateQuantity(item.productId, Math.max(1, item.quantity - 1))}
-                      className="p-1 border border-white/20 hover:border-[#d4a96a]"
+                      className="p-1 border border-white/20 hover:border-[var(--brand-color,#d4a96a)]"
                     >
                       <Minus size={12} />
                     </button>
@@ -78,7 +78,7 @@ export default function CartDrawer({
                       type="button"
                       aria-label="Increase quantity"
                       onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
-                      className="p-1 border border-white/20 hover:border-[#d4a96a]"
+                      className="p-1 border border-white/20 hover:border-[var(--brand-color,#d4a96a)]"
                     >
                       <Plus size={12} />
                     </button>
@@ -92,13 +92,13 @@ export default function CartDrawer({
         <div className="p-6 border-t border-white/10">
           <div className="flex justify-between text-sm uppercase tracking-widest mb-4">
             <span>Subtotal</span>
-            <span className="font-['Playfair_Display'] text-lg text-[#d4a96a]">{formatPrice(subtotal)}</span>
+            <span className="font-['Playfair_Display'] text-lg text-[var(--brand-color,#d4a96a)]">{formatPrice(subtotal)}</span>
           </div>
           <button
             type="button"
             disabled={items.length === 0}
             onClick={onCheckout}
-            className="w-full bg-[#d4a96a] text-[#111111] uppercase tracking-widest text-sm py-3 hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-[var(--brand-color,#d4a96a)] text-[#111111] uppercase tracking-widest text-sm py-3 hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Checkout
           </button>

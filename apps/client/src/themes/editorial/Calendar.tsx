@@ -43,7 +43,7 @@ export default function Calendar({
           type="button"
           aria-label="Previous month"
           onClick={() => setViewDate(new Date(year, month - 1, 1))}
-          className="p-2 text-white/60 hover:text-[#d4a96a] transition-colors"
+          className="p-2 text-white/60 hover:text-[var(--brand-color,#d4a96a)] transition-colors"
         >
           <ChevronLeft size={18} />
         </button>
@@ -52,7 +52,7 @@ export default function Calendar({
           type="button"
           aria-label="Next month"
           onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="p-2 text-white/60 hover:text-[#d4a96a] transition-colors"
+          className="p-2 text-white/60 hover:text-[var(--brand-color,#d4a96a)] transition-colors"
         >
           <ChevronRight size={18} />
         </button>
@@ -77,7 +77,7 @@ export default function Calendar({
               onClick={() => onSelectDate(date)}
               className={`aspect-square rounded-full text-sm flex items-center justify-center transition-colors ${
                 isSelected
-                  ? 'bg-[#d4a96a] text-[#111111] font-semibold'
+                  ? 'bg-[var(--brand-color,#d4a96a)] text-[#111111] font-semibold'
                   : isPast
                     ? 'text-white/20 cursor-not-allowed'
                     : 'text-white/80 hover:bg-white/10'
@@ -103,9 +103,9 @@ export default function Calendar({
                 onClick={() => onSelectSlot(slot.time)}
                 className={`py-2 px-3 text-sm rounded-full border transition-colors ${
                   selectedSlot === slot.time
-                    ? 'bg-[#d4a96a] border-[#d4a96a] text-[#111111] font-semibold'
+                    ? 'bg-[var(--brand-color,#d4a96a)] border-[var(--brand-color,#d4a96a)] text-[#111111] font-semibold'
                     : slot.available
-                      ? 'border-white/20 text-white/80 hover:border-[#d4a96a] hover:text-[#d4a96a]'
+                      ? 'border-white/20 text-white/80 hover:border-[var(--brand-color,#d4a96a)] hover:text-[var(--brand-color,#d4a96a)]'
                       : 'border-white/5 text-white/20 cursor-not-allowed line-through'
                 }`}
               >

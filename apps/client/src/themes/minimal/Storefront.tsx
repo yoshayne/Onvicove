@@ -108,7 +108,7 @@ export default function Storefront({ theme, products, services, staff, onAddToCa
                   <button
                     type="button"
                     onClick={() => onBookService?.(service)}
-                    className="uppercase tracking-[0.2em] text-xs font-medium bg-[#111111] text-white py-3 hover:bg-[#333333] transition-colors"
+                    className="uppercase tracking-[0.2em] text-xs font-medium bg-[var(--brand-color,#111111)] text-white py-3 hover:bg-[#333333] transition-colors"
                   >
                     Book Now
                   </button>

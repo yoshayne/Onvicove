@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useWizardStore } from '../wizardStore';
-import { apiGet } from '../../lib/api';
+import { useApi } from '../../lib/api';
 
 interface SlugCheckResponse {
   available: boolean;
@@ -23,6 +23,7 @@ export default function Step1_BusinessName() {
   const slug = useWizardStore((s) => s.slug);
   const setBusinessName = useWizardStore((s) => s.setBusinessName);
   const setSlug = useWizardStore((s) => s.setSlug);
+  const api = useApi();
 
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -41,7 +42,8 @@ export default function Step1_BusinessName() {
     setError(null);
 
     const timeout = setTimeout(() => {
-      apiGet<SlugCheckResponse>(`/api/tenants/check-slug?slug=${encodeURIComponent(candidate)}`)
+      api
+        .get<SlugCheckResponse>(`/tenants/slug-available?slug=${encodeURIComponent(candidate)}`)
         .then((res) => {
           setAvailable(res.available);
         })

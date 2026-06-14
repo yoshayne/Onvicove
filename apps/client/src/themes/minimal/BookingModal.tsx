@@ -118,7 +118,7 @@ export default function BookingModal({
               <button
                 type="submit"
                 disabled={!canConfirm}
-                className="mt-2 bg-[#111111] text-white uppercase tracking-widest text-sm font-medium py-3 hover:bg-[#333333] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="mt-2 bg-[var(--brand-color,#111111)] text-white uppercase tracking-widest text-sm font-medium py-3 hover:bg-[#333333] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirm Booking
               </button>

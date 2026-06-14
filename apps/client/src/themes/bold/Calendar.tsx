@@ -44,13 +44,13 @@ export default function Calendar({
   const monthLabel = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
 
   return (
-    <div className="bg-[#0a0a0a] border-2 border-[#e8ff00] p-4 text-white">
+    <div className="bg-[#0a0a0a] border-2 border-[var(--brand-color,#e8ff00)] p-4 text-white">
       <div className="mb-4 flex items-center justify-between">
         <button
           type="button"
           aria-label="Previous month"
           onClick={() => setViewDate(new Date(year, month - 1, 1))}
-          className="rounded-full border border-white/30 p-1 hover:border-[#e8ff00] hover:text-[#e8ff00]"
+          className="rounded-full border border-white/30 p-1 hover:border-[var(--brand-color,#e8ff00)] hover:text-[var(--brand-color,#e8ff00)]"
         >
           <ChevronLeft size={18} />
         </button>
@@ -59,7 +59,7 @@ export default function Calendar({
           type="button"
           aria-label="Next month"
           onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="rounded-full border border-white/30 p-1 hover:border-[#e8ff00] hover:text-[#e8ff00]"
+          className="rounded-full border border-white/30 p-1 hover:border-[var(--brand-color,#e8ff00)] hover:text-[var(--brand-color,#e8ff00)]"
         >
           <ChevronRight size={18} />
         </button>
@@ -84,10 +84,10 @@ export default function Calendar({
               onClick={() => onSelectDate(d)}
               className={`aspect-square text-sm font-bold uppercase transition ${
                 selected
-                  ? 'bg-[#e8ff00] text-[#0a0a0a]'
+                  ? 'bg-[var(--brand-color,#e8ff00)] text-[#0a0a0a]'
                   : disabled
                     ? 'cursor-not-allowed text-white/20'
-                    : 'border border-white/20 text-white hover:border-[#e8ff00] hover:text-[#e8ff00]'
+                    : 'border border-white/20 text-white hover:border-[var(--brand-color,#e8ff00)] hover:text-[var(--brand-color,#e8ff00)]'
               }`}
             >
               {d.getDate()}
@@ -112,9 +112,9 @@ export default function Calendar({
                   onClick={() => onSelectSlot(slot.time)}
                   className={`border-2 px-2 py-2 text-xs font-black uppercase tracking-wide transition ${
                     selected
-                      ? 'border-[#e8ff00] bg-[#e8ff00] text-[#0a0a0a]'
+                      ? 'border-[var(--brand-color,#e8ff00)] bg-[var(--brand-color,#e8ff00)] text-[#0a0a0a]'
                       : slot.available
-                        ? 'border-white/30 text-white hover:border-[#e8ff00] hover:text-[#e8ff00]'
+                        ? 'border-white/30 text-white hover:border-[var(--brand-color,#e8ff00)] hover:text-[var(--brand-color,#e8ff00)]'
                         : 'cursor-not-allowed border-white/10 text-white/20 line-through'
                   }`}
                 >

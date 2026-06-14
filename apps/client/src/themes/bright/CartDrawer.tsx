@@ -37,13 +37,13 @@ export default function CartDrawer({
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between p-6 border-b-4 border-[#ff3cac]">
-          <h2 className="font-['Poppins'] font-bold text-2xl text-[#ff3cac]">Your Bag</h2>
+        <div className="flex items-center justify-between p-6 border-b-4 border-[var(--brand-color,#ff3cac)]">
+          <h2 className="font-['Poppins'] font-bold text-2xl text-[var(--brand-color,#ff3cac)]">Your Bag</h2>
           <button
             type="button"
             aria-label="Close cart"
             onClick={onClose}
-            className="text-[#111111]/40 hover:text-[#ff3cac] transition-colors"
+            className="text-[#111111]/40 hover:text-[var(--brand-color,#ff3cac)] transition-colors"
           >
             <X size={22} />
           </button>
@@ -65,18 +65,18 @@ export default function CartDrawer({
                       type="button"
                       aria-label={`Remove ${item.name}`}
                       onClick={() => onRemove(item.productId)}
-                      className="text-[#111111]/40 hover:text-[#ff3cac]"
+                      className="text-[#111111]/40 hover:text-[var(--brand-color,#ff3cac)]"
                     >
                       <X size={16} />
                     </button>
                   </div>
-                  <span className="text-[#ff3cac] text-sm font-bold mt-1">{formatPrice(item.priceCents)}</span>
+                  <span className="text-[var(--brand-color,#ff3cac)] text-sm font-bold mt-1">{formatPrice(item.priceCents)}</span>
                   <div className="flex items-center gap-3 mt-auto">
                     <button
                       type="button"
                       aria-label="Decrease quantity"
                       onClick={() => onUpdateQuantity(item.productId, Math.max(1, item.quantity - 1))}
-                      className="p-1 rounded-full border border-[#ff3cac]/30 hover:border-[#ff3cac]"
+                      className="p-1 rounded-full border border-[var(--brand-color,#ff3cac)]/30 hover:border-[var(--brand-color,#ff3cac)]"
                     >
                       <Minus size={12} />
                     </button>
@@ -85,7 +85,7 @@ export default function CartDrawer({
                       type="button"
                       aria-label="Increase quantity"
                       onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
-                      className="p-1 rounded-full border border-[#ff3cac]/30 hover:border-[#ff3cac]"
+                      className="p-1 rounded-full border border-[var(--brand-color,#ff3cac)]/30 hover:border-[var(--brand-color,#ff3cac)]"
                     >
                       <Plus size={12} />
                     </button>
@@ -99,13 +99,13 @@ export default function CartDrawer({
         <div className="p-6 border-t border-[#f0f0ff]">
           <div className="flex justify-between text-sm font-semibold mb-4">
             <span>Subtotal</span>
-            <span className="font-['Poppins'] font-bold text-lg text-[#ff3cac]">{formatPrice(subtotal)}</span>
+            <span className="font-['Poppins'] font-bold text-lg text-[var(--brand-color,#ff3cac)]">{formatPrice(subtotal)}</span>
           </div>
           <button
             type="button"
             disabled={items.length === 0}
             onClick={onCheckout}
-            className="w-full bg-[#ff3cac] text-white font-bold rounded-full text-sm py-3 hover:bg-[#ff3cac]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-[var(--brand-color,#ff3cac)] text-white font-bold rounded-full text-sm py-3 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Checkout
           </button>

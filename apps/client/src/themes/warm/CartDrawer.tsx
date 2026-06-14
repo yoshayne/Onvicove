@@ -58,18 +58,18 @@ export default function CartDrawer({
                       type="button"
                       aria-label={`Remove ${item.name}`}
                       onClick={() => onRemove(item.productId)}
-                      className="text-[#3d2314]/40 hover:text-[#8b5e3c]"
+                      className="text-[#3d2314]/40 hover:text-[var(--brand-color,#8b5e3c)]"
                     >
                       <X size={16} />
                     </button>
                   </div>
-                  <span className="text-[#8b5e3c] text-sm mt-1">{formatPrice(item.priceCents)}</span>
+                  <span className="text-[var(--brand-color,#8b5e3c)] text-sm mt-1">{formatPrice(item.priceCents)}</span>
                   <div className="flex items-center gap-3 mt-auto">
                     <button
                       type="button"
                       aria-label="Decrease quantity"
                       onClick={() => onUpdateQuantity(item.productId, Math.max(1, item.quantity - 1))}
-                      className="p-1 rounded-full border border-[#3d2314]/20 hover:border-[#8b5e3c]"
+                      className="p-1 rounded-full border border-[#3d2314]/20 hover:border-[var(--brand-color,#8b5e3c)]"
                     >
                       <Minus size={12} />
                     </button>
@@ -78,7 +78,7 @@ export default function CartDrawer({
                       type="button"
                       aria-label="Increase quantity"
                       onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
-                      className="p-1 rounded-full border border-[#3d2314]/20 hover:border-[#8b5e3c]"
+                      className="p-1 rounded-full border border-[#3d2314]/20 hover:border-[var(--brand-color,#8b5e3c)]"
                     >
                       <Plus size={12} />
                     </button>
@@ -92,13 +92,13 @@ export default function CartDrawer({
         <div className="p-6 border-t border-[#3d2314]/10 font-['Inter']">
           <div className="flex justify-between text-sm mb-4">
             <span>Subtotal</span>
-            <span className="font-['Lora'] text-lg text-[#8b5e3c]">{formatPrice(subtotal)}</span>
+            <span className="font-['Lora'] text-lg text-[var(--brand-color,#8b5e3c)]">{formatPrice(subtotal)}</span>
           </div>
           <button
             type="button"
             disabled={items.length === 0}
             onClick={onCheckout}
-            className="w-full rounded-full bg-[#8b5e3c] text-white text-sm py-3 hover:bg-[#3d2314] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full rounded-full bg-[var(--brand-color,#8b5e3c)] text-white text-sm py-3 hover:bg-[#3d2314] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Checkout
           </button>

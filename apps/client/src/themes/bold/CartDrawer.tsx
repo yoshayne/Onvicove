@@ -31,13 +31,13 @@ export default function CartDrawer({
         onClick={onClose}
       />
       <div
-        className={`absolute right-0 top-0 h-full w-full max-w-md bg-[#0a0a0a] text-white flex flex-col border-l-2 border-[#e8ff00] transform transition-transform duration-300 ${
+        className={`absolute right-0 top-0 h-full w-full max-w-md bg-[#0a0a0a] text-white flex flex-col border-l-2 border-[var(--brand-color,#e8ff00)] transform transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <h2 className="font-black text-2xl uppercase tracking-widest">Your Cart</h2>
-          <button type="button" aria-label="Close cart" onClick={onClose} className="text-white/60 hover:text-[#e8ff00]">
+          <button type="button" aria-label="Close cart" onClick={onClose} className="text-white/60 hover:text-[var(--brand-color,#e8ff00)]">
             <X size={22} />
           </button>
         </div>
@@ -58,18 +58,18 @@ export default function CartDrawer({
                       type="button"
                       aria-label={`Remove ${item.name}`}
                       onClick={() => onRemove(item.productId)}
-                      className="text-white/40 hover:text-[#e8ff00]"
+                      className="text-white/40 hover:text-[var(--brand-color,#e8ff00)]"
                     >
                       <X size={16} />
                     </button>
                   </div>
-                  <span className="text-[#e8ff00] text-sm mt-1 font-bold">{formatPrice(item.priceCents)}</span>
+                  <span className="text-[var(--brand-color,#e8ff00)] text-sm mt-1 font-bold">{formatPrice(item.priceCents)}</span>
                   <div className="flex items-center gap-3 mt-auto">
                     <button
                       type="button"
                       aria-label="Decrease quantity"
                       onClick={() => onUpdateQuantity(item.productId, Math.max(1, item.quantity - 1))}
-                      className="p-1 border border-white/20 hover:border-[#e8ff00] hover:text-[#e8ff00]"
+                      className="p-1 border border-white/20 hover:border-[var(--brand-color,#e8ff00)] hover:text-[var(--brand-color,#e8ff00)]"
                     >
                       <Minus size={12} />
                     </button>
@@ -78,7 +78,7 @@ export default function CartDrawer({
                       type="button"
                       aria-label="Increase quantity"
                       onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
-                      className="p-1 border border-white/20 hover:border-[#e8ff00] hover:text-[#e8ff00]"
+                      className="p-1 border border-white/20 hover:border-[var(--brand-color,#e8ff00)] hover:text-[var(--brand-color,#e8ff00)]"
                     >
                       <Plus size={12} />
                     </button>
@@ -92,13 +92,13 @@ export default function CartDrawer({
         <div className="p-6 border-t border-white/10">
           <div className="flex justify-between text-sm uppercase tracking-widest mb-4 font-black">
             <span>Subtotal</span>
-            <span className="text-[#e8ff00] text-lg">{formatPrice(subtotal)}</span>
+            <span className="text-[var(--brand-color,#e8ff00)] text-lg">{formatPrice(subtotal)}</span>
           </div>
           <button
             type="button"
             disabled={items.length === 0}
             onClick={onCheckout}
-            className="w-full bg-[#e8ff00] text-[#0a0a0a] uppercase tracking-widest text-sm font-black py-3 hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-[var(--brand-color,#e8ff00)] text-[#0a0a0a] uppercase tracking-widest text-sm font-black py-3 hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Checkout
           </button>

@@ -43,7 +43,7 @@ export default function Calendar({
           type="button"
           aria-label="Previous month"
           onClick={() => setViewDate(new Date(year, month - 1, 1))}
-          className="p-2 text-[#111111]/50 hover:text-[#ff3cac] transition-colors"
+          className="p-2 text-[#111111]/50 hover:text-[var(--brand-color,#ff3cac)] transition-colors"
         >
           <ChevronLeft size={18} />
         </button>
@@ -52,7 +52,7 @@ export default function Calendar({
           type="button"
           aria-label="Next month"
           onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="p-2 text-[#111111]/50 hover:text-[#ff3cac] transition-colors"
+          className="p-2 text-[#111111]/50 hover:text-[var(--brand-color,#ff3cac)] transition-colors"
         >
           <ChevronRight size={18} />
         </button>
@@ -77,7 +77,7 @@ export default function Calendar({
               onClick={() => onSelectDate(date)}
               className={`aspect-square rounded-full text-sm flex items-center justify-center transition-colors font-medium ${
                 isSelected
-                  ? 'bg-[#ff3cac] text-white font-bold shadow-md'
+                  ? 'bg-[var(--brand-color,#ff3cac)] text-white font-bold shadow-md'
                   : isPast
                     ? 'text-[#111111]/20 cursor-not-allowed'
                     : 'text-[#111111]/70 hover:bg-white'
@@ -103,9 +103,9 @@ export default function Calendar({
                 onClick={() => onSelectSlot(slot.time)}
                 className={`py-2 px-3 text-sm rounded-full border-2 font-medium transition-colors ${
                   selectedSlot === slot.time
-                    ? 'bg-[#ff3cac] border-[#ff3cac] text-white font-bold'
+                    ? 'bg-[var(--brand-color,#ff3cac)] border-[var(--brand-color,#ff3cac)] text-white font-bold'
                     : slot.available
-                      ? 'border-[#ff3cac]/20 bg-white text-[#111111]/80 hover:border-[#ff3cac] hover:text-[#ff3cac]'
+                      ? 'border-[var(--brand-color,#ff3cac)]/20 bg-white text-[#111111]/80 hover:border-[var(--brand-color,#ff3cac)] hover:text-[var(--brand-color,#ff3cac)]'
                       : 'border-transparent bg-white/40 text-[#111111]/20 cursor-not-allowed line-through'
                 }`}
               >

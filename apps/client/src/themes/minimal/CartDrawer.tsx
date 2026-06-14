@@ -98,7 +98,7 @@ export default function CartDrawer({
             type="button"
             disabled={items.length === 0}
             onClick={onCheckout}
-            className="w-full bg-[#111111] text-white uppercase tracking-widest text-sm font-medium py-3 hover:bg-[#333333] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-[var(--brand-color,#111111)] text-white uppercase tracking-widest text-sm font-medium py-3 hover:bg-[#333333] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Checkout
           </button>

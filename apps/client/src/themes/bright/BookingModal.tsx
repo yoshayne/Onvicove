@@ -39,12 +39,12 @@ export default function BookingModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 font-['Poppins']">
       <div className="bg-white text-[#111111] w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl">
         <div className="flex items-center justify-between border-b border-[#f0f0ff] p-6">
-          <h2 className="font-['Poppins'] font-bold text-2xl text-[#ff3cac]">Book: {service.name}</h2>
+          <h2 className="font-['Poppins'] font-bold text-2xl text-[var(--brand-color,#ff3cac)]">Book: {service.name}</h2>
           <button
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="text-[#111111]/40 hover:text-[#ff3cac] transition-colors"
+            className="text-[#111111]/40 hover:text-[var(--brand-color,#ff3cac)] transition-colors"
           >
             <X size={22} />
           </button>
@@ -70,7 +70,7 @@ export default function BookingModal({
               </div>
               <div className="flex justify-between text-sm mt-1">
                 <span className="font-semibold text-[#111111]/50">Price</span>
-                <span className="font-['Poppins'] font-bold text-lg text-[#ff3cac]">
+                <span className="font-['Poppins'] font-bold text-lg text-[var(--brand-color,#ff3cac)]">
                   {formatPrice(service.priceCents)}
                 </span>
               </div>
@@ -93,7 +93,7 @@ export default function BookingModal({
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full border-2 border-[#f0f0ff] rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#ff3cac]"
+                  className="w-full border-2 border-[#f0f0ff] rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[var(--brand-color,#ff3cac)]"
                 />
               </div>
               <div>
@@ -106,7 +106,7 @@ export default function BookingModal({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border-2 border-[#f0f0ff] rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#ff3cac]"
+                  className="w-full border-2 border-[#f0f0ff] rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[var(--brand-color,#ff3cac)]"
                 />
               </div>
               <div>
@@ -118,14 +118,14 @@ export default function BookingModal({
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full border-2 border-[#f0f0ff] rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#ff3cac]"
+                  className="w-full border-2 border-[#f0f0ff] rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[var(--brand-color,#ff3cac)]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={!canConfirm}
-                className="mt-2 bg-[#ff3cac] text-white font-bold rounded-full text-sm py-3 hover:bg-[#ff3cac]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="mt-2 bg-[var(--brand-color,#ff3cac)] text-white font-bold rounded-full text-sm py-3 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirm Booking
               </button>
