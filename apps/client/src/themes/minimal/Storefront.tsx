@@ -1,0 +1,163 @@
+// NOTE: This theme expects 'Inter' to be loaded via Google Fonts in index.html, e.g.:
+// <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+import { useState } from 'react';
+import { ShoppingCart } from 'lucide-react';
+import type { ThemeProps } from '../types';
+import { formatPrice } from '../types';
+import { defaults } from './config';
+import CartDrawer from './CartDrawer';
+
+export default function Storefront({ theme, products, services, staff, onAddToCart, onBookService }: ThemeProps) {
+  const [cartOpen, setCartOpen] = useState(false);
+
+  const displayProducts = products.length > 0 ? products : defaults.products;
+  const displayServices = services.length > 0 ? services : defaults.services;
+  const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
+  const tagline = theme.tagline || defaults.tagline;
+
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+
+  return (
+    <div className="min-h-screen bg-white text-[#111111] font-['Inter']">
+      {/* Nav */}
+      <nav className="sticky top-0 z-40 bg-white border-b border-[#111111]/10">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <span className="text-lg font-bold uppercase tracking-tight">{theme.companyName}</span>
+          <div className="flex items-center gap-8">
+            <div className="hidden md:flex items-center gap-8 text-xs uppercase tracking-[0.2em] font-medium text-[#111111]/60">
+              {showProducts && <a href="#products" className="hover:text-[#111111] transition-colors">Shop</a>}
+              {showServices && <a href="#services" className="hover:text-[#111111] transition-colors">Book</a>}
+              <a href="#footer" className="hover:text-[#111111] transition-colors">Contact</a>
+            </div>
+            {showProducts && (
+              <button
+                type="button"
+                aria-label="Open cart"
+                onClick={() => setCartOpen(true)}
+                className="text-[#111111] hover:text-[#111111]/60 transition-colors"
+              >
+                <ShoppingCart size={20} />
+              </button>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+        <div>
+          <h1 className="text-4xl md:text-6xl font-light leading-tight mb-6">{theme.companyName}</h1>
+          <p className="text-[#111111]/60 text-lg font-light">{tagline}</p>
+        </div>
+        <div className="aspect-[4/3] overflow-hidden bg-[#f8f8f8]">
+          <img src={heroImage} alt="" className="w-full h-full object-cover" />
+        </div>
+      </section>
+
+      {/* Products */}
+      {showProducts && (
+        <section id="products" className="max-w-7xl mx-auto px-6 py-20">
+          <h2 className="text-2xl md:text-3xl font-bold mb-12">Shop</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+            {displayProducts.map((product) => (
+              <div key={product.id}>
+                <div className="aspect-[3/4] overflow-hidden bg-[#f8f8f8] mb-4">
+                  <img
+                    src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h3 className="text-base font-medium mb-1">{product.name}</h3>
+                <p className="text-sm text-[#111111]/60 font-light mb-3">{formatPrice(product.priceCents, theme.currency)}</p>
+                <button
+                  type="button"
+                  onClick={() => onAddToCart?.(product)}
+                  className="text-xs uppercase tracking-[0.2em] font-medium text-[#111111] hover:text-[#111111]/60 transition-colors"
+                >
+                  Add to Cart
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Services */}
+      {showServices && (
+        <section id="services" className="bg-[#f8f8f8] py-20">
+          <div className="max-w-7xl mx-auto px-6">
+            <h2 className="text-2xl md:text-3xl font-bold mb-12">Book a Service</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {displayServices.map((service) => (
+                <div key={service.id} className="bg-white p-6 flex flex-col">
+                  {service.imageUrls?.[0] && (
+                    <div className="aspect-[4/3] overflow-hidden mb-4">
+                      <img src={service.imageUrls[0]} alt={service.name} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <h3 className="text-lg font-medium mb-2">{service.name}</h3>
+                  {service.description && (
+                    <p className="text-sm text-[#111111]/60 font-light mb-4 flex-1">{service.description}</p>
+                  )}
+                  <div className="flex items-center justify-between text-sm mb-4">
+                    <span className="text-[#111111]/50 font-light">{service.durationMinutes} min</span>
+                    <span className="font-bold">{formatPrice(service.priceCents, theme.currency)}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onBookService?.(service)}
+                    className="uppercase tracking-[0.2em] text-xs font-medium bg-[#111111] text-white py-3 hover:bg-[#333333] transition-colors"
+                  >
+                    Book Now
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {staff.length > 0 && (
+              <div className="mt-16 flex flex-wrap justify-center gap-12">
+                {staff.map((member) => (
+                  <div key={member.id} className="text-center max-w-xs">
+                    {member.avatarUrl && (
+                      <img
+                        src={member.avatarUrl}
+                        alt={member.name}
+                        className="w-24 h-24 rounded-full object-cover mx-auto mb-4"
+                      />
+                    )}
+                    <h4 className="text-lg font-medium">{member.name}</h4>
+                    {member.bio && <p className="text-sm text-[#111111]/60 font-light mt-2">{member.bio}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Footer */}
+      <footer id="footer" className="bg-white border-t border-[#111111]/10 py-12">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <p className="text-lg font-bold uppercase tracking-tight mb-2">{theme.companyName}</p>
+          {theme.city && <p className="text-[#111111]/60 text-sm font-light">{theme.city}</p>}
+          <p className="text-[#111111]/40 text-xs mt-6 uppercase tracking-[0.2em] font-medium">
+            &copy; {new Date().getFullYear()} {theme.companyName}. All rights reserved.
+          </p>
+        </div>
+      </footer>
+
+      {showProducts && (
+        <CartDrawer
+          isOpen={cartOpen}
+          onClose={() => setCartOpen(false)}
+          items={[]}
+          onUpdateQuantity={() => {}}
+          onRemove={() => {}}
+          onCheckout={() => {}}
+        />
+      )}
+    </div>
+  );
+}
