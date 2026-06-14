@@ -4,7 +4,11 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { serveStatic } from '@hono/node-server/serve-static';
+import { join } from 'path';
 import { db, redis } from './db/client';
+
+// dist/index.js -> apps/server/dist -> repo root is 3 levels up
+const CLIENT_DIST = join(__dirname, '../../../dist/client');
 
 // Routes
 import tenantRoutes from './routes/tenants';
@@ -67,12 +71,12 @@ app.route('/api/public', publicRoutes);
 
 // Serve React client for all non-API routes
 // The Vite build outputs to dist/client relative to repo root
-app.use('/*', serveStatic({ root: './dist/client' }));
+app.use('/*', serveStatic({ root: CLIENT_DIST }));
 
 // SPA fallback — serve index.html for all unmatched routes
 app.get('/*', async (c) => {
   return c.html(await import('fs').then(fs =>
-    fs.promises.readFile('./dist/client/index.html', 'utf-8')
+    fs.promises.readFile(join(CLIENT_DIST, 'index.html'), 'utf-8')
   ));
 });
 
