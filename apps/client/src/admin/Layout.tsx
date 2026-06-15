@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
-import { LayoutDashboard, Building2, ScrollText, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Building2, Receipt, ScrollText, Menu, X } from 'lucide-react';
 
 const navItems = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/admin/tenants', label: 'Tenants', icon: Building2 },
+  { to: '/admin/transactions', label: 'Transactions', icon: Receipt },
   { to: '/admin/audit-log', label: 'Audit Log', icon: ScrollText },
 ];
 

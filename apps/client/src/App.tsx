@@ -25,6 +25,7 @@ import AdminLayout from './admin/Layout';
 import AdminOverview from './admin/Overview';
 import AdminTenants from './admin/Tenants';
 import AdminTenantDetail from './admin/TenantDetail';
+import AdminTransactions from './admin/Transactions';
 import AdminAuditLog from './admin/AuditLog';
 
 const Wizard = lazy(() => import('./wizard/Wizard'));
@@ -121,6 +122,7 @@ export default function App() {
                 <Route index element={<AdminOverview />} />
                 <Route path="tenants" element={<AdminTenants />} />
                 <Route path="tenants/:id" element={<AdminTenantDetail />} />
+                <Route path="transactions" element={<AdminTransactions />} />
                 <Route path="audit-log" element={<AdminAuditLog />} />
               </Route>
 
