@@ -4,6 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireAdmin } from '../middleware/admin';
 import { stripe } from '../services/stripe';
+import { getPlatformSettings, savePlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../services/settings';
 
 const app = new Hono();
 
@@ -231,6 +232,119 @@ app.post('/refunds', async (c) => {
   });
 
   return c.json({ refunded: true, refund_id: refund.id });
+});
+
+const planConfigSchema = z.object({
+  name: z.string().min(1),
+  price_cents: z.number().int().min(0),
+  item_limit: z.number().int().min(0).nullable(),
+  ai_credits: z.number().int().min(0),
+});
+
+const platformSettingsSchema = z.object({
+  plans: z.object({
+    starter: planConfigSchema,
+    pro: planConfigSchema,
+    business: planConfigSchema,
+  }),
+  ai_photo_cost_cents: z.number().int().min(0),
+  platform_fee_percent: z.number().min(0).max(1),
+  platform_fee_fixed_cents: z.number().int().min(0),
+});
+
+// GET /api/admin/settings
+app.get('/settings', async (c) => {
+  return c.json({ settings: await getPlatformSettings(), defaults: DEFAULT_PLATFORM_SETTINGS });
+});
+
+// PUT /api/admin/settings
+app.put('/settings', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = platformSettingsSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+  }
+
+  await savePlatformSettings(parsed.data);
+  await logAdminAction(c, 'update_settings', 'platform_settings', null, parsed.data as Record<string, unknown>);
+
+  return c.json({ settings: parsed.data });
+});
+
+// GET /api/admin/coupons
+app.get('/coupons', async (c) => {
+  const coupons = await db`SELECT * FROM platform_coupons ORDER BY created_at DESC`;
+  return c.json({ coupons });
+});
+
+const createCouponSchema = z.object({
+  code: z.string().min(1).max(40),
+  type: z.enum(['percentage', 'fixed']),
+  value: z.number().int().min(1),
+  applies_to_plan: z.enum(['starter', 'pro', 'business']).nullable().optional(),
+  max_redemptions: z.number().int().min(1).nullable().optional(),
+  expires_at: z.string().datetime().nullable().optional(),
+});
+
+// POST /api/admin/coupons
+app.post('/coupons', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = createCouponSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+  }
+  const d = parsed.data;
+
+  const code = d.code.trim().toUpperCase();
+  const existing = await db`SELECT id FROM platform_coupons WHERE code = ${code} LIMIT 1`;
+  if (existing[0]) return c.json({ error: 'A coupon with this code already exists' }, 409);
+
+  const rows = await db`
+    INSERT INTO platform_coupons (code, type, value, applies_to_plan, max_redemptions, expires_at)
+    VALUES (${code}, ${d.type}, ${d.value}, ${d.applies_to_plan ?? null}, ${d.max_redemptions ?? null}, ${d.expires_at ?? null})
+    RETURNING *
+  `;
+
+  await logAdminAction(c, 'create_coupon', 'platform_coupon', rows[0].id as string, { code });
+
+  return c.json({ coupon: rows[0] }, 201);
+});
+
+const updateCouponSchema = z.object({
+  is_active: z.boolean().optional(),
+});
+
+// PATCH /api/admin/coupons/:id
+app.patch('/coupons/:id', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = updateCouponSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+  }
+  const updates = parsed.data;
+  const keys = Object.keys(updates);
+  if (keys.length === 0) return c.json({ error: 'No updates provided' }, 400);
+
+  const rows = await db`
+    UPDATE platform_coupons SET ${db(updates as Record<string, unknown>, ...keys)} WHERE id = ${id} RETURNING *
+  `;
+  if (!rows[0]) return c.json({ error: 'Coupon not found' }, 404);
+
+  await logAdminAction(c, 'update_coupon', 'platform_coupon', id, updates);
+
+  return c.json({ coupon: rows[0] });
+});
+
+// DELETE /api/admin/coupons/:id
+app.delete('/coupons/:id', async (c) => {
+  const id = c.req.param('id');
+  const rows = await db`DELETE FROM platform_coupons WHERE id = ${id} RETURNING id`;
+  if (!rows[0]) return c.json({ error: 'Coupon not found' }, 404);
+
+  await logAdminAction(c, 'delete_coupon', 'platform_coupon', id);
+
+  return c.json({ deleted: true });
 });
 
 export default app;

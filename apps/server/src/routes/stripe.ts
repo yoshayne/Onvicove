@@ -99,7 +99,7 @@ app.post('/payment-intent', async (c) => {
     }
 
     const totalCents = record.total_cents as number;
-    const platformFee = computePlatformFee(totalCents);
+    const platformFee = await computePlatformFee(totalCents);
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalCents,
@@ -166,7 +166,7 @@ app.post('/payment-intent', async (c) => {
 
   await db`
     UPDATE ${db(table)}
-    SET stripe_payment_intent_id = ${paymentIntent.id}, platform_fee_cents = ${computePlatformFee(totalCents)}, updated_at = NOW()
+    SET stripe_payment_intent_id = ${paymentIntent.id}, platform_fee_cents = ${await computePlatformFee(totalCents)}, updated_at = NOW()
     WHERE id = ${reference_id}
   `;
 
@@ -241,7 +241,7 @@ app.post('/webhook', async (c) => {
       `;
       const booking = rows[0];
       if (booking) {
-        const platformFee = computePlatformFee(piAmount);
+        const platformFee = await computePlatformFee(piAmount);
         const stripeFee = Math.round(piAmount * 0.029) + 30;
         await db`
           INSERT INTO platform_transactions (

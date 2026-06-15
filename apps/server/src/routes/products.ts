@@ -4,6 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { enrichWithUrls } from '../services/storage';
+import { checkItemLimit } from '../services/settings';
 
 const app = new Hono();
 
@@ -57,13 +58,18 @@ app.get('/:id', async (c) => {
 
 // POST /api/products
 app.post('/', async (c) => {
-  const tenant = c.get('tenant') as { id: string };
+  const tenant = c.get('tenant') as { id: string; plan: string };
   const body = await c.req.json().catch(() => ({}));
   const parsed = productSchema.safeParse(body);
   if (!parsed.success) {
     return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   }
   const d = parsed.data;
+
+  const limit = await checkItemLimit(tenant);
+  if (!limit.ok) {
+    return c.json({ error: `Your plan allows up to ${limit.limit} products and services. Upgrade your plan to add more.` }, 402);
+  }
 
   const rows = await db`
     INSERT INTO products (

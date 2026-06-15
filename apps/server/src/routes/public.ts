@@ -217,7 +217,7 @@ app.post('/:slug/orders', async (c) => {
 
   const shippingCents = d.shipping_cents ?? 0;
   const totalCents = Math.max(subtotal + shippingCents - discountCents, 0);
-  const platformFee = computePlatformFee(totalCents);
+  const platformFee = await computePlatformFee(totalCents);
   const orderNumber = await generateOrderNumber(tenant.id as string);
 
   // Upsert customer
@@ -315,7 +315,7 @@ app.post('/:slug/bookings', async (c) => {
 
   const status = tenant.booking_mode === 'manual' ? 'pending' : 'confirmed';
   const amountCents = service.price_cents as number;
-  const platformFee = computePlatformFee(amountCents);
+  const platformFee = await computePlatformFee(amountCents);
 
   const rows = await db`
     INSERT INTO bookings (

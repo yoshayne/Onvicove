@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { getPlatformSettings } from './settings';
 
 let _stripe: Stripe | undefined;
 
@@ -20,11 +21,9 @@ export const stripe: Stripe = new Proxy({} as Stripe, {
   },
 });
 
-const PLATFORM_FEE_PERCENT = parseFloat(process.env.PLATFORM_FEE_PERCENT || '0.049');
-const PLATFORM_FEE_FIXED_CENTS = parseInt(process.env.PLATFORM_FEE_FIXED_CENTS || '30');
-
-export function computePlatformFee(totalCents: number): number {
-  return Math.round(totalCents * PLATFORM_FEE_PERCENT) + PLATFORM_FEE_FIXED_CENTS;
+export async function computePlatformFee(totalCents: number): Promise<number> {
+  const settings = await getPlatformSettings();
+  return Math.round(totalCents * settings.platform_fee_percent) + settings.platform_fee_fixed_cents;
 }
 
 interface CreateBookingIntentArgs {
@@ -40,7 +39,7 @@ interface CreateBookingIntentArgs {
 }
 
 export async function createBookingPaymentIntent(args: CreateBookingIntentArgs) {
-  const platformFee = computePlatformFee(args.amountCents);
+  const platformFee = await computePlatformFee(args.amountCents);
 
   const params: Stripe.PaymentIntentCreateParams = {
     amount: args.amountCents,

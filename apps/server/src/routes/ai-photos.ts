@@ -7,7 +7,8 @@ import { requireTenant } from '../middleware/tenant';
 import { uploadFile, enrichWithUrls } from '../services/storage';
 import { removeBackground, generateStyledPhoto, AI_PHOTO_STYLES } from '../services/gemini';
 import { applyWatermark } from '../services/watermark';
-import { stripe, computePlatformFee } from '../services/stripe';
+import { stripe } from '../services/stripe';
+import { getPlatformSettings } from '../services/settings';
 
 const app = new Hono();
 
@@ -175,7 +176,8 @@ app.post('/unlock', async (c) => {
     SELECT id FROM ai_photo_sessions WHERE tenant_id = ${tenant.id} AND is_free = TRUE LIMIT 1
   `;
   const isFree = freeUsed.length === 0;
-  const costCents = parseInt(process.env.AI_PHOTO_COST_CENTS || '299');
+  const settings = await getPlatformSettings();
+  const costCents = settings.ai_photo_cost_cents;
 
   let chargeId: string | null = null;
 
