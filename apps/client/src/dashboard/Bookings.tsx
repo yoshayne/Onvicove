@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
-import type { Booking, BookingStatus } from '../types';
+import type { Booking, BookingStatus, Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
 import Button from '../components/shared/Button';
+import PaymentModal from './PaymentModal';
 
 const BOOKING_STATUSES: BookingStatus[] = ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'];
 
@@ -44,6 +45,13 @@ export default function Bookings() {
       api.patch<{ booking: Booking }>(`/bookings/${id}`, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bookings'] }),
   });
+
+  const { data: tenantData } = useQuery({
+    queryKey: ['tenant', 'me'],
+    queryFn: () => api.get<{ tenant: Tenant }>('/tenants/me'),
+  });
+
+  const [paymentBooking, setPaymentBooking] = useState<Booking | null>(null);
 
   return (
     <div className="flex flex-col gap-4">
@@ -145,6 +153,12 @@ export default function Bookings() {
                           Cancel
                         </Button>
                       )}
+                      {b.status === 'completed' &&
+                        (b.amount_cents ?? 0) > (b.deposit_paid_cents ?? 0) && (
+                          <Button size="sm" variant="secondary" onClick={() => setPaymentBooking(b)}>
+                            Payment
+                          </Button>
+                        )}
                     </div>
                   </td>
                 </tr>
@@ -152,6 +166,15 @@ export default function Bookings() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {paymentBooking && (
+        <PaymentModal
+          booking={paymentBooking}
+          stripeAccountId={tenantData?.tenant.stripe_account_id ?? undefined}
+          currency={tenantData?.tenant.currency}
+          onClose={() => setPaymentBooking(null)}
+        />
       )}
     </div>
   );

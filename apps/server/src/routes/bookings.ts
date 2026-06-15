@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
+import { createBookingPaymentIntent } from '../services/stripe';
+import { sendPaymentLinkEmail } from '../services/email';
 
 const app = new Hono();
 
@@ -140,6 +142,128 @@ app.patch('/:id', async (c) => {
 
   if (!rows[0]) return c.json({ error: 'Booking not found' }, 404);
   return c.json({ booking: rows[0] });
+});
+
+// GET /api/bookings/:id/payment-info — remaining balance + card-on-file info
+app.get('/:id/payment-info', async (c) => {
+  const tenant = c.get('tenant') as { id: string; currency: string; stripe_account_id: string | null };
+  const id = c.req.param('id');
+
+  const rows = await db`
+    SELECT b.*, c.card_brand, c.card_last4, c.stripe_customer_id, c.stripe_payment_method_id
+    FROM bookings b
+    LEFT JOIN customers c ON c.id = b.customer_id
+    WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
+  `;
+  const booking = rows[0];
+  if (!booking) return c.json({ error: 'Booking not found' }, 404);
+
+  const remainingCents = Math.max((booking.amount_cents as number ?? 0) - (booking.deposit_paid_cents as number ?? 0), 0);
+
+  return c.json({
+    remaining_cents: remainingCents,
+    amount_cents: booking.amount_cents,
+    deposit_paid_cents: booking.deposit_paid_cents ?? 0,
+    has_card: !!booking.stripe_payment_method_id,
+    card_brand: booking.card_brand,
+    card_last4: booking.card_last4,
+    currency: tenant.currency,
+  });
+});
+
+// POST /api/bookings/:id/balance-intent — create PaymentIntent for remaining balance (in-person collection)
+app.post('/:id/balance-intent', async (c) => {
+  const tenant = c.get('tenant') as { id: string; currency: string; stripe_account_id: string | null };
+  const id = c.req.param('id');
+
+  const rows = await db`
+    SELECT b.*, c.stripe_customer_id
+    FROM bookings b
+    LEFT JOIN customers c ON c.id = b.customer_id
+    WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
+  `;
+  const booking = rows[0];
+  if (!booking) return c.json({ error: 'Booking not found' }, 404);
+  if (!tenant.stripe_account_id) return c.json({ error: 'This business has not connected Stripe yet' }, 400);
+
+  const remainingCents = Math.max((booking.amount_cents as number ?? 0) - (booking.deposit_paid_cents as number ?? 0), 0);
+  if (remainingCents <= 0) return c.json({ error: 'No remaining balance' }, 400);
+
+  const paymentIntent = await createBookingPaymentIntent({
+    amountCents: remainingCents,
+    currency: tenant.currency || 'usd',
+    stripeAccountId: tenant.stripe_account_id,
+    tenantId: tenant.id,
+    bookingId: id,
+    referenceType: 'booking_balance',
+    stripeCustomerId: booking.stripe_customer_id as string | null,
+  });
+
+  return c.json({ client_secret: paymentIntent.client_secret, amount: remainingCents });
+});
+
+// POST /api/bookings/:id/charge-saved-card — off-session charge using card on file
+app.post('/:id/charge-saved-card', async (c) => {
+  const tenant = c.get('tenant') as { id: string; currency: string; stripe_account_id: string | null };
+  const id = c.req.param('id');
+
+  const rows = await db`
+    SELECT b.*, c.stripe_customer_id, c.stripe_payment_method_id
+    FROM bookings b
+    LEFT JOIN customers c ON c.id = b.customer_id
+    WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
+  `;
+  const booking = rows[0];
+  if (!booking) return c.json({ error: 'Booking not found' }, 404);
+  if (!tenant.stripe_account_id) return c.json({ error: 'This business has not connected Stripe yet' }, 400);
+  if (!booking.stripe_customer_id || !booking.stripe_payment_method_id) {
+    return c.json({ error: 'No card on file for this customer' }, 400);
+  }
+
+  const remainingCents = Math.max((booking.amount_cents as number ?? 0) - (booking.deposit_paid_cents as number ?? 0), 0);
+  if (remainingCents <= 0) return c.json({ error: 'No remaining balance' }, 400);
+
+  const paymentIntent = await createBookingPaymentIntent({
+    amountCents: remainingCents,
+    currency: tenant.currency || 'usd',
+    stripeAccountId: tenant.stripe_account_id,
+    tenantId: tenant.id,
+    bookingId: id,
+    referenceType: 'booking_balance',
+    stripeCustomerId: booking.stripe_customer_id as string,
+    paymentMethodId: booking.stripe_payment_method_id as string,
+  });
+
+  return c.json({ status: paymentIntent.status, amount: remainingCents });
+});
+
+// POST /api/bookings/:id/send-payment-link — emails the customer a link to pay the remaining balance
+app.post('/:id/send-payment-link', async (c) => {
+  const tenant = c.get('tenant') as { id: string; company_name: string };
+  const id = c.req.param('id');
+
+  const rows = await db`
+    SELECT b.*, s.name AS service_name
+    FROM bookings b
+    JOIN services s ON s.id = b.service_id
+    WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
+  `;
+  const booking = rows[0];
+  if (!booking) return c.json({ error: 'Booking not found' }, 404);
+
+  const remainingCents = Math.max((booking.amount_cents as number ?? 0) - (booking.deposit_paid_cents as number ?? 0), 0);
+  if (remainingCents <= 0) return c.json({ error: 'No remaining balance' }, 400);
+
+  await sendPaymentLinkEmail({
+    toEmail: booking.customer_email as string,
+    toName: booking.customer_name as string,
+    serviceName: booking.service_name as string,
+    amountCents: remainingCents,
+    companyName: tenant.company_name,
+    bookingId: id,
+  });
+
+  return c.json({ sent: true });
 });
 
 export default app;

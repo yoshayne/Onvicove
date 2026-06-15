@@ -77,6 +77,31 @@ export async function sendOrderConfirmation(data: OrderEmailData): Promise<void>
   });
 }
 
+interface PaymentLinkEmailData {
+  toEmail: string;
+  toName: string;
+  serviceName: string;
+  amountCents: number;
+  companyName: string;
+  bookingId: string;
+}
+
+export async function sendPaymentLinkEmail(data: PaymentLinkEmailData): Promise<void> {
+  const baseUrl = process.env.CLIENT_URL || 'https://onvicove.com';
+  const payUrl = `${baseUrl}/pay/booking/${data.bookingId}`;
+  await sendTransacEmail({
+    to: [{ email: data.toEmail, name: data.toName }],
+    subject: `Payment requested — ${data.companyName}`,
+    htmlContent: `
+      <h2>Remaining balance due</h2>
+      <p>Hi ${data.toName},</p>
+      <p>Thanks for visiting ${data.companyName}! Your <strong>${data.serviceName}</strong> appointment has a remaining balance of <strong>$${(data.amountCents / 100).toFixed(2)}</strong>.</p>
+      <p><a href="${payUrl}" style="display:inline-block;padding:12px 24px;background:#111111;color:#ffffff;text-decoration:none;border-radius:8px;">Pay now</a></p>
+      <p>Or copy this link into your browser: ${payUrl}</p>
+    `,
+  });
+}
+
 export async function sendBookingReminder(data: BookingEmailData): Promise<void> {
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],

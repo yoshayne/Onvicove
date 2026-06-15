@@ -24,6 +24,7 @@ import Payouts from './dashboard/Payouts';
 
 const Wizard = lazy(() => import('./wizard/Wizard'));
 const StorefrontRouter = lazy(() => import('./storefront/StorefrontRouter'));
+const PayBalance = lazy(() => import('./storefront/PayBalance'));
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,8 @@ export default function App() {
                 <Route path="settings" element={<Settings />} />
                 <Route path="payouts" element={<Payouts />} />
               </Route>
+
+              <Route path="/pay/booking/:id" element={<PayBalance />} />
 
               <Route path="/:slug/*" element={<StorefrontRouter />} />
             </Routes>

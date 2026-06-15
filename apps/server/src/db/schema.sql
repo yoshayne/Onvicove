@@ -289,3 +289,7 @@ CREATE INDEX IF NOT EXISTS idx_bookings_time ON bookings(tenant_id, start_time);
 CREATE INDEX IF NOT EXISTS idx_bookings_staff ON bookings(staff_id, start_time);
 CREATE INDEX IF NOT EXISTS idx_orders_tenant ON orders(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(tenant_id, email);
+
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS stripe_payment_method_id TEXT;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS card_brand TEXT;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS card_last4 TEXT;
