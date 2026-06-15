@@ -21,6 +21,11 @@ import AIPhotos from './dashboard/AIPhotos';
 import Discounts from './dashboard/Discounts';
 import Settings from './dashboard/Settings';
 import Payouts from './dashboard/Payouts';
+import AdminLayout from './admin/Layout';
+import AdminOverview from './admin/Overview';
+import AdminTenants from './admin/Tenants';
+import AdminTenantDetail from './admin/TenantDetail';
+import AdminAuditLog from './admin/AuditLog';
 
 const Wizard = lazy(() => import('./wizard/Wizard'));
 const StorefrontRouter = lazy(() => import('./storefront/StorefrontRouter'));
@@ -99,6 +104,25 @@ export default function App() {
               </Route>
 
               <Route path="/pay/booking/:id" element={<PayBalance />} />
+
+              <Route
+                path="/admin/*"
+                element={
+                  <>
+                    <SignedIn>
+                      <AdminLayout />
+                    </SignedIn>
+                    <SignedOut>
+                      <RedirectToSignIn />
+                    </SignedOut>
+                  </>
+                }
+              >
+                <Route index element={<AdminOverview />} />
+                <Route path="tenants" element={<AdminTenants />} />
+                <Route path="tenants/:id" element={<AdminTenantDetail />} />
+                <Route path="audit-log" element={<AdminAuditLog />} />
+              </Route>
 
               <Route path="/:slug/*" element={<StorefrontRouter />} />
             </Routes>

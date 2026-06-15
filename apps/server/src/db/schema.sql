@@ -293,3 +293,15 @@ CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(tenant_id, email);
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS stripe_payment_method_id TEXT;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS card_brand TEXT;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS card_last4 TEXT;
+
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_email TEXT NOT NULL,
+  action TEXT NOT NULL,
+  target_type TEXT NOT NULL,
+  target_id TEXT,
+  details JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_audit_log_created ON admin_audit_log(created_at DESC);
