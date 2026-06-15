@@ -83,20 +83,33 @@ app.post('/payment-intent', async (c) => {
   const { reference_type, reference_id } = parsed.data;
 
   const table = reference_type === 'order' ? 'orders' : 'bookings';
-  const rows = await db`
-    SELECT r.*, t.stripe_account_id, t.currency
-    FROM ${db(table)} r
-    JOIN tenants t ON t.id = r.tenant_id
-    WHERE r.id = ${reference_id}
-    LIMIT 1
-  `;
+  const rows = reference_type === 'order'
+    ? await db`
+        SELECT r.*, t.stripe_account_id, t.currency
+        FROM orders r
+        JOIN tenants t ON t.id = r.tenant_id
+        WHERE r.id = ${reference_id}
+        LIMIT 1
+      `
+    : await db`
+        SELECT r.*, t.stripe_account_id, t.currency,
+          s.requires_deposit AS service_requires_deposit, s.deposit_cents AS service_deposit_cents
+        FROM bookings r
+        JOIN tenants t ON t.id = r.tenant_id
+        JOIN services s ON s.id = r.service_id
+        WHERE r.id = ${reference_id}
+        LIMIT 1
+      `;
   const record = rows[0];
   if (!record) return c.json({ error: `${reference_type} not found` }, 404);
   if (!record.stripe_account_id) {
     return c.json({ error: 'This business has not connected Stripe yet' }, 400);
   }
 
-  const totalCents = (record.total_cents ?? record.amount_cents) as number;
+  let totalCents = (record.total_cents ?? record.amount_cents) as number;
+  if (reference_type === 'booking' && record.service_requires_deposit && record.service_deposit_cents) {
+    totalCents = record.service_deposit_cents as number;
+  }
   const platformFee = computePlatformFee(totalCents);
 
   const paymentIntent = await stripe.paymentIntents.create({
@@ -119,7 +132,7 @@ app.post('/payment-intent', async (c) => {
     WHERE id = ${reference_id}
   `;
 
-  return c.json({ client_secret: paymentIntent.client_secret });
+  return c.json({ client_secret: paymentIntent.client_secret, amount: totalCents });
 });
 
 // POST /webhooks/stripe — Stripe webhook handler (raw body, signature verified)
@@ -163,21 +176,23 @@ app.post('/webhook', async (c) => {
         `;
       }
     } else if (reference_type === 'booking') {
+      const piAmount = (pi as unknown as { amount: number }).amount;
       const rows = await db`
-        UPDATE bookings SET status = 'confirmed', stripe_payment_intent_id = ${pi.id}, updated_at = NOW()
+        UPDATE bookings
+        SET status = 'confirmed', stripe_payment_intent_id = ${pi.id}, deposit_paid_cents = ${piAmount}, updated_at = NOW()
         WHERE id = ${reference_id} RETURNING *
       `;
       const booking = rows[0];
       if (booking) {
         const platformFee = booking.platform_fee_cents as number;
-        const stripeFee = Math.round((booking.amount_cents as number) * 0.029) + 30;
+        const stripeFee = Math.round(piAmount * 0.029) + 30;
         await db`
           INSERT INTO platform_transactions (
             tenant_id, reference_id, reference_type, gross_amount_cents,
             platform_fee_cents, stripe_fee_cents, net_to_tenant_cents
           ) VALUES (
-            ${tenant_id}, ${reference_id}, 'booking', ${booking.amount_cents},
-            ${platformFee}, ${stripeFee}, ${(booking.amount_cents as number) - platformFee - stripeFee}
+            ${tenant_id}, ${reference_id}, 'booking', ${piAmount},
+            ${platformFee}, ${stripeFee}, ${piAmount - platformFee - stripeFee}
           )
         `;
       }

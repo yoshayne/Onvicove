@@ -2,15 +2,22 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import type { CartItem } from '../types';
 import { formatPrice } from '../types';
+import StripePaymentForm from './StripePaymentForm';
 
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
-  status: 'idle' | 'submitting' | 'success' | 'error';
+  status: 'idle' | 'submitting' | 'payment' | 'success' | 'error';
   error: string | null;
   orderNumber: string | null;
+  clientSecret?: string | null;
+  amountCents?: number;
+  stripeAccountId?: string;
+  currency?: string;
   onSubmit: (info: { name: string; email: string; phone: string }) => void;
+  onPaymentSuccess?: () => void;
+  onPaymentCancel?: () => void;
 }
 
 export default function CheckoutModal({
@@ -20,7 +27,13 @@ export default function CheckoutModal({
   status,
   error,
   orderNumber,
+  clientSecret,
+  amountCents,
+  stripeAccountId,
+  currency,
   onSubmit,
+  onPaymentSuccess,
+  onPaymentCancel,
 }: CheckoutModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -48,6 +61,24 @@ export default function CheckoutModal({
           >
             Done
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'payment' && clientSecret) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+        <div className="w-full max-w-md rounded-lg bg-white p-6 text-[#111111]">
+          <h2 className="mb-4 text-lg font-semibold">Payment</h2>
+          <StripePaymentForm
+            clientSecret={clientSecret}
+            amountCents={amountCents ?? subtotal}
+            currency={currency}
+            stripeAccountId={stripeAccountId}
+            onSuccess={() => onPaymentSuccess?.()}
+            onCancel={() => onPaymentCancel?.()}
+          />
         </div>
       </div>
     );

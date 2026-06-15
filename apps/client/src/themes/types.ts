@@ -18,6 +18,7 @@ export interface ThemeData {
   themeId?: ThemeId;
   slug?: string;
   paymentsEnabled?: boolean;
+  stripeAccountId?: string;
 }
 
 export interface ProductImage {

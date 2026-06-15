@@ -20,9 +20,11 @@ export default function Storefront({
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
     checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
+    orderClientSecret, orderAmountCents, confirmOrderPayment, cancelOrderPayment,
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
     availableSlots, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
-    confirmBooking, dismissBookingStatus,
+    confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
+    bookingClientSecret, bookingAmountCents,
   } = useStorefrontCommerce(theme.slug);
   const showProducts = (theme.mode === 'store' || theme.mode === 'both');
   const showServices = (theme.mode === 'book' || theme.mode === 'both');
@@ -224,7 +226,13 @@ export default function Storefront({
         status={orderStatus}
         error={orderError}
         orderNumber={orderNumber}
+        clientSecret={orderClientSecret}
+        amountCents={orderAmountCents}
+        stripeAccountId={theme.stripeAccountId}
+        currency={theme.currency}
         onSubmit={submitOrder}
+        onPaymentSuccess={confirmOrderPayment}
+        onPaymentCancel={cancelOrderPayment}
       />
 
       <BookingModal
@@ -242,8 +250,14 @@ export default function Storefront({
       <BookingStatusOverlay
         status={bookingStatus}
         error={bookingError}
+        clientSecret={bookingClientSecret}
+        amountCents={bookingAmountCents}
+        stripeAccountId={theme.stripeAccountId}
+        currency={theme.currency}
         onClose={closeBooking}
         onDismiss={dismissBookingStatus}
+        onPaymentSuccess={confirmBookingPayment}
+        onPaymentCancel={cancelBookingPayment}
       />
     </div>
   );

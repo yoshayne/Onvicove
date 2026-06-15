@@ -20,6 +20,7 @@ function mapTenant(tenant: Tenant): ThemeData {
     themeId: tenant.theme_id,
     slug: tenant.slug,
     paymentsEnabled: tenant.stripe_onboarded,
+    stripeAccountId: tenant.stripe_account_id ?? undefined,
   };
 }
 

@@ -1,17 +1,49 @@
+import StripePaymentForm from './StripePaymentForm';
+
 interface BookingStatusOverlayProps {
-  status: 'idle' | 'submitting' | 'success' | 'error';
+  status: 'idle' | 'submitting' | 'payment' | 'success' | 'error';
   error: string | null;
+  clientSecret?: string | null;
+  amountCents?: number;
+  stripeAccountId?: string;
+  currency?: string;
   onClose: () => void;
   onDismiss: () => void;
+  onPaymentSuccess?: () => void;
+  onPaymentCancel?: () => void;
 }
 
-export default function BookingStatusOverlay({ status, error, onClose, onDismiss }: BookingStatusOverlayProps) {
+export default function BookingStatusOverlay({
+  status,
+  error,
+  clientSecret,
+  amountCents,
+  stripeAccountId,
+  currency,
+  onClose,
+  onDismiss,
+  onPaymentSuccess,
+  onPaymentCancel,
+}: BookingStatusOverlayProps) {
   if (status === 'idle') return null;
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4">
       <div className="w-full max-w-sm rounded-lg bg-white p-6 text-center text-[#111111]">
         {status === 'submitting' && <p className="text-sm text-gray-600">Booking your appointment…</p>}
+        {status === 'payment' && clientSecret && (
+          <>
+            <p className="mb-4 text-lg font-semibold">Pay to confirm your booking</p>
+            <StripePaymentForm
+              clientSecret={clientSecret}
+              amountCents={amountCents ?? 0}
+              currency={currency}
+              stripeAccountId={stripeAccountId}
+              onSuccess={() => onPaymentSuccess?.()}
+              onCancel={() => onPaymentCancel?.()}
+            />
+          </>
+        )}
         {status === 'success' && (
           <>
             <p className="mb-2 text-lg font-semibold">You're booked!</p>

@@ -3,7 +3,16 @@ import { apiGet, apiPost } from '../../lib/api';
 import type { AvailableSlot, CartItem, ProductData, ServiceData } from '../types';
 
 interface OrderResponse {
-  order: { order_number: string };
+  order: { id: string; order_number: string };
+}
+
+interface BookingResponse {
+  booking: { id: string };
+}
+
+interface PaymentIntentResponse {
+  client_secret: string;
+  amount: number;
 }
 
 interface AvailabilityResponse {
@@ -22,9 +31,11 @@ export function useStorefrontCommerce(slug: string | undefined) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [orderStatus, setOrderStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [orderStatus, setOrderStatus] = useState<'idle' | 'submitting' | 'payment' | 'success' | 'error'>('idle');
   const [orderError, setOrderError] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [orderClientSecret, setOrderClientSecret] = useState<string | null>(null);
+  const [orderAmountCents, setOrderAmountCents] = useState(0);
 
   function addToCart(product: ProductData) {
     setCart((prev) => {
@@ -81,12 +92,27 @@ export function useStorefrontCommerce(slug: string | undefined) {
         items: cart.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
       });
       setOrderNumber(res.order.order_number);
-      setOrderStatus('success');
-      setCart([]);
+      const pi = await apiPost<PaymentIntentResponse>('/api/stripe/payment-intent', {
+        reference_type: 'order',
+        reference_id: res.order.id,
+      });
+      setOrderClientSecret(pi.client_secret);
+      setOrderAmountCents(pi.amount);
+      setOrderStatus('payment');
     } catch (err) {
       setOrderError(err instanceof Error ? err.message : 'Failed to place order');
       setOrderStatus('error');
     }
+  }
+
+  function confirmOrderPayment() {
+    setOrderStatus('success');
+    setCart([]);
+  }
+
+  function cancelOrderPayment() {
+    setOrderStatus('error');
+    setOrderError('Payment was not completed. Your order has been placed but not paid yet.');
   }
 
   // Booking
@@ -95,8 +121,10 @@ export function useStorefrontCommerce(slug: string | undefined) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
-  const [bookingStatus, setBookingStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [bookingStatus, setBookingStatus] = useState<'idle' | 'submitting' | 'payment' | 'success' | 'error'>('idle');
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [bookingClientSecret, setBookingClientSecret] = useState<string | null>(null);
+  const [bookingAmountCents, setBookingAmountCents] = useState(0);
   const slotMapRef = useRef<Map<string, { start: string; end: string }>>(new Map());
 
   function openBooking(service: ServiceData) {
@@ -154,7 +182,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
     setBookingStatus('submitting');
     setBookingError(null);
     try {
-      await apiPost(`/api/public/${slug}/bookings`, {
+      const res = await apiPost<BookingResponse>(`/api/public/${slug}/bookings`, {
         service_id: bookingService.id,
         customer_name: info.name,
         customer_email: info.email,
@@ -162,11 +190,26 @@ export function useStorefrontCommerce(slug: string | undefined) {
         start_time: slot.start,
         end_time: slot.end,
       });
-      setBookingStatus('success');
+      const pi = await apiPost<PaymentIntentResponse>('/api/stripe/payment-intent', {
+        reference_type: 'booking',
+        reference_id: res.booking.id,
+      });
+      setBookingClientSecret(pi.client_secret);
+      setBookingAmountCents(pi.amount);
+      setBookingStatus('payment');
     } catch (err) {
       setBookingError(err instanceof Error ? err.message : 'Failed to book');
       setBookingStatus('error');
     }
+  }
+
+  function confirmBookingPayment() {
+    setBookingStatus('success');
+  }
+
+  function cancelBookingPayment() {
+    setBookingStatus('error');
+    setBookingError('Payment was not completed. Please try booking again.');
   }
 
   return {
@@ -182,7 +225,11 @@ export function useStorefrontCommerce(slug: string | undefined) {
     orderStatus,
     orderError,
     orderNumber,
+    orderClientSecret,
+    orderAmountCents,
     submitOrder,
+    confirmOrderPayment,
+    cancelOrderPayment,
 
     bookingService,
     bookingOpen,
@@ -195,7 +242,11 @@ export function useStorefrontCommerce(slug: string | undefined) {
     selectBookingSlot,
     bookingStatus,
     bookingError,
+    bookingClientSecret,
+    bookingAmountCents,
     confirmBooking,
+    confirmBookingPayment,
+    cancelBookingPayment,
     dismissBookingStatus,
   };
 }
