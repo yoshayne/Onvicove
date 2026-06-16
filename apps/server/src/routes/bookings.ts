@@ -4,7 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { createBookingPaymentIntent } from '../services/stripe';
-import { sendPaymentLinkEmail } from '../services/email';
+import { sendPaymentLinkEmail, sendBookingCancelled } from '../services/email';
 
 const app = new Hono();
 
@@ -117,7 +117,7 @@ app.post('/', async (c) => {
 
 // PATCH /api/bookings/:id
 app.patch('/:id', async (c) => {
-  const tenant = c.get('tenant') as { id: string };
+  const tenant = c.get('tenant') as { id: string; company_name: string };
   const id = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
   const parsed = updateBookingSchema.safeParse(body);
@@ -133,6 +133,8 @@ app.patch('/:id', async (c) => {
     return c.json({ booking: existing[0] });
   }
 
+  const before = await db`SELECT status FROM bookings WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
+
   const rows = await db`
     UPDATE bookings
     SET ${db(updates as Record<string, unknown>, ...keys)}, updated_at = NOW()
@@ -141,7 +143,21 @@ app.patch('/:id', async (c) => {
   `;
 
   if (!rows[0]) return c.json({ error: 'Booking not found' }, 404);
-  return c.json({ booking: rows[0] });
+  const booking = rows[0];
+
+  if (updates.status === 'cancelled' && before[0]?.status !== 'cancelled') {
+    const svcRows = await db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`;
+    sendBookingCancelled({
+      toEmail: booking.customer_email as string,
+      toName: booking.customer_name as string,
+      serviceName: (svcRows[0]?.name as string) ?? 'your appointment',
+      startTime: new Date(booking.start_time as string).toLocaleString(),
+      endTime: new Date(booking.end_time as string).toLocaleString(),
+      companyName: tenant.company_name,
+    }).catch((err) => console.error('Booking cancelled email error:', err));
+  }
+
+  return c.json({ booking });
 });
 
 // GET /api/bookings/:id/payment-info — remaining balance + card-on-file info

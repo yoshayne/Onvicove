@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
+import { sendOrderShipped } from '../services/email';
 
 const app = new Hono();
 
@@ -55,7 +56,7 @@ app.get('/:id', async (c) => {
 
 // PATCH /api/orders/:id
 app.patch('/:id', async (c) => {
-  const tenant = c.get('tenant') as { id: string };
+  const tenant = c.get('tenant') as { id: string; company_name: string };
   const id = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
   const parsed = updateOrderSchema.safeParse(body);
@@ -71,6 +72,8 @@ app.patch('/:id', async (c) => {
     return c.json({ order: existing[0] });
   }
 
+  const before = await db`SELECT tracking_number FROM orders WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
+
   const rows = await db`
     UPDATE orders
     SET ${db(updates as Record<string, unknown>, ...keys)}, updated_at = NOW()
@@ -79,7 +82,21 @@ app.patch('/:id', async (c) => {
   `;
 
   if (!rows[0]) return c.json({ error: 'Order not found' }, 404);
-  return c.json({ order: rows[0] });
+  const order = rows[0];
+
+  // Send shipped email when tracking number is newly added
+  if (updates.tracking_number && !before[0]?.tracking_number) {
+    sendOrderShipped({
+      toEmail: order.customer_email as string,
+      toName: order.customer_name as string,
+      orderNumber: order.order_number as string,
+      companyName: tenant.company_name,
+      trackingNumber: updates.tracking_number,
+      trackingUrl: (order.tracking_url as string | null) ?? null,
+    }).catch((err) => console.error('Shipped email error:', err));
+  }
+
+  return c.json({ order });
 });
 
 export default app;

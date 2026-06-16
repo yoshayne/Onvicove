@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { stripe, computePlatformFee, createBookingPaymentIntent, getOrCreateStripeCustomer } from '../services/stripe';
+import { sendStripeConnected, sendAdminStripeConnected } from '../services/email';
 
 const app = new Hono();
 
@@ -63,6 +64,18 @@ app.get('/account-status', requireAuth, async (c) => {
       UPDATE tenants SET stripe_onboarded = ${onboarded}, updated_at = NOW()
       WHERE id = ${tenant.id}
     `;
+    if (onboarded) {
+      const userRows = await db`SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
+      const user = userRows[0];
+      if (user?.email) {
+        const toName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || (user.email as string);
+        const baseUrl = process.env.CLIENT_URL || 'https://onvicove.com';
+        Promise.all([
+          sendStripeConnected({ toEmail: user.email as string, toName, companyName: tenant.company_name as string, dashboardUrl: `${baseUrl}/dashboard` }),
+          sendAdminStripeConnected({ companyName: tenant.company_name as string, ownerEmail: user.email as string }),
+        ]).catch((err) => console.error('Stripe connected email error:', err));
+      }
+    }
   }
 
   return c.json({ connected: true, onboarded });

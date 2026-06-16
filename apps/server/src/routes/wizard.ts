@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { generateUniqueSlug } from '../lib/slugify';
+import { sendTenantWelcome, sendSiteLive, sendAdminNewSignup } from '../services/email';
 
 const app = new Hono();
 
@@ -132,6 +133,19 @@ app.post('/complete', async (c) => {
         VALUES (${result.id}, ${st.name}, ${st.email ?? null}, ${db.json(st.availability ?? {})})
       `;
     }
+  }
+
+  // Fire welcome emails — best-effort, don't fail the response
+  const userRows = await db`SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
+  const user = userRows[0];
+  if (user?.email) {
+    const toName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || (user.email as string);
+    const baseUrl = process.env.CLIENT_URL || 'https://onvicove.com';
+    Promise.all([
+      sendTenantWelcome({ toEmail: user.email as string, toName, companyName: result.company_name as string, dashboardUrl: `${baseUrl}/dashboard` }),
+      sendSiteLive({ toEmail: user.email as string, toName, companyName: result.company_name as string, storefrontUrl: `${baseUrl}/${result.slug}` }),
+      sendAdminNewSignup({ companyName: result.company_name as string, ownerEmail: user.email as string, plan: result.plan as string }),
+    ]).catch((err) => console.error('Welcome email error:', err));
   }
 
   return c.json({ tenant: result });

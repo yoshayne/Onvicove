@@ -5,6 +5,10 @@ import { requireAuth } from '../middleware/clerk';
 import { requireAdmin } from '../middleware/admin';
 import { stripe } from '../services/stripe';
 import { getPlatformSettings, savePlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../services/settings';
+import {
+  sendPlanUpgraded, sendPlanDowngraded, sendAccountSuspended,
+  sendOrderRefunded, sendBookingRefunded, sendAdminRefund,
+} from '../services/email';
 
 const app = new Hono();
 
@@ -113,6 +117,10 @@ app.patch('/tenants/:id', async (c) => {
   const keys = Object.keys(updates);
   if (keys.length === 0) return c.json({ error: 'No updates provided' }, 400);
 
+  const beforeRows = await db`SELECT t.*, u.email, u.first_name, u.last_name FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${id} LIMIT 1`;
+  if (!beforeRows[0]) return c.json({ error: 'Tenant not found' }, 404);
+  const before = beforeRows[0];
+
   const rows = await db`
     UPDATE tenants
     SET ${db(updates as Record<string, unknown>, ...keys)}, updated_at = NOW()
@@ -122,6 +130,26 @@ app.patch('/tenants/:id', async (c) => {
   if (!rows[0]) return c.json({ error: 'Tenant not found' }, 404);
 
   await logAdminAction(c, 'update_tenant', 'tenant', id, updates);
+
+  const baseUrl = process.env.CLIENT_URL || 'https://onvicove.com';
+  const ownerEmail = before.email as string | null;
+  if (ownerEmail) {
+    const toName = `${before.first_name ?? ''} ${before.last_name ?? ''}`.trim() || ownerEmail;
+    const companyName = before.company_name as string;
+
+    if (updates.plan && updates.plan !== before.plan) {
+      const PLAN_RANK: Record<string, number> = { starter: 0, pro: 1, business: 2 };
+      const wasUpgrade = (PLAN_RANK[updates.plan] ?? 0) > (PLAN_RANK[before.plan as string] ?? 0);
+      const fn = wasUpgrade ? sendPlanUpgraded : sendPlanDowngraded;
+      fn({ toEmail: ownerEmail, toName, companyName, newPlan: updates.plan, dashboardUrl: `${baseUrl}/dashboard` })
+        .catch((err) => console.error('Plan change email error:', err));
+    }
+
+    if (updates.is_active === false && before.is_active !== false) {
+      sendAccountSuspended({ toEmail: ownerEmail, toName, companyName })
+        .catch((err) => console.error('Suspended email error:', err));
+    }
+  }
 
   return c.json({ tenant: rows[0] });
 });
@@ -230,6 +258,37 @@ app.post('/refunds', async (c) => {
     refund_id: refund.id,
     amount_cents: tx.gross_amount_cents,
   });
+
+  // Notify customer and admin — best-effort
+  const tenantRows = await db`SELECT company_name FROM tenants WHERE id = ${tx.tenant_id} LIMIT 1`;
+  const companyName = (tenantRows[0]?.company_name as string) ?? 'the business';
+  const amountCents = tx.gross_amount_cents as number;
+
+  if (referenceType === 'order') {
+    Promise.all([
+      sendOrderRefunded({
+        toEmail: record.customer_email as string,
+        toName: record.customer_name as string,
+        orderNumber: record.order_number as string,
+        totalCents: amountCents,
+        companyName,
+      }),
+      sendAdminRefund({ companyName, referenceType, referenceId: tx.reference_id as string, amountCents }),
+    ]).catch((err) => console.error('Refund email error:', err));
+  } else {
+    const svcRows = await db`SELECT name FROM services WHERE id = ${record.service_id} LIMIT 1`;
+    const serviceName = (svcRows[0]?.name as string) ?? 'your appointment';
+    Promise.all([
+      sendBookingRefunded({
+        toEmail: record.customer_email as string,
+        toName: record.customer_name as string,
+        serviceName,
+        amountCents,
+        companyName,
+      }),
+      sendAdminRefund({ companyName, referenceType, referenceId: tx.reference_id as string, amountCents }),
+    ]).catch((err) => console.error('Refund email error:', err));
+  }
 
   return c.json({ refunded: true, refund_id: refund.id });
 });
