@@ -181,6 +181,30 @@ app.delete('/tenants/:id', async (c) => {
   return c.json({ deleted: true });
 });
 
+// DELETE /api/admin/tenants — delete ALL tenants
+app.delete('/tenants', async (c) => {
+  const tenants = await db`SELECT id, company_name FROM tenants`;
+  for (const t of tenants) {
+    await db`DELETE FROM platform_transactions WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE tenant_id = ${t.id})`;
+    await db`DELETE FROM order_items WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM ai_photo_generations WHERE session_id IN (SELECT id FROM ai_photo_sessions WHERE tenant_id = ${t.id})`;
+    await db`DELETE FROM bookings WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM orders WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM product_variants WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM ai_photo_sessions WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM products WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM services WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM staff WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM customers WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM page_sections WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM discount_codes WHERE tenant_id = ${t.id}`;
+    await db`DELETE FROM tenants WHERE id = ${t.id}`;
+  }
+  await logAdminAction(c, 'delete_all_tenants', 'tenant', null, { count: tenants.length });
+  return c.json({ deleted: tenants.length });
+});
+
 // GET /api/admin/audit-log
 app.get('/audit-log', async (c) => {
   const targetType = c.req.query('target_type');

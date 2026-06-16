@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
+import Button from '../components/shared/Button';
 
 interface AdminTenant {
   id: string;
@@ -19,9 +20,15 @@ interface AdminTenant {
 
 export default function Tenants() {
   const api = useApi();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [plan, setPlan] = useState('');
   const [status, setStatus] = useState('');
+
+  const deleteAllMutation = useMutation({
+    mutationFn: () => api.delete('/admin/tenants'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
 
   const params = new URLSearchParams();
   if (search) params.set('search', search);
@@ -36,7 +43,21 @@ export default function Tenants() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold text-slate-900">Tenants</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-900">Tenants</h1>
+        <Button
+          variant="danger"
+          size="sm"
+          disabled={deleteAllMutation.isPending || !data?.tenants.length}
+          onClick={() => {
+            if (window.confirm(`Permanently delete ALL ${data?.tenants.length} tenant accounts? This cannot be undone.`)) {
+              deleteAllMutation.mutate();
+            }
+          }}
+        >
+          {deleteAllMutation.isPending ? 'Deleting…' : 'Delete all'}
+        </Button>
+      </div>
 
       <div className="flex flex-wrap gap-3">
         <input
