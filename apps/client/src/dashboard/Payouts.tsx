@@ -12,7 +12,7 @@ interface AccountStatus {
 export default function Payouts() {
   const api = useApi();
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['stripe', 'account-status'],
     queryFn: () => api.get<AccountStatus>('/stripe/account-status'),
   });
@@ -47,10 +47,13 @@ export default function Payouts() {
               )}
             </div>
             {!data?.onboarded && (
-              <div>
+              <div className="flex flex-col gap-2">
                 <Button isLoading={connectMutation.isPending} onClick={() => connectMutation.mutate()}>
                   {data?.connected ? 'Continue onboarding' : 'Connect Stripe account'}
                 </Button>
+                {connectMutation.isError && (
+                  <p className="text-sm text-red-600">{(connectMutation.error as Error)?.message ?? 'Something went wrong. Please try again.'}</p>
+                )}
               </div>
             )}
           </div>

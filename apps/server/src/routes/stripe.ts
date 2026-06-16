@@ -19,28 +19,34 @@ app.post('/connect-link', requireAuth, async (c) => {
 
   let accountId = tenant.stripe_account_id as string | null;
 
-  if (!accountId) {
-    const account = await stripe.accounts.create({
-      type: 'express',
-      business_type: 'individual',
-      email: undefined,
+  try {
+    if (!accountId) {
+      const account = await stripe.accounts.create({
+        type: 'express',
+        business_type: 'individual',
+        email: undefined,
+      });
+      accountId = account.id;
+      await db`
+        UPDATE tenants SET stripe_account_id = ${accountId}, updated_at = NOW()
+        WHERE id = ${tenant.id}
+      `;
+    }
+
+    const baseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const link = await stripe.accountLinks.create({
+      account: accountId,
+      type: 'account_onboarding',
+      refresh_url: `${baseUrl}/dashboard/payouts`,
+      return_url: `${baseUrl}/dashboard/payouts`,
     });
-    accountId = account.id;
-    await db`
-      UPDATE tenants SET stripe_account_id = ${accountId}, updated_at = NOW()
-      WHERE id = ${tenant.id}
-    `;
+
+    return c.json({ url: link.url });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Stripe error';
+    console.error('Stripe connect-link error:', message);
+    return c.json({ error: message }, 500);
   }
-
-  const baseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-  const link = await stripe.accountLinks.create({
-    account: accountId,
-    type: 'account_onboarding',
-    refresh_url: `${baseUrl}/dashboard/payouts`,
-    return_url: `${baseUrl}/dashboard/payouts`,
-  });
-
-  return c.json({ url: link.url });
 });
 
 // GET /api/stripe/account-status
