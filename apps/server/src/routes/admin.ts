@@ -160,6 +160,8 @@ app.delete('/tenants/:id', async (c) => {
   const rows = await db`SELECT t.company_name, u.email, u.first_name, u.last_name FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${id} LIMIT 1`;
   if (!rows[0]) return c.json({ error: 'Tenant not found' }, 404);
 
+  // Delete platform_transactions manually — FK may not have CASCADE on older deployments
+  await db`DELETE FROM platform_transactions WHERE tenant_id = ${id}`;
   await db`DELETE FROM tenants WHERE id = ${id}`;
   await logAdminAction(c, 'delete_tenant', 'tenant', id, { company_name: rows[0].company_name });
 

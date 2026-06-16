@@ -295,6 +295,8 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_url TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_nudge_sent_at TIMESTAMPTZ;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_reminder_sent_at TIMESTAMPTZ;
+ALTER TABLE platform_transactions DROP CONSTRAINT IF EXISTS platform_transactions_tenant_id_fkey;
+ALTER TABLE platform_transactions ADD CONSTRAINT platform_transactions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS card_brand TEXT;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS card_last4 TEXT;
 
