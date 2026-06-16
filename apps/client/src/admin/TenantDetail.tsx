@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
 import type { Tenant } from '../types';
@@ -21,6 +21,7 @@ export default function TenantDetail() {
   const { id } = useParams<{ id: string }>();
   const api = useApi();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'tenants', id],
@@ -31,6 +32,14 @@ export default function TenantDetail() {
     mutationFn: (updates: { plan?: string; is_active?: boolean }) =>
       api.patch<TenantDetailResponse>(`/admin/tenants/${id}`, updates),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'tenants', id] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/admin/tenants/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'tenants'] });
+      navigate('/admin/tenants');
+    },
   });
 
   if (isLoading) {
@@ -104,14 +113,33 @@ export default function TenantDetail() {
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="mb-3 text-sm font-medium text-slate-500">Account status</div>
-        <Button
-          variant={tenant.is_active ? 'danger' : 'primary'}
-          size="sm"
-          onClick={() => updateMutation.mutate({ is_active: !tenant.is_active })}
-          disabled={updateMutation.isPending}
-        >
-          {tenant.is_active ? 'Suspend account' : 'Reactivate account'}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={tenant.is_active ? 'danger' : 'primary'}
+            size="sm"
+            onClick={() => updateMutation.mutate({ is_active: !tenant.is_active })}
+            disabled={updateMutation.isPending}
+          >
+            {tenant.is_active ? 'Suspend account' : 'Reactivate account'}
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            disabled={deleteMutation.isPending}
+            onClick={() => {
+              if (window.confirm(`Permanently delete ${tenant.company_name}? This cannot be undone.`)) {
+                deleteMutation.mutate();
+              }
+            }}
+          >
+            {deleteMutation.isPending ? 'Deleting…' : 'Delete account'}
+          </Button>
+        </div>
+        {deleteMutation.isError && (
+          <p className="mt-2 text-sm text-red-600">
+            {deleteMutation.error instanceof Error ? deleteMutation.error.message : 'Delete failed.'}
+          </p>
+        )}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">

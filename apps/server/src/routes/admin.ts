@@ -154,6 +154,18 @@ app.patch('/tenants/:id', async (c) => {
   return c.json({ tenant: rows[0] });
 });
 
+// DELETE /api/admin/tenants/:id
+app.delete('/tenants/:id', async (c) => {
+  const id = c.req.param('id');
+  const rows = await db`SELECT t.company_name, u.email, u.first_name, u.last_name FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${id} LIMIT 1`;
+  if (!rows[0]) return c.json({ error: 'Tenant not found' }, 404);
+
+  await db`DELETE FROM tenants WHERE id = ${id}`;
+  await logAdminAction(c, 'delete_tenant', 'tenant', id, { company_name: rows[0].company_name });
+
+  return c.json({ deleted: true });
+});
+
 // GET /api/admin/audit-log
 app.get('/audit-log', async (c) => {
   const targetType = c.req.query('target_type');
