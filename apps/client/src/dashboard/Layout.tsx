@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink, Outlet, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -44,13 +44,19 @@ const navItems = [
 
 export default function Layout() {
   const api = useApi();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['tenant', 'me'],
     queryFn: () => api.get<{ tenant: Tenant }>('/tenants/me'),
+    retry: false,
   });
+
+  useEffect(() => {
+    if (error) navigate('/wizard', { replace: true });
+  }, [error, navigate]);
 
   const tenant = data?.tenant;
 
