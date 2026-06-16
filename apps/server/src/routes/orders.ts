@@ -10,6 +10,8 @@ const updateOrderSchema = z.object({
   status: z.enum(['pending', 'paid', 'fulfilled', 'refunded', 'cancelled']).optional(),
   fulfillment_status: z.enum(['unfulfilled', 'fulfilled', 'partial']).optional(),
   notes: z.string().nullable().optional(),
+  tracking_number: z.string().nullable().optional(),
+  tracking_url: z.string().url().nullable().optional(),
 });
 
 app.use('*', requireAuth, requireTenant);

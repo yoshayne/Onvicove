@@ -19,6 +19,7 @@ export default function Orders() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [itemsCache, setItemsCache] = useState<Record<string, OrderItem[]>>({});
   const [itemsLoading, setItemsLoading] = useState<string | null>(null);
+  const [trackingDraft, setTrackingDraft] = useState<Record<string, { number: string; url: string }>>({});
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['orders', statusFilter],
@@ -33,6 +34,18 @@ export default function Orders() {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
+
+  function getTracking(order: Order) {
+    return trackingDraft[order.id] ?? { number: order.tracking_number ?? '', url: order.tracking_url ?? '' };
+  }
+
+  function saveTracking(order: Order) {
+    const draft = getTracking(order);
+    updateMutation.mutate({
+      id: order.id,
+      body: { tracking_number: draft.number || null, tracking_url: draft.url || null },
+    });
+  }
 
   async function toggleExpand(order: Order) {
     if (expandedId === order.id) {
@@ -175,6 +188,42 @@ export default function Orders() {
                         ) : (
                           <p className="text-xs text-slate-500">No items.</p>
                         )}
+                        <div className="mt-3 flex flex-wrap items-end gap-3 border-t border-slate-200 pt-3" onClick={(e) => e.stopPropagation()}>
+                          <div>
+                            <label className="block text-xs text-slate-500">Tracking number</label>
+                            <input
+                              type="text"
+                              value={getTracking(order).number}
+                              onChange={(e) => setTrackingDraft((prev) => ({ ...prev, [order.id]: { ...getTracking(order), number: e.target.value } }))}
+                              onBlur={() => saveTracking(order)}
+                              onKeyDown={(e) => e.key === 'Enter' && saveTracking(order)}
+                              placeholder="e.g. 1Z999AA10123456784"
+                              className="mt-1 w-56 rounded border border-slate-300 px-2 py-1 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-slate-500">Tracking URL</label>
+                            <input
+                              type="url"
+                              value={getTracking(order).url}
+                              onChange={(e) => setTrackingDraft((prev) => ({ ...prev, [order.id]: { ...getTracking(order), url: e.target.value } }))}
+                              onBlur={() => saveTracking(order)}
+                              onKeyDown={(e) => e.key === 'Enter' && saveTracking(order)}
+                              placeholder="https://..."
+                              className="mt-1 w-64 rounded border border-slate-300 px-2 py-1 text-xs"
+                            />
+                          </div>
+                          {(order.tracking_number || order.tracking_url) && (
+                            <a
+                              href={order.tracking_url ?? '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline"
+                            >
+                              Track shipment ↗
+                            </a>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )}

@@ -291,6 +291,8 @@ CREATE INDEX IF NOT EXISTS idx_orders_tenant ON orders(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(tenant_id, email);
 
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS stripe_payment_method_id TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_url TEXT;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS card_brand TEXT;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS card_last4 TEXT;
 

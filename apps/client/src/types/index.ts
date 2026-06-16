@@ -207,6 +207,8 @@ export interface Order {
   shipping_address: Record<string, unknown> | null;
   billing_address: Record<string, unknown> | null;
   notes: string | null;
+  tracking_number: string | null;
+  tracking_url: string | null;
   created_at: string;
   updated_at: string;
   items?: OrderItem[];
