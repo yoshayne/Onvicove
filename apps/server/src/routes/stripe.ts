@@ -33,7 +33,8 @@ app.post('/connect-link', requireAuth, async (c) => {
       `;
     }
 
-    const baseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const rawBase = process.env.CLIENT_URL || 'http://localhost:5173';
+    const baseUrl = rawBase.replace(/^http:\/\/(?!localhost)/, 'https://');
     const link = await stripe.accountLinks.create({
       account: accountId,
       type: 'account_onboarding',
