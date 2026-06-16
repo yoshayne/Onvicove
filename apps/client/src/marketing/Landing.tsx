@@ -1,15 +1,8 @@
 import { Link } from 'react-router-dom';
 import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { ArrowRight, Sparkles, Calendar, ShoppingBag, Palette, Zap } from 'lucide-react';
+import ThemeShowcase from './ThemeShowcase';
 
-const themes = [
-  { name: 'Editorial', desc: 'Dark luxury, serif headlines', color: '#1a1a1a', accent: '#d4a96a' },
-  { name: 'Minimal', desc: 'Swiss grid, clean whitespace', color: '#ffffff', accent: '#111111' },
-  { name: 'Bold', desc: 'Streetwear, neon yellow', color: '#0a0a0a', accent: '#e8ff00' },
-  { name: 'Warm', desc: 'Wellness & artisan tones', color: '#fdf8f3', accent: '#8b5e3c' },
-  { name: 'Classic', desc: 'Professional navy & gold', color: '#1a3a5c', accent: '#c8a850' },
-  { name: 'Bright', desc: 'Gen Z beauty, hot pink', color: '#ffffff', accent: '#ff3cac' },
-];
 
 const features = [
   {
@@ -108,25 +101,7 @@ export default function Landing() {
       </section>
 
       {/* Theme showcase */}
-      <section className="mx-auto max-w-6xl px-6 py-16">
-        <h2 className="text-center text-3xl font-bold tracking-tight">Six premium themes</h2>
-        <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
-          Pick a look that matches your brand — switch any time from your dashboard.
-        </p>
-        <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {themes.map((t) => (
-            <div key={t.name} className="overflow-hidden rounded-xl border border-slate-100">
-              <div className="flex h-24 items-center justify-center" style={{ backgroundColor: t.color }}>
-                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: t.accent }} />
-              </div>
-              <div className="p-3">
-                <p className="text-sm font-semibold">{t.name}</p>
-                <p className="text-xs text-slate-500">{t.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <ThemeShowcase />
 
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-6 py-24 text-center">
