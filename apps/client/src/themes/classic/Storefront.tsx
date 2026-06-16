@@ -84,7 +84,7 @@ export default function Storefront({
 
       {/* Products */}
       {showProducts && displayProducts.length > 0 && (
-        <section id="products" className="mx-auto max-w-6xl px-6 py-16">
+        <section id="products" className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Our Collection
           </h2>
@@ -129,7 +129,7 @@ export default function Storefront({
 
       {/* Services */}
       {showServices && displayServices.length > 0 && (
-        <section id="services" className="mx-auto max-w-6xl px-6 py-16">
+        <section id="services" className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Our Services
           </h2>
@@ -196,7 +196,7 @@ export default function Storefront({
       )}
 
       {/* Footer */}
-      <footer id="about" className="mt-8 border-t-4 border-[#1a3a5c] bg-[#f5f5f5] py-10">
+      <footer id="about" className="scroll-mt-20 mt-8 border-t-4 border-[#1a3a5c] bg-[#f5f5f5] py-10">
         <div className="mx-auto max-w-6xl px-6 text-center">
           <div className="font-['Merriweather'] text-lg font-bold text-[#1a3a5c]">
             {theme.companyName}

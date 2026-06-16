@@ -72,7 +72,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
       {/* Products */}
       {showProducts && (
-        <section id="products" className="max-w-7xl mx-auto px-6 py-20">
+        <section id="products" className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
           <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Shop the Collection</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {displayProducts.map((product) => (
@@ -102,7 +102,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
       {/* Services */}
       {showServices && (
-        <section id="services" className="bg-[#f5f5f5] py-20">
+        <section id="services" className="scroll-mt-20 bg-[#f5f5f5] py-20">
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Reservations</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -155,7 +155,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       )}
 
       {/* Footer */}
-      <footer id="footer" className="bg-[#1a1a1a] text-white py-12">
+      <footer id="footer" className="scroll-mt-20 bg-[#1a1a1a] text-white py-12">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="font-['Playfair_Display'] text-2xl uppercase tracking-wide mb-2">{theme.companyName}</p>
           {theme.city && <p className="text-white/60 text-sm">{theme.city}</p>}

@@ -68,7 +68,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
       {/* Products */}
       {showProducts && (
-        <section id="products" className="max-w-7xl mx-auto px-6 py-20">
+        <section id="products" className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
           <h2 className="font-black text-4xl md:text-5xl mb-12 text-center uppercase tracking-wide">
             Shop The Drop
           </h2>
@@ -100,7 +100,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
       {/* Services */}
       {showServices && (
-        <section id="services" className="bg-[#161616] py-20 border-t border-white/10">
+        <section id="services" className="scroll-mt-20 bg-[#161616] py-20 border-t border-white/10">
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="font-black text-4xl md:text-5xl mb-12 text-center uppercase tracking-wide">
               Book A Session
@@ -155,7 +155,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       )}
 
       {/* Footer */}
-      <footer id="footer" className="bg-[#0a0a0a] text-white py-12 border-t border-white/10">
+      <footer id="footer" className="scroll-mt-20 bg-[#0a0a0a] text-white py-12 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="font-black text-3xl uppercase tracking-widest mb-2">{theme.companyName}</p>
           {theme.city && <p className="text-white/60 text-sm uppercase tracking-wide">{theme.city}</p>}
