@@ -69,9 +69,9 @@ export default function Landing() {
 
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-6 py-24 text-center">
-        <p className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-          <Sparkles size={14} /> Shopify meets Calendly
-        </p>
+        <div className="mb-8 flex justify-center">
+          <img src="/logo.png" alt="Shop Suite Direct" className="h-24 w-auto" />
+        </div>
         <h1 className="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight sm:text-6xl">
           Build your premium online store or booking site in under 10 minutes
         </h1>
