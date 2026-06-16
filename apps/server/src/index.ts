@@ -40,8 +40,8 @@ app.use('*', logger());
 app.use('/api/*', cors({
   origin: [
     process.env.CLIENT_URL || 'http://localhost:5173',
-    'https://onvicove.com',
-    'https://www.onvicove.com',
+    'https://shopsuitedirect.com',
+    'https://www.shopsuitedirect.com',
   ],
   credentials: true,
 }));
@@ -94,7 +94,7 @@ const port = parseInt(process.env.PORT || '3000');
 
 console.log(`
 ╔═══════════════════════════════════╗
-║  Onvicove server starting...      ║
+║  Shop Suite Direct server...      ║
 ║  Port: ${port}                        ║
 ║  Env:  ${process.env.NODE_ENV || 'development'}               ║
 ╚═══════════════════════════════════╝

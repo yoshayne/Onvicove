@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import { db } from '../db/client';
 import { sendStripeNudge, sendStripeReminder } from '../services/email';
 
-const DASHBOARD_URL = `${process.env.CLIENT_URL || 'https://onvicove.com'}/dashboard/payouts`;
+const DASHBOARD_URL = `${process.env.CLIENT_URL || 'https://shopsuitedirect.com'}/dashboard/payouts`;
 
 async function runStripeNudges() {
   // 24-hour nudge: wizard complete, not onboarded, no nudge sent yet, account older than 24h

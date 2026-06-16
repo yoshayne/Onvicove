@@ -90,7 +90,7 @@ export default function Layout() {
         }`}
       >
         <div className="flex items-center justify-between px-4 py-5">
-          <span className="text-lg font-bold tracking-tight">Onvicove</span>
+          <span className="text-lg font-bold tracking-tight">Shop Suite Direct</span>
           <button
             className="rounded p-1 hover:bg-slate-800 lg:hidden"
             onClick={() => setSidebarOpen(false)}

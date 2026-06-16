@@ -220,7 +220,7 @@ export const useWizardStore = create<WizardState>()(
       reset: () => set({ ...initialState }),
     }),
     {
-      name: 'onvicove-wizard',
+      name: 'shopsuitedirect-wizard',
     }
   )
 );

@@ -44,7 +44,7 @@ export default function Landing() {
     <div className="min-h-screen bg-white text-slate-900">
       <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="text-xl font-bold tracking-tight">Onvicove</span>
+          <span className="text-xl font-bold tracking-tight">Shop Suite Direct</span>
           <div className="flex items-center gap-4">
             <SignedOut>
               <Link to="/sign-in" className="text-sm font-medium text-slate-700 hover:text-slate-900">
@@ -76,7 +76,7 @@ export default function Landing() {
           Build your premium online store or booking site in under 10 minutes
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
-          Onvicove gives any business a beautiful, unified storefront and booking
+          Shop Suite Direct gives any business a beautiful, unified storefront and booking
           experience — no designers, no developers, no hassle.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
@@ -152,7 +152,7 @@ export default function Landing() {
       </section>
 
       <footer className="border-t border-slate-100 py-8 text-center text-sm text-slate-500">
-        © {new Date().getFullYear()} Onvicove. All rights reserved.
+        © {new Date().getFullYear()} Shop Suite Direct. All rights reserved.
       </footer>
     </div>
   );

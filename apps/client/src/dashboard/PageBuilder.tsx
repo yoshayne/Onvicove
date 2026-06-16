@@ -19,7 +19,7 @@ const DEFAULT_SECTIONS: SectionItem[] = [
   { id: 'contact', type: 'contact', label: 'Contact / location', enabled: true },
 ];
 
-const STORAGE_KEY = 'onvicove_page_sections_home';
+const STORAGE_KEY = 'shopsuitedirect_page_sections_home';
 
 export default function PageBuilder() {
   const [sections, setSections] = useState<SectionItem[]>(DEFAULT_SECTIONS);

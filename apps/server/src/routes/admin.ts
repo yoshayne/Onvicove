@@ -131,7 +131,7 @@ app.patch('/tenants/:id', async (c) => {
 
   await logAdminAction(c, 'update_tenant', 'tenant', id, updates);
 
-  const baseUrl = process.env.CLIENT_URL || 'https://onvicove.com';
+  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
   const ownerEmail = before.email as string | null;
   if (ownerEmail) {
     const toName = `${before.first_name ?? ''} ${before.last_name ?? ''}`.trim() || ownerEmail;

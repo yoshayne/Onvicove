@@ -86,7 +86,7 @@ export default function Step1_BusinessName() {
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
           <p className="text-sm text-gray-500">
             Your site address will be:{' '}
-            <span className="font-medium text-gray-900">onvicove.com/{slug}</span>
+            <span className="font-medium text-gray-900">shopsuitedirect.com/{slug}</span>
           </p>
           <div className="mt-2 text-sm">
             {checking && <span className="text-gray-400">Checking availability…</span>}

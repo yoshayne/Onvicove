@@ -18,7 +18,7 @@ const PLANS: PlanOption[] = [
       'Online store or booking page',
       'Up to 25 products or services',
       'Standard themes',
-      'Onvicove branding',
+      'Shop Suite Direct branding',
     ],
   },
   {
@@ -29,7 +29,7 @@ const PLANS: PlanOption[] = [
     features: [
       'Unlimited products & services',
       'All premium themes',
-      'Remove Onvicove branding',
+      'Remove Shop Suite Direct branding',
       'AI photo generation credits',
       'Priority support',
     ],

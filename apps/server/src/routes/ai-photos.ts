@@ -200,7 +200,7 @@ app.post('/unlock', async (c) => {
       payment_method: payment_method_id,
       confirm: true,
       off_session: true,
-      description: 'Onvicove AI product photo',
+      description: 'Shop Suite Direct AI product photo',
       metadata: { tenant_id: tenant.id, session_id, generation_id },
     });
     chargeId = paymentIntent.id;

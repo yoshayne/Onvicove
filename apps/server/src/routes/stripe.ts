@@ -69,7 +69,7 @@ app.get('/account-status', requireAuth, async (c) => {
       const user = userRows[0];
       if (user?.email) {
         const toName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || (user.email as string);
-        const baseUrl = process.env.CLIENT_URL || 'https://onvicove.com';
+        const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
         Promise.all([
           sendStripeConnected({ toEmail: user.email as string, toName, companyName: tenant.company_name as string, dashboardUrl: `${baseUrl}/dashboard` }),
           sendAdminStripeConnected({ companyName: tenant.company_name as string, ownerEmail: user.email as string }),

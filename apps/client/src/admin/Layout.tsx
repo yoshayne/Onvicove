@@ -30,7 +30,7 @@ export default function AdminLayout() {
         }`}
       >
         <div className="flex items-center justify-between px-4 py-5">
-          <span className="text-lg font-bold tracking-tight">Onvicove Admin</span>
+          <span className="text-lg font-bold tracking-tight">Shop Suite Direct Admin</span>
           <button
             className="rounded p-1 hover:bg-slate-800 lg:hidden"
             onClick={() => setSidebarOpen(false)}

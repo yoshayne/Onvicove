@@ -41,13 +41,13 @@ export default function Step10_Launch() {
       <div>
         <h2 className="text-2xl font-semibold text-gray-900">Review &amp; launch</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Take a final look before your site goes live at onvicove.com/{slug || '...'}.
+          Take a final look before your site goes live at shopsuitedirect.com/{slug || '...'}.
         </p>
       </div>
 
       <div className="flex flex-col divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
         <SummaryRow label="Business name" value={businessName || '—'} />
-        <SummaryRow label="Site address" value={slug ? `onvicove.com/${slug}` : '—'} />
+        <SummaryRow label="Site address" value={slug ? `shopsuitedirect.com/${slug}` : '—'} />
         <SummaryRow label="Store type" value={MODE_LABELS[mode] ?? mode} />
         <SummaryRow label="Theme" value={themeId} />
         {mode !== 'book' && <SummaryRow label="Products" value={`${products.length} added`} />}

@@ -1,8 +1,8 @@
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
 const SENDER = {
-  name: process.env.BREVO_SENDER_NAME || 'Onvicove',
-  email: process.env.BREVO_SENDER_EMAIL || 'no-reply@onvicove.com',
+  name: process.env.BREVO_SENDER_NAME || 'Shop Suite Direct',
+  email: process.env.BREVO_SENDER_EMAIL || 'no-reply@shopsuitedirect.com',
 };
 
 function adminEmail(): string | null {
@@ -15,11 +15,11 @@ function btn(text: string, url: string) {
 
 function wrap(title: string, body: string) {
   return `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1e293b;max-width:600px;margin:0 auto;padding:32px 16px">
-    <p style="font-weight:700;font-size:18px;margin-bottom:24px">Onvicove</p>
+    <p style="font-weight:700;font-size:18px;margin-bottom:24px">Shop Suite Direct</p>
     <h2 style="font-size:22px;margin-bottom:16px">${title}</h2>
     ${body}
     <hr style="margin-top:40px;border:none;border-top:1px solid #e2e8f0"/>
-    <p style="font-size:12px;color:#94a3b8;margin-top:16px">Onvicove · You're receiving this because you have an account with us.</p>
+    <p style="font-size:12px;color:#94a3b8;margin-top:16px">Shop Suite Direct · You're receiving this because you have an account with us.</p>
   </body></html>`;
 }
 
@@ -58,10 +58,10 @@ export async function sendTenantWelcome(data: {
 }): Promise<void> {
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],
-    subject: `Welcome to Onvicove, ${data.toName.split(' ')[0]}!`,
+    subject: `Welcome to Shop Suite Direct, ${data.toName.split(' ')[0]}!`,
     htmlContent: wrap('Your account is ready 🎉', `
       <p>Hi ${data.toName.split(' ')[0]},</p>
-      <p>Welcome to Onvicove! Your business <strong>${data.companyName}</strong> is set up and ready to go.</p>
+      <p>Welcome to Shop Suite Direct! Your business <strong>${data.companyName}</strong> is set up and ready to go.</p>
       <p>Here's what to do next:</p>
       <ol style="line-height:2">
         <li>Connect your Stripe account so you can accept payments</li>
@@ -137,7 +137,7 @@ export async function sendAccountSuspended(data: {
 }): Promise<void> {
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],
-    subject: `Your Onvicove account has been paused`,
+    subject: `Your Shop Suite Direct account has been paused`,
     htmlContent: wrap('Account paused', `
       <p>Hi ${data.toName.split(' ')[0]},</p>
       <p>Your <strong>${data.companyName}</strong> account has been temporarily paused by our team.</p>
@@ -163,7 +163,7 @@ export async function sendStripeNudge(data: {
       <p>Your <strong>${data.companyName}</strong> storefront is live, but you haven't connected a Stripe account yet — so you can't receive payments from customers.</p>
       <p>It only takes a few minutes to set up.</p>
       ${btn('Connect Stripe now', data.connectUrl)}
-      <p style="font-size:13px;color:#64748b">Stripe is free to connect. Onvicove takes a small platform fee per transaction — see your dashboard for details.</p>
+      <p style="font-size:13px;color:#64748b">Stripe is free to connect. Shop Suite Direct takes a small platform fee per transaction — see your dashboard for details.</p>
     `),
   });
 }
@@ -345,7 +345,7 @@ interface PaymentLinkEmailData {
 }
 
 export async function sendPaymentLinkEmail(data: PaymentLinkEmailData): Promise<void> {
-  const baseUrl = process.env.CLIENT_URL || 'https://onvicove.com';
+  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
   const payUrl = `${baseUrl}/pay/booking/${data.bookingId}`;
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],
@@ -369,7 +369,7 @@ export async function sendAdminNewSignup(data: {
   const email = adminEmail();
   if (!email) return;
   await sendTransacEmail({
-    to: [{ email, name: 'Onvicove Admin' }],
+    to: [{ email, name: 'Shop Suite Direct Admin' }],
     subject: `New signup: ${data.companyName}`,
     htmlContent: wrap('New tenant signed up', `
       <p><strong>Company:</strong> ${data.companyName}</p>
@@ -386,7 +386,7 @@ export async function sendAdminStripeConnected(data: {
   const email = adminEmail();
   if (!email) return;
   await sendTransacEmail({
-    to: [{ email, name: 'Onvicove Admin' }],
+    to: [{ email, name: 'Shop Suite Direct Admin' }],
     subject: `Stripe connected: ${data.companyName}`,
     htmlContent: wrap('Tenant connected Stripe', `
       <p><strong>Company:</strong> ${data.companyName}</p>
@@ -404,7 +404,7 @@ export async function sendAdminRefund(data: {
   const email = adminEmail();
   if (!email) return;
   await sendTransacEmail({
-    to: [{ email, name: 'Onvicove Admin' }],
+    to: [{ email, name: 'Shop Suite Direct Admin' }],
     subject: `Refund processed: $${(data.amountCents / 100).toFixed(2)} — ${data.companyName}`,
     htmlContent: wrap('Refund processed', `
       <p><strong>Tenant:</strong> ${data.companyName}</p>

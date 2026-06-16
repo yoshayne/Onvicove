@@ -31,7 +31,8 @@ export default function AuthPage({ mode }: AuthPageProps) {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <span className="text-2xl font-bold tracking-tight text-slate-900">Onvicove</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900">Shop Suite Direct</span>
+          <p className="mt-1 text-xs font-medium tracking-wide text-slate-400">Build. Brand. Beautifully.</p>
           <p className="mt-2 text-sm text-slate-500">
             {mode === 'sign-in'
               ? 'Sign in to build and manage your site.'
