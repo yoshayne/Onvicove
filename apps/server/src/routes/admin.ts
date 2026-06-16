@@ -160,8 +160,21 @@ app.delete('/tenants/:id', async (c) => {
   const rows = await db`SELECT t.company_name, u.email, u.first_name, u.last_name FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${id} LIMIT 1`;
   if (!rows[0]) return c.json({ error: 'Tenant not found' }, 404);
 
-  // Delete platform_transactions manually — FK may not have CASCADE on older deployments
+  // Manually delete in dependency order — some FKs lack CASCADE on older deployments
   await db`DELETE FROM platform_transactions WHERE tenant_id = ${id}`;
+  await db`DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE tenant_id = ${id})`;
+  await db`DELETE FROM order_items WHERE tenant_id = ${id}`;
+  await db`DELETE FROM ai_photo_generations WHERE session_id IN (SELECT id FROM ai_photo_sessions WHERE tenant_id = ${id})`;
+  await db`DELETE FROM bookings WHERE tenant_id = ${id}`;
+  await db`DELETE FROM orders WHERE tenant_id = ${id}`;
+  await db`DELETE FROM product_variants WHERE tenant_id = ${id}`;
+  await db`DELETE FROM ai_photo_sessions WHERE tenant_id = ${id}`;
+  await db`DELETE FROM products WHERE tenant_id = ${id}`;
+  await db`DELETE FROM services WHERE tenant_id = ${id}`;
+  await db`DELETE FROM staff WHERE tenant_id = ${id}`;
+  await db`DELETE FROM customers WHERE tenant_id = ${id}`;
+  await db`DELETE FROM page_sections WHERE tenant_id = ${id}`;
+  await db`DELETE FROM discount_codes WHERE tenant_id = ${id}`;
   await db`DELETE FROM tenants WHERE id = ${id}`;
   await logAdminAction(c, 'delete_tenant', 'tenant', id, { company_name: rows[0].company_name });
 
