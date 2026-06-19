@@ -59,11 +59,28 @@ export async function removeBackground(imageBuffer: Buffer): Promise<Buffer> {
  * Uses Gemini to generate a styled product photo from a cutout image and a style prompt.
  * Returns the generated image buffer (PNG).
  */
-export async function generateStyledPhoto(cutoutBuffer: Buffer, prompt: string): Promise<Buffer> {
-  return generateImage(
-    `Using this product image, regenerate the scene as: ${prompt}. Keep the product itself accurate and unchanged, only change the background and setting.`,
-    cutoutBuffer
-  );
+export async function generateStyledPhoto(
+  cutoutBuffer: Buffer,
+  stylePrompt: string,
+  productDescription?: string,
+  productCategory?: string
+): Promise<Buffer> {
+  const productContext = productDescription
+    ? `The product is: ${productDescription}${productCategory ? ` (${productCategory})` : ''}. Focus entirely on this specific product as the main subject.`
+    : '';
+
+  const prompt = [
+    'Professional commercial product photography.',
+    productContext,
+    `Scene: ${stylePrompt}.`,
+    'Create a clean, high-quality photo suitable for an online store or product catalog.',
+    'The product must be the clear focal point with sharp detail and perfect lighting.',
+    'Commercial quality output. Do not add extra objects or people unless they are part of the scene style.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return generateImage(prompt, cutoutBuffer);
 }
 
 export const AI_PHOTO_STYLES: { id: string; label: string; prompt: string }[] = [

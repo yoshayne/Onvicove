@@ -74,6 +74,8 @@ app.post('/sessions', async (c) => {
 const generateSchema = z.object({
   sessionId: z.string().uuid(),
   style: z.string().min(1),
+  productDescription: z.string().min(1).max(300),
+  productCategory: z.string().max(100).optional(),
   feedback: z.string().nullable().optional(),
 });
 
@@ -85,7 +87,7 @@ app.post('/generate', async (c) => {
   if (!parsed.success) {
     return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   }
-  const { sessionId, style, feedback } = parsed.data;
+  const { sessionId, style, productDescription, productCategory, feedback } = parsed.data;
 
   const sessions = await db`
     SELECT * FROM ai_photo_sessions WHERE id = ${sessionId} AND tenant_id = ${tenant.id} LIMIT 1
@@ -96,7 +98,8 @@ app.post('/generate', async (c) => {
   const styleDef = AI_PHOTO_STYLES.find((s) => s.id === style);
   if (!styleDef) return c.json({ error: 'Unknown style' }, 400);
 
-  const prompt = feedback ? `${styleDef.prompt}, ${feedback}` : styleDef.prompt;
+  const stylePrompt = feedback ? `${styleDef.prompt}, ${feedback}` : styleDef.prompt;
+  const prompt = `${productDescription} | ${productCategory ?? ''} | ${stylePrompt}`;
 
   const genRows = await db`
     INSERT INTO ai_photo_generations (session_id, style, feedback, prompt_used, status)
@@ -112,7 +115,7 @@ app.post('/generate', async (c) => {
     const fetchRes = await fetch(cutoutUrl);
     const cutoutBuffer = Buffer.from(await fetchRes.arrayBuffer());
 
-    const fullBuffer = await generateStyledPhoto(cutoutBuffer, prompt);
+    const fullBuffer = await generateStyledPhoto(cutoutBuffer, stylePrompt, productDescription, productCategory);
     const previewBuffer = await applyWatermark(fullBuffer);
 
     const fullKey = `tenants/${tenant.id}/ai-photos/${uuidv4()}-full.png`;

@@ -68,7 +68,6 @@ export default function Step6_Products() {
           <ProductCard
             key={product.id}
             product={product}
-            index={products.indexOf(product)}
             onUpdate={(updates) => updateProduct(product.id, updates)}
             onRemove={() => removeProduct(product.id)}
           />
@@ -88,12 +87,11 @@ export default function Step6_Products() {
 
 interface ProductCardProps {
   product: WizardProduct;
-  index: number;
   onUpdate: (updates: Partial<WizardProduct>) => void;
   onRemove: () => void;
 }
 
-function ProductCard({ product, index, onUpdate, onRemove }: ProductCardProps) {
+function ProductCard({ product, onUpdate, onRemove }: ProductCardProps) {
   const api = useApi();
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -187,7 +185,7 @@ function ProductCard({ product, index, onUpdate, onRemove }: ProductCardProps) {
 
       {showAiPanel && (
         <AiPhotoPanel
-          productIndex={index}
+          productName={product.name || undefined}
           onApply={(fullImageUrl) => onUpdate({ imageUrl: fullImageUrl })}
         />
       )}
@@ -195,14 +193,28 @@ function ProductCard({ product, index, onUpdate, onRemove }: ProductCardProps) {
   );
 }
 
-type AiPhotoStage = 'upload' | 'cutout-ready' | 'style-select' | 'generating' | 'preview';
+const PRODUCT_CATEGORIES = [
+  'Clothing & Apparel',
+  'Bags & Accessories',
+  'Skincare & Beauty',
+  'Food & Beverage',
+  'Candles & Home Decor',
+  'Jewelry',
+  'Electronics',
+  'Books & Art',
+  'Health & Wellness',
+  'Toys & Games',
+  'Other',
+];
+
+type AiPhotoStage = 'upload' | 'describe' | 'style-select' | 'generating' | 'preview';
 
 interface AiPhotoPanelProps {
-  productIndex: number;
+  productName?: string;
   onApply: (fullImageUrl: string) => void;
 }
 
-function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
+function AiPhotoPanel({ productName, onApply }: AiPhotoPanelProps) {
   const api = useApi();
 
   const [stage, setStage] = useState<AiPhotoStage>('upload');
@@ -212,6 +224,9 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [cutoutImageUrl, setCutoutImageUrl] = useState<string | null>(null);
   const [isFree, setIsFree] = useState(false);
+
+  const [productDescription, setProductDescription] = useState(productName ?? '');
+  const [productCategory, setProductCategory] = useState('');
 
   const [styles, setStyles] = useState<AiPhotoStyle[]>([]);
   const [isLoadingStyles, setIsLoadingStyles] = useState(false);
@@ -237,7 +252,7 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
       setSessionId(result.sessionId);
       setCutoutImageUrl(result.cutoutImageUrl);
       setIsFree(result.isFree);
-      setStage('cutout-ready');
+      setStage('describe');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -245,7 +260,8 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
     }
   }
 
-  async function loadStyles() {
+  async function handleDescribeContinue() {
+    if (!productDescription.trim()) return;
     setIsLoadingStyles(true);
     setError(null);
     try {
@@ -268,6 +284,8 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
       const result = await api.post<AiPhotoGenerateResponse>('/ai-photos/generate', {
         sessionId,
         style: selectedStyle,
+        productDescription: productDescription.trim(),
+        productCategory: productCategory || undefined,
         feedback: withFeedback || undefined,
       });
       setGenerationId(result.generationId);
@@ -310,46 +328,104 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
   return (
     <div className="mt-3 rounded-lg border border-purple-200 bg-purple-50/40 p-3">
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-700">
-        AI Photo Studio
+        ✨ AI Photo Studio
       </p>
 
       {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
 
+      {/* Step 1: Upload */}
       {stage === 'upload' && (
-        <label className="block cursor-pointer rounded-lg border border-dashed border-purple-300 bg-white p-4 text-center text-sm text-gray-600 hover:border-purple-400">
-          {isUploading ? 'Uploading…' : 'Upload a photo of your product to get started'}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handlePhotoUpload}
-            disabled={isUploading}
-          />
-        </label>
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-gray-500">Upload a photo of your product — any angle, any background.</p>
+          <label className="block cursor-pointer rounded-lg border border-dashed border-purple-300 bg-white p-4 text-center text-sm text-gray-600 hover:border-purple-400">
+            {isUploading ? (
+              <span className="text-purple-600">Removing background…</span>
+            ) : (
+              <>
+                <span className="block text-2xl mb-1">📸</span>
+                Tap to upload your product photo
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoUpload}
+              disabled={isUploading}
+            />
+          </label>
+        </div>
       )}
 
-      {stage === 'cutout-ready' && cutoutImageUrl && (
+      {/* Step 2: Describe the product */}
+      {stage === 'describe' && cutoutImageUrl && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <img src={cutoutImageUrl} alt="Background removed" className="h-20 w-20 rounded-lg object-contain bg-white" />
-            <p className="text-sm font-medium text-green-700">✓ Background removed</p>
+          <div className="flex items-start gap-3">
+            <img src={cutoutImageUrl} alt="Product cutout" className="h-20 w-20 shrink-0 rounded-lg object-contain bg-white border border-gray-100" />
+            <div className="flex flex-col gap-0.5">
+              <p className="text-sm font-medium text-green-700">✓ Background removed</p>
+              <p className="text-xs text-gray-500">Now tell us what the product is so the AI knows what to focus on.</p>
+            </div>
           </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-700">
+              What is the product? <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={productDescription}
+              onChange={(e) => setProductDescription(e.target.value)}
+              placeholder="e.g. black leather crossbody bag, red linen button-up shirt"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+            />
+            <p className="mt-1 text-xs text-gray-400">Be specific — color, material, and type help a lot.</p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-700">Category</label>
+            <select
+              value={productCategory}
+              onChange={(e) => setProductCategory(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+            >
+              <option value="">Select a category (optional)</option>
+              {PRODUCT_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
           <button
             type="button"
-            onClick={loadStyles}
-            disabled={isLoadingStyles}
-            className="self-start rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-40"
+            onClick={handleDescribeContinue}
+            disabled={!productDescription.trim() || isLoadingStyles}
+            className="self-start rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {isLoadingStyles ? 'Loading styles…' : 'Choose a style'}
+            {isLoadingStyles ? 'Loading styles…' : 'Choose a style →'}
           </button>
         </div>
       )}
 
+      {/* Steps 3–5: Style select, generating, preview */}
       {(stage === 'style-select' || stage === 'generating' || stage === 'preview') && (
         <div className="flex flex-col gap-3">
-          <p className="text-xs font-medium text-gray-600">
-            Pick a style (free to preview):
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-gray-600">Pick a scene style:</p>
+            <button
+              type="button"
+              onClick={() => setStage('describe')}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              ← Change product
+            </button>
+          </div>
+
+          <p className="text-xs text-purple-700 bg-purple-50 rounded px-2 py-1.5">
+            Generating for: <strong>{productDescription}</strong>
+            {productCategory && <span className="text-gray-500"> · {productCategory}</span>}
           </p>
+
           <div className="grid grid-cols-3 gap-2">
             {styles.map((style) => (
               <button
@@ -383,7 +459,10 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
           </button>
 
           {stage === 'generating' && (
-            <div className="h-40 w-full animate-pulse rounded-lg bg-gray-200" />
+            <div className="flex flex-col items-center gap-2 py-4">
+              <div className="h-40 w-full animate-pulse rounded-lg bg-gray-200" />
+              <p className="text-xs text-gray-400">Creating your product photo…</p>
+            </div>
           )}
 
           {stage === 'preview' && previewImageUrl && (
@@ -408,7 +487,7 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
                     type="text"
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
-                    placeholder="e.g. more dramatic lighting"
+                    placeholder="e.g. more dramatic lighting, warmer tones"
                     className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                   />
                   <button
@@ -417,7 +496,7 @@ function AiPhotoPanel({ productIndex, onApply }: AiPhotoPanelProps) {
                     disabled={isGenerating}
                     className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:opacity-40"
                   >
-                    Regenerate
+                    Retry
                   </button>
                 </div>
               </div>
