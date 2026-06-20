@@ -8,6 +8,14 @@ import { checkItemLimit } from '../services/settings';
 
 const app = new Hono();
 
+const variantSchema = z.object({
+  id: z.string().uuid().optional(),
+  option_type: z.enum(['size', 'color', 'custom']),
+  name: z.string().min(1),
+  option_name: z.string().nullable().optional(),
+  color_hex: z.string().nullable().optional(),
+});
+
 const productSchema = z.object({
   type: z.enum(['physical', 'digital', 'subscription']).default('physical'),
   name: z.string().min(1),
@@ -27,33 +35,56 @@ const productSchema = z.object({
   weight_grams: z.number().int().nullable().optional(),
   requires_shipping: z.boolean().optional(),
   sort_order: z.number().int().optional(),
+  variants: z.array(variantSchema).optional(),
 });
 
 const updateProductSchema = productSchema.partial();
 
 app.use('*', requireAuth, requireTenant);
 
+async function saveVariants(productId: string, tenantId: string, variants: z.infer<typeof variantSchema>[]) {
+  await db`DELETE FROM product_variants WHERE product_id = ${productId}`;
+  for (let i = 0; i < variants.length; i++) {
+    const v = variants[i];
+    await db`
+      INSERT INTO product_variants (product_id, tenant_id, name, option_type, option_name, color_hex, sort_order)
+      VALUES (${productId}, ${tenantId}, ${v.name}, ${v.option_type}, ${v.option_name ?? null}, ${v.color_hex ?? null}, ${i})
+    `;
+  }
+}
+
+async function attachVariants(products: Record<string, unknown>[]) {
+  if (products.length === 0) return products;
+  const ids = products.map((p) => p.id as string);
+  const variants = await db`
+    SELECT * FROM product_variants WHERE product_id = ANY(${ids}::uuid[]) ORDER BY sort_order ASC
+  `;
+  return products.map((p) => ({
+    ...p,
+    variants: variants.filter((v) => v.product_id === p.id),
+  }));
+}
+
 // GET /api/products
 app.get('/', async (c) => {
   const tenant = c.get('tenant') as { id: string };
   const rows = await db`
-    SELECT * FROM products
-    WHERE tenant_id = ${tenant.id}
-    ORDER BY sort_order ASC, created_at DESC
+    SELECT * FROM products WHERE tenant_id = ${tenant.id} ORDER BY sort_order ASC, created_at DESC
   `;
   const enriched = await Promise.all(rows.map((r) => enrichWithUrls(r)));
-  return c.json({ products: enriched });
+  const withVariants = await attachVariants(enriched);
+  return c.json({ products: withVariants });
 });
 
 // GET /api/products/:id
 app.get('/:id', async (c) => {
   const tenant = c.get('tenant') as { id: string };
   const id = c.req.param('id');
-  const rows = await db`
-    SELECT * FROM products WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1
-  `;
+  const rows = await db`SELECT * FROM products WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
   if (!rows[0]) return c.json({ error: 'Product not found' }, 404);
-  return c.json({ product: await enrichWithUrls(rows[0]) });
+  const enriched = await enrichWithUrls(rows[0]);
+  const [withVariants] = await attachVariants([enriched]);
+  return c.json({ product: withVariants });
 });
 
 // POST /api/products
@@ -61,15 +92,11 @@ app.post('/', async (c) => {
   const tenant = c.get('tenant') as { id: string; plan: string };
   const body = await c.req.json().catch(() => ({}));
   const parsed = productSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
-  }
+  if (!parsed.success) return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   const d = parsed.data;
 
   const limit = await checkItemLimit(tenant);
-  if (!limit.ok) {
-    return c.json({ error: `Your plan allows up to ${limit.limit} products and services. Upgrade your plan to add more.` }, 402);
-  }
+  if (!limit.ok) return c.json({ error: `Your plan allows up to ${limit.limit} products and services. Upgrade your plan to add more.` }, 402);
 
   const rows = await db`
     INSERT INTO products (
@@ -84,11 +111,14 @@ app.post('/', async (c) => {
       ${d.category ?? null}, ${JSON.stringify(d.tags ?? [])}, ${d.is_active ?? true},
       ${d.is_featured ?? false}, ${d.digital_file_key ?? null}, ${d.subscription_interval ?? null},
       ${d.weight_grams ?? null}, ${d.requires_shipping ?? false}, ${d.sort_order ?? 0}
-    )
-    RETURNING *
+    ) RETURNING *
   `;
 
-  return c.json({ product: await enrichWithUrls(rows[0]) }, 201);
+  if (d.variants?.length) await saveVariants(rows[0].id as string, tenant.id, d.variants);
+
+  const enriched = await enrichWithUrls(rows[0]);
+  const [withVariants] = await attachVariants([enriched]);
+  return c.json({ product: withVariants }, 201);
 });
 
 // PATCH /api/products/:id
@@ -97,40 +127,40 @@ app.patch('/:id', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
   const parsed = updateProductSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+  if (!parsed.success) return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+
+  const { variants, ...rest } = parsed.data;
+  const updates: Record<string, unknown> = { ...rest };
+  if (rest.image_keys !== undefined) updates.image_keys = JSON.stringify(rest.image_keys);
+  if (rest.tags !== undefined) updates.tags = JSON.stringify(rest.tags);
+
+  let productRow: Record<string, unknown>;
+
+  if (Object.keys(updates).length > 0) {
+    const rows = await db`
+      UPDATE products SET ${db(updates, ...Object.keys(updates))}, updated_at = NOW()
+      WHERE id = ${id} AND tenant_id = ${tenant.id} RETURNING *
+    `;
+    if (!rows[0]) return c.json({ error: 'Product not found' }, 404);
+    productRow = rows[0];
+  } else {
+    const rows = await db`SELECT * FROM products WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
+    if (!rows[0]) return c.json({ error: 'Product not found' }, 404);
+    productRow = rows[0];
   }
 
-  const d = parsed.data;
-  const updates: Record<string, unknown> = { ...d };
-  if (d.image_keys !== undefined) updates.image_keys = JSON.stringify(d.image_keys);
-  if (d.tags !== undefined) updates.tags = JSON.stringify(d.tags);
+  if (variants !== undefined) await saveVariants(id, tenant.id, variants);
 
-  const keys = Object.keys(updates);
-  if (keys.length === 0) {
-    const existing = await db`SELECT * FROM products WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
-    if (!existing[0]) return c.json({ error: 'Product not found' }, 404);
-    return c.json({ product: await enrichWithUrls(existing[0]) });
-  }
-
-  const rows = await db`
-    UPDATE products
-    SET ${db(updates, ...keys)}, updated_at = NOW()
-    WHERE id = ${id} AND tenant_id = ${tenant.id}
-    RETURNING *
-  `;
-
-  if (!rows[0]) return c.json({ error: 'Product not found' }, 404);
-  return c.json({ product: await enrichWithUrls(rows[0]) });
+  const enriched = await enrichWithUrls(productRow);
+  const [withVariants] = await attachVariants([enriched]);
+  return c.json({ product: withVariants });
 });
 
 // DELETE /api/products/:id
 app.delete('/:id', async (c) => {
   const tenant = c.get('tenant') as { id: string };
   const id = c.req.param('id');
-  const rows = await db`
-    DELETE FROM products WHERE id = ${id} AND tenant_id = ${tenant.id} RETURNING id
-  `;
+  const rows = await db`DELETE FROM products WHERE id = ${id} AND tenant_id = ${tenant.id} RETURNING id`;
   if (!rows[0]) return c.json({ error: 'Product not found' }, 404);
   return c.json({ success: true });
 });

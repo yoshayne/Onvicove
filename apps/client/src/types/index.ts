@@ -47,6 +47,9 @@ export interface ProductVariant {
   product_id: string;
   tenant_id: string;
   name: string;
+  option_type: 'size' | 'color' | 'custom';
+  option_name: string | null;
+  color_hex: string | null;
   price_cents: number | null;
   stock_quantity: number | null;
   sku: string | null;
