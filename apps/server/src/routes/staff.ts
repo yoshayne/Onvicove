@@ -91,26 +91,25 @@ app.post('/', async (c) => {
   }
   const d = parsed.data;
 
-  const insertValues: Record<string, unknown> = {
-    tenant_id: tenant.id,
-    name: d.name,
-    email: d.email ?? null,
-    phone: d.phone ?? null,
-    bio: d.bio ?? null,
-    avatar_key: d.avatar_key ?? null,
-    is_active: d.is_active ?? true,
-  };
-  if (d.availability !== undefined) {
-    insertValues.availability = db.json(d.availability);
-  }
-
-  const keys = Object.keys(insertValues);
+  // Insert scalar fields, then set JSONB availability in a separate statement
+  // so db.json() is used directly in a template literal (not inside db(obj,keys)).
   const rows = await db`
-    INSERT INTO staff ${db(insertValues, ...keys)}
+    INSERT INTO staff (tenant_id, name, email, phone, bio, avatar_key, is_active)
+    VALUES (
+      ${tenant.id}, ${d.name}, ${d.email ?? null}, ${d.phone ?? null},
+      ${d.bio ?? null}, ${d.avatar_key ?? null}, ${d.is_active ?? true}
+    )
     RETURNING *
   `;
+  let staffRow = rows[0];
 
-  const staffRow = rows[0];
+  if (d.availability !== undefined) {
+    const updated = await db`
+      UPDATE staff SET availability = ${db.json(d.availability)} WHERE id = ${staffRow.id} RETURNING *
+    `;
+    if (updated[0]) staffRow = updated[0];
+  }
+
   if (d.service_ids) {
     await setServiceIds(staffRow.id as string, d.service_ids);
   }
@@ -130,21 +129,24 @@ app.patch('/:id', async (c) => {
   }
   const d = parsed.data;
 
+  // Separate JSONB availability from scalar fields — db.json() must be used
+  // directly in a template literal, not nested inside db(obj, keys).
+  const { availability, service_ids: _serviceIds, ...scalarData } = d;
+
   const updates: Record<string, unknown> = {};
-  if (d.name !== undefined) updates.name = d.name;
-  if (d.email !== undefined) updates.email = d.email;
-  if (d.phone !== undefined) updates.phone = d.phone;
-  if (d.bio !== undefined) updates.bio = d.bio;
-  if (d.avatar_key !== undefined) updates.avatar_key = d.avatar_key;
-  if (d.is_active !== undefined) updates.is_active = d.is_active;
-  if (d.availability !== undefined) updates.availability = db.json(d.availability);
+  if (scalarData.name !== undefined) updates.name = scalarData.name;
+  if (scalarData.email !== undefined) updates.email = scalarData.email;
+  if (scalarData.phone !== undefined) updates.phone = scalarData.phone;
+  if (scalarData.bio !== undefined) updates.bio = scalarData.bio;
+  if (scalarData.avatar_key !== undefined) updates.avatar_key = scalarData.avatar_key;
+  if (scalarData.is_active !== undefined) updates.is_active = scalarData.is_active;
 
   const keys = Object.keys(updates);
   let staffRow;
+
   if (keys.length > 0) {
     const rows = await db`
-      UPDATE staff
-      SET ${db(updates, ...keys)}
+      UPDATE staff SET ${db(updates, ...keys)}, updated_at = NOW()
       WHERE id = ${id} AND tenant_id = ${tenant.id}
       RETURNING *
     `;
@@ -156,8 +158,18 @@ app.patch('/:id', async (c) => {
     staffRow = existing[0];
   }
 
+  // Update JSONB availability directly in its own template literal
+  if (availability !== undefined) {
+    const updated = await db`
+      UPDATE staff SET availability = ${db.json(availability)}, updated_at = NOW()
+      WHERE id = ${id} AND tenant_id = ${tenant.id}
+      RETURNING *
+    `;
+    if (updated[0]) staffRow = updated[0];
+  }
+
   if (d.service_ids !== undefined) {
-    await setServiceIds(id, d.service_ids);
+    await setServiceIds(id, d.service_ids ?? []);
   }
 
   const enriched = await enrichWithUrls(staffRow);
