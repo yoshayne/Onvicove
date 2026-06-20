@@ -18,14 +18,18 @@ const DAYS: { key: keyof WeeklyAvailability; label: string }[] = [
   { key: 'sun', label: 'Sun' },
 ];
 
-const EMPTY_AVAILABILITY: WeeklyAvailability = {
-  mon: [],
-  tue: [],
-  wed: [],
-  thu: [],
-  fri: [],
+const DEFAULT_AVAILABILITY: WeeklyAvailability = {
+  mon: [{ start: '09:00', end: '17:00' }],
+  tue: [{ start: '09:00', end: '17:00' }],
+  wed: [{ start: '09:00', end: '17:00' }],
+  thu: [{ start: '09:00', end: '17:00' }],
+  fri: [{ start: '09:00', end: '17:00' }],
   sat: [],
   sun: [],
+};
+
+const EMPTY_DAY: WeeklyAvailability = {
+  mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [],
 };
 
 interface StaffFormState {
@@ -44,7 +48,7 @@ const emptyForm: StaffFormState = {
   phone: '',
   bio: '',
   is_active: true,
-  availability: EMPTY_AVAILABILITY,
+  availability: DEFAULT_AVAILABILITY,
   avatar_key: null,
 };
 
@@ -97,7 +101,7 @@ export default function StaffPage() {
       phone: staff.phone ?? '',
       bio: staff.bio ?? '',
       is_active: staff.is_active,
-      availability: { ...EMPTY_AVAILABILITY, ...staff.availability },
+      availability: { ...EMPTY_DAY, ...staff.availability },
       avatar_key: staff.avatar_key,
     });
     setModalOpen(true);
@@ -281,45 +285,77 @@ export default function StaffPage() {
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700">Weekly availability</label>
-            <div className="flex flex-col gap-2">
-              {DAYS.map(({ key, label }) => (
-                <div key={key} className="flex flex-wrap items-start gap-2 rounded-lg border border-slate-200 p-2">
-                  <span className="w-10 pt-1.5 text-sm font-medium text-slate-700">{label}</span>
-                  <div className="flex flex-1 flex-col gap-2">
-                    {form.availability[key].map((slot, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <input
-                          type="time"
-                          value={slot.start}
-                          onChange={(e) => updateSlot(key, i, { ...slot, start: e.target.value })}
-                          className="rounded border border-slate-300 px-2 py-1 text-xs"
-                        />
-                        <span className="text-xs text-slate-400">to</span>
-                        <input
-                          type="time"
-                          value={slot.end}
-                          onChange={(e) => updateSlot(key, i, { ...slot, end: e.target.value })}
-                          className="rounded border border-slate-300 px-2 py-1 text-xs"
-                        />
+            <p className="text-xs text-slate-500">Toggle days open/closed and set the hours customers can book.</p>
+            <div className="flex flex-col divide-y divide-slate-100 rounded-lg border border-slate-200 overflow-hidden">
+              {DAYS.map(({ key, label }) => {
+                const isOpen = form.availability[key].length > 0;
+                return (
+                  <div key={key} className="flex flex-wrap items-start gap-3 px-3 py-2.5 bg-white">
+                    {/* Day label + open/closed toggle */}
+                    <div className="flex items-center gap-2 w-24 pt-0.5 shrink-0">
+                      <span className="text-sm font-medium text-slate-700 w-8">{label}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isOpen) {
+                            setForm((f) => ({ ...f, availability: { ...f.availability, [key]: [] } }));
+                          } else {
+                            addSlot(key);
+                          }
+                        }}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                          isOpen ? 'bg-blue-500' : 'bg-slate-200'
+                        }`}
+                        aria-label={isOpen ? 'Close this day' : 'Open this day'}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${isOpen ? 'translate-x-4' : 'translate-x-1'}`} />
+                      </button>
+                      <span className="text-xs text-slate-400">{isOpen ? 'Open' : 'Closed'}</span>
+                    </div>
+
+                    {/* Time slots */}
+                    {isOpen ? (
+                      <div className="flex flex-1 flex-col gap-1.5">
+                        {form.availability[key].map((slot, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <input
+                              type="time"
+                              value={slot.start}
+                              onChange={(e) => updateSlot(key, i, { ...slot, start: e.target.value })}
+                              className="rounded border border-slate-300 px-2 py-1 text-xs"
+                            />
+                            <span className="text-xs text-slate-400">–</span>
+                            <input
+                              type="time"
+                              value={slot.end}
+                              onChange={(e) => updateSlot(key, i, { ...slot, end: e.target.value })}
+                              className="rounded border border-slate-300 px-2 py-1 text-xs"
+                            />
+                            {form.availability[key].length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeSlot(key, i)}
+                                className="text-xs text-red-500 hover:underline"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        ))}
                         <button
                           type="button"
-                          onClick={() => removeSlot(key, i)}
-                          className="text-xs text-red-600 hover:underline"
+                          onClick={() => addSlot(key)}
+                          className="self-start text-xs text-blue-600 hover:underline"
                         >
-                          Remove
+                          + Add break
                         </button>
                       </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => addSlot(key)}
-                      className="self-start text-xs text-slate-500 hover:underline"
-                    >
-                      + Add time slot
-                    </button>
+                    ) : (
+                      <span className="pt-0.5 text-xs text-slate-400 italic">Unavailable — no bookings accepted</span>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
