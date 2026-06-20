@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
+import { Link, Navigate } from 'react-router-dom';
+import { SignedIn, SignedOut, UserButton, useAuth } from '@clerk/clerk-react';
 import { ArrowRight, Sparkles, Calendar, ShoppingBag, Palette, Zap } from 'lucide-react';
 import ThemeShowcase from './ThemeShowcase';
 
@@ -33,6 +33,9 @@ const features = [
 ];
 
 export default function Landing() {
+  const { isSignedIn } = useAuth();
+  if (isSignedIn) return <Navigate to="/dashboard" replace />;
+
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur">
