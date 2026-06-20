@@ -145,6 +145,77 @@ function variantsToForm(
   return { sizes, colors, customOptionName, customOptionValues };
 }
 
+// ── Media Library Picker ──────────────────────────────────────────────────────
+
+interface MediaItem { key: string; url: string; source: 'product' | 'ai'; label: string }
+
+function MediaLibraryPicker({
+  currentKeys,
+  onSelect,
+  onClose,
+}: {
+  currentKeys: string[];
+  onSelect: (item: MediaItem) => void;
+  onClose: () => void;
+}) {
+  const api = useApi();
+  const { data, isLoading } = useQuery({
+    queryKey: ['media-library'],
+    queryFn: () => api.get<{ items: MediaItem[] }>('/ai-photos/media'),
+    staleTime: 30_000,
+  });
+
+  const items = data?.items ?? [];
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-lg">
+      <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
+        <span className="text-sm font-semibold text-slate-800">Media library</span>
+        <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-700">✕</button>
+      </div>
+      <div className="max-h-64 overflow-y-auto p-3">
+        {isLoading ? (
+          <div className="flex h-24 items-center justify-center"><Spinner size="sm" /></div>
+        ) : items.length === 0 ? (
+          <p className="text-center text-xs text-slate-400 py-8">No saved images yet. Upload or generate AI photos first.</p>
+        ) : (
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+            {items.map((item) => {
+              const selected = currentKeys.includes(item.key);
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  title={item.label}
+                  onClick={() => !selected && onSelect(item)}
+                  disabled={selected}
+                  className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-all ${
+                    selected
+                      ? 'border-blue-500 opacity-60 cursor-default'
+                      : 'border-transparent hover:border-blue-400 cursor-pointer'
+                  }`}
+                >
+                  <img src={item.url} alt={item.label} className="h-full w-full object-cover" />
+                  {selected && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-blue-500/20">
+                      <span className="text-lg text-blue-600">✓</span>
+                    </div>
+                  )}
+                  {item.source === 'ai' && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 px-1 pb-0.5">
+                      <span className="text-[8px] font-bold text-white">AI</span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── AI Photo panel (inline, reused from wizard) ──────────────────────────────
 
 const STYLE_SWATCHES: Record<string, string> = {
@@ -331,6 +402,7 @@ export default function Products() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [showAiPanel, setShowAiPanel] = useState(false);
+  const [showMediaLib, setShowMediaLib] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['products'],
@@ -396,7 +468,7 @@ export default function Products() {
 
   function closeModal() {
     setModalOpen(false); setEditing(null); setForm(emptyForm);
-    setShowAiPanel(false); setMutationError(null); setUploadError(null);
+    setShowAiPanel(false); setShowMediaLib(false); setMutationError(null); setUploadError(null);
   }
 
   async function handleImageUpload(file: File) {
@@ -763,25 +835,44 @@ export default function Products() {
                 ))}
               </div>
             )}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <label className="cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                {uploading ? 'Uploading…' : '+ Add photo'}
+                {uploading ? 'Uploading…' : '+ Upload photo'}
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} disabled={uploading} />
               </label>
+              <button
+                type="button"
+                onClick={() => { setShowMediaLib((v) => !v); setShowAiPanel(false); }}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                🖼 From library
+              </button>
+              {editing && (
+                <button
+                  type="button"
+                  onClick={() => { setShowAiPanel((v) => !v); setShowMediaLib(false); }}
+                  className="rounded-lg border border-slate-300 bg-gradient-to-r from-purple-50 to-blue-50 px-3 py-2 text-sm font-medium text-gray-700 hover:from-purple-100 hover:to-blue-100"
+                >
+                  ✨ Generate AI photo
+                </button>
+              )}
               {uploading && <Spinner size="sm" />}
             </div>
             {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
-            {editing && (
-              <div>
-                <button type="button" onClick={() => setShowAiPanel((v) => !v)} className="rounded-lg border border-slate-300 bg-gradient-to-r from-purple-50 to-blue-50 px-3 py-2 text-sm font-medium text-gray-700 hover:from-purple-100 hover:to-blue-100">
-                  ✨ Generate AI photo
-                </button>
-                {showAiPanel && (
-                  <div className="mt-2">
-                    <AiPhotoPanel productId={editing.id} productName={form.name} onUnlocked={() => { queryClient.invalidateQueries({ queryKey: ['products'] }); setShowAiPanel(false); }} />
-                  </div>
-                )}
-              </div>
+            {showMediaLib && (
+              <MediaLibraryPicker
+                currentKeys={form.imageEntries.map((e) => e.key)}
+                onSelect={(item) => {
+                  setForm((prev) => {
+                    if (prev.imageEntries.some((e) => e.key === item.key)) return prev;
+                    return { ...prev, imageEntries: [...prev.imageEntries, { key: item.key, url: item.url }] };
+                  });
+                }}
+                onClose={() => setShowMediaLib(false)}
+              />
+            )}
+            {editing && showAiPanel && (
+              <AiPhotoPanel productId={editing.id} productName={form.name} onUnlocked={() => { queryClient.invalidateQueries({ queryKey: ['products'] }); queryClient.invalidateQueries({ queryKey: ['media-library'] }); setShowAiPanel(false); }} />
             )}
           </div>
 

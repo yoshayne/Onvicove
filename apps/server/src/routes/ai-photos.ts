@@ -65,6 +65,61 @@ app.get('/sessions', async (c) => {
   return c.json({ sessions: rows });
 });
 
+// GET /api/ai-photos/media — all unique images available in the tenant's media library
+// Sources: (1) all product image_keys (2) all unlocked AI photo full_image_keys
+app.get('/media', async (c) => {
+  const tenant = c.get('tenant') as { id: string };
+  const { getSignedFileUrl } = await import('../services/storage');
+
+  // Product images — unnest the JSONB array
+  const productImages = await db`
+    SELECT DISTINCT jsonb_array_elements_text(image_keys) AS key,
+                    p.name AS product_name
+    FROM products p
+    WHERE p.tenant_id = ${tenant.id}
+      AND jsonb_array_length(image_keys) > 0
+  `;
+
+  // Unlocked AI photo full images
+  const aiImages = await db`
+    SELECT g.full_image_key AS key,
+           s.style,
+           p.name AS product_name,
+           g.id AS generation_id
+    FROM ai_photo_generations g
+    JOIN ai_photo_sessions s ON s.id = g.session_id
+    LEFT JOIN products p ON p.id = s.product_id
+    WHERE s.tenant_id = ${tenant.id}
+      AND s.status = 'unlocked'
+      AND g.full_image_key IS NOT NULL
+      AND g.is_selected = TRUE
+    ORDER BY s.created_at DESC
+  `;
+
+  const allKeys = [
+    ...productImages.map((r) => ({ key: r.key as string, source: 'product' as const, label: r.product_name as string ?? 'Product' })),
+    ...aiImages.map((r) => ({ key: r.key as string, source: 'ai' as const, label: `${r.product_name ?? 'AI'} — ${r.style}` })),
+  ];
+
+  // Deduplicate keys (an AI photo may also be in product image_keys after unlock)
+  const seen = new Set<string>();
+  const unique = allKeys.filter((item) => {
+    if (seen.has(item.key)) return false;
+    seen.add(item.key);
+    return true;
+  });
+
+  const items = await Promise.all(
+    unique.map(async (item) => {
+      let url: string | null = null;
+      try { url = await getSignedFileUrl(item.key); } catch {}
+      return { ...item, url };
+    })
+  );
+
+  return c.json({ items: items.filter((i) => i.url) });
+});
+
 // POST /api/ai-photos/sessions — multipart "image", optional product_id
 app.post('/sessions', async (c) => {
   const tenant = c.get('tenant') as { id: string };
