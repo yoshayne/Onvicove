@@ -48,8 +48,8 @@ export default function StripePaymentForm({
 
   const stripePromise = useMemo(() => {
     if (!publishableKey) return null;
-    return loadStripe(publishableKey, stripeAccountId ? { stripeAccount: stripeAccountId } : undefined);
-  }, [publishableKey, stripeAccountId]);
+    return loadStripe(publishableKey);
+  }, [publishableKey]);
 
   if (!publishableKey) {
     return (
