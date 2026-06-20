@@ -12,6 +12,9 @@ function formatCents(cents: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
 }
 
+// Track keys + urls together so we can display and save correctly
+interface ImageEntry { key: string; url: string }
+
 interface ProductFormState {
   name: string;
   description: string;
@@ -20,7 +23,7 @@ interface ProductFormState {
   stock_quantity: number | null;
   is_active: boolean;
   type: ProductType;
-  image_keys: string[];
+  imageEntries: ImageEntry[];
 }
 
 const emptyForm: ProductFormState = {
@@ -31,8 +34,245 @@ const emptyForm: ProductFormState = {
   stock_quantity: null,
   is_active: true,
   type: 'physical',
-  image_keys: [],
+  imageEntries: [],
 };
+
+// ---- AI Photo types ----
+const STYLE_SWATCHES: Record<string, string> = {
+  studio: 'linear-gradient(135deg, #f5f5f5, #d4d4d4)',
+  lifestyle: 'linear-gradient(135deg, #d6c2a3, #8b6f4e)',
+  outdoor: 'linear-gradient(135deg, #8bc48a, #3f6b3a)',
+  marble: 'linear-gradient(135deg, #e8e8e8, #b8b8c0)',
+  gradient: 'linear-gradient(135deg, #ff7eb3, #6a82fb)',
+  wood: 'linear-gradient(135deg, #c89b6d, #6b4423)',
+};
+
+const PRODUCT_CATEGORIES_AI = [
+  'Clothing & Apparel', 'Bags & Accessories', 'Skincare & Beauty',
+  'Food & Beverage', 'Candles & Home Decor', 'Jewelry',
+  'Electronics', 'Books & Art', 'Health & Wellness', 'Toys & Games', 'Other',
+];
+
+interface AiStyle { id: string; name: string }
+type AiStage = 'upload' | 'describe' | 'style-select' | 'generating' | 'preview';
+
+interface AiPhotoPanelProps {
+  productId: string;
+  productName?: string;
+  onUnlocked: () => void; // just refresh — server already saved the key
+}
+
+function AiPhotoPanel({ productId, productName, onUnlocked }: AiPhotoPanelProps) {
+  const api = useApi();
+  const [stage, setStage] = useState<AiStage>('upload');
+  const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [cutoutUrl, setCutoutUrl] = useState<string | null>(null);
+  const [isFree, setIsFree] = useState(false);
+  const [productDesc, setProductDesc] = useState(productName ?? '');
+  const [productCat, setProductCat] = useState('');
+  const [styles, setStyles] = useState<AiStyle[]>([]);
+  const [isLoadingStyles, setIsLoadingStyles] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
+  const [generationId, setGenerationId] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('product_id', productId);
+      const res = await api.post<{ sessionId: string; cutoutImageUrl: string; isFree: boolean }>('/ai-photos/sessions', formData);
+      setSessionId(res.sessionId);
+      setCutoutUrl(res.cutoutImageUrl);
+      setIsFree(res.isFree);
+      setStage('describe');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  async function handleContinue() {
+    if (!productDesc.trim()) return;
+    setIsLoadingStyles(true);
+    setError(null);
+    try {
+      const res = await api.get<{ styles: AiStyle[] }>('/ai-photos/styles');
+      setStyles(res.styles);
+      setStage('style-select');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load styles');
+    } finally {
+      setIsLoadingStyles(false);
+    }
+  }
+
+  async function generate(withFeedback?: string) {
+    if (!sessionId || !selectedStyle) return;
+    setError(null);
+    setIsGenerating(true);
+    setStage('generating');
+    try {
+      const res = await api.post<{ generationId: string; previewImageUrl: string }>('/ai-photos/generate', {
+        sessionId, style: selectedStyle,
+        productDescription: productDesc.trim(),
+        productCategory: productCat || undefined,
+        feedback: withFeedback || undefined,
+      });
+      setGenerationId(res.generationId);
+      setPreviewUrl(res.previewImageUrl);
+      setStage('preview');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Generation failed');
+      setStage('style-select');
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  async function handleUnlock() {
+    if (!sessionId || !generationId) return;
+    setError(null);
+    setIsUnlocking(true);
+    try {
+      await api.post('/ai-photos/unlock', { sessionId, generationId });
+      setUnlocked(true);
+      onUnlocked(); // refresh product so new image_key shows up
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unlock failed';
+      if (!isFree && /payment/i.test(msg)) {
+        setError('Add a payment method in Settings to unlock additional AI photos.');
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setIsUnlocking(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-purple-200 bg-purple-50/40 p-3">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-700">✨ AI Photo Studio</p>
+      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+
+      {stage === 'upload' && (
+        <label className="block cursor-pointer rounded-lg border border-dashed border-purple-300 bg-white p-4 text-center text-sm text-gray-600 hover:border-purple-400">
+          {isUploading ? <span className="text-purple-600">Removing background…</span> : '📸 Upload a product photo to generate AI images'}
+          <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={isUploading} />
+        </label>
+      )}
+
+      {stage === 'describe' && cutoutUrl && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start gap-3">
+            <img src={cutoutUrl} alt="Cutout" className="h-16 w-16 shrink-0 rounded-lg border bg-white object-contain" />
+            <p className="text-xs text-green-700 font-medium mt-1">✓ Background removed — now describe the product so the AI knows what to focus on.</p>
+          </div>
+          <input
+            type="text"
+            value={productDesc}
+            onChange={(e) => setProductDesc(e.target.value)}
+            placeholder="e.g. black leather crossbody bag, red linen shirt"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+          />
+          <select
+            value={productCat}
+            onChange={(e) => setProductCat(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="">Category (optional)</option>
+            {PRODUCT_CATEGORIES_AI.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <button
+            type="button"
+            onClick={handleContinue}
+            disabled={!productDesc.trim() || isLoadingStyles}
+            className="self-start rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-40"
+          >
+            {isLoadingStyles ? 'Loading…' : 'Choose a style →'}
+          </button>
+        </div>
+      )}
+
+      {(stage === 'style-select' || stage === 'generating' || stage === 'preview') && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-gray-600">Pick a scene:</p>
+            <button type="button" onClick={() => setStage('describe')} className="text-xs text-gray-400 hover:text-gray-600">← Change product</button>
+          </div>
+          <p className="rounded bg-purple-50 px-2 py-1.5 text-xs text-purple-700">
+            <strong>{productDesc}</strong>{productCat && <span className="text-gray-500"> · {productCat}</span>}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {styles.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setSelectedStyle(s.id)}
+                className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-xs transition ${selectedStyle === s.id ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-200 hover:border-gray-300'}`}
+              >
+                <div className="flex h-12 w-full items-center justify-center rounded text-[10px] font-medium uppercase tracking-wide text-white" style={{ background: STYLE_SWATCHES[s.id] ?? '#6b7280' }}>
+                  {s.name}
+                </div>
+                <span className="text-gray-700">{s.name}</span>
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => generate()}
+            disabled={!selectedStyle || isGenerating}
+            className="self-start rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-40"
+          >
+            {isGenerating ? 'Generating…' : 'Generate preview'}
+          </button>
+          {stage === 'generating' && <div className="h-36 w-full animate-pulse rounded-lg bg-gray-200" />}
+          {stage === 'preview' && previewUrl && (
+            <div className="flex flex-col gap-3">
+              <div className="relative">
+                <img src={previewUrl} alt="Preview" className="w-full rounded-lg object-cover" />
+                <span className="absolute bottom-2 right-2 rounded bg-black/60 px-2 py-1 text-xs text-white">Preview — watermarked</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="Want changes? e.g. warmer tones"
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                />
+                <button type="button" onClick={() => generate(feedback)} disabled={isGenerating} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-40">
+                  Retry
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleUnlock}
+                disabled={isUnlocking || unlocked}
+                className="self-start rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-40"
+              >
+                {unlocked ? '✓ Photo saved to product' : isUnlocking ? 'Saving…' : 'Use this photo'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---- Main component ----
 
 export default function Products() {
   const api = useApi();
@@ -41,6 +281,7 @@ export default function Products() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductFormState>(emptyForm);
   const [uploading, setUploading] = useState(false);
+  const [showAiPanel, setShowAiPanel] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['products'],
@@ -49,19 +290,13 @@ export default function Products() {
 
   const createMutation = useMutation({
     mutationFn: (body: Partial<Product>) => api.post<{ product: Product }>('/products', body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      closeModal();
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); closeModal(); },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Partial<Product> }) =>
       api.patch<{ product: Product }>(`/products/${id}`, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      closeModal();
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); closeModal(); },
   });
 
   const deleteMutation = useMutation({
@@ -72,11 +307,19 @@ export default function Products() {
   function openCreate() {
     setEditing(null);
     setForm(emptyForm);
+    setShowAiPanel(false);
     setModalOpen(true);
   }
 
   function openEdit(product: Product) {
     setEditing(product);
+    // Zip keys + urls together; only take up to 10 to show (no stale AI-generated overflow)
+    const keys = product.image_keys ?? [];
+    const urls = product.image_urls ?? [];
+    const imageEntries: ImageEntry[] = keys
+      .slice(0, 10)
+      .map((key, i) => ({ key, url: urls[i] ?? '' }))
+      .filter((e) => e.url); // only show ones with a valid URL
     setForm({
       name: product.name,
       description: product.description ?? '',
@@ -85,8 +328,9 @@ export default function Products() {
       stock_quantity: product.stock_quantity,
       is_active: product.is_active,
       type: product.type,
-      image_keys: product.image_keys ?? [],
+      imageEntries,
     });
+    setShowAiPanel(false);
     setModalOpen(true);
   }
 
@@ -94,18 +338,29 @@ export default function Products() {
     setModalOpen(false);
     setEditing(null);
     setForm(emptyForm);
+    setShowAiPanel(false);
   }
 
   async function handleImageUpload(file: File) {
     setUploading(true);
     try {
-      const res = await api.upload<{ key: string }>('/uploads', file);
-      setForm((prev) => ({ ...prev, image_keys: [...prev.image_keys, res.key] }));
+      const res = await api.upload<{ key: string; url: string }>('/uploads', file);
+      setForm((prev) => ({
+        ...prev,
+        imageEntries: [...prev.imageEntries, { key: res.key, url: res.url }],
+      }));
     } catch {
-      // ignore upload errors here, surfaced visually via missing image
+      // ignore — user will see no new thumbnail
     } finally {
       setUploading(false);
     }
+  }
+
+  function removeImage(index: number) {
+    setForm((prev) => ({
+      ...prev,
+      imageEntries: prev.imageEntries.filter((_, i) => i !== index),
+    }));
   }
 
   function handleSubmit(e: FormEvent) {
@@ -118,7 +373,7 @@ export default function Products() {
       stock_quantity: form.stock_quantity,
       is_active: form.is_active,
       type: form.type,
-      image_keys: form.image_keys,
+      image_keys: form.imageEntries.map((e) => e.key),
     };
     if (editing) {
       updateMutation.mutate({ id: editing.id, body });
@@ -137,9 +392,7 @@ export default function Products() {
       </div>
 
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center">
-          <Spinner size="lg" />
-        </div>
+        <div className="flex h-64 items-center justify-center"><Spinner size="lg" /></div>
       ) : isError ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">Failed to load products.</div>
       ) : !data?.products.length ? (
@@ -165,11 +418,7 @@ export default function Products() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {p.image_urls?.[0] ? (
-                        <img
-                          src={p.image_urls[0]}
-                          alt={p.name}
-                          className="h-10 w-10 rounded object-cover"
-                        />
+                        <img src={p.image_urls[0]} alt={p.name} className="h-10 w-10 rounded object-cover" />
                       ) : (
                         <div className="h-10 w-10 rounded bg-slate-100" />
                       )}
@@ -180,22 +429,12 @@ export default function Products() {
                   <td className="px-4 py-3 text-slate-700">{formatCents(p.price_cents)}</td>
                   <td className="px-4 py-3 text-slate-700">{p.stock_quantity ?? '-'}</td>
                   <td className="px-4 py-3">
-                    <Badge tone={p.is_active ? 'success' : 'default'}>
-                      {p.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
+                    <Badge tone={p.is_active ? 'success' : 'default'}>{p.is_active ? 'Active' : 'Inactive'}</Badge>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <Button size="sm" variant="secondary" onClick={() => openEdit(p)}>
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => {
-                          if (confirm(`Delete ${p.name}?`)) deleteMutation.mutate(p.id);
-                        }}
-                      >
+                      <Button size="sm" variant="secondary" onClick={() => openEdit(p)}>Edit</Button>
+                      <Button size="sm" variant="danger" onClick={() => { if (confirm(`Delete ${p.name}?`)) deleteMutation.mutate(p.id); }}>
                         Delete
                       </Button>
                     </div>
@@ -209,49 +448,23 @@ export default function Products() {
 
       <Modal isOpen={modalOpen} onClose={closeModal} title={editing ? 'Edit product' : 'Add product'}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input
-            label="Name"
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            required
-          />
-          <Textarea
-            label="Description"
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            rows={3}
-          />
+          <Input label="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+          <Textarea label="Description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} />
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label="Price (USD)"
-              type="number"
-              min={0}
-              step="0.01"
+              label="Price (USD)" type="number" min={0} step="0.01"
               value={form.price_cents / 100}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, price_cents: Math.round(Number(e.target.value) * 100) }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, price_cents: Math.round(Number(e.target.value) * 100) }))}
               required
             />
             <Input
-              label="Stock quantity"
-              type="number"
-              min={0}
+              label="Stock quantity" type="number" min={0}
               value={form.stock_quantity ?? ''}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  stock_quantity: e.target.value === '' ? null : Number(e.target.value),
-                }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, stock_quantity: e.target.value === '' ? null : Number(e.target.value) }))}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Category"
-              value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-            />
+            <Input label="Category" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-slate-700">Type</label>
               <select
@@ -266,38 +479,70 @@ export default function Products() {
             </div>
           </div>
 
+          {/* Image management */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-slate-700">Image</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleImageUpload(file);
-              }}
-            />
-            {uploading && <Spinner size="sm" />}
-            {form.image_keys.length > 0 && (
-              <p className="text-xs text-slate-500">{form.image_keys.length} image(s) attached</p>
+            <label className="text-sm font-medium text-slate-700">Photos</label>
+
+            {/* Thumbnails with remove */}
+            {form.imageEntries.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {form.imageEntries.map((entry, i) => (
+                  <div key={entry.key} className="relative group">
+                    <img src={entry.url} alt={`Image ${i + 1}`} className="h-16 w-16 rounded-lg object-cover border border-slate-200" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute -top-1.5 -right-1.5 hidden group-hover:flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs leading-none"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <label className="cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                {uploading ? 'Uploading…' : '+ Add photo'}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} disabled={uploading} />
+              </label>
+              {uploading && <Spinner size="sm" />}
+            </div>
+
+            {/* AI Photo panel */}
+            {editing && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowAiPanel((v) => !v)}
+                  className="rounded-lg border border-slate-300 bg-gradient-to-r from-purple-50 to-blue-50 px-3 py-2 text-sm font-medium text-gray-700 hover:from-purple-100 hover:to-blue-100"
+                >
+                  ✨ Generate AI photo
+                </button>
+                {showAiPanel && (
+                  <div className="mt-2">
+                    <AiPhotoPanel
+                      productId={editing.id}
+                      productName={form.name}
+                      onUnlocked={() => {
+                        queryClient.invalidateQueries({ queryKey: ['products'] });
+                        setShowAiPanel(false);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
           <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={form.is_active}
-              onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
-            />
+            <input type="checkbox" checked={form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} />
             Active
           </label>
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={closeModal}>
-              Cancel
-            </Button>
-            <Button type="submit" isLoading={isSaving}>
-              {editing ? 'Save changes' : 'Create product'}
-            </Button>
+            <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
+            <Button type="submit" isLoading={isSaving}>{editing ? 'Save changes' : 'Create product'}</Button>
           </div>
         </form>
       </Modal>
