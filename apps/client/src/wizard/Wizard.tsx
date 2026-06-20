@@ -46,6 +46,7 @@ function buildWizardData(state: WizardState) {
     city: state.city,
     industry: state.industry,
     logoKey: state.logoFileKey,
+    faviconKey: state.faviconFileKey,
     heroImageKey: state.heroImageFileKey,
     plan: state.plan,
     products: state.products.map((p) => ({
@@ -90,6 +91,7 @@ function applyWizardData(state: WizardState, data: Record<string, unknown>, slug
   if (typeof d.city === 'string') state.setCity(d.city);
   if (typeof d.industry === 'string') state.setIndustry(d.industry);
   if (typeof d.logoKey === 'string') state.setLogo(d.logoKey, undefined);
+  if (typeof d.faviconKey === 'string') state.setFavicon(d.faviconKey, undefined);
   if (typeof d.heroImageKey === 'string') state.setHeroImage(d.heroImageKey, undefined);
   if (d.plan) state.setPlan(d.plan);
 

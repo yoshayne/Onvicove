@@ -63,6 +63,8 @@ export interface WizardState {
 
   logoFileKey?: string;
   logoPreviewUrl?: string;
+  faviconFileKey?: string;
+  faviconPreviewUrl?: string;
   heroImageFileKey?: string;
   heroImagePreviewUrl?: string;
 
@@ -92,6 +94,7 @@ export interface WizardState {
   setIndustry: (industry: string) => void;
 
   setLogo: (key: string | undefined, previewUrl: string | undefined) => void;
+  setFavicon: (key: string | undefined, previewUrl: string | undefined) => void;
   setHeroImage: (key: string | undefined, previewUrl: string | undefined) => void;
 
   addProduct: (product: WizardProduct) => void;
@@ -129,6 +132,7 @@ const initialState: Omit<
   | 'setCity'
   | 'setIndustry'
   | 'setLogo'
+  | 'setFavicon'
   | 'setHeroImage'
   | 'addProduct'
   | 'updateProduct'
@@ -155,6 +159,8 @@ const initialState: Omit<
   industry: '',
   logoFileKey: undefined,
   logoPreviewUrl: undefined,
+  faviconFileKey: undefined,
+  faviconPreviewUrl: undefined,
   heroImageFileKey: undefined,
   heroImagePreviewUrl: undefined,
   products: [],
@@ -186,6 +192,7 @@ export const useWizardStore = create<WizardState>()(
       setIndustry: (industry) => set({ industry }),
 
       setLogo: (key, previewUrl) => set({ logoFileKey: key, logoPreviewUrl: previewUrl }),
+      setFavicon: (key, previewUrl) => set({ faviconFileKey: key, faviconPreviewUrl: previewUrl }),
       setHeroImage: (key, previewUrl) =>
         set({ heroImageFileKey: key, heroImagePreviewUrl: previewUrl }),
 
