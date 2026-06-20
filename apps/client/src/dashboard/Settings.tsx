@@ -5,6 +5,7 @@ import type { Tenant, BookingMode } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Button from '../components/shared/Button';
 import { Input } from '../components/shared/Input';
+import CustomDomainPanel from './CustomDomainPanel';
 
 interface SettingsFormState {
   company_name: string;
@@ -14,7 +15,6 @@ interface SettingsFormState {
   industry: string;
   timezone: string;
   currency: string;
-  custom_domain: string;
   booking_mode: BookingMode;
   show_live_calendar: boolean;
 }
@@ -28,7 +28,6 @@ function tenantToForm(tenant: Tenant): SettingsFormState {
     industry: tenant.industry ?? '',
     timezone: tenant.timezone,
     currency: tenant.currency,
-    custom_domain: tenant.custom_domain ?? '',
     booking_mode: tenant.booking_mode,
     show_live_calendar: tenant.show_live_calendar,
   };
@@ -71,7 +70,6 @@ export default function Settings() {
       industry: form.industry || null,
       timezone: form.timezone,
       currency: form.currency,
-      custom_domain: form.custom_domain || null,
       booking_mode: form.booking_mode,
       show_live_calendar: form.show_live_calendar,
     });
@@ -89,11 +87,13 @@ export default function Settings() {
     return <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">Failed to load settings.</div>;
   }
 
+  const tenant = data!.tenant;
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 max-w-2xl">
       <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
 
-      <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6">
         <Input
           label="Company name"
           value={form.company_name}
@@ -136,19 +136,11 @@ export default function Settings() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Currency"
-            value={form.currency}
-            onChange={(e) => setForm((f) => (f ? { ...f, currency: e.target.value.toUpperCase() } : f))}
-          />
-          <Input
-            label="Custom domain"
-            value={form.custom_domain}
-            onChange={(e) => setForm((f) => (f ? { ...f, custom_domain: e.target.value } : f))}
-            placeholder="www.example.com"
-          />
-        </div>
+        <Input
+          label="Currency"
+          value={form.currency}
+          onChange={(e) => setForm((f) => (f ? { ...f, currency: e.target.value.toUpperCase() } : f))}
+        />
 
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-slate-700">Booking mode</label>
@@ -178,6 +170,8 @@ export default function Settings() {
           </Button>
         </div>
       </form>
+
+      <CustomDomainPanel tenant={tenant} />
     </div>
   );
 }

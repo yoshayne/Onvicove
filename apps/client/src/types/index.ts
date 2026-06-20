@@ -34,6 +34,7 @@ export interface Tenant {
   currency: string;
   custom_domain: string | null;
   custom_domain_verified: boolean;
+  custom_domain_verify_token: string | null;
   wizard_completed: boolean;
   wizard_step: number;
   wizard_data: Record<string, unknown>;

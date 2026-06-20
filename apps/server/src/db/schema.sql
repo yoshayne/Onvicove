@@ -363,3 +363,6 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_subscription_status TEXT DEF
 ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_status_check;
 ALTER TABLE bookings ADD CONSTRAINT bookings_status_check
   CHECK (status IN ('pending','awaiting_payment','confirmed','cancelled','completed','no_show'));
+
+-- Custom domain verification token
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_verify_token TEXT;

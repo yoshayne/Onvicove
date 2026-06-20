@@ -7,6 +7,7 @@ import { logger } from 'hono/logger';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { join } from 'path';
 import { db, redis } from './db/client';
+import { domainCache } from './services/domainCache';
 
 // dist/index.js -> apps/server/dist -> repo root is 3 levels up
 const CLIENT_DIST = join(__dirname, '../../../dist/client');
@@ -28,6 +29,7 @@ import publicRoutes from './routes/public';
 import adminRoutes from './routes/admin';
 import webhookRoutes from './routes/webhooks';
 import subscriptionRoutes from './routes/subscriptions';
+import domainRoutes from './routes/domains';
 
 const app = new Hono();
 
@@ -80,6 +82,44 @@ app.route('/api/public', publicRoutes);
 app.route('/api/admin', adminRoutes);
 app.route('/api/webhooks', webhookRoutes);
 app.route('/api/subscriptions', subscriptionRoutes);
+app.route('/api/domains', domainRoutes);
+
+// Custom domain middleware — if Host matches a verified tenant domain,
+// inject the tenant slug so the SPA can resolve the storefront.
+// Must come before the static file handler.
+app.use('/*', async (c, next) => {
+  const host = c.req.header('host') ?? '';
+  const ownHosts = [
+    'localhost',
+    '127.0.0.1',
+    process.env.RAILWAY_PUBLIC_DOMAIN ?? '',
+    'shopsuitedirect.com',
+    'www.shopsuitedirect.com',
+  ].filter(Boolean);
+
+  const isOwnHost = ownHosts.some((h) => host === h || host.endsWith(`.${h}`));
+  if (isOwnHost) return next();
+
+  // Strip port for local dev
+  const domain = host.replace(/:\d+$/, '');
+  const tenantId = await domainCache.resolve(domain);
+  if (!tenantId) return next();
+
+  // Look up the slug so the SPA knows which store to render at /
+  const rows = await db`SELECT slug FROM tenants WHERE id = ${tenantId} LIMIT 1`;
+  if (!rows[0]) return next();
+
+  // Rewrite the path to /store/:slug so the React router handles it
+  const slug = rows[0].slug as string;
+  const originalPath = new URL(c.req.url).pathname;
+  const rewritten = originalPath === '/' ? `/store/${slug}` : `/store/${slug}${originalPath}`;
+
+  c.req.raw = new Request(
+    new URL(rewritten, c.req.url).toString(),
+    c.req.raw,
+  );
+  return next();
+});
 
 // Serve React client for all non-API routes
 // The Vite build outputs to dist/client relative to repo root
