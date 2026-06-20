@@ -66,42 +66,42 @@ app.get('/sessions', async (c) => {
 });
 
 // GET /api/ai-photos/media — all unique images available in the tenant's media library
-// Sources: (1) all product image_keys (2) all unlocked AI photo full_image_keys
+// Sources: (1) all product image_keys (2) all AI photo full_image_keys for unlocked sessions
 app.get('/media', async (c) => {
   const tenant = c.get('tenant') as { id: string };
   const { getSignedFileUrl } = await import('../services/storage');
 
-  // Product images — unnest the JSONB array
+  // Product images — unnest the JSONB array (handle null/empty gracefully)
   const productImages = await db`
-    SELECT DISTINCT jsonb_array_elements_text(image_keys) AS key,
-                    p.name AS product_name
-    FROM products p
+    SELECT DISTINCT elem AS key, p.name AS product_name
+    FROM products p,
+         jsonb_array_elements_text(COALESCE(p.image_keys, '[]'::jsonb)) AS elem
     WHERE p.tenant_id = ${tenant.id}
-      AND jsonb_array_length(image_keys) > 0
   `;
 
-  // Unlocked AI photo full images
+  // All AI photo full images from unlocked sessions (not just is_selected — show everything paid for)
   const aiImages = await db`
-    SELECT g.full_image_key AS key,
-           s.style,
-           p.name AS product_name,
-           g.id AS generation_id
+    SELECT DISTINCT ON (g.full_image_key)
+           g.full_image_key AS key,
+           g.style,
+           g.is_selected,
+           p.name AS product_name
     FROM ai_photo_generations g
     JOIN ai_photo_sessions s ON s.id = g.session_id
     LEFT JOIN products p ON p.id = s.product_id
     WHERE s.tenant_id = ${tenant.id}
       AND s.status = 'unlocked'
       AND g.full_image_key IS NOT NULL
-      AND g.is_selected = TRUE
-    ORDER BY s.created_at DESC
+      AND g.status = 'done'
+    ORDER BY g.full_image_key, s.created_at DESC
   `;
 
   const allKeys = [
-    ...productImages.map((r) => ({ key: r.key as string, source: 'product' as const, label: r.product_name as string ?? 'Product' })),
-    ...aiImages.map((r) => ({ key: r.key as string, source: 'ai' as const, label: `${r.product_name ?? 'AI'} — ${r.style}` })),
+    ...productImages.map((r) => ({ key: r.key as string, source: 'product' as const, label: (r.product_name as string) ?? 'Product' })),
+    ...aiImages.map((r) => ({ key: r.key as string, source: 'ai' as const, label: `${(r.product_name as string) ?? 'AI'} — ${r.style}` })),
   ];
 
-  // Deduplicate keys (an AI photo may also be in product image_keys after unlock)
+  // Deduplicate (AI photo key may already be in a product's image_keys after unlock)
   const seen = new Set<string>();
   const unique = allKeys.filter((item) => {
     if (seen.has(item.key)) return false;
