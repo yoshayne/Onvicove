@@ -15,6 +15,25 @@ const requestSchema = z.object({
   domain: z.string().min(3).max(253),
 });
 
+// GET /api/domain-purchases/check?domain=example.com — availability check via WhoisXML
+app.get('/check', requireAuth, async (c) => {
+  const domain = (c.req.query('domain') ?? '').trim().toLowerCase();
+  if (!domain || domain.length < 3) return c.json({ error: 'Invalid domain' }, 400);
+
+  const apiKey = process.env.WHOISXML_API_KEY;
+  if (!apiKey) return c.json({ error: 'Availability check not configured' }, 503);
+
+  try {
+    const url = `https://domain-availability.whoisxmlapi.com/api/v1?apiKey=${apiKey}&domainName=${encodeURIComponent(domain)}&credits=DA`;
+    const res = await fetch(url);
+    const json = await res.json() as { DomainInfo?: { domainAvailability?: string } };
+    const available = json.DomainInfo?.domainAvailability === 'AVAILABLE';
+    return c.json({ domain, available });
+  } catch {
+    return c.json({ error: 'Check failed' }, 502);
+  }
+});
+
 // POST /api/domain-purchases/request — tenant submits a domain they want bought
 app.post('/request', requireAuth, requireTenant, async (c) => {
   const tenant = c.get('tenant') as {

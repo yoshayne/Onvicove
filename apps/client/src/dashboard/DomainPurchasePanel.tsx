@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShoppingBag, Clock, CheckCircle, X, ExternalLink } from 'lucide-react';
+import { ShoppingBag, Clock, CheckCircle, X, ExternalLink, Loader2 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import Button from '../components/shared/Button';
 
@@ -12,6 +12,11 @@ interface DomainRequest {
   notes: string | null;
   price_cents: number | null;
   created_at: string;
+}
+
+interface AvailabilityResult {
+  domain: string;
+  available: boolean;
 }
 
 const POPULAR_TLDS = [
@@ -38,6 +43,8 @@ export default function DomainPurchasePanel() {
   const [name, setName] = useState('');
   const [selectedTld, setSelectedTld] = useState('.com');
   const [customTld, setCustomTld] = useState('');
+  const [debouncedDomain, setDebouncedDomain] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data } = useQuery({
     queryKey: ['domain-purchase-requests'],
@@ -47,6 +54,25 @@ export default function DomainPurchasePanel() {
   const requests = data?.requests ?? [];
   const hasPending = requests.some((r) => r.status === 'pending');
   const hasActive = requests.some((r) => r.status === 'purchased');
+
+  const tld = customTld.trim() ? (customTld.startsWith('.') ? customTld : `.${customTld}`) : selectedTld;
+  const cleanName = name.trim().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9-]/g, '');
+  const fullDomain = cleanName ? `${cleanName}${tld}` : '';
+
+  // Debounce the availability check
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!fullDomain) { setDebouncedDomain(''); return; }
+    debounceRef.current = setTimeout(() => setDebouncedDomain(fullDomain), 600);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [fullDomain]);
+
+  const { data: availability, isFetching: checkingAvailability } = useQuery({
+    queryKey: ['domain-check', debouncedDomain],
+    queryFn: () => api.get<AvailabilityResult>(`/domain-purchases/check?domain=${encodeURIComponent(debouncedDomain)}`),
+    enabled: !!debouncedDomain,
+    staleTime: 60_000,
+  });
 
   const requestMutation = useMutation({
     mutationFn: (domain: string) => api.post('/domain-purchases/request', { domain }),
@@ -62,12 +88,12 @@ export default function DomainPurchasePanel() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['domain-purchase-requests'] }),
   });
 
-  const tld = customTld.trim() ? (customTld.startsWith('.') ? customTld : `.${customTld}`) : selectedTld;
-  const cleanName = name.trim().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9-]/g, '');
-  const fullDomain = cleanName ? `${cleanName}${tld}` : '';
+  const isAvailable = availability?.domain === fullDomain && availability.available;
+  const isTaken = availability?.domain === fullDomain && !availability.available;
+  const canSubmit = !!fullDomain && isAvailable && !requestMutation.isPending;
 
   function handleSubmit() {
-    if (!fullDomain) return;
+    if (!canSubmit) return;
     requestMutation.mutate(fullDomain);
   }
 
@@ -113,8 +139,29 @@ export default function DomainPurchasePanel() {
                 className="w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
+
+            {/* Availability indicator */}
             {fullDomain && (
-              <p className="text-xs text-indigo-600 font-mono mt-1">→ {fullDomain}</p>
+              <div className="flex items-center gap-1.5 mt-1">
+                {checkingAvailability || debouncedDomain !== fullDomain ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin text-slate-400" />
+                    <span className="text-xs text-slate-400 font-mono">{fullDomain}</span>
+                  </>
+                ) : isAvailable ? (
+                  <>
+                    <CheckCircle size={12} className="text-green-500" />
+                    <span className="text-xs text-green-700 font-mono font-medium">{fullDomain} — available</span>
+                  </>
+                ) : isTaken ? (
+                  <>
+                    <X size={12} className="text-red-500" />
+                    <span className="text-xs text-red-600 font-mono font-medium">{fullDomain} — already taken</span>
+                  </>
+                ) : (
+                  <span className="text-xs text-indigo-600 font-mono">→ {fullDomain}</span>
+                )}
+              </div>
             )}
           </div>
 
@@ -157,7 +204,7 @@ export default function DomainPurchasePanel() {
           <Button
             onClick={handleSubmit}
             isLoading={requestMutation.isPending}
-            disabled={!fullDomain}
+            disabled={!canSubmit}
           >
             <ShoppingBag size={14} className="mr-1.5" />
             Request this domain
