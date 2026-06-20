@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   start_time TIMESTAMPTZ NOT NULL,
   end_time TIMESTAMPTZ NOT NULL,
   status TEXT DEFAULT 'pending'
-    CHECK (status IN ('pending','confirmed','cancelled','completed','no_show')),
+    CHECK (status IN ('pending','awaiting_payment','confirmed','cancelled','completed','no_show')),
   notes TEXT,
   internal_notes TEXT,
   stripe_payment_intent_id TEXT,
@@ -358,3 +358,8 @@ ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS color_hex TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_subscription_status TEXT DEFAULT 'none';
+
+-- Allow awaiting_payment status on bookings
+ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_status_check;
+ALTER TABLE bookings ADD CONSTRAINT bookings_status_check
+  CHECK (status IN ('pending','awaiting_payment','confirmed','cancelled','completed','no_show'));
