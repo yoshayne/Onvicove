@@ -414,3 +414,60 @@ export async function sendAdminRefund(data: {
     `),
   });
 }
+
+export async function sendAdminDomainPurchaseRequest(data: {
+  companyName: string;
+  ownerEmail: string;
+  domain: string;
+  requestId: string;
+  adminUrl: string;
+}): Promise<void> {
+  const email = adminEmail();
+  if (!email) return;
+  await sendTransacEmail({
+    to: [{ email, name: 'Shop Suite Direct Admin' }],
+    subject: `Domain purchase request: ${data.domain} — ${data.companyName}`,
+    htmlContent: wrap('New domain purchase request', `
+      <p><strong>Domain requested:</strong> ${data.domain}</p>
+      <p><strong>Tenant:</strong> ${data.companyName}</p>
+      <p><strong>Owner email:</strong> ${data.ownerEmail}</p>
+      <p>Purchase this domain at <a href="https://railway.com/domains">railway.com/domains</a>, attach it to the production service, then mark this request as purchased from the admin panel.</p>
+      ${btn('View request in admin', data.adminUrl)}
+    `),
+  });
+}
+
+export async function sendTenantDomainRequestReceived(data: {
+  toEmail: string;
+  toName: string;
+  domain: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.toEmail, name: data.toName }],
+    subject: `Domain request received — ${data.domain}`,
+    htmlContent: wrap('We received your domain request', `
+      <p>Hi ${data.toName},</p>
+      <p>We've received your request for <strong>${data.domain}</strong>.</p>
+      <p>Our team will purchase and configure it for you — usually within 1 business day. We'll email you once it's live.</p>
+      <p>Questions? Just reply to this email.</p>
+    `),
+  });
+}
+
+export async function sendTenantDomainPurchased(data: {
+  toEmail: string;
+  toName: string;
+  domain: string;
+  dashboardUrl: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.toEmail, name: data.toName }],
+    subject: `Your domain is live — ${data.domain}`,
+    htmlContent: wrap('Your domain is ready', `
+      <p>Hi ${data.toName},</p>
+      <p>Your domain <strong>${data.domain}</strong> has been purchased and connected to your store. It's live now!</p>
+      ${btn('Visit your store', `https://${data.domain}`)}
+      <p>SSL is included and renews automatically. No action needed on your end.</p>
+    `),
+  });
+}

@@ -1,8 +1,8 @@
 const RAILWAY_API = 'https://backboard.railway.app/graphql/v2';
 
 function getToken(): string {
-  const token = process.env.RAILWAY_API_TOKEN;
-  if (!token) throw new Error('RAILWAY_API_TOKEN env var not set');
+  const token = process.env.RAILWAY_TOKEN;
+  if (!token) throw new Error('RAILWAY_TOKEN env var not set');
   return token;
 }
 

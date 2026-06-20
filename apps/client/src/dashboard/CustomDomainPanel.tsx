@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Globe, AlertCircle, Copy, Trash2, RefreshCw, ExternalLink } from 'lucide-react';
+import { CheckCircle, Globe, AlertCircle, Copy, Trash2, RefreshCw, ExternalLink, ShoppingBag } from 'lucide-react';
 import { useApi } from '../lib/api';
 import type { Tenant } from '../types';
 import Button from '../components/shared/Button';
+import DomainPurchasePanel from './DomainPurchasePanel';
 
 interface Props {
   tenant: Tenant;
@@ -56,9 +57,12 @@ function DnsRecord({
   );
 }
 
+type Tab = 'connect' | 'buy';
+
 export default function CustomDomainPanel({ tenant }: Props) {
   const api = useApi();
   const queryClient = useQueryClient();
+  const [tab, setTab] = useState<Tab>('connect');
   const [input, setInput] = useState('');
   const [copied, setCopied] = useState<CopiedKey | null>(null);
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
@@ -260,46 +264,82 @@ export default function CustomDomainPanel({ tenant }: Props) {
 
   // ── No domain ──
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 flex flex-col gap-4">
-      <div className="flex items-start gap-3">
-        <Globe size={18} className="text-slate-400 shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-semibold text-slate-800">Connect a custom domain</p>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Let customers visit your store at <em>www.yourbusiness.com</em> instead of a shared URL. SSL is included free.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && input.trim()) requestMutation.mutate(input); }}
-          placeholder="www.yourdomain.com"
-          className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <Button
-          onClick={() => requestMutation.mutate(input)}
-          isLoading={requestMutation.isPending}
-          disabled={!input.trim()}
-          size="sm"
+    <div className="flex flex-col gap-4">
+      {/* Tab switcher */}
+      <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+        <button
+          type="button"
+          onClick={() => setTab('connect')}
+          className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium rounded-md px-3 py-2 transition-all ${
+            tab === 'connect'
+              ? 'bg-white text-slate-800 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
         >
-          Connect
-        </Button>
+          <Globe size={13} />
+          I already have a domain
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('buy')}
+          className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium rounded-md px-3 py-2 transition-all ${
+            tab === 'buy'
+              ? 'bg-white text-slate-800 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <ShoppingBag size={13} />
+          Buy a domain
+        </button>
       </div>
 
-      {requestMutation.isError && (
-        <p className="text-xs text-red-600">
-          {requestMutation.error instanceof Error ? requestMutation.error.message : 'Something went wrong'}
-        </p>
+      {tab === 'connect' ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-5 flex flex-col gap-4">
+          <div className="flex items-start gap-3">
+            <Globe size={18} className="text-slate-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Connect a custom domain</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Let customers visit your store at <em>www.yourbusiness.com</em> instead of a shared URL. SSL is included free.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && input.trim()) requestMutation.mutate(input); }}
+              placeholder="www.yourdomain.com"
+              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <Button
+              onClick={() => requestMutation.mutate(input)}
+              isLoading={requestMutation.isPending}
+              disabled={!input.trim()}
+              size="sm"
+            >
+              Connect
+            </Button>
+          </div>
+
+          {requestMutation.isError && (
+            <p className="text-xs text-red-600">
+              {requestMutation.error instanceof Error ? requestMutation.error.message : 'Something went wrong'}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-1 text-xs text-slate-400">
+            <p>→ SSL certificate is provisioned automatically — no extra cost.</p>
+            <p>→ We recommend <strong>www.yourdomain.com</strong>. Apex domains (without www) require ALIAS/ANAME support.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <DomainPurchasePanel />
+        </div>
       )}
-
-      <div className="flex flex-col gap-1 text-xs text-slate-400">
-        <p>→ SSL certificate is provisioned automatically — no extra cost.</p>
-        <p>→ We recommend <strong>www.yourdomain.com</strong>. Apex domains (without www) require ALIAS/ANAME support.</p>
-      </div>
     </div>
   );
 }

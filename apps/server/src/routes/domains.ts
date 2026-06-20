@@ -88,7 +88,7 @@ app.post('/verify', requireAuth, requireTenant, async (c) => {
   let railwayId = tenant.custom_domain_railway_id;
   let cnameTarget = process.env.RAILWAY_PUBLIC_DOMAIN ?? '';
 
-  if (!railwayId && process.env.RAILWAY_API_TOKEN) {
+  if (!railwayId && process.env.RAILWAY_TOKEN) {
     try {
       const result = await railwayAddDomain(tenant.custom_domain);
       railwayId = result.id;
@@ -130,7 +130,7 @@ app.delete('/', requireAuth, requireTenant, async (c) => {
   }
 
   // Remove from Railway if it was provisioned there
-  if (tenant.custom_domain_railway_id && process.env.RAILWAY_API_TOKEN) {
+  if (tenant.custom_domain_railway_id && process.env.RAILWAY_TOKEN) {
     try {
       await railwayRemoveDomain(tenant.custom_domain_railway_id);
     } catch (err) {

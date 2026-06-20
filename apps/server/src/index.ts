@@ -30,6 +30,7 @@ import adminRoutes from './routes/admin';
 import webhookRoutes from './routes/webhooks';
 import subscriptionRoutes from './routes/subscriptions';
 import domainRoutes from './routes/domains';
+import domainPurchaseRoutes from './routes/domain-purchases';
 
 const app = new Hono();
 
@@ -83,6 +84,7 @@ app.route('/api/admin', adminRoutes);
 app.route('/api/webhooks', webhookRoutes);
 app.route('/api/subscriptions', subscriptionRoutes);
 app.route('/api/domains', domainRoutes);
+app.route('/api/domain-purchases', domainPurchaseRoutes);
 
 // Custom domain middleware — if Host matches a verified tenant domain,
 // inject the tenant slug so the SPA can resolve the storefront.

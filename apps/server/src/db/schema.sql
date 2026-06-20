@@ -370,3 +370,17 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_verify_token TEXT;
 -- Railway custom domain provisioning
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_railway_id TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_cname_target TEXT;
+
+-- Domain purchase requests (tenant requests a domain, admin buys it via Railway)
+CREATE TABLE IF NOT EXISTS domain_purchase_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  domain TEXT NOT NULL,
+  tld TEXT NOT NULL,
+  status TEXT DEFAULT 'pending'
+    CHECK (status IN ('pending','purchased','rejected','cancelled')),
+  notes TEXT,
+  price_cents INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
