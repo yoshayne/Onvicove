@@ -44,7 +44,7 @@ app.get('/:slug/products', async (c) => {
     const variants = await db`
       SELECT * FROM product_variants WHERE product_id = ANY(${productIds}) ORDER BY sort_order ASC
     `;
-    const byProduct = new Map<string, typeof variants>();
+    const byProduct = new Map<string, (typeof variants)[number][]>();
     for (const v of variants) {
       const pid = v.product_id as string;
       if (!byProduct.has(pid)) byProduct.set(pid, []);
