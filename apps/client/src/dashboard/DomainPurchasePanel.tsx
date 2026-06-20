@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShoppingBag, Clock, CheckCircle, X, ExternalLink, Loader2 } from 'lucide-react';
+import { ShoppingBag, Clock, CheckCircle, X, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
 import { useApi } from '../lib/api';
 import Button from '../components/shared/Button';
 
@@ -17,6 +17,7 @@ interface DomainRequest {
 interface AvailabilityResult {
   domain: string;
   available: boolean;
+  price_cents: number | null;
 }
 
 const POPULAR_TLDS = [
@@ -31,11 +32,15 @@ const POPULAR_TLDS = [
 ];
 
 const STATUS_UI = {
-  pending: { label: 'Pending', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: Clock },
+  pending: { label: 'Processing', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: Clock },
   purchased: { label: 'Active', color: 'text-green-700 bg-green-50 border-green-200', icon: CheckCircle },
   rejected: { label: 'Unavailable', color: 'text-red-700 bg-red-50 border-red-200', icon: X },
   cancelled: { label: 'Cancelled', color: 'text-slate-500 bg-slate-50 border-slate-200', icon: X },
 };
+
+function formatPrice(cents: number) {
+  return `$${(cents / 100).toFixed(0)}/yr`;
+}
 
 export default function DomainPurchasePanel() {
   const api = useApi();
@@ -46,12 +51,15 @@ export default function DomainPurchasePanel() {
   const [debouncedDomain, setDebouncedDomain] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data } = useQuery({
+  // Check for ?domain_paid=1 return from Stripe Checkout
+  const paidReturn = new URLSearchParams(window.location.search).get('domain_paid') === '1';
+
+  const { data: requestsData } = useQuery({
     queryKey: ['domain-purchase-requests'],
     queryFn: () => api.get<{ requests: DomainRequest[] }>('/domain-purchases/my'),
   });
 
-  const requests = data?.requests ?? [];
+  const requests = requestsData?.requests ?? [];
   const hasPending = requests.some((r) => r.status === 'pending');
   const hasActive = requests.some((r) => r.status === 'purchased');
 
@@ -59,7 +67,6 @@ export default function DomainPurchasePanel() {
   const cleanName = name.trim().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9-]/g, '');
   const fullDomain = cleanName ? `${cleanName}${tld}` : '';
 
-  // Debounce the availability check
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!fullDomain) { setDebouncedDomain(''); return; }
@@ -74,12 +81,10 @@ export default function DomainPurchasePanel() {
     staleTime: 60_000,
   });
 
-  const requestMutation = useMutation({
-    mutationFn: (domain: string) => api.post('/domain-purchases/request', { domain }),
-    onSuccess: () => {
-      setName('');
-      queryClient.invalidateQueries({ queryKey: ['domain-purchase-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['tenant', 'me'] });
+  const checkoutMutation = useMutation({
+    mutationFn: (domain: string) => api.post<{ url: string }>('/domain-purchases/checkout', { domain }),
+    onSuccess: (res) => {
+      window.location.href = res.url;
     },
   });
 
@@ -90,20 +95,27 @@ export default function DomainPurchasePanel() {
 
   const isAvailable = availability?.domain === fullDomain && availability.available;
   const isTaken = availability?.domain === fullDomain && !availability.available;
-  const canSubmit = !!fullDomain && isAvailable && !requestMutation.isPending;
-
-  function handleSubmit() {
-    if (!canSubmit) return;
-    requestMutation.mutate(fullDomain);
-  }
+  const isChecking = checkingAvailability || (!!fullDomain && debouncedDomain !== fullDomain);
+  const price = isAvailable ? availability?.price_cents : null;
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Returned from successful Stripe payment */}
+      {paidReturn && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 flex items-start gap-2 text-sm text-blue-800">
+          <CheckCircle size={15} className="shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold">Payment received — your domain is being set up!</p>
+            <p className="text-xs mt-0.5 text-blue-700">We'll purchase and attach your domain within 24–48 hours. You'll get an email when it's live.</p>
+          </div>
+        </div>
+      )}
+
       {/* Active domain notice */}
       {hasActive && (
         <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 flex items-center gap-2 text-sm text-green-800">
           <CheckCircle size={15} className="shrink-0" />
-          Your purchased domain is active. Visit your store or manage renewals at{' '}
+          Your purchased domain is active. Manage renewals at{' '}
           <a
             href="https://railway.com/workspace/domains"
             target="_blank"
@@ -115,7 +127,18 @@ export default function DomainPurchasePanel() {
         </div>
       )}
 
-      {/* Request form */}
+      {/* Pending notice */}
+      {hasPending && !paidReturn && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2 text-sm text-amber-800">
+          <Clock size={15} className="shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold">Domain purchase in progress</p>
+            <p className="text-xs mt-0.5 text-amber-700">We're setting up your domain. You'll get an email within 24–48 hours when it's live.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase form — hide if already pending or active */}
       {!hasPending && !hasActive && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
@@ -131,27 +154,25 @@ export default function DomainPurchasePanel() {
               <input
                 type="text"
                 value={customTld || selectedTld}
-                onChange={(e) => {
-                  setCustomTld(e.target.value);
-                  setSelectedTld('');
-                }}
+                onChange={(e) => { setCustomTld(e.target.value); setSelectedTld(''); }}
                 placeholder=".com"
                 className="w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
-            {/* Availability indicator */}
+            {/* Availability + price indicator */}
             {fullDomain && (
               <div className="flex items-center gap-1.5 mt-1">
-                {checkingAvailability || debouncedDomain !== fullDomain ? (
+                {isChecking ? (
                   <>
                     <Loader2 size={12} className="animate-spin text-slate-400" />
                     <span className="text-xs text-slate-400 font-mono">{fullDomain}</span>
                   </>
-                ) : isAvailable ? (
+                ) : isAvailable && price ? (
                   <>
                     <CheckCircle size={12} className="text-green-500" />
                     <span className="text-xs text-green-700 font-mono font-medium">{fullDomain} — available</span>
+                    <span className="text-xs text-green-600 font-semibold ml-1">{formatPrice(price)}</span>
                   </>
                 ) : isTaken ? (
                   <>
@@ -189,33 +210,33 @@ export default function DomainPurchasePanel() {
 
           <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 flex flex-col gap-1 text-xs text-slate-600">
             <p className="font-semibold text-slate-700">How it works</p>
-            <p>1. Submit your request — we'll check availability and pricing</p>
-            <p>2. We purchase the domain through Railway (usually within 1 business day)</p>
+            <p>1. Pick an available domain and pay — price shown above includes 1 year registration</p>
+            <p>2. We purchase it through Railway within 24–48 hours</p>
             <p>3. SSL is included, DNS is auto-configured, and you'll get an email when it's live</p>
-            <p>4. We'll invoice you the domain cost + a small setup fee</p>
           </div>
 
-          {requestMutation.isError && (
-            <p className="text-xs text-red-600">
-              {requestMutation.error instanceof Error ? requestMutation.error.message : 'Something went wrong'}
-            </p>
+          {checkoutMutation.isError && (
+            <div className="flex items-center gap-2 text-xs text-red-600">
+              <AlertCircle size={12} />
+              {checkoutMutation.error instanceof Error ? checkoutMutation.error.message : 'Something went wrong'}
+            </div>
           )}
 
           <Button
-            onClick={handleSubmit}
-            isLoading={requestMutation.isPending}
-            disabled={!canSubmit}
+            onClick={() => checkoutMutation.mutate(fullDomain)}
+            isLoading={checkoutMutation.isPending}
+            disabled={!isAvailable || !price || checkoutMutation.isPending}
           >
             <ShoppingBag size={14} className="mr-1.5" />
-            Request this domain
+            {price ? `Purchase ${fullDomain} — ${formatPrice(price)}` : 'Select an available domain'}
           </Button>
         </div>
       )}
 
-      {/* Pending requests */}
+      {/* Request history */}
       {requests.filter((r) => r.status !== 'cancelled').length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Your requests</p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Your domains</p>
           {requests
             .filter((r) => r.status !== 'cancelled')
             .map((req) => {
@@ -231,9 +252,12 @@ export default function DomainPurchasePanel() {
                     <div className="min-w-0">
                       <p className="text-sm font-semibold font-mono truncate">{req.domain}</p>
                       {req.notes && <p className="text-xs opacity-70 mt-0.5">{req.notes}</p>}
+                      {req.price_cents && (
+                        <p className="text-xs opacity-60 mt-0.5">Paid {formatPrice(req.price_cents)}</p>
+                      )}
                       {req.status === 'pending' && (
-                        <p className="text-xs opacity-60 mt-0.5">
-                          Submitted {new Date(req.created_at).toLocaleDateString()}
+                        <p className="text-xs opacity-60">
+                          Submitted {new Date(req.created_at).toLocaleDateString()} · live within 24–48 hrs
                         </p>
                       )}
                     </div>
@@ -242,17 +266,6 @@ export default function DomainPurchasePanel() {
                     <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${ui.color}`}>
                       {ui.label}
                     </span>
-                    {req.status === 'pending' && (
-                      <button
-                        type="button"
-                        onClick={() => cancelMutation.mutate(req.id)}
-                        disabled={cancelMutation.isPending}
-                        className="text-slate-400 hover:text-red-500 transition-colors"
-                        aria-label="Cancel request"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
                   </div>
                 </div>
               );

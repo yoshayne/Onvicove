@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { stripe, computePlatformFee, createBookingPaymentIntent, getOrCreateStripeCustomer } from '../services/stripe';
-import { sendStripeConnected, sendAdminStripeConnected } from '../services/email';
+import { sendStripeConnected, sendAdminStripeConnected, sendAdminDomainPurchaseRequest, sendTenantDomainRequestReceived } from '../services/email';
 
 const app = new Hono();
 
@@ -356,6 +356,61 @@ app.post('/webhook', async (c) => {
           updated_at = NOW()
       WHERE stripe_customer_id = ${sub.customer}
     `;
+  }
+
+  // Domain purchase payment completed — create the request record and notify admin
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object as {
+      id: string;
+      amount_total: number | null;
+      metadata: Record<string, string>;
+    };
+    if (session.metadata?.type === 'domain_purchase') {
+      const { tenant_id, domain } = session.metadata;
+      const tld = domain.split('.').slice(1).join('.');
+
+      const existing = await db`
+        SELECT id FROM domain_purchase_requests
+        WHERE tenant_id = ${tenant_id} AND domain = ${domain} AND status IN ('pending','purchased')
+        LIMIT 1
+      `;
+
+      if (!existing[0]) {
+        const rows = await db`
+          INSERT INTO domain_purchase_requests (tenant_id, domain, tld, status, price_cents, stripe_session_id)
+          VALUES (${tenant_id}, ${domain}, ${tld}, 'pending', ${session.amount_total ?? null}, ${session.id})
+          RETURNING *
+        `;
+        const request = rows[0];
+
+        const tenantRows = await db`
+          SELECT t.company_name, t.clerk_user_id FROM tenants t WHERE t.id = ${tenant_id} LIMIT 1
+        `;
+        const tenant = tenantRows[0];
+        if (tenant) {
+          const users = await db`
+            SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${tenant.clerk_user_id} LIMIT 1
+          `;
+          const user = users[0];
+          const ownerEmail = user?.email as string ?? '';
+          const ownerName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || tenant.company_name as string;
+          const adminUrl = `${process.env.CLIENT_URL ?? 'https://shopsuitedirect.com'}/admin/domain-requests`;
+
+          await Promise.allSettled([
+            sendAdminDomainPurchaseRequest({
+              companyName: tenant.company_name as string,
+              ownerEmail,
+              domain,
+              requestId: request.id as string,
+              adminUrl,
+            }),
+            ownerEmail
+              ? sendTenantDomainRequestReceived({ toEmail: ownerEmail, toName: ownerName, domain })
+              : Promise.resolve(),
+          ]);
+        }
+      }
+    }
   }
 
   if (event.type === 'invoice.payment_failed') {

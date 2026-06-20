@@ -381,6 +381,8 @@ CREATE TABLE IF NOT EXISTS domain_purchase_requests (
     CHECK (status IN ('pending','purchased','rejected','cancelled')),
   notes TEXT,
   price_cents INTEGER,
+  stripe_session_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS stripe_session_id TEXT;
