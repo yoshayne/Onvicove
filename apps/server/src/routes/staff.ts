@@ -101,7 +101,7 @@ app.post('/', async (c) => {
     is_active: d.is_active ?? true,
   };
   if (d.availability !== undefined) {
-    insertValues.availability = JSON.stringify(d.availability);
+    insertValues.availability = db.json(d.availability);
   }
 
   const keys = Object.keys(insertValues);
@@ -137,7 +137,7 @@ app.patch('/:id', async (c) => {
   if (d.bio !== undefined) updates.bio = d.bio;
   if (d.avatar_key !== undefined) updates.avatar_key = d.avatar_key;
   if (d.is_active !== undefined) updates.is_active = d.is_active;
-  if (d.availability !== undefined) updates.availability = JSON.stringify(d.availability);
+  if (d.availability !== undefined) updates.availability = db.json(d.availability);
 
   const keys = Object.keys(updates);
   let staffRow;
