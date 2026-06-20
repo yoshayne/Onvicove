@@ -389,21 +389,27 @@ export default function Products() {
   }
 
   function addCustomSize() {
-    const s = form.customSizeInput.trim();
-    if (!s || form.sizes.includes(s)) return;
-    setForm((prev) => ({ ...prev, sizes: [...prev.sizes, s], customSizeInput: '' }));
+    setForm((prev) => {
+      const s = prev.customSizeInput.trim();
+      if (!s || prev.sizes.includes(s)) return prev;
+      return { ...prev, sizes: [...prev.sizes, s], customSizeInput: '' };
+    });
   }
 
   function addColor() {
-    const name = form.colorNameInput.trim();
-    if (!name) return;
-    setForm((prev) => ({ ...prev, colors: [...prev.colors, { name, hex: prev.colorHexInput }], colorNameInput: '', colorHexInput: '#000000' }));
+    setForm((prev) => {
+      const name = prev.colorNameInput.trim();
+      if (!name) return prev;
+      return { ...prev, colors: [...prev.colors, { name, hex: prev.colorHexInput }], colorNameInput: '', colorHexInput: '#000000' };
+    });
   }
 
   function addCustomValue() {
-    const v = form.customOptionInput.trim();
-    if (!v || form.customOptionValues.includes(v)) return;
-    setForm((prev) => ({ ...prev, customOptionValues: [...prev.customOptionValues, v], customOptionInput: '' }));
+    setForm((prev) => {
+      const v = prev.customOptionInput.trim();
+      if (!v || prev.customOptionValues.includes(v)) return prev;
+      return { ...prev, customOptionValues: [...prev.customOptionValues, v], customOptionInput: '' };
+    });
   }
 
   function resolvedCategory() {
