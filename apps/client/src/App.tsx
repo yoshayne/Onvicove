@@ -30,6 +30,7 @@ import AdminTransactions from './admin/Transactions';
 import AdminAuditLog from './admin/AuditLog';
 import AdminSettings from './admin/Settings';
 import AdminCoupons from './admin/Coupons';
+import AdminDomainRequests from './admin/DomainRequests';
 
 const Wizard = lazy(() => import('./wizard/Wizard'));
 const StorefrontRouter = lazy(() => import('./storefront/StorefrontRouter'));
@@ -128,6 +129,7 @@ export default function App() {
                 <Route path="tenants/:id" element={<AdminTenantDetail />} />
                 <Route path="transactions" element={<AdminTransactions />} />
                 <Route path="audit-log" element={<AdminAuditLog />} />
+                <Route path="domain-requests" element={<AdminDomainRequests />} />
                 <Route path="coupons" element={<AdminCoupons />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>

@@ -148,6 +148,30 @@ export default function TenantDetail() {
           <div><span className="text-slate-400">City:</span> {tenant.city || '—'}</div>
           <div><span className="text-slate-400">Currency:</span> {tenant.currency}</div>
           <div><span className="text-slate-400">Created:</span> {new Date(tenant.created_at).toLocaleDateString()}</div>
+          <div className="sm:col-span-2 flex items-center gap-2">
+            <span className="text-slate-400">Custom domain:</span>
+            {tenant.custom_domain ? (
+              <>
+                <a
+                  href={`https://${tenant.custom_domain}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-indigo-600 hover:underline"
+                >
+                  {tenant.custom_domain}
+                </a>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                  tenant.custom_domain_verified
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-amber-100 text-amber-700'
+                }`}>
+                  {tenant.custom_domain_verified ? 'verified' : 'pending'}
+                </span>
+              </>
+            ) : (
+              <span className="text-slate-400">None</span>
+            )}
+          </div>
         </div>
       </div>
     </div>
