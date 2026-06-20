@@ -64,7 +64,7 @@ app.get('/availability', async (c) => {
     AND status NOT IN ('cancelled', 'no_show')
     AND start_time < ${end.toISOString()}
     AND end_time > ${start.toISOString()}
-  `;
+  ` as { start_time: string; end_time: string }[];
 
   const slots = computeAvailableSlots({
     date,
