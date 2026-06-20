@@ -366,3 +366,7 @@ ALTER TABLE bookings ADD CONSTRAINT bookings_status_check
 
 -- Custom domain verification token
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_verify_token TEXT;
+
+-- Railway custom domain provisioning
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_railway_id TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_cname_target TEXT;
