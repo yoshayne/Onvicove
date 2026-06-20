@@ -36,6 +36,7 @@ export interface ProductData {
   category?: string;
   isFeatured?: boolean;
   stockQuantity?: number;
+  requiresShipping?: boolean;
 }
 
 export interface ServiceData {
@@ -65,6 +66,7 @@ export interface CartItem {
   priceCents: number;
   quantity: number;
   imageUrl?: string;
+  requiresShipping?: boolean;
 }
 
 export interface AvailableSlot {

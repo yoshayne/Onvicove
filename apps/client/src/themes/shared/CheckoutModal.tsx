@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import type { CartItem } from '../types';
 import { formatPrice } from '../types';
 import StripePaymentForm from './StripePaymentForm';
+import type { ShippingAddress } from './useStorefrontCommerce';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -15,7 +16,7 @@ interface CheckoutModalProps {
   amountCents?: number;
   stripeAccountId?: string;
   currency?: string;
-  onSubmit: (info: { name: string; email: string; phone: string }) => void;
+  onSubmit: (info: { name: string; email: string; phone: string; shippingAddress?: ShippingAddress }) => void;
   onPaymentSuccess?: () => void;
   onPaymentCancel?: () => void;
 }
@@ -38,10 +39,25 @@ export default function CheckoutModal({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [line1, setLine1] = useState('');
+  const [line2, setLine2] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [country, setCountry] = useState('US');
 
   if (!isOpen) return null;
 
+  const needsShipping = items.some((i) => i.requiresShipping !== false);
   const subtotal = items.reduce((sum, item) => sum + item.priceCents * item.quantity, 0);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const shippingAddress: ShippingAddress | undefined = needsShipping
+      ? { line1, line2: line2 || undefined, city, state, postal_code: postalCode, country }
+      : undefined;
+    onSubmit({ name, email, phone, shippingAddress });
+  }
 
   if (status === 'success') {
     return (
@@ -95,21 +111,14 @@ export default function CheckoutModal({
         </div>
 
         <div className="mb-4 flex items-center justify-between text-sm">
-          <span className="text-gray-500">Subtotal</span>
-          <span className="font-medium">{formatPrice(subtotal)}</span>
+          <span className="text-gray-500">Subtotal ({items.reduce((s, i) => s + i.quantity, 0)} items)</span>
+          <span className="font-medium">{formatPrice(subtotal, currency)}</span>
         </div>
 
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit({ name, email, phone });
-          }}
-        >
+        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Contact info</p>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-name">
-              Name
-            </label>
+            <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-name">Name</label>
             <input
               id="co-name"
               type="text"
@@ -120,9 +129,7 @@ export default function CheckoutModal({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-email">
-              Email
-            </label>
+            <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-email">Email</label>
             <input
               id="co-email"
               type="email"
@@ -133,9 +140,7 @@ export default function CheckoutModal({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-phone">
-              Phone (optional)
-            </label>
+            <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-phone">Phone (optional)</label>
             <input
               id="co-phone"
               type="tel"
@@ -144,6 +149,86 @@ export default function CheckoutModal({
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand-color,#111111)] focus:outline-none"
             />
           </div>
+
+          {needsShipping && (
+            <>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Shipping address</p>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-line1">Address</label>
+                <input
+                  id="co-line1"
+                  type="text"
+                  required
+                  placeholder="123 Main St"
+                  value={line1}
+                  onChange={(e) => setLine1(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand-color,#111111)] focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-line2">Apt / Suite (optional)</label>
+                <input
+                  id="co-line2"
+                  type="text"
+                  value={line2}
+                  onChange={(e) => setLine2(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand-color,#111111)] focus:outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-city">City</label>
+                  <input
+                    id="co-city"
+                    type="text"
+                    required
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand-color,#111111)] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-state">State</label>
+                  <input
+                    id="co-state"
+                    type="text"
+                    required
+                    placeholder="CA"
+                    maxLength={2}
+                    value={state}
+                    onChange={(e) => setState(e.target.value.toUpperCase())}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand-color,#111111)] focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-zip">ZIP code</label>
+                  <input
+                    id="co-zip"
+                    type="text"
+                    required
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand-color,#111111)] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500" htmlFor="co-country">Country</label>
+                  <input
+                    id="co-country"
+                    type="text"
+                    required
+                    placeholder="US"
+                    maxLength={2}
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value.toUpperCase())}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand-color,#111111)] focus:outline-none"
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {status === 'error' && error && <p className="text-sm text-red-600">{error}</p>}
 

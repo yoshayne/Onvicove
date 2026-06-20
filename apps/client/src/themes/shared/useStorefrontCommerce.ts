@@ -6,6 +6,15 @@ interface OrderResponse {
   order: { id: string; order_number: string };
 }
 
+export interface ShippingAddress {
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+}
+
 interface BookingResponse {
   booking: { id: string };
 }
@@ -53,6 +62,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
           priceCents: product.priceCents,
           quantity: 1,
           imageUrl: product.imageUrls?.[0],
+          requiresShipping: product.requiresShipping ?? true,
         },
       ];
     });
@@ -80,7 +90,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
     setOrderError(null);
   }
 
-  async function submitOrder(info: { name: string; email: string; phone: string }) {
+  async function submitOrder(info: { name: string; email: string; phone: string; shippingAddress?: ShippingAddress }) {
     if (!slug || cart.length === 0) return;
     setOrderStatus('submitting');
     setOrderError(null);
@@ -90,6 +100,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
         customer_email: info.email,
         customer_phone: info.phone || null,
         items: cart.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
+        shipping_address: info.shippingAddress ?? null,
       });
       setOrderNumber(res.order.order_number);
       const pi = await apiPost<PaymentIntentResponse>('/api/stripe/payment-intent', {

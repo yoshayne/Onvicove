@@ -320,9 +320,13 @@ app.post('/:slug/bookings', async (c) => {
   `;
   const customer = customers[0];
 
-  const status = tenant.booking_mode === 'manual' ? 'pending' : 'confirmed';
   const amountCents = service.price_cents as number;
   const platformFee = await computePlatformFee(amountCents);
+  const status = tenant.booking_mode === 'manual'
+    ? 'pending'
+    : amountCents > 0
+      ? 'awaiting_payment'
+      : 'confirmed';
 
   const rows = await db`
     INSERT INTO bookings (

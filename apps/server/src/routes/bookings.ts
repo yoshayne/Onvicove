@@ -85,7 +85,7 @@ app.get('/', async (c) => {
   const dateFrom = c.req.query('date_from');
   const dateTo = c.req.query('date_to');
 
-  const conditions = [db`tenant_id = ${tenant.id}`];
+  const conditions = [db`tenant_id = ${tenant.id}`, db`status != ${'awaiting_payment'}`];
   if (status) conditions.push(db`status = ${status}`);
   if (dateFrom) conditions.push(db`start_time >= ${dateFrom}`);
   if (dateTo) conditions.push(db`start_time <= ${dateTo}`);

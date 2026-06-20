@@ -35,6 +35,7 @@ function mapProduct(p: Product): ProductData {
     category: p.category ?? undefined,
     isFeatured: p.is_featured,
     stockQuantity: p.stock_quantity ?? undefined,
+    requiresShipping: p.requires_shipping ?? true,
   };
 }
 

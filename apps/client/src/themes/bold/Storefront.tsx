@@ -45,9 +45,14 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                 type="button"
                 aria-label="Open cart"
                 onClick={() => setCartOpen(true)}
-                className="text-white hover:text-[var(--brand-color,#e8ff00)] transition-colors"
+                className="relative text-white hover:text-[var(--brand-color,#e8ff00)] transition-colors"
               >
                 <ShoppingCart size={20} />
+                {cart.reduce((s, i) => s + i.quantity, 0) > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--brand-color,#e8ff00)] text-[9px] font-bold text-black">
+                    {cart.reduce((s, i) => s + i.quantity, 0)}
+                  </span>
+                )}
               </button>
             )}
           </div>
