@@ -16,6 +16,7 @@ import {
   Tag,
   Settings as SettingsIcon,
   Wallet,
+  CreditCard,
   Menu,
   X,
   ExternalLink,
@@ -40,6 +41,7 @@ const navItems = [
   { to: '/dashboard/discounts', label: 'Discounts', icon: Tag },
   { to: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   { to: '/dashboard/payouts', label: 'Payouts', icon: Wallet },
+  { to: '/dashboard/billing', label: 'Billing', icon: CreditCard },
 ];
 
 export default function Layout() {

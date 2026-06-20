@@ -24,6 +24,9 @@ export interface Tenant {
   timezone: string;
   stripe_account_id: string | null;
   stripe_onboarded: boolean;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  stripe_subscription_status: string | null;
   plan: PlanId;
   plan_expires_at: string | null;
   booking_mode: BookingMode;

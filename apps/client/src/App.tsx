@@ -21,6 +21,7 @@ import AIPhotos from './dashboard/AIPhotos';
 import Discounts from './dashboard/Discounts';
 import Settings from './dashboard/Settings';
 import Payouts from './dashboard/Payouts';
+import Billing from './dashboard/Billing';
 import AdminLayout from './admin/Layout';
 import AdminOverview from './admin/Overview';
 import AdminTenants from './admin/Tenants';
@@ -104,6 +105,7 @@ export default function App() {
                 <Route path="discounts" element={<Discounts />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="payouts" element={<Payouts />} />
+                <Route path="billing" element={<Billing />} />
               </Route>
 
               <Route path="/pay/booking/:id" element={<PayBalance />} />

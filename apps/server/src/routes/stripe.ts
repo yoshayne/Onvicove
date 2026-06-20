@@ -298,6 +298,76 @@ app.post('/webhook', async (c) => {
     }
   }
 
+  // Subscription lifecycle events
+  if (
+    event.type === 'customer.subscription.created' ||
+    event.type === 'customer.subscription.updated'
+  ) {
+    const sub = event.data.object as {
+      id: string;
+      status: string;
+      customer: string;
+      items: { data: { price: { id: string } }[] };
+      current_period_end: number;
+      cancel_at_period_end: boolean;
+    };
+
+    const priceId = sub.items.data[0]?.price?.id;
+    const proPriceId = process.env.STRIPE_PRICE_PRO_MONTHLY;
+    const businessPriceId = process.env.STRIPE_PRICE_BUSINESS_MONTHLY;
+
+    let plan: string | null = null;
+    if (priceId && priceId === proPriceId) plan = 'pro';
+    else if (priceId && priceId === businessPriceId) plan = 'business';
+
+    const status = sub.cancel_at_period_end ? 'canceling' : sub.status;
+    const periodEnd = new Date(sub.current_period_end * 1000).toISOString();
+
+    if (plan) {
+      await db`
+        UPDATE tenants
+        SET stripe_subscription_id = ${sub.id},
+            stripe_subscription_status = ${status},
+            plan = ${plan},
+            plan_expires_at = ${periodEnd},
+            updated_at = NOW()
+        WHERE stripe_customer_id = ${sub.customer}
+      `;
+    } else {
+      await db`
+        UPDATE tenants
+        SET stripe_subscription_id = ${sub.id},
+            stripe_subscription_status = ${status},
+            plan_expires_at = ${periodEnd},
+            updated_at = NOW()
+        WHERE stripe_customer_id = ${sub.customer}
+      `;
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const sub = event.data.object as { id: string; customer: string };
+    await db`
+      UPDATE tenants
+      SET stripe_subscription_status = 'canceled',
+          stripe_subscription_id = NULL,
+          plan = 'starter',
+          plan_expires_at = NULL,
+          updated_at = NOW()
+      WHERE stripe_customer_id = ${sub.customer}
+    `;
+  }
+
+  if (event.type === 'invoice.payment_failed') {
+    const inv = event.data.object as { customer: string; subscription: string | null };
+    if (inv.subscription) {
+      await db`
+        UPDATE tenants SET stripe_subscription_status = 'past_due', updated_at = NOW()
+        WHERE stripe_customer_id = ${inv.customer}
+      `;
+    }
+  }
+
   return c.json({ received: true });
 });
 

@@ -43,6 +43,9 @@ CREATE TABLE IF NOT EXISTS tenants (
   wizard_step INTEGER DEFAULT 0,
   wizard_data JSONB DEFAULT '{}',
   is_active BOOLEAN DEFAULT TRUE,
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  stripe_subscription_status TEXT DEFAULT 'none',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -350,3 +353,8 @@ CREATE TABLE IF NOT EXISTS platform_coupons (
 ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS option_type TEXT DEFAULT 'custom';
 ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS option_name TEXT;
 ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS color_hex TEXT;
+
+-- Subscription billing columns for tenant platform plans
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_subscription_status TEXT DEFAULT 'none';

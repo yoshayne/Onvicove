@@ -27,6 +27,7 @@ import discountRoutes from './routes/discounts';
 import publicRoutes from './routes/public';
 import adminRoutes from './routes/admin';
 import webhookRoutes from './routes/webhooks';
+import subscriptionRoutes from './routes/subscriptions';
 
 const app = new Hono();
 
@@ -78,6 +79,7 @@ app.route('/api/discounts', discountRoutes);
 app.route('/api/public', publicRoutes);
 app.route('/api/admin', adminRoutes);
 app.route('/api/webhooks', webhookRoutes);
+app.route('/api/subscriptions', subscriptionRoutes);
 
 // Serve React client for all non-API routes
 // The Vite build outputs to dist/client relative to repo root

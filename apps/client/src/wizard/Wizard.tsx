@@ -5,6 +5,7 @@ import WizardLayout from './WizardLayout';
 import { useWizardStore, selectWizardCompleteness, type WizardState } from './wizardStore';
 import { useApi } from '../lib/api';
 
+import StripePaymentForm from '../themes/shared/StripePaymentForm';
 import Step1_BusinessName from './steps/Step1_BusinessName';
 import Step2_Mode from './steps/Step2_Mode';
 import Step3_Theme from './steps/Step3_Theme';
@@ -139,6 +140,8 @@ export default function Wizard() {
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [launchedSlug, setLaunchedSlug] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [subClientSecret, setSubClientSecret] = useState<string | null>(null);
+  const [subPriceCents, setSubPriceCents] = useState(0);
 
   const StepComponent = STEP_COMPONENTS[currentStep] ?? Step1_BusinessName;
 
@@ -183,7 +186,24 @@ export default function Wizard() {
         wizard_data: buildWizardData(state),
       });
       const result = await api.post<WizardCompleteResponse>('/wizard/complete');
-      setLaunchedSlug(result.tenant.slug || state.slug);
+      const slug = result.tenant.slug || state.slug;
+      setLaunchedSlug(slug);
+
+      // If tenant chose a paid plan, kick off subscription payment
+      if (state.plan === 'pro' || state.plan === 'business') {
+        try {
+          const sub = await api.post<{ clientSecret?: string; upgraded?: boolean; status: string }>(
+            '/subscriptions/create',
+            { plan: state.plan }
+          );
+          if (sub.clientSecret) {
+            setSubPriceCents(state.plan === 'pro' ? 2900 : 7900);
+            setSubClientSecret(sub.clientSecret);
+          }
+        } catch {
+          // Subscription can be set up from dashboard/billing — non-blocking
+        }
+      }
     } catch (err) {
       setLaunchError(err instanceof Error ? err.message : 'Failed to launch site');
     } finally {
@@ -219,6 +239,10 @@ export default function Wizard() {
           launchedSlug={launchedSlug}
           canLaunch={completeness.isReadyToLaunch}
           onBack={prevStep}
+          subClientSecret={subClientSecret}
+          subPriceCents={subPriceCents}
+          onSubPaymentSuccess={() => setSubClientSecret(null)}
+          onSubPaymentCancel={() => setSubClientSecret(null)}
           onGoToSite={(slug) => {
             reset();
             navigate(`/${slug}`);
@@ -240,6 +264,10 @@ interface Step10LaunchControlsProps {
   launchedSlug: string | null;
   canLaunch: boolean;
   onBack: () => void;
+  subClientSecret: string | null;
+  subPriceCents: number;
+  onSubPaymentSuccess: () => void;
+  onSubPaymentCancel: () => void;
   onGoToSite: (slug: string) => void;
   onGoToDashboard: () => void;
 }
@@ -253,31 +281,52 @@ function Step10LaunchControls({
   launchedSlug,
   canLaunch,
   onBack,
+  subClientSecret,
+  subPriceCents,
+  onSubPaymentSuccess,
+  onSubPaymentCancel,
   onGoToSite,
   onGoToDashboard,
 }: Step10LaunchControlsProps) {
   if (launchedSlug) {
     return (
-      <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4 text-center">
-        <p className="mb-2 text-sm font-medium text-green-800">
-          🎉 Your site is live!
-        </p>
-        <div className="flex items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => onGoToSite(launchedSlug)}
-            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-          >
-            View your site /{launchedSlug}
-          </button>
-          <button
-            type="button"
-            onClick={() => onGoToDashboard()}
-            className="rounded-lg border border-green-300 bg-white px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-100"
-          >
-            Go to dashboard
-          </button>
+      <div className="mt-6 flex flex-col gap-4">
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+          <p className="mb-2 text-sm font-medium text-green-800">
+            Your site is live!
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => onGoToSite(launchedSlug)}
+              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+            >
+              View your site /{launchedSlug}
+            </button>
+            <button
+              type="button"
+              onClick={() => onGoToDashboard()}
+              className="rounded-lg border border-green-300 bg-white px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-100"
+            >
+              Go to dashboard
+            </button>
+          </div>
         </div>
+
+        {subClientSecret && (
+          <div className="rounded-lg border border-gray-200 bg-white p-5">
+            <p className="mb-1 text-base font-semibold text-gray-900">Activate your plan</p>
+            <p className="mb-4 text-sm text-gray-500">
+              Enter your payment details to activate your subscription and unlock premium features.
+            </p>
+            <StripePaymentForm
+              clientSecret={subClientSecret}
+              amountCents={subPriceCents}
+              onSuccess={onSubPaymentSuccess}
+              onCancel={onSubPaymentCancel}
+            />
+          </div>
+        )}
       </div>
     );
   }
