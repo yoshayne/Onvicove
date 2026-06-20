@@ -12,7 +12,7 @@ const STEP_LABELS: Record<number, string> = {
   5: 'Hero photo',
   6: 'Products',
   7: 'Services',
-  8: 'Availability',
+  8: 'Staff & Hours',
   9: 'Payments',
   10: 'Plan',
   11: 'Launch',
