@@ -125,6 +125,7 @@ app.post('/payment-intent', async (c) => {
       amount: totalCents,
       currency: (record.currency as string)?.toLowerCase() || 'usd',
       application_fee_amount: platformFee,
+      automatic_payment_methods: { enabled: true },
       transfer_data: { destination: record.stripe_account_id as string },
       metadata: { reference_type, reference_id, tenant_id: record.tenant_id as string },
     });

@@ -45,6 +45,7 @@ export async function createBookingPaymentIntent(args: CreateBookingIntentArgs) 
     amount: args.amountCents,
     currency: args.currency.toLowerCase() || 'usd',
     application_fee_amount: platformFee,
+    automatic_payment_methods: { enabled: true },
     transfer_data: { destination: args.stripeAccountId },
     metadata: {
       reference_type: args.referenceType,
