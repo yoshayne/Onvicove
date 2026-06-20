@@ -146,7 +146,7 @@ app.patch('/:id', async (c) => {
 
   if (keys.length > 0) {
     const rows = await db`
-      UPDATE staff SET ${db(updates, ...keys)}, updated_at = NOW()
+      UPDATE staff SET ${db(updates, ...keys)}
       WHERE id = ${id} AND tenant_id = ${tenant.id}
       RETURNING *
     `;
@@ -161,7 +161,7 @@ app.patch('/:id', async (c) => {
   // Update JSONB availability directly in its own template literal
   if (availability !== undefined) {
     const updated = await db`
-      UPDATE staff SET availability = ${db.json(availability)}, updated_at = NOW()
+      UPDATE staff SET availability = ${db.json(availability)}
       WHERE id = ${id} AND tenant_id = ${tenant.id}
       RETURNING *
     `;
