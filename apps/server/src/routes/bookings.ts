@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { createBookingPaymentIntent } from '../services/stripe';
 import { sendPaymentLinkEmail, sendBookingCancelled } from '../services/email';
+import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
 
 const app = new Hono();
 
@@ -27,6 +28,55 @@ const createBookingSchema = z.object({
 });
 
 app.use('*', requireAuth, requireTenant);
+
+// GET /api/bookings/availability?service_id=&date=YYYY-MM-DD&staff_id= (optional)
+app.get('/availability', async (c) => {
+  const tenant = c.get('tenant') as { id: string; timezone?: string };
+  const serviceId = c.req.query('service_id');
+  const date = c.req.query('date');
+  const staffId = c.req.query('staff_id');
+
+  if (!serviceId || !date) {
+    return c.json({ error: 'service_id and date are required' }, 400);
+  }
+
+  const timezone = tenant.timezone || 'America/New_York';
+
+  const services = await db`SELECT * FROM services WHERE id = ${serviceId} AND tenant_id = ${tenant.id} LIMIT 1`;
+  if (!services[0]) return c.json({ error: 'Service not found' }, 404);
+  const service = services[0];
+
+  let staffList;
+  if (staffId) {
+    staffList = await db`SELECT * FROM staff WHERE id = ${staffId} AND tenant_id = ${tenant.id} AND is_active = TRUE LIMIT 1`;
+  } else {
+    staffList = await db`SELECT * FROM staff WHERE tenant_id = ${tenant.id} AND is_active = TRUE LIMIT 1`;
+  }
+  if (!staffList[0]) return c.json({ slots: [] });
+
+  const staff = staffList[0];
+  const { start, end } = getDayUtcRange(date, timezone);
+
+  const existingBookings = await db`
+    SELECT start_time, end_time FROM bookings
+    WHERE tenant_id = ${tenant.id}
+    AND (staff_id = ${staff.id} OR staff_id IS NULL)
+    AND status NOT IN ('cancelled', 'no_show')
+    AND start_time < ${end.toISOString()}
+    AND end_time > ${start.toISOString()}
+  `;
+
+  const slots = computeAvailableSlots({
+    date,
+    timezone,
+    availability: staff.availability as Record<string, { start: string; end: string }[]>,
+    durationMinutes: service.duration_minutes as number,
+    bufferMinutes: (service.buffer_minutes as number) ?? 0,
+    existingBookings,
+  });
+
+  return c.json({ slots, staffId: staff.id, timezone });
+});
 
 // GET /api/bookings — filters: status, date_from, date_to
 app.get('/', async (c) => {

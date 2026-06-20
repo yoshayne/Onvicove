@@ -6,6 +6,7 @@ import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
 import Button from '../components/shared/Button';
 import PaymentModal from './PaymentModal';
+import NewBookingModal from './NewBookingModal';
 
 const BOOKING_STATUSES: BookingStatus[] = ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'];
 
@@ -52,10 +53,14 @@ export default function Bookings() {
   });
 
   const [paymentBooking, setPaymentBooking] = useState<Booking | null>(null);
+  const [showNewBooking, setShowNewBooking] = useState(false);
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold text-slate-900">Bookings</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-900">Bookings</h1>
+        <Button onClick={() => setShowNewBooking(true)}>+ New booking</Button>
+      </div>
 
       <div className="flex flex-wrap gap-3">
         <select
@@ -167,6 +172,8 @@ export default function Bookings() {
           </table>
         </div>
       )}
+
+      <NewBookingModal isOpen={showNewBooking} onClose={() => setShowNewBooking(false)} />
 
       {paymentBooking && (
         <PaymentModal
