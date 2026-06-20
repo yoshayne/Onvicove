@@ -8,11 +8,13 @@ import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
 import CheckoutModal from '../shared/CheckoutModal';
 import BookingStatusOverlay from '../shared/BookingStatusOverlay';
+import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 
 export default function Storefront({ theme, products, services, staff }: ThemeProps) {
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
+    quickViewProduct, openQuickView, closeQuickView,
     checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
     orderClientSecret, orderAmountCents, confirmOrderPayment, cancelOrderPayment,
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
@@ -95,11 +97,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                 <p className="text-sm text-[#111111]/60 mb-3 flex-1">{formatPrice(product.priceCents, theme.currency)}</p>
                 <button
                   type="button"
-                  onClick={() => addToCart(product)}
-                  disabled={!theme.paymentsEnabled}
-                  className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-2 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--brand-color,#ff3cac)]"
+                  onClick={() => openQuickView(product)}
+                  className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-2 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors"
                 >
-                  {theme.paymentsEnabled ? 'Add to Cart' : 'Coming Soon'}
+                  {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
                 </button>
               </div>
             ))}
@@ -173,6 +174,14 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           </p>
         </div>
       </footer>
+
+      <ProductQuickView
+        product={quickViewProduct}
+        onClose={closeQuickView}
+        onAddToCart={(product, variant) => { addToCart(product, variant); closeQuickView(); }}
+        currency={theme.currency}
+        paymentsEnabled={theme.paymentsEnabled}
+      />
 
       {showProducts && (
         <CartDrawer

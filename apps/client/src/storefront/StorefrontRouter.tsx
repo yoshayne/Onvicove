@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '../lib/api';
 import Spinner from '../components/shared/Spinner';
 import ThemeRenderer from '../themes/ThemeRenderer';
-import type { ThemeData, ProductData, ServiceData, StaffData } from '../themes/types';
+import type { ThemeData, ProductData, ProductVariantData, ServiceData, StaffData } from '../themes/types';
 import type { Tenant, Product, Service, Staff } from '../types';
 
 function mapTenant(tenant: Tenant): ThemeData {
@@ -24,7 +24,7 @@ function mapTenant(tenant: Tenant): ThemeData {
   };
 }
 
-function mapProduct(p: Product): ProductData {
+function mapProduct(p: Product & { variants?: ProductVariantData[] }): ProductData {
   return {
     id: p.id,
     name: p.name,
@@ -36,6 +36,7 @@ function mapProduct(p: Product): ProductData {
     isFeatured: p.is_featured,
     stockQuantity: p.stock_quantity ?? undefined,
     requiresShipping: p.requires_shipping ?? true,
+    variants: p.variants ?? [],
   };
 }
 

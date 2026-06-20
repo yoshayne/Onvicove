@@ -26,6 +26,16 @@ export interface ProductImage {
   alt?: string;
 }
 
+export interface ProductVariantData {
+  id: string;
+  name: string;
+  option_type: 'size' | 'color' | 'custom';
+  option_name: string | null;
+  color_hex: string | null;
+  price_cents: number | null;
+  stock_quantity: number | null;
+}
+
 export interface ProductData {
   id: string;
   name: string;
@@ -37,6 +47,7 @@ export interface ProductData {
   isFeatured?: boolean;
   stockQuantity?: number;
   requiresShipping?: boolean;
+  variants?: ProductVariantData[];
 }
 
 export interface ServiceData {
@@ -61,7 +72,10 @@ export interface StaffData {
 }
 
 export interface CartItem {
+  cartKey: string;       // `${productId}:${variantId || ''}`
   productId: string;
+  variantId?: string;
+  variantName?: string;
   name: string;
   priceCents: number;
   quantity: number;

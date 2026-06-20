@@ -6,8 +6,8 @@ interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
-  onUpdateQuantity: (productId: string, qty: number) => void;
-  onRemove: (productId: string) => void;
+  onUpdateQuantity: (cartKey: string, qty: number) => void;
+  onRemove: (cartKey: string) => void;
   onCheckout: () => void;
 }
 
@@ -47,7 +47,7 @@ export default function CartDrawer({
             <p className="text-[#3d2314]/40 text-sm">Your basket is empty.</p>
           ) : (
             items.map((item) => (
-              <div key={item.productId} className="flex gap-4">
+              <div key={item.cartKey} className="flex gap-4">
                 {item.imageUrl && (
                   <img src={item.imageUrl} alt={item.name} className="w-20 h-24 object-cover rounded-xl" />
                 )}
@@ -57,7 +57,7 @@ export default function CartDrawer({
                     <button
                       type="button"
                       aria-label={`Remove ${item.name}`}
-                      onClick={() => onRemove(item.productId)}
+                      onClick={() => onRemove(item.cartKey)}
                       className="text-[#3d2314]/40 hover:text-[var(--brand-color,#8b5e3c)]"
                     >
                       <X size={16} />
@@ -68,7 +68,7 @@ export default function CartDrawer({
                     <button
                       type="button"
                       aria-label="Decrease quantity"
-                      onClick={() => onUpdateQuantity(item.productId, Math.max(1, item.quantity - 1))}
+                      onClick={() => onUpdateQuantity(item.cartKey, Math.max(1, item.quantity - 1))}
                       className="p-1 rounded-full border border-[#3d2314]/20 hover:border-[var(--brand-color,#8b5e3c)]"
                     >
                       <Minus size={12} />
@@ -77,7 +77,7 @@ export default function CartDrawer({
                     <button
                       type="button"
                       aria-label="Increase quantity"
-                      onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
+                      onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)}
                       className="p-1 rounded-full border border-[#3d2314]/20 hover:border-[var(--brand-color,#8b5e3c)]"
                     >
                       <Plus size={12} />

@@ -7,11 +7,13 @@ import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
 import CheckoutModal from '../shared/CheckoutModal';
 import BookingStatusOverlay from '../shared/BookingStatusOverlay';
+import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 
 export default function Storefront({ theme, products, services, staff }: ThemeProps) {
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
+    quickViewProduct, openQuickView, closeQuickView,
     checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
     orderClientSecret, orderAmountCents, confirmOrderPayment, cancelOrderPayment,
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
@@ -228,11 +230,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                     )}
                     <button
                       type="button"
-                      onClick={() => addToCart(product)}
-                      disabled={!theme.paymentsEnabled}
-                      className="product-overlay-btn w-full bg-[var(--brand-color,#e8ff00)] text-black text-xs font-bold uppercase tracking-[0.2em] py-3 hover:bg-white transition-colors disabled:opacity-40"
+                      onClick={() => openQuickView(product)}
+                      className="product-overlay-btn w-full bg-[var(--brand-color,#e8ff00)] text-black text-xs font-bold uppercase tracking-[0.2em] py-3 hover:bg-white transition-colors"
                     >
-                      {theme.paymentsEnabled ? 'Add to Cart' : 'Coming Soon'}
+                      {theme.paymentsEnabled ? 'Quick View' : 'View Details'}
                     </button>
                   </div>
 
@@ -447,6 +448,14 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       )}
 
       {/* ── Commerce overlays ── */}
+      <ProductQuickView
+        product={quickViewProduct}
+        onClose={closeQuickView}
+        onAddToCart={(product, variant) => { addToCart(product, variant); closeQuickView(); }}
+        currency={theme.currency}
+        paymentsEnabled={theme.paymentsEnabled}
+      />
+
       {showProducts && (
         <CartDrawer
           isOpen={cartOpen}

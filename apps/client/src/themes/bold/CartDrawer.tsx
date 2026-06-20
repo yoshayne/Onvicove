@@ -6,8 +6,8 @@ interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
-  onUpdateQuantity: (productId: string, qty: number) => void;
-  onRemove: (productId: string) => void;
+  onUpdateQuantity: (cartKey: string, qty: number) => void;
+  onRemove: (cartKey: string) => void;
   onCheckout: () => void;
 }
 
@@ -72,7 +72,7 @@ export default function CartDrawer({
             </div>
           ) : (
             items.map((item) => (
-              <div key={item.productId} className="flex gap-4 group">
+              <div key={item.cartKey} className="flex gap-4 group">
                 {item.imageUrl ? (
                   <div className="w-20 h-24 shrink-0 overflow-hidden bg-[#1a1a1a]">
                     <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
@@ -88,12 +88,15 @@ export default function CartDrawer({
                     <button
                       type="button"
                       aria-label={`Remove ${item.name}`}
-                      onClick={() => onRemove(item.productId)}
+                      onClick={() => onRemove(item.cartKey)}
                       className="shrink-0 text-white/20 hover:text-red-400 transition-colors mt-0.5"
                     >
                       <X size={14} />
                     </button>
                   </div>
+                  {item.variantName && (
+                    <span className="text-white/40 text-[10px] uppercase tracking-wide">{item.variantName}</span>
+                  )}
                   <span className="text-[var(--brand-color,#e8ff00)] text-sm font-bold mt-1">
                     {formatPrice(item.priceCents)}
                   </span>
@@ -101,7 +104,7 @@ export default function CartDrawer({
                     <button
                       type="button"
                       aria-label="Decrease quantity"
-                      onClick={() => onUpdateQuantity(item.productId, Math.max(1, item.quantity - 1))}
+                      onClick={() => onUpdateQuantity(item.cartKey, Math.max(1, item.quantity - 1))}
                       className="px-3 py-2 hover:bg-white/5 hover:text-[var(--brand-color,#e8ff00)] transition-colors"
                     >
                       <Minus size={11} />
@@ -110,7 +113,7 @@ export default function CartDrawer({
                     <button
                       type="button"
                       aria-label="Increase quantity"
-                      onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
+                      onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)}
                       className="px-3 py-2 hover:bg-white/5 hover:text-[var(--brand-color,#e8ff00)] transition-colors"
                     >
                       <Plus size={11} />

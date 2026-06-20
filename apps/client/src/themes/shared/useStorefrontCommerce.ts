@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../lib/api';
-import type { AvailableSlot, CartItem, ProductData, ServiceData } from '../types';
+import type { AvailableSlot, CartItem, ProductData, ProductVariantData, ServiceData } from '../types';
 
 interface OrderResponse {
   order: { id: string; order_number: string };
@@ -46,20 +46,40 @@ export function useStorefrontCommerce(slug: string | undefined) {
   const [orderClientSecret, setOrderClientSecret] = useState<string | null>(null);
   const [orderAmountCents, setOrderAmountCents] = useState(0);
 
-  function addToCart(product: ProductData) {
+  // Quick view
+  const [quickViewProduct, setQuickViewProduct] = useState<ProductData | null>(null);
+
+  function openQuickView(product: ProductData) {
+    setQuickViewProduct(product);
+  }
+
+  function closeQuickView() {
+    setQuickViewProduct(null);
+  }
+
+  function addToCart(product: ProductData, variant?: ProductVariantData) {
+    const cartKey = `${product.id}:${variant?.id ?? ''}`;
+    const priceCents = variant?.price_cents ?? product.priceCents;
+    const variantName = variant
+      ? (variant.option_name ?? variant.name)
+      : undefined;
+
     setCart((prev) => {
-      const existing = prev.find((i) => i.productId === product.id);
+      const existing = prev.find((i) => i.cartKey === cartKey);
       if (existing) {
         return prev.map((i) =>
-          i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.cartKey === cartKey ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
       return [
         ...prev,
         {
+          cartKey,
           productId: product.id,
+          variantId: variant?.id,
+          variantName,
           name: product.name,
-          priceCents: product.priceCents,
+          priceCents,
           quantity: 1,
           imageUrl: product.imageUrls?.[0],
           requiresShipping: product.requiresShipping ?? true,
@@ -69,12 +89,12 @@ export function useStorefrontCommerce(slug: string | undefined) {
     setCartOpen(true);
   }
 
-  function updateCartQuantity(productId: string, quantity: number) {
-    setCart((prev) => prev.map((i) => (i.productId === productId ? { ...i, quantity } : i)));
+  function updateCartQuantity(cartKey: string, quantity: number) {
+    setCart((prev) => prev.map((i) => (i.cartKey === cartKey ? { ...i, quantity } : i)));
   }
 
-  function removeFromCart(productId: string) {
-    setCart((prev) => prev.filter((i) => i.productId !== productId));
+  function removeFromCart(cartKey: string) {
+    setCart((prev) => prev.filter((i) => i.cartKey !== cartKey));
   }
 
   function openCheckout() {
@@ -99,7 +119,11 @@ export function useStorefrontCommerce(slug: string | undefined) {
         customer_name: info.name,
         customer_email: info.email,
         customer_phone: info.phone || null,
-        items: cart.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
+        items: cart.map((i) => ({
+          product_id: i.productId,
+          variant_id: i.variantId ?? null,
+          quantity: i.quantity,
+        })),
         shipping_address: info.shippingAddress ?? null,
       });
       setOrderNumber(res.order.order_number);
@@ -230,6 +254,9 @@ export function useStorefrontCommerce(slug: string | undefined) {
     addToCart,
     updateCartQuantity,
     removeFromCart,
+    quickViewProduct,
+    openQuickView,
+    closeQuickView,
     checkoutOpen,
     openCheckout,
     closeCheckout,

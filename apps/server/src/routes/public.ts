@@ -37,7 +37,23 @@ app.get('/:slug/products', async (c) => {
   const products = await db`
     SELECT * FROM products WHERE tenant_id = ${tenants[0].id} AND is_active = TRUE ORDER BY sort_order ASC
   `;
-  return c.json({ products: await Promise.all(products.map(enrichWithUrls)) });
+  const enriched = await Promise.all(products.map(enrichWithUrls));
+
+  if (enriched.length > 0) {
+    const productIds = enriched.map((p) => p.id as string);
+    const variants = await db`
+      SELECT * FROM product_variants WHERE product_id = ANY(${productIds}) ORDER BY sort_order ASC
+    `;
+    const byProduct = new Map<string, typeof variants>();
+    for (const v of variants) {
+      const pid = v.product_id as string;
+      if (!byProduct.has(pid)) byProduct.set(pid, []);
+      byProduct.get(pid)!.push(v);
+    }
+    return c.json({ products: enriched.map((p) => ({ ...p, variants: byProduct.get(p.id as string) ?? [] })) });
+  }
+
+  return c.json({ products: enriched });
 });
 
 // GET /api/public/:slug/products/:id

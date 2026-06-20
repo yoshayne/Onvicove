@@ -6,6 +6,7 @@ import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
 import CheckoutModal from '../shared/CheckoutModal';
 import BookingStatusOverlay from '../shared/BookingStatusOverlay';
+import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 
 // Heading font "Merriweather" requires loading Google Fonts in index.html.
@@ -19,6 +20,7 @@ export default function Storefront({
 }: ThemeProps) {
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
+    quickViewProduct, openQuickView, closeQuickView,
     checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
     orderClientSecret, orderAmountCents, confirmOrderPayment, cancelOrderPayment,
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
@@ -118,12 +120,11 @@ export default function Storefront({
                   </span>
                   <button
                     type="button"
-                    onClick={() => addToCart(product)}
-                    disabled={!theme.paymentsEnabled}
-                    className="flex items-center gap-2 border border-[#1a3a5c] px-4 py-2 text-sm font-bold uppercase tracking-wide text-[#1a3a5c] transition hover:bg-[#1a3a5c] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#1a3a5c]"
+                    onClick={() => openQuickView(product)}
+                    className="flex items-center gap-2 border border-[#1a3a5c] px-4 py-2 text-sm font-bold uppercase tracking-wide text-[#1a3a5c] transition hover:bg-[#1a3a5c] hover:text-white"
                   >
                     <ShoppingCart size={16} />
-                    {theme.paymentsEnabled ? 'Add to Cart' : 'Coming Soon'}
+                    {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
                   </button>
                 </div>
               </div>
@@ -212,6 +213,14 @@ export default function Storefront({
           </p>
         </div>
       </footer>
+
+      <ProductQuickView
+        product={quickViewProduct}
+        onClose={closeQuickView}
+        onAddToCart={(product, variant) => { addToCart(product, variant); closeQuickView(); }}
+        currency={theme.currency}
+        paymentsEnabled={theme.paymentsEnabled}
+      />
 
       {showProducts && (
         <CartDrawer
