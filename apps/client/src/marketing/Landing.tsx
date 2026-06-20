@@ -37,20 +37,23 @@ function HairStylistMockup() {
             {['Services', 'Book', 'Shop'].map(t => <span key={t} style={{ fontSize: 5, color: '#9d174d' }}>{t}</span>)}
           </div>
         </div>
-        <div style={{ background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', padding: '14px 10px 10px' }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: '#831843', lineHeight: 1.2, marginBottom: 3 }}>Healthy hair.<br />Confident you.</div>
-          <div style={{ fontSize: 5, color: '#9d174d', marginBottom: 8 }}>Premium hair care & styling services</div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <div style={{ background: '#ec4899', color: '#fff', fontSize: 5, fontWeight: 700, padding: '3px 7px', borderRadius: 10 }}>Book Now</div>
-            <div style={{ border: '1px solid #ec4899', color: '#ec4899', fontSize: 5, fontWeight: 600, padding: '3px 7px', borderRadius: 10 }}>View Services</div>
+        {/* Hero with real photo */}
+        <div style={{ position: 'relative', height: 72, overflow: 'hidden' }}>
+          <img src="/landing/hair-hero.jpg" alt="Hair salon" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(131,24,77,0.75) 0%, rgba(131,24,77,0.2) 100%)', padding: '10px 10px' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 3 }}>Healthy hair.<br />Confident you.</div>
+            <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+              <div style={{ background: '#ec4899', color: '#fff', fontSize: 4.5, fontWeight: 700, padding: '2.5px 6px', borderRadius: 10 }}>Book Now</div>
+              <div style={{ border: '1px solid rgba(255,255,255,0.7)', color: '#fff', fontSize: 4.5, fontWeight: 600, padding: '2.5px 6px', borderRadius: 10 }}>View Services</div>
+            </div>
           </div>
         </div>
-        <div style={{ padding: '8px 10px', background: '#fff' }}>
+        <div style={{ padding: '7px 10px', background: '#fff' }}>
           <div style={{ fontSize: 5, fontWeight: 700, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Popular Services</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-            {[["Women's Cut", "$65"], ["Balayage", "$180"]].map(([n, p]) => (
+            {[["Women's Cut", "$65", '/landing/hair-svc-1.jpg'], ["Balayage", "$180", '/landing/hair-svc-2.jpg']].map(([n, p, img]) => (
               <div key={n} style={{ borderRadius: 6, overflow: 'hidden', border: '1px solid #fce7f3' }}>
-                <div style={{ height: 22, background: 'linear-gradient(135deg, #fce7f3, #fdf2f8)' }} />
+                <img src={img} alt={n} style={{ width: '100%', height: 22, objectFit: 'cover' }} />
                 <div style={{ padding: '3px 4px' }}>
                   <div style={{ fontSize: 4.5, fontWeight: 600, color: '#1f2937' }}>{n}</div>
                   <div style={{ fontSize: 4, color: '#ec4899', fontWeight: 700 }}>{p}</div>
@@ -74,21 +77,26 @@ function FitnessCoachMockup() {
             {['Programs', 'Book', 'Shop'].map(t => <span key={t} style={{ fontSize: 5, color: '#888' }}>{t}</span>)}
           </div>
         </div>
-        <div style={{ background: '#0a0a0a', padding: '14px 10px 10px' }}>
-          <div style={{ fontSize: 10, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '-0.02em' }}>Stronger<br />Every Day</div>
-          <div style={{ fontSize: 5, color: '#666', marginBottom: 8 }}>Coaching that gets real results.</div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <div style={{ background: '#e8ff00', color: '#000', fontSize: 5, fontWeight: 800, padding: '3px 7px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Book a Free Call</div>
+        {/* Hero with real photo */}
+        <div style={{ position: 'relative', height: 72, overflow: 'hidden' }}>
+          <img src="/landing/fitness-hero.jpg" alt="Fitness coach" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', padding: '10px 10px' }}>
+            <div style={{ fontSize: 9, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '-0.02em' }}>Stronger<br />Every Day</div>
+            <div style={{ marginTop: 6 }}>
+              <div style={{ background: '#e8ff00', color: '#000', fontSize: 4.5, fontWeight: 800, padding: '2.5px 7px', borderRadius: 4, display: 'inline-block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Book a Free Call</div>
+            </div>
           </div>
         </div>
-        <div style={{ padding: '8px 10px', background: '#111' }}>
+        <div style={{ padding: '7px 10px', background: '#111' }}>
           <div style={{ fontSize: 5, fontWeight: 700, color: '#e8ff00', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Programs</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-            {[["1:1 Coaching", "$150/mo"], ["Nutrition Plan", "$99/mo"]].map(([n, p]) => (
-              <div key={n} style={{ background: '#1a1a1a', borderRadius: 4, padding: '4px' }}>
-                <div style={{ height: 18, background: '#252525', borderRadius: 3, marginBottom: 3 }} />
-                <div style={{ fontSize: 4.5, fontWeight: 700, color: '#fff' }}>{n}</div>
-                <div style={{ fontSize: 4, color: '#e8ff00', fontWeight: 700 }}>{p}</div>
+            {[["1:1 Coaching", "$150/mo", '/landing/fitness-prog-1.jpg'], ["Nutrition Plan", "$99/mo", '/landing/fitness-prog-2.jpg']].map(([n, p, img]) => (
+              <div key={n} style={{ background: '#1a1a1a', borderRadius: 4, overflow: 'hidden' }}>
+                <img src={img} alt={n} style={{ width: '100%', height: 18, objectFit: 'cover' }} />
+                <div style={{ padding: '3px 4px' }}>
+                  <div style={{ fontSize: 4.5, fontWeight: 700, color: '#fff' }}>{n}</div>
+                  <div style={{ fontSize: 4, color: '#e8ff00', fontWeight: 700 }}>{p}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -108,20 +116,23 @@ function CandleStoreMockup() {
             {['Shop', 'About', 'Cart'].map(t => <span key={t} style={{ fontSize: 5, color: '#7a5c46' }}>{t}</span>)}
           </div>
         </div>
-        <div style={{ background: '#f5e8d8', padding: '14px 10px 10px' }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: '#3d2b1f', lineHeight: 1.2, marginBottom: 3 }}>Handcrafted<br />candles for<br />every moment.</div>
-          <div style={{ fontSize: 5, color: '#7a5c46', marginBottom: 8 }}>Hand-poured with natural soy wax</div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <div style={{ background: '#8b5e3c', color: '#fff', fontSize: 5, fontWeight: 700, padding: '3px 7px', borderRadius: 4 }}>Shop Collection</div>
+        {/* Hero with real photo */}
+        <div style={{ position: 'relative', height: 72, overflow: 'hidden' }}>
+          <img src="/landing/candle-hero.jpg" alt="Candle store" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(61,43,31,0.5)', padding: '10px 10px' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 3 }}>Handcrafted<br />candles for<br />every moment.</div>
+            <div style={{ marginTop: 4 }}>
+              <div style={{ background: '#8b5e3c', color: '#fff', fontSize: 4.5, fontWeight: 700, padding: '2.5px 6px', borderRadius: 4, display: 'inline-block' }}>Shop Collection</div>
+            </div>
           </div>
         </div>
-        <div style={{ padding: '8px 10px', background: '#fdf8f3' }}>
+        <div style={{ padding: '7px 10px', background: '#fdf8f3' }}>
           <div style={{ fontSize: 5, fontWeight: 700, color: '#3d2b1f', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Best Sellers</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4 }}>
-            {[["Vanilla Cream", "$28"], ["Sandalwood", "$28"], ["Sea Salt", "$24"]].map(([n, p]) => (
-              <div key={n} style={{ borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ height: 20, background: 'linear-gradient(135deg, #e8d5c4, #ddd0c4)' }} />
-                <div style={{ padding: '3px 2px' }}>
+            {[["Vanilla Cream", "$28", '/landing/candle-prod-1.jpg'], ["Sandalwood", "$28", '/landing/candle-prod-2.jpg'], ["Sea Salt", "$24", '/landing/candle-hero.jpg']].map(([n, p, img]) => (
+              <div key={n} style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid #e8d5c4' }}>
+                <img src={img} alt={n} style={{ width: '100%', height: 20, objectFit: 'cover' }} />
+                <div style={{ padding: '3px 2px', background: '#fff' }}>
                   <div style={{ fontSize: 4, fontWeight: 600, color: '#3d2b1f' }}>{n}</div>
                   <div style={{ fontSize: 4, color: '#8b5e3c', fontWeight: 700 }}>{p}</div>
                 </div>
@@ -144,19 +155,22 @@ function PhotographerMockup() {
             {['Portfolio', 'Sessions', 'Book'].map(t => <span key={t} style={{ fontSize: 5, color: 'rgba(255,255,255,0.7)' }}>{t}</span>)}
           </div>
         </div>
-        <div style={{ background: '#1a3a5c', padding: '14px 10px 10px' }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 3, letterSpacing: '0.02em' }}>Timeless<br />photos.<br />Real stories.</div>
-          <div style={{ fontSize: 5, color: 'rgba(255,255,255,0.6)', marginBottom: 8 }}>Portrait & family photography</div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <div style={{ background: '#c8a850', color: '#fff', fontSize: 5, fontWeight: 700, padding: '3px 7px', borderRadius: 4 }}>Book a Session</div>
+        {/* Hero with real photo */}
+        <div style={{ position: 'relative', height: 72, overflow: 'hidden' }}>
+          <img src="/landing/photo-hero.jpg" alt="Photography" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(26,58,92,0.65)', padding: '10px 10px' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 3, letterSpacing: '0.02em' }}>Timeless<br />photos.<br />Real stories.</div>
+            <div style={{ marginTop: 4 }}>
+              <div style={{ background: '#c8a850', color: '#fff', fontSize: 4.5, fontWeight: 700, padding: '2.5px 6px', borderRadius: 4, display: 'inline-block' }}>Book a Session</div>
+            </div>
           </div>
         </div>
-        <div style={{ padding: '8px 10px', background: '#fff' }}>
+        <div style={{ padding: '7px 10px', background: '#fff' }}>
           <div style={{ fontSize: 5, fontWeight: 700, color: '#1a3a5c', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Popular Sessions</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-            {[["Portrait Session", "$250"], ["Family Session", "$350"]].map(([n, p]) => (
+            {[["Portrait Session", "$250", '/landing/photo-sess-1.jpg'], ["Family Session", "$350", '/landing/photo-sess-2.jpg']].map(([n, p, img]) => (
               <div key={n} style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-                <div style={{ height: 22, background: 'linear-gradient(135deg, #dde4ed, #c8d5e8)' }} />
+                <img src={img} alt={n} style={{ width: '100%', height: 22, objectFit: 'cover' }} />
                 <div style={{ padding: '3px 4px' }}>
                   <div style={{ fontSize: 4.5, fontWeight: 600, color: '#1a3a5c' }}>{n}</div>
                   <div style={{ fontSize: 4, color: '#c8a850', fontWeight: 700 }}>{p}</div>
@@ -366,10 +380,8 @@ export default function Landing() {
             <div className="flex gap-3">
               <div className="flex-1 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
                 <div className="bg-slate-100 px-3 py-1.5 text-[10px] font-semibold text-slate-500 border-b border-slate-200">Before</div>
-                <div className="h-36 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                  <div className="w-16 h-20 bg-amber-800/30 rounded-lg flex items-center justify-center">
-                    <div className="w-8 h-12 bg-amber-700/50 rounded" />
-                  </div>
+                <div className="h-36 overflow-hidden">
+                  <img src="/landing/ai-before.jpg" alt="Product before AI" className="w-full h-full object-cover" />
                 </div>
               </div>
               <div className="flex items-center">
@@ -379,10 +391,8 @@ export default function Landing() {
               </div>
               <div className="flex-1 rounded-xl overflow-hidden border-2 shadow-md" style={{ borderColor: BRAND + '40' }}>
                 <div className="px-3 py-1.5 text-[10px] font-semibold border-b" style={{ background: BRAND + '10', color: BRAND, borderColor: BRAND + '30' }}>After</div>
-                <div className="h-36 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${BRAND}10, ${BRAND}05)` }}>
-                  <div className="w-16 h-20 rounded-lg shadow-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, #d4a96a, #8b5e3c)` }}>
-                    <div className="w-8 h-12 rounded opacity-80" style={{ background: 'linear-gradient(180deg, #c8a850, #8b5e3c)' }} />
-                  </div>
+                <div className="h-36 overflow-hidden">
+                  <img src="/landing/ai-after.jpg" alt="Product after AI" className="w-full h-full object-cover" />
                 </div>
               </div>
             </div>
