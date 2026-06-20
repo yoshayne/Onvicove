@@ -345,3 +345,9 @@ CREATE TABLE IF NOT EXISTS platform_coupons (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+
+
+-- Product variant option metadata
+ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS option_type TEXT DEFAULT 'custom';
+ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS option_name TEXT;
+ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS color_hex TEXT;
