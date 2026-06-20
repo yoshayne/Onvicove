@@ -25,6 +25,46 @@ app.get('/styles', async (c) => {
   });
 });
 
+// GET /api/ai-photos/sessions — list all sessions with their unlocked/selected generation
+app.get('/sessions', async (c) => {
+  const tenant = c.get('tenant') as { id: string };
+  const sessions = await db`
+    SELECT
+      s.id, s.product_id, s.status, s.is_free, s.amount_cents, s.created_at,
+      p.name AS product_name,
+      g.id AS generation_id, g.style, g.full_image_key, g.preview_image_key
+    FROM ai_photo_sessions s
+    LEFT JOIN products p ON p.id = s.product_id
+    LEFT JOIN ai_photo_generations g ON g.session_id = s.id AND g.is_selected = TRUE
+    WHERE s.tenant_id = ${tenant.id}
+    ORDER BY s.created_at DESC
+  `;
+
+  const { getSignedFileUrl } = await import('../services/storage');
+  const rows = await Promise.all(
+    sessions.map(async (row) => {
+      const imageKey = row.status === 'unlocked' ? row.full_image_key : row.preview_image_key;
+      let imageUrl: string | null = null;
+      if (imageKey) {
+        try { imageUrl = await getSignedFileUrl(imageKey as string); } catch {}
+      }
+      return {
+        id: row.id,
+        productId: row.product_id,
+        productName: row.product_name ?? null,
+        status: row.status,
+        isFree: row.is_free,
+        style: row.style ?? null,
+        generationId: row.generation_id ?? null,
+        imageUrl,
+        createdAt: row.created_at,
+      };
+    })
+  );
+
+  return c.json({ sessions: rows });
+});
+
 // POST /api/ai-photos/sessions — multipart "image", optional product_id
 app.post('/sessions', async (c) => {
   const tenant = c.get('tenant') as { id: string };

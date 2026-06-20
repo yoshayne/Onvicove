@@ -328,6 +328,8 @@ export default function Products() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductFormState>(emptyForm);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
   const [showAiPanel, setShowAiPanel] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
@@ -338,12 +340,14 @@ export default function Products() {
   const createMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) => api.post<{ product: Product }>('/products', body),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); closeModal(); },
+    onError: (err: Error) => setMutationError(err.message),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
       api.patch<{ product: Product }>(`/products/${id}`, body),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); closeModal(); },
+    onError: (err: Error) => setMutationError(err.message),
   });
 
   const deleteMutation = useMutation({
@@ -352,29 +356,60 @@ export default function Products() {
   });
 
   function openCreate() {
-    setEditing(null); setForm(emptyForm); setShowAiPanel(false); setModalOpen(true);
+    setEditing(null); setForm(emptyForm); setShowAiPanel(false);
+    setMutationError(null); setUploadError(null); setModalOpen(true);
   }
 
   function openEdit(product: Product) {
-    setEditing(product);
-    const keys = product.image_keys ?? [];
-    const urls = product.image_urls ?? [];
-    const imageEntries: ImageEntry[] = keys.slice(0, 10).map((key, i) => ({ key, url: urls[i] ?? '' })).filter((e) => e.url);
-    const variantForm = variantsToForm((product.variants as Array<{ option_type: string; name: string; option_name?: string | null; color_hex?: string | null }>) ?? []);
-    setForm({ ...emptyForm, name: product.name, description: product.description ?? '', price_cents: product.price_cents, category: PRESET_CATEGORIES.includes(product.category ?? '') ? (product.category ?? '') : (product.category ? 'Other' : ''), category_custom: PRESET_CATEGORIES.includes(product.category ?? '') ? '' : (product.category ?? ''), stock_quantity: product.stock_quantity, is_active: product.is_active, type: product.type, imageEntries, ...variantForm });
-    setShowAiPanel(false); setModalOpen(true);
+    try {
+      setEditing(product);
+      const keys = product.image_keys ?? [];
+      const urls = product.image_urls ?? [];
+      // Keep ALL existing keys; show URL if available, placeholder otherwise
+      const imageEntries: ImageEntry[] = keys.slice(0, 20).map((key, i) => ({ key, url: urls[i] ?? '' }));
+      const variantForm = variantsToForm(
+        (product.variants as Array<{ option_type: string; name: string; option_name?: string | null; color_hex?: string | null }>) ?? []
+      );
+      const category = product.category ?? '';
+      setForm({
+        ...emptyForm,
+        name: product.name,
+        description: product.description ?? '',
+        price_cents: product.price_cents,
+        category: PRESET_CATEGORIES.includes(category) ? category : (category ? 'Other' : ''),
+        category_custom: PRESET_CATEGORIES.includes(category) ? '' : category,
+        stock_quantity: product.stock_quantity,
+        is_active: product.is_active,
+        type: product.type,
+        imageEntries,
+        ...variantForm,
+      });
+      setMutationError(null); setUploadError(null); setShowAiPanel(false);
+      setModalOpen(true);
+    } catch (err) {
+      console.error('openEdit error:', err);
+      // Still open the modal with basic data so user can at least save
+      setForm({ ...emptyForm, name: product.name, price_cents: product.price_cents, is_active: product.is_active, type: product.type });
+      setModalOpen(true);
+    }
   }
 
   function closeModal() {
-    setModalOpen(false); setEditing(null); setForm(emptyForm); setShowAiPanel(false);
+    setModalOpen(false); setEditing(null); setForm(emptyForm);
+    setShowAiPanel(false); setMutationError(null); setUploadError(null);
   }
 
   async function handleImageUpload(file: File) {
     setUploading(true);
+    setUploadError(null);
     try {
       const res = await api.upload<{ key: string; url: string }>('/uploads', file);
       setForm((prev) => ({ ...prev, imageEntries: [...prev.imageEntries, { key: res.key, url: res.url }] }));
-    } catch { /* ignore */ } finally { setUploading(false); }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   }
 
   function removeImage(index: number) {
@@ -714,7 +749,11 @@ export default function Products() {
               <div className="flex flex-wrap gap-2">
                 {form.imageEntries.map((entry, i) => (
                   <div key={entry.key} className="group relative">
-                    <img src={entry.url} alt={`Image ${i + 1}`} className="h-16 w-16 rounded-lg border border-slate-200 object-cover" />
+                    {entry.url ? (
+                      <img src={entry.url} alt={`Image ${i + 1}`} className="h-16 w-16 rounded-lg border border-slate-200 object-cover" />
+                    ) : (
+                      <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-xs text-slate-400">photo</div>
+                    )}
                     <button
                       type="button"
                       onClick={() => removeImage(i)}
@@ -731,6 +770,7 @@ export default function Products() {
               </label>
               {uploading && <Spinner size="sm" />}
             </div>
+            {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
             {editing && (
               <div>
                 <button type="button" onClick={() => setShowAiPanel((v) => !v)} className="rounded-lg border border-slate-300 bg-gradient-to-r from-purple-50 to-blue-50 px-3 py-2 text-sm font-medium text-gray-700 hover:from-purple-100 hover:to-blue-100">
@@ -750,6 +790,8 @@ export default function Products() {
             <input type="checkbox" checked={form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} />
             Active
           </label>
+
+          {mutationError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{mutationError}</p>}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>

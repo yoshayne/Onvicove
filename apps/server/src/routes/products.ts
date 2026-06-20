@@ -107,8 +107,8 @@ app.post('/', async (c) => {
     ) VALUES (
       ${tenant.id}, ${d.type}, ${d.name}, ${d.description ?? null}, ${d.price_cents},
       ${d.compare_at_price_cents ?? null}, ${d.sku ?? null}, ${d.stock_quantity ?? null},
-      ${d.track_inventory ?? false}, ${JSON.stringify(d.image_keys ?? [])},
-      ${d.category ?? null}, ${JSON.stringify(d.tags ?? [])}, ${d.is_active ?? true},
+      ${d.track_inventory ?? false}, ${db.json(d.image_keys ?? [])},
+      ${d.category ?? null}, ${db.json(d.tags ?? [])}, ${d.is_active ?? true},
       ${d.is_featured ?? false}, ${d.digital_file_key ?? null}, ${d.subscription_interval ?? null},
       ${d.weight_grams ?? null}, ${d.requires_shipping ?? false}, ${d.sort_order ?? 0}
     ) RETURNING *
@@ -131,8 +131,8 @@ app.patch('/:id', async (c) => {
 
   const { variants, ...rest } = parsed.data;
   const updates: Record<string, unknown> = { ...rest };
-  if (rest.image_keys !== undefined) updates.image_keys = JSON.stringify(rest.image_keys);
-  if (rest.tags !== undefined) updates.tags = JSON.stringify(rest.tags);
+  if (rest.image_keys !== undefined) updates.image_keys = db.json(rest.image_keys);
+  if (rest.tags !== undefined) updates.tags = db.json(rest.tags);
 
   let productRow: Record<string, unknown>;
 
