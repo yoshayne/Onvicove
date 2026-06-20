@@ -1,9 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { formatPrice } from '../types';
 
-const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
+// Prefer the build-time env var; fall back to runtime fetch from /api/public/config
+let resolvedPublishableKey: string | null = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string) || null;
+let keyFetchPromise: Promise<void> | null = null;
+
+function ensureKey(): Promise<void> {
+  if (resolvedPublishableKey) return Promise.resolve();
+  if (keyFetchPromise) return keyFetchPromise;
+  keyFetchPromise = fetch('/api/public/config')
+    .then((r) => r.json())
+    .then((data: { stripePublishableKey?: string | null }) => {
+      if (data.stripePublishableKey) resolvedPublishableKey = data.stripePublishableKey;
+    })
+    .catch(() => {});
+  return keyFetchPromise;
+}
+
+// Pre-fetch on module load so it's ready by the time the form renders
+ensureKey();
 
 interface StripePaymentFormProps {
   clientSecret: string;
@@ -22,10 +39,23 @@ export default function StripePaymentForm({
   onSuccess,
   onCancel,
 }: StripePaymentFormProps) {
+  const [publishableKey, setPublishableKey] = useState<string | null>(resolvedPublishableKey);
+
+  useEffect(() => {
+    if (publishableKey) return;
+    ensureKey().then(() => setPublishableKey(resolvedPublishableKey));
+  }, [publishableKey]);
+
   const stripePromise = useMemo(() => {
     if (!publishableKey) return null;
     return loadStripe(publishableKey, stripeAccountId ? { stripeAccount: stripeAccountId } : undefined);
-  }, [stripeAccountId]);
+  }, [publishableKey, stripeAccountId]);
+
+  if (!publishableKey) {
+    return (
+      <p className="text-sm text-amber-600">Loading payment form…</p>
+    );
+  }
 
   if (!stripePromise) {
     return (

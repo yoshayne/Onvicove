@@ -11,6 +11,13 @@ const app = new Hono();
 
 app.use('*', rateLimitPublic);
 
+// GET /api/public/config — public runtime config (Stripe publishable key etc.)
+app.get('/config', async (c) => {
+  return c.json({
+    stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? process.env.VITE_STRIPE_PUBLISHABLE_KEY ?? null,
+  });
+});
+
 // GET /api/public/:slug
 app.get('/:slug', async (c) => {
   const slug = c.req.param('slug');
