@@ -619,13 +619,14 @@ export default function Products() {
               label="Colors"
               tooltip="Add the color options available for this product. Type the color name, pick the color, then click Add."
             />
+            <p className="text-xs text-slate-500">Type a color name first, then pick the color swatch, then click Add.</p>
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={form.colorNameInput}
                 onChange={(e) => setForm((f) => ({ ...f, colorNameInput: e.target.value }))}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addColor(); } }}
-                placeholder="Color name (e.g. Hot Pink)"
+                placeholder="e.g. Hot Pink, Yellow, Black"
                 className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
               />
               <input
@@ -635,7 +636,12 @@ export default function Products() {
                 className="h-9 w-10 cursor-pointer rounded border border-slate-300 p-0.5"
                 title="Pick a color"
               />
-              <button type="button" onClick={addColor} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+              <button
+                type="button"
+                onClick={addColor}
+                disabled={!form.colorNameInput.trim()}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
                 Add
               </button>
             </div>
