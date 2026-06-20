@@ -5,7 +5,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { uploadFile, enrichWithUrls } from '../services/storage';
-import { removeBackground, generateStyledPhoto, AI_PHOTO_STYLES } from '../services/gemini';
+import { removeBackground, generateStyledPhoto, studioWhiteComposite, AI_PHOTO_STYLES } from '../services/gemini';
 import { applyWatermark } from '../services/watermark';
 import { stripe } from '../services/stripe';
 import { getPlatformSettings } from '../services/settings';
@@ -115,7 +115,9 @@ app.post('/generate', async (c) => {
     const fetchRes = await fetch(cutoutUrl);
     const cutoutBuffer = Buffer.from(await fetchRes.arrayBuffer());
 
-    const fullBuffer = await generateStyledPhoto(cutoutBuffer, stylePrompt, productDescription, productCategory);
+    const fullBuffer = styleDef.bypass === 'studio-white'
+      ? await studioWhiteComposite(cutoutBuffer)
+      : await generateStyledPhoto(cutoutBuffer, stylePrompt, productDescription, productCategory);
     const previewBuffer = await applyWatermark(fullBuffer);
 
     const fullKey = `tenants/${tenant.id}/ai-photos/${uuidv4()}-full.png`;
