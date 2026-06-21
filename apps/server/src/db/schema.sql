@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   mode TEXT NOT NULL DEFAULT 'both'
     CHECK (mode IN ('store','book','both')),
   theme_id TEXT NOT NULL DEFAULT 'editorial'
-    CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright')),
+    CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft')),
   brand_color TEXT DEFAULT '#3D4F7C',
   city TEXT,
   industry TEXT,
@@ -386,3 +386,8 @@ CREATE TABLE IF NOT EXISTS domain_purchase_requests (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS stripe_session_id TEXT;
+
+-- Expand theme_id CHECK constraint to include 6 premium themes
+ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
+ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
+  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft'));
