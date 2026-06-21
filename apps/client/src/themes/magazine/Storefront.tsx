@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import { formatPrice } from '../types';
@@ -8,8 +9,13 @@ import CheckoutModal from '../shared/CheckoutModal';
 import BookingStatusOverlay from '../shared/BookingStatusOverlay';
 import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
+import { useStorefrontForms } from '../shared/useStorefrontForms';
+import CustomOrderModal from '../shared/CustomOrderModal';
 
 export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+  const [customOrderOpen, setCustomOrderOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
   const commerce = useStorefrontCommerce(theme.slug);
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
@@ -62,9 +68,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           <p style={{ fontSize: 14, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.7, maxWidth: 400, marginBottom: 32 }}>
             Editorial-style photography for those who appreciate the art of timeless imagery.
           </p>
-          <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             {showProducts && <a href="#products" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', color: '#1a1a1a', borderBottom: '1px solid #1a1a1a', paddingBottom: 4 }}>View Portfolio →</a>}
             {showServices && <a href="#services" style={{ display: 'inline-block', padding: '10px 24px', fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', background: '#1a1a1a', color: '#f8f6f1' }}>Book a Shoot</a>}
+            <button type="button" onClick={() => setCustomOrderOpen(true)} style={{ display: 'inline-block', padding: '10px 24px', fontSize: 12, letterSpacing: '0.15em', background: 'none', border: '1px solid #1a1a1a', color: '#1a1a1a', cursor: 'pointer' }}>Custom Order</button>
           </div>
         </div>
         <div style={{ position: 'relative' }}>
@@ -147,10 +154,26 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
       {/* Footer */}
       <footer id="footer" style={{ borderTop: '1px solid #d0cdc8', padding: '40px 24px', background: '#f8f6f1' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 16 }}>{theme.companyName}</p>
           {theme.city && <p style={{ fontSize: 12, color: '#1a1a1a', opacity: 0.4 }}>{theme.city}</p>}
-          <p style={{ fontSize: 11, color: '#1a1a1a', opacity: 0.3, letterSpacing: '0.1em' }}>&copy; {new Date().getFullYear()}</p>
+          <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} className="mt-6 flex justify-center gap-2">
+            <input
+              type="email"
+              placeholder="Your email"
+              value={emailInput}
+              onChange={(ev) => setEmailInput(ev.target.value)}
+              className="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-500"
+            />
+            <button
+              type="submit"
+              disabled={subscribeStatus === 'loading' || subscribeStatus === 'success'}
+              className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900 transition-colors disabled:opacity-50"
+            >
+              {subscribeStatus === 'success' ? '✓ Subscribed!' : subscribeStatus === 'loading' ? '...' : 'Subscribe'}
+            </button>
+          </form>
+          <p style={{ fontSize: 11, color: '#1a1a1a', opacity: 0.3, letterSpacing: '0.1em', marginTop: 16 }}>&copy; {new Date().getFullYear()}</p>
         </div>
       </footer>
 
@@ -159,6 +182,13 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       <CheckoutModal isOpen={checkoutOpen} onClose={closeCheckout} items={cart} status={orderStatus} error={orderError} orderNumber={orderNumber} clientSecret={orderClientSecret} amountCents={orderAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onSubmit={submitOrder} onPaymentSuccess={confirmOrderPayment} onPaymentCancel={cancelOrderPayment} />
       <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} />
       <BookingStatusOverlay status={bookingStatus} error={bookingError} clientSecret={bookingClientSecret} amountCents={bookingAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onClose={closeBooking} onDismiss={dismissBookingStatus} onPaymentSuccess={confirmBookingPayment} onPaymentCancel={cancelBookingPayment} />
+      <CustomOrderModal
+        isOpen={customOrderOpen}
+        onClose={() => setCustomOrderOpen(false)}
+        companyName={theme.companyName}
+        status={customOrderStatus}
+        onSubmit={submitCustomOrder}
+      />
     </div>
   );
 }

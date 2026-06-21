@@ -1,3 +1,4 @@
+import { useState } from 'react';
 // NOTE: This theme expects 'Lora' and 'Inter' to be loaded via
 // Google Fonts in index.html, e.g.:
 // <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
@@ -11,8 +12,13 @@ import CheckoutModal from '../shared/CheckoutModal';
 import BookingStatusOverlay from '../shared/BookingStatusOverlay';
 import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
+import { useStorefrontForms } from '../shared/useStorefrontForms';
+import CustomOrderModal from '../shared/CustomOrderModal';
 
 export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+  const [customOrderOpen, setCustomOrderOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
     quickViewProduct, openQuickView, closeQuickView,
@@ -169,6 +175,23 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="font-['Lora'] text-2xl mb-2">{theme.companyName}</p>
           {theme.city && <p className="text-[#fdf8f3]/60 text-sm">{theme.city}</p>}
+          <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} className="mt-6 flex justify-center gap-2">
+            <input
+              type="email"
+              placeholder="Your email"
+              value={emailInput}
+              onChange={(ev) => setEmailInput(ev.target.value)}
+              className="rounded border border-white/30 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/50 focus:outline-none focus:border-white/60"
+            />
+            <button
+              type="submit"
+              disabled={subscribeStatus === 'loading' || subscribeStatus === 'success'}
+              className="rounded bg-white/20 px-4 py-2 text-sm font-medium text-white hover:bg-white/30 transition-colors disabled:opacity-50"
+            >
+              {subscribeStatus === 'success' ? '✓ Subscribed!' : subscribeStatus === 'loading' ? '...' : 'Subscribe'}
+            </button>
+          </form>
+          <button type="button" onClick={() => setCustomOrderOpen(true)} className="mt-4 border border-white/60 px-5 py-2 text-xs uppercase tracking-widest text-white hover:bg-white/10 transition-opacity">Custom Order</button>
           <p className="text-[#fdf8f3]/40 text-xs mt-6">
             &copy; {new Date().getFullYear()} {theme.companyName}. All rights reserved.
           </p>
@@ -233,6 +256,13 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         onDismiss={dismissBookingStatus}
         onPaymentSuccess={confirmBookingPayment}
         onPaymentCancel={cancelBookingPayment}
+      />
+      <CustomOrderModal
+        isOpen={customOrderOpen}
+        onClose={() => setCustomOrderOpen(false)}
+        companyName={theme.companyName}
+        status={customOrderStatus}
+        onSubmit={submitCustomOrder}
       />
     </div>
   );

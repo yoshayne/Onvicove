@@ -148,6 +148,8 @@ export interface Customer {
   order_count: number;
   booking_count: number;
   stripe_customer_id: string | null;
+  email_optin: boolean | null;
+  email_optin_at: string | null;
   created_at: string;
   updated_at: string;
 }

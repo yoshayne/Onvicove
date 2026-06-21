@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import { formatPrice } from '../types';
@@ -8,8 +9,13 @@ import CheckoutModal from '../shared/CheckoutModal';
 import BookingStatusOverlay from '../shared/BookingStatusOverlay';
 import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
+import { useStorefrontForms } from '../shared/useStorefrontForms';
+import CustomOrderModal from '../shared/CustomOrderModal';
 
 export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+  const [customOrderOpen, setCustomOrderOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
   const commerce = useStorefrontCommerce(theme.slug);
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
@@ -81,6 +87,9 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                 SERVICES
               </a>
             )}
+            <button type="button" onClick={() => setCustomOrderOpen(true)} style={{ display: 'inline-block', padding: '14px 28px', fontSize: 12, fontWeight: 900, letterSpacing: '0.1em', border: '4px solid #000', color: '#000', background: 'none', cursor: 'pointer' }}>
+              CUSTOM ORDER
+            </button>
           </div>
         </div>
         <div style={{ position: 'relative' }}>
@@ -165,7 +174,13 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <p style={{ fontWeight: 900, fontSize: 20, letterSpacing: '-0.02em' }}>{theme.companyName.toUpperCase()}</p>
           {theme.city && <p style={{ fontFamily: 'monospace', fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{theme.city}</p>}
-          <p style={{ fontFamily: 'monospace', fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>&copy; {new Date().getFullYear()}</p>
+          <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} className="mt-6 flex justify-center gap-2">
+            <input type="email" placeholder="Your email" value={emailInput} onChange={(ev) => setEmailInput(ev.target.value)} className="rounded border border-white/30 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/50 focus:outline-none focus:border-white/60" />
+            <button type="submit" disabled={subscribeStatus === 'loading' || subscribeStatus === 'success'} className="rounded bg-white/20 px-4 py-2 text-sm font-medium text-white hover:bg-white/30 transition-colors disabled:opacity-50">
+              {subscribeStatus === 'success' ? '✓ Subscribed!' : subscribeStatus === 'loading' ? '...' : 'Subscribe'}
+            </button>
+          </form>
+          <p style={{ fontFamily: 'monospace', fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 16 }}>&copy; {new Date().getFullYear()}</p>
         </div>
       </footer>
 
@@ -174,6 +189,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       <CheckoutModal isOpen={checkoutOpen} onClose={closeCheckout} items={cart} status={orderStatus} error={orderError} orderNumber={orderNumber} clientSecret={orderClientSecret} amountCents={orderAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onSubmit={submitOrder} onPaymentSuccess={confirmOrderPayment} onPaymentCancel={cancelOrderPayment} />
       <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} />
       <BookingStatusOverlay status={bookingStatus} error={bookingError} clientSecret={bookingClientSecret} amountCents={bookingAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onClose={closeBooking} onDismiss={dismissBookingStatus} onPaymentSuccess={confirmBookingPayment} onPaymentCancel={cancelBookingPayment} />
+      <CustomOrderModal isOpen={customOrderOpen} onClose={() => setCustomOrderOpen(false)} companyName={theme.companyName} status={customOrderStatus} onSubmit={submitCustomOrder} />
     </div>
   );
 }

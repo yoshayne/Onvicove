@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ShoppingCart, Leaf, Heart, Star } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import { formatPrice } from '../types';
@@ -8,8 +9,13 @@ import CheckoutModal from '../shared/CheckoutModal';
 import BookingStatusOverlay from '../shared/BookingStatusOverlay';
 import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
+import { useStorefrontForms } from '../shared/useStorefrontForms';
+import CustomOrderModal from '../shared/CustomOrderModal';
 
 export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+  const [customOrderOpen, setCustomOrderOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
   const commerce = useStorefrontCommerce(theme.slug);
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
@@ -78,6 +84,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               {showServices && <a href="#services" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(167,139,250,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(167,139,250,0.4)', color: 'var(--brand-color, #a78bfa)', borderRadius: 50, textDecoration: 'none' }}>Book a Session</a>}
               {showProducts && <a href="#products" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 50, textDecoration: 'none' }}>Shop Products</a>}
+              <button type="button" onClick={() => setCustomOrderOpen(true)} style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)', borderRadius: 50, cursor: 'pointer' }}>Custom Order</button>
             </div>
           </div>
           {showServices && (
@@ -191,6 +198,22 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       <footer id="footer" style={{ padding: '48px 24px', textAlign: 'center', borderTop: '1px solid rgba(167,139,250,0.1)' }}>
         <p style={{ fontSize: 18, fontWeight: 700, background: 'linear-gradient(90deg, #a78bfa, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 8 }}>{theme.companyName}</p>
         {theme.city && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{theme.city}</p>}
+        <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} className="mt-6 flex justify-center gap-2">
+          <input
+            type="email"
+            placeholder="Your email"
+            value={emailInput}
+            onChange={(ev) => setEmailInput(ev.target.value)}
+            className="rounded border border-white/30 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/50 focus:outline-none focus:border-white/60"
+          />
+          <button
+            type="submit"
+            disabled={subscribeStatus === 'loading' || subscribeStatus === 'success'}
+            className="rounded bg-white/20 px-4 py-2 text-sm font-medium text-white hover:bg-white/30 transition-colors disabled:opacity-50"
+          >
+            {subscribeStatus === 'success' ? '✓ Subscribed!' : subscribeStatus === 'loading' ? '...' : 'Subscribe'}
+          </button>
+        </form>
         <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 24 }}>&copy; {new Date().getFullYear()} {theme.companyName}</p>
       </footer>
 
@@ -199,6 +222,13 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       <CheckoutModal isOpen={checkoutOpen} onClose={closeCheckout} items={cart} status={orderStatus} error={orderError} orderNumber={orderNumber} clientSecret={orderClientSecret} amountCents={orderAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onSubmit={submitOrder} onPaymentSuccess={confirmOrderPayment} onPaymentCancel={cancelOrderPayment} />
       <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} />
       <BookingStatusOverlay status={bookingStatus} error={bookingError} clientSecret={bookingClientSecret} amountCents={bookingAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onClose={closeBooking} onDismiss={dismissBookingStatus} onPaymentSuccess={confirmBookingPayment} onPaymentCancel={cancelBookingPayment} />
+      <CustomOrderModal
+        isOpen={customOrderOpen}
+        onClose={() => setCustomOrderOpen(false)}
+        companyName={theme.companyName}
+        status={customOrderStatus}
+        onSubmit={submitCustomOrder}
+      />
     </div>
   );
 }

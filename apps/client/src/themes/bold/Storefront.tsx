@@ -9,6 +9,8 @@ import CheckoutModal from '../shared/CheckoutModal';
 import BookingStatusOverlay from '../shared/BookingStatusOverlay';
 import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
+import { useStorefrontForms } from '../shared/useStorefrontForms';
+import CustomOrderModal from '../shared/CustomOrderModal';
 
 export default function Storefront({ theme, products, services, staff }: ThemeProps) {
   const {
@@ -24,6 +26,9 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [customOrderOpen, setCustomOrderOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
 
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
@@ -188,6 +193,13 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                 Book a Session
               </a>
             )}
+            <button
+              type="button"
+              onClick={() => setCustomOrderOpen(true)}
+              className="border border-white/40 text-white/80 font-medium uppercase tracking-[0.2em] text-xs px-8 py-4 hover:border-white hover:text-white transition-colors"
+            >
+              Custom Order
+            </button>
           </div>
         </div>
 
@@ -404,17 +416,20 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/30 mb-5">Stay in the loop</p>
               <p className="text-white/40 text-xs mb-4 leading-relaxed">Drop your email for exclusive releases and offers.</p>
-              <form onSubmit={(e) => e.preventDefault()} className="flex">
+              <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} className="flex">
                 <input
                   type="email"
                   placeholder="your@email.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
                   className="flex-1 bg-[#111] border border-white/10 px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[var(--brand-color,#e8ff00)] transition-colors"
                 />
                 <button
                   type="submit"
-                  className="bg-[var(--brand-color,#e8ff00)] text-black text-xs font-bold uppercase tracking-wide px-5 hover:bg-white transition-colors"
+                  disabled={subscribeStatus === 'loading' || subscribeStatus === 'success'}
+                  className="bg-[var(--brand-color,#e8ff00)] text-black text-xs font-bold uppercase tracking-wide px-5 hover:bg-white transition-colors disabled:opacity-60"
                 >
-                  Join
+                  {subscribeStatus === 'success' ? '✓' : subscribeStatus === 'loading' ? '...' : 'Join'}
                 </button>
               </form>
             </div>
@@ -506,6 +521,13 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         onDismiss={dismissBookingStatus}
         onPaymentSuccess={confirmBookingPayment}
         onPaymentCancel={cancelBookingPayment}
+      />
+      <CustomOrderModal
+        isOpen={customOrderOpen}
+        onClose={() => setCustomOrderOpen(false)}
+        companyName={theme.companyName}
+        status={customOrderStatus}
+        onSubmit={submitCustomOrder}
       />
     </div>
   );

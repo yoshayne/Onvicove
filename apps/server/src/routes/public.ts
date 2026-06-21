@@ -6,6 +6,7 @@ import { enrichWithUrls } from '../services/storage';
 import { generateOrderNumber } from '../lib/orderNumber';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
 import { computePlatformFee, createBookingPaymentIntent } from '../services/stripe';
+import { sendCustomOrderNotification, sendCustomOrderConfirmation } from '../services/email';
 
 const app = new Hono();
 
@@ -464,6 +465,87 @@ app.post('/bookings/:id/balance-intent', async (c) => {
     stripe_account_id: booking.stripe_account_id,
     currency: booking.currency,
   });
+});
+
+const subscribeSchema = z.object({
+  email: z.string().email(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
+
+// POST /api/public/:slug/subscribe
+app.post('/:slug/subscribe', async (c) => {
+  const slug = c.req.param('slug');
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = subscribeSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+  }
+  const d = parsed.data;
+
+  const tenants = await db`SELECT id FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
+  if (!tenants[0]) return c.json({ error: 'Store not found' }, 404);
+
+  await db`
+    INSERT INTO customers (tenant_id, email, first_name, last_name, email_optin, email_optin_at)
+    VALUES (${tenants[0].id}, ${d.email}, ${d.firstName ?? null}, ${d.lastName ?? null}, TRUE, NOW())
+    ON CONFLICT (tenant_id, email) DO UPDATE SET
+      email_optin = TRUE,
+      email_optin_at = NOW(),
+      first_name = COALESCE(customers.first_name, EXCLUDED.first_name),
+      last_name = COALESCE(customers.last_name, EXCLUDED.last_name),
+      updated_at = NOW()
+  `;
+
+  return c.json({ success: true });
+});
+
+const customOrderSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  message: z.string().min(10),
+});
+
+// POST /api/public/:slug/custom-order
+app.post('/:slug/custom-order', async (c) => {
+  const slug = c.req.param('slug');
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = customOrderSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+  }
+  const d = parsed.data;
+
+  const tenants = await db`SELECT * FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
+  const tenant = tenants[0];
+  if (!tenant) return c.json({ error: 'Store not found' }, 404);
+
+  await db`
+    INSERT INTO custom_order_requests (tenant_id, customer_name, customer_email, message)
+    VALUES (${tenant.id}, ${d.name}, ${d.email}, ${d.message})
+  `;
+
+  const users = await db`SELECT email FROM users WHERE clerk_user_id = ${tenant.clerk_user_id} LIMIT 1`;
+  const tenantEmail = users[0]?.email as string | null;
+
+  if (tenantEmail) {
+    await sendCustomOrderNotification({
+      tenantEmail,
+      tenantName: tenant.company_name as string,
+      companyName: tenant.company_name as string,
+      customerName: d.name,
+      customerEmail: d.email,
+      message: d.message,
+    }).catch(() => {});
+  }
+
+  await sendCustomOrderConfirmation({
+    customerEmail: d.email,
+    customerName: d.name,
+    companyName: tenant.company_name as string,
+  }).catch(() => {});
+
+  return c.json({ success: true });
 });
 
 export default app;

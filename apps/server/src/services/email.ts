@@ -471,3 +471,45 @@ export async function sendTenantDomainPurchased(data: {
     `),
   });
 }
+
+// ─── Custom order requests ───────────────────────────────────────────────────
+
+export async function sendCustomOrderNotification(data: {
+  tenantEmail: string;
+  tenantName: string;
+  companyName: string;
+  customerName: string;
+  customerEmail: string;
+  message: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.tenantEmail, name: data.companyName }],
+    subject: `New custom order request from ${data.customerName}`,
+    htmlContent: wrap('New custom order request', `
+      <p>Hi,</p>
+      <p>Someone has submitted a custom order request through your <strong>${data.companyName}</strong> storefront.</p>
+      <p><strong>Name:</strong> ${data.customerName}</p>
+      <p><strong>Email:</strong> ${data.customerEmail}</p>
+      <p><strong>Message:</strong></p>
+      <p style="background:#f8fafc;border-left:4px solid #e2e8f0;padding:12px 16px;border-radius:4px">${data.message}</p>
+      <p style="font-size:13px;color:#64748b">Reply directly to the customer at ${data.customerEmail} to follow up.</p>
+    `),
+    replyTo: { email: data.customerEmail },
+  });
+}
+
+export async function sendCustomOrderConfirmation(data: {
+  customerEmail: string;
+  customerName: string;
+  companyName: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.customerEmail, name: data.customerName }],
+    subject: `We received your custom order request — ${data.companyName}`,
+    htmlContent: wrap('We got your request!', `
+      <p>Hi ${data.customerName},</p>
+      <p>Thank you for reaching out to <strong>${data.companyName}</strong>! We've received your custom order request and will be in touch with you soon.</p>
+      <p style="font-size:13px;color:#64748b">If you have any additional details to share, just reply to this email.</p>
+    `),
+  });
+}

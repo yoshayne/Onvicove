@@ -391,3 +391,20 @@ ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS stripe_session_id 
 ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
 ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
   CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft'));
+
+-- Email list opt-in
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS email_optin BOOLEAN DEFAULT FALSE;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS email_optin_at TIMESTAMPTZ;
+
+-- Custom order requests
+CREATE TABLE IF NOT EXISTS custom_order_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  customer_name TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','read','responded')),
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);

@@ -53,10 +53,19 @@ export default function Customers() {
     });
   }
 
+  const subscriberCount = data?.customers.filter((c) => c.email_optin).length ?? 0;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Customers</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Customers</h1>
+          {data && (
+            <p className="mt-1 text-sm text-slate-500">
+              {subscriberCount} {subscriberCount === 1 ? 'subscriber' : 'subscribers'}
+            </p>
+          )}
+        </div>
         <input
           type="search"
           placeholder="Search by name or email..."
@@ -86,6 +95,7 @@ export default function Customers() {
                 <th className="px-4 py-3 font-medium">Total spent</th>
                 <th className="px-4 py-3 font-medium">Orders</th>
                 <th className="px-4 py-3 font-medium">Bookings</th>
+                <th className="px-4 py-3 font-medium">Email list</th>
                 <th className="px-4 py-3 font-medium">Tags</th>
               </tr>
             </thead>
@@ -103,6 +113,13 @@ export default function Customers() {
                   <td className="px-4 py-3 text-slate-700">{formatCents(c.total_spent_cents)}</td>
                   <td className="px-4 py-3 text-slate-700">{c.order_count}</td>
                   <td className="px-4 py-3 text-slate-700">{c.booking_count}</td>
+                  <td className="px-4 py-3">
+                    {c.email_optin ? (
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                        ✓ Subscribed
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="px-4 py-3 text-slate-700">{(c.tags ?? []).join(', ') || '-'}</td>
                 </tr>
               ))}
@@ -118,7 +135,14 @@ export default function Customers() {
       >
         {selected && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="text-sm text-slate-500">{selected.email}</div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-slate-500">{selected.email}</div>
+              {selected.email_optin ? (
+                <span className="text-sm text-green-600 font-medium">📧 On email list</span>
+              ) : (
+                <span className="text-sm text-slate-400">Not subscribed</span>
+              )}
+            </div>
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div>
                 <p className="text-slate-500">Total spent</p>
