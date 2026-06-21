@@ -4,12 +4,12 @@ export const config: ThemeConfig = {
   id: 'obsidian' as any,
   name: 'Obsidian',
   colors: {
-    bg: '#000000',
-    surface: '#111111',
-    text: '#ffffff',
+    bg: '#0a0a0f',
+    surface: '#12121a',
+    text: '#f0ede8',
     accent: '#c9a84c',
-    nav: '#000000',
-    hero: '#0a0a0a',
+    nav: 'rgba(10,10,15,0.75)',
+    hero: '#0d0d14',
   },
   fonts: { heading: 'Playfair Display', body: 'Inter' },
 };
@@ -22,7 +22,7 @@ export const defaults: {
   staff: StaffData[];
 } = {
   tagline: 'Timeless luxury. Expertly crafted.',
-  heroImageUrl: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1600&q=80',
+  heroImageUrl: 'https://images.unsplash.com/photo-1526045612212-70caf35c14df?auto=format&fit=crop&w=1600&q=80',
   products: [
     {
       id: 'obs-1', name: 'Diamond Solitaire Ring',
