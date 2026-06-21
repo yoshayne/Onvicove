@@ -15,7 +15,7 @@ const updateTenantSchema = z.object({
   hero_image_key: z.string().nullable().optional(),
   favicon_key: z.string().nullable().optional(),
   mode: z.enum(['store', 'book', 'both']).optional(),
-  theme_id: z.enum(['editorial', 'minimal', 'bold', 'warm', 'classic', 'bright']).optional(),
+  theme_id: z.enum(['editorial', 'minimal', 'bold', 'warm', 'classic', 'bright', 'obsidian', 'aurora', 'magazine', 'brutalist', 'neon-tokyo', 'craft']).optional(),
   brand_color: z.string().optional(),
   city: z.string().nullable().optional(),
   industry: z.string().nullable().optional(),
@@ -29,7 +29,7 @@ const updateTenantSchema = z.object({
 const createTenantSchema = z.object({
   company_name: z.string().min(1),
   mode: z.enum(['store', 'book', 'both']).optional(),
-  theme_id: z.enum(['editorial', 'minimal', 'bold', 'warm', 'classic', 'bright']).optional(),
+  theme_id: z.enum(['editorial', 'minimal', 'bold', 'warm', 'classic', 'bright', 'obsidian', 'aurora', 'magazine', 'brutalist', 'neon-tokyo', 'craft']).optional(),
 });
 
 // GET /api/tenants/slug-available?slug=foo
