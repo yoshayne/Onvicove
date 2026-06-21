@@ -41,15 +41,22 @@ const queryClient = new QueryClient();
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
 
 function HashScroller() {
-  const { hash } = useLocation();
   useEffect(() => {
-    if (!hash) return;
-    const id = hash.slice(1);
-    const el = document.getElementById(id);
-    if (el) {
+    function handleClick(e: MouseEvent) {
+      const anchor = (e.target as HTMLElement).closest('a');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (!href?.startsWith('#')) return;
+      const id = href.slice(1);
+      const el = document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
       el.scrollIntoView({ behavior: 'smooth' });
+      history.pushState(null, '', href);
     }
-  }, [hash]);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
   return null;
 }
 
