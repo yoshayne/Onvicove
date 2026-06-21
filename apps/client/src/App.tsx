@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -40,6 +40,19 @@ const queryClient = new QueryClient();
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
 
+function HashScroller() {
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (!hash) return;
+    const id = hash.slice(1);
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [hash]);
+  return null;
+}
+
 function RedirectToSignIn() {
   const location = useLocation();
   return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
@@ -58,6 +71,7 @@ export default function App() {
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
+          <HashScroller />
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/" element={<Landing />} />
