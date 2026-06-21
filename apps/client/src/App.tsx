@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Spinner from './components/shared/Spinner';
 
 import Landing from './marketing/Landing';
+import Guide from './marketing/Guide';
 import AuthPage from './marketing/AuthPage';
 import DashboardLayout from './dashboard/Layout';
 import Overview from './dashboard/Overview';
@@ -82,6 +83,7 @@ export default function App() {
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/guide" element={<Guide />} />
 
               <Route path="/sign-in/*" element={<AuthPage mode="sign-in" />} />
               <Route path="/sign-up/*" element={<AuthPage mode="sign-up" />} />
