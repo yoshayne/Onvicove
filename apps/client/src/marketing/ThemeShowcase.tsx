@@ -709,7 +709,7 @@ export default function ThemeShowcase() {
                   className={`rounded-full px-3 py-1.5 text-sm font-medium transition-all ring-1 ring-amber-200 ${
                     activeTheme === t.id ? 'shadow-sm' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
                   }`}
-                  style={activeTheme === t.id ? { background: MINI_STYLES[t.id].accent, color: ['bold', 'brutalist', 'magazine', 'craft'].includes(t.id) ? '#000' : '#fff', outline: 'none', ringColor: 'transparent' } : {}}
+                  style={activeTheme === t.id ? { background: MINI_STYLES[t.id].accent, color: ['bold', 'brutalist', 'magazine', 'craft'].includes(t.id) ? '#000' : '#fff', outline: 'none' } : {}}
                 >
                   ★ {t.name}
                 </button>
