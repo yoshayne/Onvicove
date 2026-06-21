@@ -270,6 +270,7 @@ export default function Landing() {
             <a href="#features" className="hover:text-slate-900 transition-colors">Features</a>
             <a href="#themes" className="hover:text-slate-900 transition-colors">Themes</a>
             <a href="#pricing" className="hover:text-slate-900 transition-colors">Pricing</a>
+            <Link to="/guide" className="hover:text-slate-900 transition-colors">Get prepared</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link to="/sign-in" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
@@ -308,8 +309,14 @@ export default function Landing() {
             >
               Build my website free <ArrowRight size={16} />
             </Link>
+            <Link
+              to="/guide"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-base font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition-colors"
+            >
+              What do I need? <ArrowRight size={16} />
+            </Link>
           </div>
-          <p className="text-xs text-slate-400 mb-10">No credit card required</p>
+          <p className="text-xs text-slate-400 mb-10">No credit card required · Takes about 10 minutes</p>
 
           {/* Feature pills */}
           <div className="flex flex-wrap items-center justify-center gap-3">
