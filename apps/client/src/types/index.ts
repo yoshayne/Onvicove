@@ -1,7 +1,7 @@
 // Shared TypeScript types matching apps/server/src/db/schema.sql
 
 export type TenantMode = 'store' | 'book' | 'both';
-export type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright';
+export type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft';
 export type PlanId = 'starter' | 'pro' | 'business';
 export type BookingMode = 'instant' | 'manual';
 
