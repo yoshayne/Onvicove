@@ -25,7 +25,8 @@ interface AuthPageProps {
 
 export default function AuthPage({ mode }: AuthPageProps) {
   const location = useLocation();
-  const redirectTo = (location.state as { from?: string } | null)?.from || '/onboarding';
+  const defaultRedirect = mode === 'sign-in' ? '/dashboard' : '/onboarding';
+  const redirectTo = (location.state as { from?: string } | null)?.from || defaultRedirect;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">

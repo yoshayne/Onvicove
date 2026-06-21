@@ -158,6 +158,10 @@ export default function Wizard() {
     api
       .get<WizardProgressResponse>('/wizard/progress')
       .then((progress) => {
+        if (progress.wizard_completed) {
+          navigate('/dashboard', { replace: true });
+          return;
+        }
         if (progress.wizard_step > 0) {
           applyWizardData(state, progress.wizard_data, progress.slug);
           useWizardStore.getState().setStep(Math.min(11, Math.max(1, progress.wizard_step)));
