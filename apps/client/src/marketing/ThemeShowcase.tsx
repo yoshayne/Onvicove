@@ -1,13 +1,19 @@
 import { useState, Suspense, lazy, type ComponentType } from 'react';
 import type { ThemeId, ThemeProps, ProductData, ServiceData } from '../themes/types';
 
-const THEMES: { id: ThemeId; name: string; desc: string }[] = [
+const THEMES: { id: ThemeId; name: string; desc: string; premium?: boolean }[] = [
   { id: 'editorial', name: 'Editorial', desc: 'Dark luxury, serif headlines' },
   { id: 'minimal', name: 'Minimal', desc: 'Swiss grid, clean whitespace' },
   { id: 'bold', name: 'Bold', desc: 'Streetwear, neon yellow' },
   { id: 'warm', name: 'Warm', desc: 'Wellness & artisan tones' },
   { id: 'classic', name: 'Classic', desc: 'Professional navy & gold' },
   { id: 'bright', name: 'Bright', desc: 'Gen Z beauty, hot pink' },
+  { id: 'obsidian', name: 'Obsidian', desc: 'Black luxury, gold accents', premium: true },
+  { id: 'aurora', name: 'Aurora', desc: 'Gradient & glassmorphism', premium: true },
+  { id: 'magazine', name: 'Magazine', desc: 'Editorial asymmetric grid', premium: true },
+  { id: 'brutalist', name: 'Brutalist', desc: 'Raw, bold, unconventional', premium: true },
+  { id: 'neon-tokyo', name: 'Neon Tokyo', desc: 'Cyberpunk neon energy', premium: true },
+  { id: 'craft', name: 'Craft', desc: 'Handmade paper textures', premium: true },
 ];
 
 const MINI_STYLES: Record<ThemeId, {
@@ -38,6 +44,30 @@ const MINI_STYLES: Record<ThemeId, {
     bg: '#ffffff', nav: '#ffffff', hero: '#f0f0ff', accent: '#ff3cac',
     text: '#1a1a2e', subtext: '#666', headingFont: 'sans-serif', bodyFont: 'sans-serif', navText: '#1a1a2e',
   },
+  obsidian: {
+    bg: '#000000', nav: '#000000', hero: '#0a0a0a', accent: '#c9a84c',
+    text: '#ffffff', subtext: 'rgba(255,255,255,0.5)', headingFont: 'Georgia, serif', bodyFont: 'sans-serif', navText: '#c9a84c',
+  },
+  aurora: {
+    bg: '#0d0d1a', nav: '#0d0d1a', hero: '#1a0533', accent: '#a78bfa',
+    text: '#ffffff', subtext: 'rgba(255,255,255,0.6)', headingFont: 'sans-serif', bodyFont: 'sans-serif', navText: '#ffffff',
+  },
+  magazine: {
+    bg: '#f8f6f1', nav: '#f8f6f1', hero: '#f8f6f1', accent: '#1a1a1a',
+    text: '#1a1a1a', subtext: '#777777', headingFont: 'Georgia, serif', bodyFont: 'sans-serif', navText: '#1a1a1a',
+  },
+  brutalist: {
+    bg: '#ffffff', nav: '#ffffff', hero: '#ffffff', accent: '#0000ff',
+    text: '#000000', subtext: '#555555', headingFont: 'sans-serif', bodyFont: 'monospace', navText: '#000000',
+  },
+  'neon-tokyo': {
+    bg: '#050510', nav: '#050510', hero: '#050510', accent: '#ff2d9b',
+    text: '#ffffff', subtext: 'rgba(255,255,255,0.6)', headingFont: 'sans-serif', bodyFont: 'sans-serif', navText: '#ffffff',
+  },
+  craft: {
+    bg: '#f5f0e8', nav: '#f5f0e8', hero: '#ece5d8', accent: '#5c4a32',
+    text: '#2c1f14', subtext: '#7a6650', headingFont: 'Georgia, serif', bodyFont: 'sans-serif', navText: '#2c1f14',
+  },
 };
 
 const MOCK_PRODUCTS: ProductData[] = [
@@ -58,6 +88,12 @@ const themeLoaders: Record<ThemeId, () => Promise<{ default: ComponentType<Theme
   warm: () => import('../themes/warm/Storefront'),
   classic: () => import('../themes/classic/Storefront'),
   bright: () => import('../themes/bright/Storefront'),
+  obsidian: () => import('../themes/obsidian/Storefront'),
+  aurora: () => import('../themes/aurora/Storefront'),
+  magazine: () => import('../themes/magazine/Storefront'),
+  brutalist: () => import('../themes/brutalist/Storefront'),
+  'neon-tokyo': () => import('../themes/neon-tokyo/Storefront'),
+  craft: () => import('../themes/craft/Storefront'),
 };
 
 function MiniMockup({ id }: { id: ThemeId }) {
@@ -189,9 +225,9 @@ export default function ThemeShowcase() {
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
-      <h2 className="text-center text-3xl font-bold tracking-tight">Six premium themes</h2>
+      <h2 className="text-center text-3xl font-bold tracking-tight">Twelve stunning themes</h2>
       <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
-        Pick a look that matches your brand — switch any time from your dashboard.
+        Six free themes for every brand. Six next-level premium themes for Pro & Business plans.
       </p>
 
       {/* Tab switcher */}
@@ -219,28 +255,55 @@ export default function ThemeShowcase() {
       </div>
 
       {tab === 'grid' && (
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {THEMES.map((t) => (
-            <div
-              key={t.id}
-              className="group cursor-pointer overflow-hidden rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
-              onClick={() => { setActiveTheme(t.id); setTab('full'); }}
-            >
-              <div className="h-44 overflow-hidden" style={{ background: MINI_STYLES[t.id].bg }}>
-                <div style={{ transform: 'scale(1)', transformOrigin: 'top left', width: '100%', height: '100%' }}>
+        <>
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {THEMES.filter((t) => !t.premium).map((t) => (
+              <div
+                key={t.id}
+                className="group cursor-pointer overflow-hidden rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+                onClick={() => { setActiveTheme(t.id); setTab('full'); }}
+              >
+                <div className="h-44 overflow-hidden" style={{ background: MINI_STYLES[t.id].bg }}>
                   <MiniMockup id={t.id} />
                 </div>
+                <div className="border-t border-slate-100 p-3">
+                  <p className="text-sm font-semibold text-slate-900">{t.name}</p>
+                  <p className="text-xs text-slate-500">{t.desc}</p>
+                  <p className="mt-1.5 text-xs font-medium text-slate-400 group-hover:text-slate-600 transition-colors">Preview →</p>
+                </div>
               </div>
-              <div className="border-t border-slate-100 p-3">
-                <p className="text-sm font-semibold text-slate-900">{t.name}</p>
-                <p className="text-xs text-slate-500">{t.desc}</p>
-                <p className="mt-1.5 text-xs font-medium text-slate-400 group-hover:text-slate-600 transition-colors">
-                  Preview →
-                </p>
-              </div>
+            ))}
+          </div>
+
+          <div className="mt-10">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex-1 h-px bg-slate-200" />
+              <span className="flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-700">
+                ★ Pro &amp; Business Themes
+              </span>
+              <div className="flex-1 h-px bg-slate-200" />
             </div>
-          ))}
-        </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+              {THEMES.filter((t) => t.premium).map((t) => (
+                <div
+                  key={t.id}
+                  className="group cursor-pointer overflow-hidden rounded-xl border border-amber-200 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+                  onClick={() => { setActiveTheme(t.id); setTab('full'); }}
+                >
+                  <div className="relative h-44 overflow-hidden" style={{ background: MINI_STYLES[t.id].bg }}>
+                    <MiniMockup id={t.id} />
+                    <span className="absolute top-2 right-2 rounded-full bg-amber-400 px-2 py-0.5 text-[9px] font-bold text-black uppercase tracking-wide">PRO</span>
+                  </div>
+                  <div className="border-t border-amber-100 bg-amber-50/50 p-3">
+                    <p className="text-sm font-semibold text-slate-900">{t.name}</p>
+                    <p className="text-xs text-slate-500">{t.desc}</p>
+                    <p className="mt-1.5 text-xs font-medium text-amber-600 group-hover:text-amber-700 transition-colors">Preview →</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       {tab === 'full' && (

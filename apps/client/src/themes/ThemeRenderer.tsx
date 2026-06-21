@@ -9,6 +9,12 @@ const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProp
   warm: () => import('./warm/Storefront'),
   classic: () => import('./classic/Storefront'),
   bright: () => import('./bright/Storefront'),
+  obsidian: () => import('./obsidian/Storefront'),
+  aurora: () => import('./aurora/Storefront'),
+  magazine: () => import('./magazine/Storefront'),
+  brutalist: () => import('./brutalist/Storefront'),
+  'neon-tokyo': () => import('./neon-tokyo/Storefront'),
+  craft: () => import('./craft/Storefront'),
 };
 
 interface ThemeRendererProps extends ThemeProps {
