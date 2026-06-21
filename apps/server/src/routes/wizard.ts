@@ -14,7 +14,9 @@ app.get('/progress', async (c) => {
   const clerkUserId = c.get('clerkUserId') as string;
   const rows = await db`
     SELECT wizard_step, wizard_data, wizard_completed, slug
-    FROM tenants WHERE clerk_user_id = ${clerkUserId} LIMIT 1
+    FROM tenants WHERE clerk_user_id = ${clerkUserId}
+    ORDER BY wizard_completed DESC, updated_at DESC
+    LIMIT 1
   `;
 
   if (!rows[0]) {
@@ -40,7 +42,8 @@ app.post('/save', async (c) => {
   const { wizard_step, wizard_data } = parsed.data;
 
   const existing = await db`
-    SELECT id FROM tenants WHERE clerk_user_id = ${clerkUserId} LIMIT 1
+    SELECT id FROM tenants WHERE clerk_user_id = ${clerkUserId}
+    ORDER BY wizard_completed DESC, updated_at DESC LIMIT 1
   `;
 
   if (existing[0]) {
@@ -71,7 +74,8 @@ app.post('/complete', async (c) => {
   const clerkUserId = c.get('clerkUserId') as string;
 
   const rows = await db`
-    SELECT * FROM tenants WHERE clerk_user_id = ${clerkUserId} LIMIT 1
+    SELECT * FROM tenants WHERE clerk_user_id = ${clerkUserId}
+    ORDER BY wizard_completed DESC, updated_at DESC LIMIT 1
   `;
   const tenant = rows[0];
   if (!tenant) return c.json({ error: 'No wizard progress found' }, 404);

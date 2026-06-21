@@ -8,6 +8,7 @@ export async function requireTenant(c: Context, next: Next) {
     SELECT * FROM tenants
     WHERE clerk_user_id = ${clerkUserId}
     AND is_active = true
+    ORDER BY wizard_completed DESC, updated_at DESC
     LIMIT 1
   `;
 
