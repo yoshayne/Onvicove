@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   wizard_completed BOOLEAN DEFAULT FALSE,
   wizard_step INTEGER DEFAULT 0,
   wizard_data JSONB DEFAULT '{}',
+  page_content JSONB DEFAULT '{}',
   is_active BOOLEAN DEFAULT TRUE,
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
@@ -298,6 +299,8 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_url TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_nudge_sent_at TIMESTAMPTZ;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_reminder_sent_at TIMESTAMPTZ;
+-- Per-tenant editable storefront text (page builder live editor). Keyed by section/field.
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS page_content JSONB DEFAULT '{}';
 ALTER TABLE platform_transactions DROP CONSTRAINT IF EXISTS platform_transactions_tenant_id_fkey;
 ALTER TABLE platform_transactions ADD CONSTRAINT platform_transactions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE;
 ALTER TABLE order_items DROP CONSTRAINT IF EXISTS order_items_product_id_fkey;

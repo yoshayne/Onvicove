@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import type { ComponentType, CSSProperties } from 'react';
 import type { ThemeId, ThemeProps } from './types';
+import { ContentProvider } from './content';
+import type { PageContent } from './content';
 
 const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
   editorial: () => import('./editorial/Storefront'),
@@ -19,9 +21,21 @@ const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProp
 
 interface ThemeRendererProps extends ThemeProps {
   themeId: ThemeId;
+  /** Editable text overrides for this storefront. */
+  content?: PageContent;
+  /** When true, text becomes inline-editable (dashboard page builder). */
+  editing?: boolean;
+  /** Called when an editable text field is committed. */
+  onEditContent?: (key: string, value: string) => void;
 }
 
-export default function ThemeRenderer({ themeId, ...props }: ThemeRendererProps) {
+export default function ThemeRenderer({
+  themeId,
+  content,
+  editing,
+  onEditContent,
+  ...props
+}: ThemeRendererProps) {
   const loader = themeMap[themeId] ?? themeMap.editorial;
   const Storefront = lazy(loader);
 
@@ -31,9 +45,11 @@ export default function ThemeRenderer({ themeId, ...props }: ThemeRendererProps)
 
   return (
     <div style={style}>
-      <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
-        <Storefront {...props} />
-      </Suspense>
+      <ContentProvider content={content} editing={editing} onEdit={onEditContent}>
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
+          <Storefront {...props} />
+        </Suspense>
+      </ContentProvider>
     </div>
   );
 }

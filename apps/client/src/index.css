@@ -18,3 +18,20 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Page builder inline text editing: highlight editable text and focus state. */
+.ssd-editable {
+  cursor: text;
+  border-radius: 3px;
+  outline: 1px dashed rgba(99, 102, 241, 0.5);
+  outline-offset: 2px;
+  transition: outline-color 0.15s ease, background-color 0.15s ease;
+}
+.ssd-editable:hover {
+  outline-color: rgba(99, 102, 241, 0.9);
+  background-color: rgba(99, 102, 241, 0.06);
+}
+.ssd-editable:focus {
+  outline: 2px solid rgb(99, 102, 241);
+  background-color: rgba(99, 102, 241, 0.08);
+}

@@ -121,6 +121,7 @@ export default function StorefrontRouter() {
     <ThemeRenderer
       themeId={tenant.theme_id}
       theme={mapTenant(tenant)}
+      content={tenant.page_content}
       products={(productsQuery.data ?? []).map(mapProduct)}
       services={(servicesQuery.data ?? []).map(mapService)}
       staff={(staffQuery.data ?? []).map(mapStaff)}

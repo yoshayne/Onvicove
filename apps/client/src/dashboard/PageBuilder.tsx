@@ -1,109 +1,178 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useApi } from '../lib/api';
+import type { Tenant } from '../types';
 import Button from '../components/shared/Button';
-import Badge from '../components/shared/Badge';
+import Spinner from '../components/shared/Spinner';
+import ThemeRenderer from '../themes/ThemeRenderer';
+import type { ThemeData } from '../themes/types';
+import type { PageContent } from '../themes/content';
 
-interface SectionItem {
-  id: string;
-  type: string;
-  label: string;
-  enabled: boolean;
+type Viewport = 'desktop' | 'mobile';
+
+function mapTheme(tenant: Tenant): ThemeData {
+  return {
+    companyName: tenant.company_name,
+    tagline: tenant.tagline ?? undefined,
+    logoUrl: tenant.logo_url,
+    heroImageUrl: tenant.hero_image_url,
+    brandColor: tenant.brand_color ?? undefined,
+    mode: tenant.mode,
+    currency: tenant.currency,
+    city: tenant.city ?? undefined,
+    industry: tenant.industry ?? undefined,
+    themeId: tenant.theme_id,
+    slug: tenant.slug,
+    // Editing preview is decoupled from real payments; show the enabled CTA labels.
+    paymentsEnabled: true,
+  };
 }
 
-const DEFAULT_SECTIONS: SectionItem[] = [
-  { id: 'hero', type: 'hero', label: 'Hero banner', enabled: true },
-  { id: 'featured-products', type: 'featured-products', label: 'Featured products', enabled: true },
-  { id: 'services', type: 'services', label: 'Services list', enabled: true },
-  { id: 'about', type: 'about', label: 'About section', enabled: true },
-  { id: 'staff', type: 'staff', label: 'Meet the team', enabled: false },
-  { id: 'testimonials', type: 'testimonials', label: 'Testimonials', enabled: false },
-  { id: 'contact', type: 'contact', label: 'Contact / location', enabled: true },
-];
-
-const STORAGE_KEY = 'shopsuitedirect_page_sections_home';
-
 export default function PageBuilder() {
-  const [sections, setSections] = useState<SectionItem[]>(DEFAULT_SECTIONS);
-  const [saved, setSaved] = useState(false);
+  const api = useApi();
+  const queryClient = useQueryClient();
 
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['tenant', 'me'],
+    queryFn: () => api.get<{ tenant: Tenant }>('/tenants/me'),
+  });
+
+  const [content, setContent] = useState<PageContent>({});
+  const [dirty, setDirty] = useState(false);
+  const [viewport, setViewport] = useState<Viewport>('desktop');
+
+  // Initialise editable content once the tenant loads.
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as SectionItem[];
-        if (Array.isArray(parsed)) setSections(parsed);
-      } catch {
-        // ignore invalid stored data
-      }
+    if (data?.tenant) {
+      setContent(data.tenant.page_content ?? {});
+      setDirty(false);
     }
-  }, []);
+  }, [data?.tenant]);
 
-  function move(index: number, direction: -1 | 1) {
-    setSections((prev) => {
-      const next = [...prev];
-      const target = index + direction;
-      if (target < 0 || target >= next.length) return prev;
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
+  const saveMutation = useMutation({
+    mutationFn: (next: PageContent) =>
+      api.put<{ tenant: Tenant }>('/tenants/me/page-content', { page_content: next }),
+    onSuccess: (res) => {
+      queryClient.setQueryData(['tenant', 'me'], res);
+      setDirty(false);
+    },
+  });
+
+  const themeData = useMemo(() => (data?.tenant ? mapTheme(data.tenant) : null), [data?.tenant]);
+
+  function handleEdit(key: string, value: string) {
+    setContent((prev) => {
+      if (prev[key] === value) return prev;
+      return { ...prev, [key]: value };
     });
-    setSaved(false);
+    setDirty(true);
   }
 
-  function toggle(id: string) {
-    setSections((prev) => prev.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s)));
-    setSaved(false);
+  function handleReset() {
+    setContent(data?.tenant?.page_content ?? {});
+    setDirty(false);
   }
 
-  function handleSave() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sections));
-    setSaved(true);
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (isError || !data?.tenant || !themeData) {
+    return (
+      <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">Failed to load your storefront.</div>
+    );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Page Builder</h1>
-        <Button onClick={handleSave}>{saved ? 'Saved' : 'Save layout'}</Button>
-      </div>
-      <p className="text-sm text-slate-500">
-        Reorder and toggle the sections shown on your storefront home page. Use the arrows to
-        change order and the toggle to show or hide a section.
-      </p>
-
-      <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2">
-        {sections.map((section, index) => (
-          <div
-            key={section.id}
-            className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-4 py-3"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-slate-900">{section.label}</span>
-              <Badge tone={section.enabled ? 'success' : 'default'}>
-                {section.enabled ? 'Visible' : 'Hidden'}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => move(index, -1)}
-                disabled={index === 0}
-                className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 disabled:opacity-30"
-              >
-                Up
-              </button>
-              <button
-                type="button"
-                onClick={() => move(index, 1)}
-                disabled={index === sections.length - 1}
-                className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 disabled:opacity-30"
-              >
-                Down
-              </button>
-              <Button size="sm" variant="secondary" onClick={() => toggle(section.id)}>
-                {section.enabled ? 'Hide' : 'Show'}
-              </Button>
-            </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Page Builder</h1>
+          <p className="text-sm text-slate-500">
+            Click any text in the live preview below to edit it, then save to publish to your
+            storefront.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-slate-200 p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewport('desktop')}
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                viewport === 'desktop' ? 'bg-slate-900 text-white' : 'text-slate-600'
+              }`}
+            >
+              Desktop
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewport('mobile')}
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                viewport === 'mobile' ? 'bg-slate-900 text-white' : 'text-slate-600'
+              }`}
+            >
+              Mobile
+            </button>
           </div>
-        ))}
+          {dirty && (
+            <Button variant="secondary" size="sm" onClick={handleReset} disabled={saveMutation.isPending}>
+              Discard
+            </Button>
+          )}
+          <Button
+            size="sm"
+            onClick={() => saveMutation.mutate(content)}
+            disabled={!dirty || saveMutation.isPending}
+            isLoading={saveMutation.isPending}
+          >
+            {saveMutation.isSuccess && !dirty ? 'Saved' : 'Save changes'}
+          </Button>
+        </div>
+      </div>
+
+      {saveMutation.isError && (
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+          Couldn&apos;t save your changes. Please try again.
+        </div>
+      )}
+
+      <div className="rounded-xl border border-dashed border-indigo-300 bg-indigo-50/50 px-4 py-2 text-xs text-indigo-700">
+        <span className="font-semibold">Editing mode:</span> highlighted text is editable. Buttons and
+        links won&apos;t navigate while you edit. Inline editing is available on the Minimal theme so
+        far — more themes coming.
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+        <div className="flex items-center gap-1.5 border-b border-slate-200 bg-white px-4 py-2">
+          <span className="h-3 w-3 rounded-full bg-red-400" />
+          <span className="h-3 w-3 rounded-full bg-amber-400" />
+          <span className="h-3 w-3 rounded-full bg-green-400" />
+          <span className="ml-3 truncate text-xs text-slate-400">/{data.tenant.slug}</span>
+        </div>
+        <div className="flex justify-center overflow-auto p-4" style={{ maxHeight: '75vh' }}>
+          <div
+            className="ssd-editor-preview origin-top bg-white shadow-sm transition-all"
+            style={{
+              width: viewport === 'mobile' ? 390 : '100%',
+              maxWidth: viewport === 'mobile' ? 390 : 1280,
+            }}
+          >
+            <ThemeRenderer
+              themeId={data.tenant.theme_id}
+              theme={themeData}
+              content={content}
+              editing
+              onEditContent={handleEdit}
+              products={[]}
+              services={[]}
+              staff={[]}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
