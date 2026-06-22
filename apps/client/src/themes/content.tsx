@@ -13,6 +13,14 @@
 import { createContext, useContext } from 'react';
 import type { ElementType, ReactNode } from 'react';
 
+/** Describes one editable text field for a given theme. Used by the mobile fields panel. */
+export interface ContentFieldSchema {
+  key: string;
+  label: string;
+  fallback: string;
+  section: string;
+}
+
 export type PageContent = Record<string, string>;
 
 interface ContentContextValue {

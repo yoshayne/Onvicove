@@ -1,4 +1,5 @@
 import type { ThemeConfig, ProductData, ServiceData, StaffData } from '../types';
+import type { ContentFieldSchema } from '../content';
 
 export const config: ThemeConfig = {
   id: 'minimal',
@@ -16,6 +17,20 @@ export const config: ThemeConfig = {
     body: 'Inter',
   },
 };
+
+export const contentSchema: ContentFieldSchema[] = [
+  { key: 'hero.tagline', label: 'Hero tagline', fallback: 'Considered design, reduced to what matters.', section: 'Hero' },
+  { key: 'products.heading', label: 'Products section heading', fallback: 'Shop', section: 'Products' },
+  { key: 'products.cta_add', label: 'Add-to-cart button', fallback: 'Add to Cart', section: 'Products' },
+  { key: 'products.cta_view', label: 'View-details button (no payments)', fallback: 'View Details', section: 'Products' },
+  { key: 'services.heading', label: 'Services section heading', fallback: 'Book a Service', section: 'Services' },
+  { key: 'services.cta_book', label: 'Book button', fallback: 'Book Now', section: 'Services' },
+  { key: 'services.cta_soon', label: 'Coming-soon button (no payments)', fallback: 'Coming Soon', section: 'Services' },
+  { key: 'nav.shop', label: 'Nav — Shop link', fallback: 'Shop', section: 'Navigation' },
+  { key: 'nav.book', label: 'Nav — Book link', fallback: 'Book', section: 'Navigation' },
+  { key: 'nav.contact', label: 'Nav — Contact link', fallback: 'Contact', section: 'Navigation' },
+  { key: 'footer.custom_order', label: 'Custom order button', fallback: 'Custom Order', section: 'Footer' },
+];
 
 export const defaults: {
   tagline: string;
