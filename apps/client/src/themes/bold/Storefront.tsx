@@ -190,7 +190,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                 href="#services"
                 className="border-2 border-white text-white font-bold uppercase tracking-[0.2em] text-xs px-8 py-4 hover:border-[var(--brand-color,#e8ff00)] hover:text-[var(--brand-color,#e8ff00)] transition-colors"
               >
-                Book a Session
+                Book
               </a>
             )}
             <button

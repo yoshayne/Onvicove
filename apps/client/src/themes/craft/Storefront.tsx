@@ -88,7 +88,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
             )}
             {showServices && (
               <a href="#services" style={{ display: 'inline-block', padding: '12px 28px', fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', border: '1px solid #5c4a32', color: '#5c4a32', textTransform: 'uppercase' }}>
-                Workshops
+                Book
               </a>
             )}
             <button type="button" onClick={() => setCustomOrderOpen(true)} style={{ display: 'inline-block', padding: '12px 28px', fontSize: 12, letterSpacing: '0.15em', border: '1px solid #5c4a32', color: '#5c4a32', textTransform: 'uppercase', background: 'none', cursor: 'pointer' }}>
