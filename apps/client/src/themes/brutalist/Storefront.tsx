@@ -51,8 +51,8 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
             <div style={{ display: 'flex', gap: 24, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em' }}>
-              {showProducts && <a href="#products" style={{ textDecoration: 'none', color: '#000' }}>WORK</a>}
-              {showServices && <a href="#services" style={{ textDecoration: 'none', color: '#000' }}>SERVICES</a>}
+              {showProducts && <a href="#products" style={{ textDecoration: 'none', color: '#000' }}>SHOP</a>}
+              {showServices && <a href="#services" style={{ textDecoration: 'none', color: '#000' }}>BOOK</a>}
               <a href="#footer" style={{ textDecoration: 'none', color: '#000' }}>CONTACT</a>
             </div>
             {showProducts && (
@@ -79,12 +79,12 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 32 }}>
             {showProducts && (
               <a href="#products" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 12, fontWeight: 900, letterSpacing: '0.1em', textDecoration: 'none', background: '#000', color: '#fff' }}>
-                VIEW OUR WORK
+                SHOP
               </a>
             )}
             {showServices && (
               <a href="#services" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 12, fontWeight: 900, letterSpacing: '0.1em', textDecoration: 'none', border: '2px solid #000', color: '#000' }}>
-                SERVICES
+                BOOK
               </a>
             )}
             <button type="button" onClick={() => setCustomOrderOpen(true)} style={{ display: 'inline-block', padding: '14px 28px', fontSize: 12, fontWeight: 900, letterSpacing: '0.1em', border: '4px solid #000', color: '#000', background: 'none', cursor: 'pointer' }}>
@@ -119,7 +119,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {showProducts && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '3px solid #000', paddingBottom: 16, marginBottom: 32 }}>
-            <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em' }}>THE DROP</h2>
+            <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em' }}>SHOP</h2>
             <span style={{ fontFamily: 'monospace', fontSize: 11 }}>({displayProducts.length} ITEMS)</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 0 }}>
@@ -135,7 +135,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                     <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 14 }}>{formatPrice(product.priceCents, theme.currency)}</span>
                     <button type="button" onClick={() => openQuickView(product)}
                       style={{ padding: '6px 14px', fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', background: '#000', color: '#fff', border: 'none', cursor: 'pointer' }}>
-                      {theme.paymentsEnabled ? 'ADD' : 'VIEW'}
+                      {theme.paymentsEnabled ? 'ADD TO CART' : 'VIEW DETAILS'}
                     </button>
                   </div>
                 </div>
@@ -149,7 +149,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {showServices && (
         <section id="services" style={{ background: '#f0f0f0', padding: '64px 24px', borderTop: '3px solid #000' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-            <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em', marginBottom: 32 }}>SERVICES</h2>
+            <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em', marginBottom: 32 }}>BOOK</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
               {displayServices.map((service) => (
                 <div key={service.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'center', padding: '24px 0', borderTop: '2px solid #000' }}>
@@ -160,7 +160,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
                     style={{ padding: '12px 24px', fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', background: 'var(--brand-color, #0000ff)', color: '#fff', border: 'none', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4, whiteSpace: 'nowrap' }}>
-                    {theme.paymentsEnabled ? 'GET A QUOTE' : 'COMING SOON'}
+                    {theme.paymentsEnabled ? 'BOOK NOW' : 'COMING SOON'}
                   </button>
                 </div>
               ))}

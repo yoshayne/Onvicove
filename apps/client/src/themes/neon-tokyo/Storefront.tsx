@@ -57,10 +57,9 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 28, fontSize: 12, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em' }}>
-            {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>ショップ</a>}
-            {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>コレクション</a>}
-            {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>ブログ</a>}
-            <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>コンタクト</a>
+            {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>Shop</a>}
+            {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Book</a>}
+            <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>Contact</a>
             {showProducts && (
               <button type="button" aria-label="Open cart" onClick={() => setCartOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'rgba(255,45,155,0.1)', border: '1px solid rgba(255,45,155,0.4)', borderRadius: 4, cursor: 'pointer', color: '#ff2d9b', fontSize: 11, fontWeight: 600 }}>
                 <ShoppingCart size={14} />

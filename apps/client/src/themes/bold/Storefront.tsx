@@ -218,7 +218,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
             <div className="flex items-end justify-between mb-14">
               <div>
                 <p className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.4em] mb-2">— The Drop</p>
-                <h2 className="bold-heading text-5xl md:text-6xl uppercase leading-none">Shop The Drop</h2>
+                <h2 className="bold-heading text-5xl md:text-6xl uppercase leading-none">Shop</h2>
               </div>
               <div className="hidden md:block h-px flex-1 bg-white/10 mx-8 mb-3" />
             </div>
@@ -289,7 +289,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
             <div className="flex items-end justify-between mb-14">
               <div>
                 <p className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.4em] mb-2">— Appointments</p>
-                <h2 className="bold-heading text-5xl md:text-6xl uppercase leading-none">Book a Session</h2>
+                <h2 className="bold-heading text-5xl md:text-6xl uppercase leading-none">Book</h2>
               </div>
               <div className="hidden md:block h-px flex-1 bg-white/10 mx-8 mb-3" />
             </div>
@@ -407,7 +407,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
               <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/30 mb-5">Navigate</p>
               <div className="flex flex-col gap-3">
                 {showProducts && <a href="#products" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Shop</a>}
-                {showServices && <a href="#services" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Book a Session</a>}
+                {showServices && <a href="#services" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Book</a>}
                 {staff.length > 0 && <a href="#team" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Team</a>}
               </div>
             </div>

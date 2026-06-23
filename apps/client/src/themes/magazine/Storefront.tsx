@@ -69,8 +69,8 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
             Editorial-style photography for those who appreciate the art of timeless imagery.
           </p>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            {showProducts && <a href="#products" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', color: '#1a1a1a', borderBottom: '1px solid #1a1a1a', paddingBottom: 4 }}>View Portfolio →</a>}
-            {showServices && <a href="#services" style={{ display: 'inline-block', padding: '10px 24px', fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', background: '#1a1a1a', color: '#f8f6f1' }}>Book a Shoot</a>}
+            {showProducts && <a href="#products" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', color: '#1a1a1a', borderBottom: '1px solid #1a1a1a', paddingBottom: 4 }}>Shop</a>}
+            {showServices && <a href="#services" style={{ display: 'inline-block', padding: '10px 24px', fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', background: '#1a1a1a', color: '#f8f6f1' }}>Book</a>}
             <button type="button" onClick={() => setCustomOrderOpen(true)} style={{ display: 'inline-block', padding: '10px 24px', fontSize: 12, letterSpacing: '0.15em', background: 'none', border: '1px solid #1a1a1a', color: '#1a1a1a', cursor: 'pointer' }}>Custom Order</button>
           </div>
         </div>
@@ -86,7 +86,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {showProducts && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 40, borderBottom: '1px solid #d0cdc8', paddingBottom: 16 }}>
-            <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400 }}>Featured Work</h2>
+            <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400 }}>Shop</h2>
             <span style={{ fontSize: 11, letterSpacing: '0.2em', color: '#1a1a1a', opacity: 0.4 }}>VIEW ALL</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
@@ -118,7 +118,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {showServices && (
         <section id="services" style={{ background: '#eeece7', padding: '80px 24px' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-            <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400, marginBottom: 40 }}>Services</h2>
+            <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400, marginBottom: 40 }}>Book</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
               {displayServices.map((service, i) => (
                 <div key={service.id} style={{ display: 'grid', gridTemplateColumns: '60px 1fr auto', gap: 24, alignItems: 'center', padding: '32px 0', borderTop: '1px solid #d0cdc8' }}>
@@ -130,7 +130,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
                     style={{ padding: '10px 24px', fontSize: 12, letterSpacing: '0.1em', background: '#1a1a1a', color: '#f8f6f1', border: 'none', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4, whiteSpace: 'nowrap' }}>
-                    {theme.paymentsEnabled ? 'Book Shoot' : 'Coming Soon'}
+                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
                   </button>
                 </div>
               ))}
