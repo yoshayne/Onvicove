@@ -84,12 +84,12 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
             <div style={{ display: 'flex', gap: 12 }}>
               {showProducts && (
                 <a href="#products" className="neon-btn" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', color: '#000', textDecoration: 'none', borderRadius: 4 }}>
-                  SHOP COLLECTION
+                  Shop
                 </a>
               )}
               {showServices && (
                 <a href="#services" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', color: '#00ffff', background: 'rgba(0,255,255,0.1)', border: '1px solid rgba(0,255,255,0.4)', textDecoration: 'none', borderRadius: 4 }}>
-                  VIP ACCESS
+                  Book
                 </a>
               )}
               <button type="button" onClick={() => setCustomOrderOpen(true)} style={{ display: 'inline-block', padding: '14px 28px', fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(0,255,255,0.7)', background: 'none', border: '1px solid rgba(0,255,255,0.3)', borderRadius: 4, cursor: 'pointer' }}>
@@ -115,10 +115,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {showProducts && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-            <h2 style={{ fontWeight: 800, fontSize: 24, letterSpacing: '-0.01em' }}>
-              <span className="neon-pink">NEW</span> DROPS
-            </h2>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Season 2025</span>
+            <h2 style={{ fontWeight: 800, fontSize: 24, letterSpacing: '-0.01em' }}>Shop</h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
             {displayProducts.map((product) => (
@@ -140,7 +137,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                     <span className="neon-pink" style={{ fontSize: 15, fontWeight: 800 }}>¥{(product.priceCents / 100 * 150).toLocaleString()}</span>
                     <button type="button" onClick={() => openQuickView(product)}
                       style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(255,45,155,0.15)', border: '1px solid rgba(255,45,155,0.4)', color: '#ff2d9b', borderRadius: 4, cursor: 'pointer', letterSpacing: '0.05em' }}>
-                      {theme.paymentsEnabled ? 'ADD' : 'VIEW'}
+                      {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
                     </button>
                   </div>
                 </div>
@@ -154,9 +151,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {showServices && (
         <section id="services" style={{ padding: '64px 24px', background: 'rgba(255,45,155,0.03)', borderTop: '1px solid rgba(255,45,155,0.15)' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-            <h2 style={{ fontWeight: 800, fontSize: 24, letterSpacing: '-0.01em', marginBottom: 32 }}>
-              <span className="neon-cyan">EXCLUSIVE</span> ACCESS
-            </h2>
+            <h2 style={{ fontWeight: 800, fontSize: 24, letterSpacing: '-0.01em', marginBottom: 32 }}>Book</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
               {displayServices.map((service) => (
                 <div key={service.id} className="neon-border" style={{ borderRadius: 8, padding: 24 }}>
@@ -168,7 +163,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
                     className="neon-btn" style={{ width: '100%', padding: '12px', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', color: '#000', border: 'none', borderRadius: 4, cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4 }}>
-                    {theme.paymentsEnabled ? 'JOIN NOW' : 'COMING SOON'}
+                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
                   </button>
                 </div>
               ))}

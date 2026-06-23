@@ -60,7 +60,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           <div style={{ display: 'flex', justifyContent: 'center', gap: 32, fontSize: 11, letterSpacing: '0.15em', paddingBottom: 12, color: '#5c4a32', textTransform: 'uppercase' }}>
             {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>Shop</a>}
             <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>About</a>
-            {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Workshops</a>}
+            {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Book</a>}
             <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>Journal</a>
             <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>Contact</a>
           </div>
@@ -117,7 +117,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {/* Products */}
       {showProducts && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
-          <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400, marginBottom: 40, textAlign: 'center' }}>From the Workshop</h2>
+          <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400, marginBottom: 40, textAlign: 'center' }}>Shop</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 24 }}>
             {displayProducts.map((product) => (
               <div key={product.id} style={{ background: '#ece5d8', borderRadius: 8, overflow: 'hidden', border: '1px solid #c4b49a' }}>
@@ -133,7 +133,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                     <span style={{ fontSize: 14, color: '#5c4a32', fontWeight: 600 }}>{formatPrice(product.priceCents, theme.currency)}</span>
                     <button type="button" onClick={() => openQuickView(product)}
                       style={{ fontSize: 11, padding: '6px 14px', background: '#5c4a32', color: '#f5f0e8', border: 'none', borderRadius: 4, cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                      {theme.paymentsEnabled ? 'Add' : 'View'}
+                      {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
                     </button>
                   </div>
                 </div>
@@ -149,7 +149,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
               <p style={{ fontSize: 11, letterSpacing: '0.2em', color: '#7a6650', marginBottom: 12, textTransform: 'uppercase' }}>Learn & Create</p>
-              <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 32, fontWeight: 400 }}>Workshops</h2>
+              <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 32, fontWeight: 400 }}>Book</h2>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
               {displayServices.map((service) => (
@@ -167,7 +167,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
                     style={{ width: '100%', padding: '12px', fontSize: 12, letterSpacing: '0.15em', textTransform: 'uppercase', background: '#5c4a32', color: '#f5f0e8', border: 'none', borderRadius: 4, cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4 }}>
-                    {theme.paymentsEnabled ? 'Reserve a Spot' : 'Coming Soon'}
+                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
                   </button>
                 </div>
               ))}
