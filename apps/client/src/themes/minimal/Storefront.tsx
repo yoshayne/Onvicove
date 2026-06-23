@@ -13,8 +13,6 @@ import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
-import { EditableText } from '../content';
-
 export default function Storefront({ theme, products, services, staff }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -46,9 +44,9 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           <span className="text-lg font-bold uppercase tracking-tight">{theme.companyName}</span>
           <div className="flex items-center gap-8">
             <div className="hidden md:flex items-center gap-8 text-xs uppercase tracking-[0.2em] font-medium text-[#111111]/60">
-              {showProducts && <EditableText as="a" k="nav.shop" fallback="Shop" href="#products" className="hover:text-[#111111] transition-colors" />}
-              {showServices && <EditableText as="a" k="nav.book" fallback="Book" href="#services" className="hover:text-[#111111] transition-colors" />}
-              <EditableText as="a" k="nav.contact" fallback="Contact" href="#footer" className="hover:text-[#111111] transition-colors" />
+              {showProducts && <a href="#products" className="hover:text-[#111111] transition-colors">Shop</a>}
+              {showServices && <a href="#services" className="hover:text-[#111111] transition-colors">Book</a>}
+              <a href="#footer" className="hover:text-[#111111] transition-colors">Contact</a>
             </div>
             {showProducts && (
               <button
@@ -73,7 +71,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       <section className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
         <div>
           <h1 className="text-4xl md:text-6xl font-light leading-tight mb-6">{theme.companyName}</h1>
-          <EditableText as="p" k="hero.tagline" fallback={tagline} className="text-[#111111]/60 text-lg font-light" />
+          <p className="text-[#111111]/60 text-lg font-light">{tagline}</p>
         </div>
         <div className="aspect-[4/3] overflow-hidden bg-[#f8f8f8]">
           <img src={heroImage} alt="" className="w-full h-full object-cover" />
@@ -83,7 +81,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {/* Products */}
       {showProducts && (
         <section id="products" className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
-          <EditableText as="h2" k="products.heading" fallback="Shop" className="text-2xl md:text-3xl font-bold mb-12" />
+          <h2 className="text-2xl md:text-3xl font-bold mb-12">Shop</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
             {displayProducts.map((product) => (
               <div key={product.id}>
@@ -101,11 +99,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                   onClick={() => openQuickView(product)}
                   className="text-xs uppercase tracking-[0.2em] font-medium text-[#111111] hover:text-[#111111]/60 transition-colors"
                 >
-                  {theme.paymentsEnabled ? (
-                    <EditableText k="products.cta_add" fallback="Add to Cart" />
-                  ) : (
-                    <EditableText k="products.cta_view" fallback="View Details" />
-                  )}
+                  {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
                 </button>
               </div>
             ))}
@@ -117,7 +111,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {showServices && (
         <section id="services" className="scroll-mt-20 bg-[#f8f8f8] py-20">
           <div className="max-w-7xl mx-auto px-6">
-            <EditableText as="h2" k="services.heading" fallback="Book a Service" className="text-2xl md:text-3xl font-bold mb-12" />
+            <h2 className="text-2xl md:text-3xl font-bold mb-12">Book</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {displayServices.map((service) => (
                 <div key={service.id} className="bg-white p-6 flex flex-col">
@@ -140,11 +134,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                     disabled={!theme.paymentsEnabled}
                     className="uppercase tracking-[0.2em] text-xs font-medium bg-[var(--brand-color,#111111)] text-white py-3 hover:bg-[#333333] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--brand-color,#111111)]"
                   >
-                    {theme.paymentsEnabled ? (
-                      <EditableText k="services.cta_book" fallback="Book Now" />
-                    ) : (
-                      <EditableText k="services.cta_soon" fallback="Coming Soon" />
-                    )}
+                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
                   </button>
                 </div>
               ))}
@@ -192,7 +182,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
               {subscribeStatus === 'success' ? '✓ Subscribed!' : subscribeStatus === 'loading' ? '...' : 'Subscribe'}
             </button>
           </form>
-          <button type="button" onClick={() => setCustomOrderOpen(true)} className="mt-4 border border-white/60 px-5 py-2 text-xs uppercase tracking-widest text-white hover:bg-white/10 transition-opacity"><EditableText k="footer.custom_order" fallback="Custom Order" /></button>
+          <button type="button" onClick={() => setCustomOrderOpen(true)} className="mt-4 border border-white/60 px-5 py-2 text-xs uppercase tracking-widest text-white hover:bg-white/10 transition-opacity">Custom Order</button>
           <p className="text-[#111111]/40 text-xs mt-6 uppercase tracking-[0.2em] font-medium">
             &copy; {new Date().getFullYear()} {theme.companyName}. All rights reserved.
           </p>

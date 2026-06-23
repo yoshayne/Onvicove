@@ -87,7 +87,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {showProducts && (
         <section id="products" className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
           <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[var(--brand-color,#ff3cac)]">
-            Shop Our Faves
+            Shop
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {displayProducts.map((product) => (
@@ -119,7 +119,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         <section id="services" className="scroll-mt-20 bg-[#f0f0ff] py-20">
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[var(--brand-color,#ff3cac)]">
-              Book a Session
+              Book
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {displayServices.map((service) => (

@@ -61,7 +61,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 32, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
             {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>Shop</a>}
-            {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Sessions</a>}
+            {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Book</a>}
             <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>Contact</a>
             {showProducts && (
               <button type="button" aria-label="Open cart" onClick={() => setCartOpen(true)} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', padding: 0 }}>
@@ -82,8 +82,8 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
             <h1 style={{ fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 700, lineHeight: 1.1, marginBottom: 20, letterSpacing: '-0.02em' }}>{tagline}</h1>
             <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', marginBottom: 32, lineHeight: 1.7, maxWidth: 480 }}>Holistic treatments and products to help you glow from within.</p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              {showServices && <a href="#services" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(167,139,250,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(167,139,250,0.4)', color: 'var(--brand-color, #a78bfa)', borderRadius: 50, textDecoration: 'none' }}>Book a Session</a>}
-              {showProducts && <a href="#products" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 50, textDecoration: 'none' }}>Shop Products</a>}
+              {showServices && <a href="#services" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(167,139,250,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(167,139,250,0.4)', color: 'var(--brand-color, #a78bfa)', borderRadius: 50, textDecoration: 'none' }}>Book</a>}
+              {showProducts && <a href="#products" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 50, textDecoration: 'none' }}>Shop</a>}
               <button type="button" onClick={() => setCustomOrderOpen(true)} style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)', borderRadius: 50, cursor: 'pointer' }}>Custom Order</button>
             </div>
           </div>
@@ -114,7 +114,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {/* Products */}
       {showProducts && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 24px' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Ritual Essentials</h2>
+          <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Shop</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
             {displayProducts.map((product) => (
               <div key={product.id} style={{ ...glass, borderRadius: 20, overflow: 'hidden' }}>
@@ -130,7 +130,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                     <span style={{ color: 'var(--brand-color, #a78bfa)', fontSize: 15, fontWeight: 600 }}>{formatPrice(product.priceCents, theme.currency)}</span>
                     <button type="button" onClick={() => openQuickView(product)}
                       style={{ fontSize: 12, padding: '6px 16px', borderRadius: 50, background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', color: 'var(--brand-color, #a78bfa)', cursor: 'pointer' }}>
-                      {theme.paymentsEnabled ? 'Add' : 'View'}
+                      {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
                     </button>
                   </div>
                 </div>
@@ -144,7 +144,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       {showServices && (
         <section id="services" style={{ padding: '80px 24px', background: 'rgba(255,255,255,0.02)' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Healing Sessions</h2>
+            <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Book</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
               {displayServices.map((service) => (
                 <div key={service.id} style={{ ...glass, borderRadius: 20, padding: 28 }}>
@@ -156,7 +156,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
                     style={{ width: '100%', padding: '12px', borderRadius: 12, fontSize: 13, fontWeight: 600, background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(96,165,250,0.2))', border: '1px solid rgba(167,139,250,0.3)', color: 'var(--brand-color, #a78bfa)', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4 }}>
-                    {theme.paymentsEnabled ? 'Book Session' : 'Coming Soon'}
+                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
                   </button>
                 </div>
               ))}

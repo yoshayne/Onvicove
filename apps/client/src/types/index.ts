@@ -39,7 +39,6 @@ export interface Tenant {
   wizard_completed: boolean;
   wizard_step: number;
   wizard_data: Record<string, unknown>;
-  page_content?: Record<string, string>;
   is_active: boolean;
   created_at: string;
   updated_at: string;

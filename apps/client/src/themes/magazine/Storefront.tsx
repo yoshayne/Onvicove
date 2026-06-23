@@ -45,8 +45,8 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
             <div style={{ fontFamily: 'Playfair Display, Georgia, serif', fontWeight: 700 }}>{theme.companyName}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 32, fontSize: 12, letterSpacing: '0.1em', color: '#1a1a1a' }}>
-            {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>Portfolio</a>}
-            {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Services</a>}
+            {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>Shop</a>}
+            {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Book</a>}
             <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>Contact</a>
             {showProducts && (
               <button type="button" aria-label="Open cart" onClick={() => setCartOpen(true)} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: '#1a1a1a', padding: 0 }}>

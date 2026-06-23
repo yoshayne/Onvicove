@@ -54,7 +54,7 @@ export default function Storefront({
           <div className="flex items-center gap-8">
             <nav className="hidden gap-8 font-['Merriweather'] text-sm font-bold uppercase tracking-wide text-[#1a3a5c] md:flex">
               {showProducts && <a href="#products" className="hover:text-[var(--brand-color,#c8a850)]">Shop</a>}
-              {showServices && <a href="#services" className="hover:text-[var(--brand-color,#c8a850)]">Services</a>}
+              {showServices && <a href="#services" className="hover:text-[var(--brand-color,#c8a850)]">Book</a>}
               <a href="#about" className="hover:text-[var(--brand-color,#c8a850)]">About</a>
             </nav>
             {showProducts && (
@@ -90,7 +90,7 @@ export default function Storefront({
             href={showProducts ? '#products' : '#services'}
             className="mt-8 inline-block rounded-sm bg-[var(--brand-color,#c8a850)] px-8 py-3 font-['Merriweather'] text-sm font-bold uppercase tracking-widest text-[#1a3a5c] transition hover:bg-[#b8983f]"
           >
-            {showProducts ? 'Shop the Collection' : 'Book an Appointment'}
+            {showProducts ? 'Shop' : 'Book'}
           </a>
               <button type="button" onClick={() => setCustomOrderOpen(true)} className="inline-block border-b border-current pb-1 text-sm hover:opacity-60 transition-opacity">Custom Order</button>
         </div>
@@ -100,7 +100,7 @@ export default function Storefront({
       {showProducts && displayProducts.length > 0 && (
         <section id="products" className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
-            Our Collection
+            Shop
           </h2>
           <div className="mx-auto mt-2 h-1 w-16 bg-[var(--brand-color,#c8a850)]" />
           <div className="mt-10 grid grid-cols-1 gap-px border border-gray-200 bg-gray-200 sm:grid-cols-2 md:grid-cols-3">
@@ -144,7 +144,7 @@ export default function Storefront({
       {showServices && displayServices.length > 0 && (
         <section id="services" className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
-            Our Services
+            Book
           </h2>
           <div className="mx-auto mt-2 h-1 w-16 bg-[var(--brand-color,#c8a850)]" />
           <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">

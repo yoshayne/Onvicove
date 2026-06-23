@@ -110,7 +110,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 24px' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <p style={{ fontSize: 11, letterSpacing: '0.3em', color: 'var(--brand-color, #c9a84c)', marginBottom: 12, textTransform: 'uppercase' }}>The Collection</p>
-            <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 36, fontWeight: 400 }}>Curated Excellence</h2>
+            <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 36, fontWeight: 400 }}>Shop</h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 24 }}>
             {displayProducts.map((product) => (
@@ -128,7 +128,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                     <span style={{ color: 'var(--brand-color, #c9a84c)', fontSize: 14 }}>{formatPrice(product.priceCents, theme.currency)}</span>
                     <button type="button" onClick={() => openQuickView(product)}
                       style={{ fontSize: 10, letterSpacing: '0.15em', color: 'rgba(255,255,255,0.5)', background: 'none', border: 'none', cursor: 'pointer', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: 2 }}>
-                      {theme.paymentsEnabled ? 'Add to Cart' : 'View'}
+                      {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
                     </button>
                   </div>
                 </div>
@@ -143,8 +143,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         <section id="services" style={{ background: '#050505', padding: '80px 24px' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
-              <p style={{ fontSize: 11, letterSpacing: '0.3em', color: 'var(--brand-color, #c9a84c)', marginBottom: 12, textTransform: 'uppercase' }}>Private Services</p>
-              <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 36, fontWeight: 400 }}>By Appointment</h2>
+              <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 36, fontWeight: 400 }}>Book</h2>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
               {displayServices.map((service) => (
@@ -157,7 +156,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
                     style={{ width: '100%', padding: '12px', fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', background: 'transparent', border: '1px solid var(--brand-color, #c9a84c)', color: 'var(--brand-color, #c9a84c)', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4 }}>
-                    {theme.paymentsEnabled ? 'Request Appointment' : 'Coming Soon'}
+                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
                   </button>
                 </div>
               ))}
