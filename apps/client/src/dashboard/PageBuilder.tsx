@@ -104,6 +104,16 @@ export default function PageBuilder() {
     setSaved(true);
   }
 
+  function moveGallery(index: number, dir: -1 | 1) {
+    setGalleries((prev) => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
   function addGallery() {
     setGalleries((prev) => [...prev, emptyGallery()]);
   }
@@ -132,13 +142,15 @@ export default function PageBuilder() {
     );
   }
 
-  async function uploadGalleryImage(id: string, file: File) {
+  async function uploadGalleryImages(id: string, files: FileList) {
     setUploadingFor(id);
     try {
-      const res = await api.upload<{ url: string }>('/uploads', file);
-      setGalleries((prev) =>
-        prev.map((g) => (g.id === id ? { ...g, images: [...g.images, { url: res.url }] } : g))
-      );
+      for (const file of Array.from(files)) {
+        const res = await api.upload<{ url: string }>('/uploads', file);
+        setGalleries((prev) =>
+          prev.map((g) => (g.id === id ? { ...g, images: [...g.images, { url: res.url }] } : g))
+        );
+      }
     } finally {
       setUploadingFor(null);
     }
@@ -238,7 +250,7 @@ export default function PageBuilder() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {galleries.map((g) => (
+            {galleries.map((g, index) => (
               <div key={g.id} className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex items-center justify-between gap-2">
                   <input
@@ -248,13 +260,19 @@ export default function PageBuilder() {
                     placeholder="Gallery title (optional)"
                     className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
                   />
-                  <button
-                    type="button"
-                    onClick={() => removeGallery(g.id)}
-                    className="shrink-0 rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button type="button" onClick={() => moveGallery(index, -1)} disabled={index === 0}
+                      className="rounded border border-slate-200 px-1.5 py-1 text-xs text-slate-600 disabled:opacity-30 hover:bg-slate-50">↑</button>
+                    <button type="button" onClick={() => moveGallery(index, 1)} disabled={index === galleries.length - 1}
+                      className="rounded border border-slate-200 px-1.5 py-1 text-xs text-slate-600 disabled:opacity-30 hover:bg-slate-50">↓</button>
+                    <button
+                      type="button"
+                      onClick={() => removeGallery(g.id)}
+                      className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
 
                 <select
@@ -301,15 +319,15 @@ export default function PageBuilder() {
                   ))}
                   <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-500">
                     {uploadingFor === g.id ? <Spinner size="sm" /> : <Upload size={16} />}
-                    <span className="text-[10px]">Add photo</span>
+                    <span className="text-[10px]">Add photos</span>
                     <input
                       type="file"
                       accept="image/*"
+                      multiple
                       className="hidden"
                       disabled={uploadingFor === g.id}
                       onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) uploadGalleryImage(g.id, file);
+                        if (e.target.files?.length) uploadGalleryImages(g.id, e.target.files);
                         e.target.value = '';
                       }}
                     />
