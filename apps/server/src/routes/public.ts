@@ -29,6 +29,18 @@ app.get('/:slug', async (c) => {
   return c.json({ tenant: await enrichWithUrls(rows[0]) });
 });
 
+// GET /api/public/:slug/page-sections/:page
+app.get('/:slug/page-sections/:page', async (c) => {
+  const slug = c.req.param('slug');
+  const page = c.req.param('page');
+  const tenants = await db`SELECT id FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
+  if (!tenants[0]) return c.json({ sections: [] });
+  const rows = await db`
+    SELECT sections FROM page_sections WHERE tenant_id = ${tenants[0].id} AND page = ${page} LIMIT 1
+  `;
+  return c.json({ sections: rows[0]?.sections ?? [] });
+});
+
 // GET /api/public/:slug/products
 app.get('/:slug/products', async (c) => {
   const slug = c.req.param('slug');

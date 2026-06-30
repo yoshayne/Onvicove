@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import type { ComponentType, CSSProperties } from 'react';
 import type { ThemeId, ThemeProps } from './types';
+import Gallery from './shared/Gallery';
+import type { GallerySectionData } from './shared/Gallery';
 
 const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
   editorial: () => import('./editorial/Storefront'),
@@ -19,9 +21,11 @@ const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProp
 
 interface ThemeRendererProps extends ThemeProps {
   themeId: ThemeId;
+  /** Gallery sections to render after the storefront body. */
+  galleries?: GallerySectionData[];
 }
 
-export default function ThemeRenderer({ themeId, ...props }: ThemeRendererProps) {
+export default function ThemeRenderer({ themeId, galleries, ...props }: ThemeRendererProps) {
   const loader = themeMap[themeId] ?? themeMap.editorial;
   const Storefront = lazy(loader);
 
@@ -34,6 +38,9 @@ export default function ThemeRenderer({ themeId, ...props }: ThemeRendererProps)
       <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
         <Storefront {...props} />
       </Suspense>
+      {galleries?.filter((g) => g.enabled).map((g) => (
+        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
+      ))}
     </div>
   );
 }

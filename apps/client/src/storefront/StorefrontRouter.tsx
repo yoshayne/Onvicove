@@ -4,6 +4,7 @@ import { apiGet } from '../lib/api';
 import Spinner from '../components/shared/Spinner';
 import ThemeRenderer from '../themes/ThemeRenderer';
 import type { ThemeData, ProductData, ProductVariantData, ServiceData, StaffData } from '../themes/types';
+import type { GallerySectionData } from '../themes/shared/Gallery';
 import type { Tenant, Product, Service, Staff } from '../types';
 
 function mapTenant(tenant: Tenant): ThemeData {
@@ -98,6 +99,15 @@ export default function StorefrontRouter() {
     enabled: !!slug && !!tenantQuery.data,
   });
 
+  const sectionsQuery = useQuery({
+    queryKey: ['public-page-sections', slug],
+    queryFn: () =>
+      apiGet<{ sections: GallerySectionData[] }>(`/api/public/${slug}/page-sections/home`)
+        .then((r) => r.sections)
+        .catch(() => []),
+    enabled: !!slug && !!tenantQuery.data,
+  });
+
   if (tenantQuery.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -124,6 +134,7 @@ export default function StorefrontRouter() {
       products={(productsQuery.data ?? []).map(mapProduct)}
       services={(servicesQuery.data ?? []).map(mapService)}
       staff={(staffQuery.data ?? []).map(mapStaff)}
+      galleries={(sectionsQuery.data ?? []).filter((s) => s.type === 'gallery')}
     />
   );
 }
