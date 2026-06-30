@@ -43,11 +43,18 @@ app.onError((err, c) => {
 // Middleware
 app.use('*', logger());
 app.use('/api/*', cors({
-  origin: [
-    process.env.CLIENT_URL || 'http://localhost:5173',
-    'https://shopsuitedirect.com',
-    'https://www.shopsuitedirect.com',
-  ],
+  origin: (origin) => {
+    if (!origin) return origin;
+    const allowed = [
+      process.env.CLIENT_URL || 'http://localhost:5173',
+      `https://${PLATFORM_DOMAIN}`,
+      `https://www.${PLATFORM_DOMAIN}`,
+    ];
+    if (allowed.includes(origin)) return origin;
+    // Allow any subdomain of the platform domain
+    if (origin.endsWith(`.${PLATFORM_DOMAIN}`)) return origin;
+    return null;
+  },
   credentials: true,
 }));
 
@@ -91,21 +98,37 @@ app.route('/api/page-sections', pageSectionRoutes);
 // Custom domain middleware — if Host matches a verified tenant domain,
 // inject the tenant slug so the SPA can resolve the storefront.
 // Must come before the static file handler.
+const PLATFORM_DOMAIN = process.env.PLATFORM_DOMAIN || 'shopsuitedirect.com';
+const RESERVED_SUBDOMAINS = new Set(['www', 'api', 'app', 'admin', 'mail', 'ftp']);
+
 app.use('/*', async (c, next) => {
   const host = c.req.header('host') ?? '';
+  const hostNoPort = host.replace(/:\d+$/, '');
+
+  // ── Platform subdomain: {slug}.shopsuitedirect.com ──────────────────────────
+  if (hostNoPort.endsWith(`.${PLATFORM_DOMAIN}`)) {
+    const sub = hostNoPort.slice(0, hostNoPort.length - PLATFORM_DOMAIN.length - 1);
+    if (sub && !RESERVED_SUBDOMAINS.has(sub)) {
+      const originalPath = new URL(c.req.url).pathname;
+      const rewritten = originalPath === '/' ? `/store/${sub}` : `/store/${sub}${originalPath}`;
+      c.req.raw = new Request(new URL(rewritten, c.req.url).toString(), c.req.raw);
+      return next();
+    }
+  }
+
   const ownHosts = [
     'localhost',
     '127.0.0.1',
     process.env.RAILWAY_PUBLIC_DOMAIN ?? '',
-    'shopsuitedirect.com',
-    'www.shopsuitedirect.com',
+    PLATFORM_DOMAIN,
+    `www.${PLATFORM_DOMAIN}`,
   ].filter(Boolean);
 
   const isOwnHost = ownHosts.some((h) => host === h || host.endsWith(`.${h}`));
   if (isOwnHost) return next();
 
-  // Strip port for local dev
-  const domain = host.replace(/:\d+$/, '');
+  // ── Custom tenant domain ─────────────────────────────────────────────────────
+  const domain = hostNoPort;
   const tenantId = await domainCache.resolve(domain);
   if (!tenantId) return next();
 
