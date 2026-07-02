@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserButton, useUser } from '@clerk/clerk-react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -62,6 +62,9 @@ export default function Layout() {
   const navigate = useNavigate();
   const { user } = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const location = useLocation();
+  const isPageBuilder = location.pathname === '/dashboard/page-builder';
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['tenant', 'me'],
@@ -231,7 +234,7 @@ export default function Layout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main className={`flex-1 overflow-hidden ${isPageBuilder ? '' : 'overflow-y-auto p-4 lg:p-6'}`}>
           {tenant && !tenant.wizard_completed && (
             <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
               <p className="text-sm text-amber-800">
