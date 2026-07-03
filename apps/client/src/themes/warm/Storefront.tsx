@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { ShoppingBag } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import ContactBlock from '../shared/ContactBlock';
+import Gallery from '../shared/Gallery';
+import type { GallerySectionData } from '../shared/Gallery';
 import { formatPrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
@@ -16,7 +18,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-export default function Storefront({ theme, products, services, staff, visibleSections }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -176,6 +178,11 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         </section>
       )}
 
+      {galleries && galleries.length > 0 && galleries.map((g) => (
+        <div key={g.id} style={{ order: secOrder(g.id) }}>
+          <Gallery layout={g.layout} images={g.images ?? []} title={g.title} />
+        </div>
+      ))}
       </div>{/* end ordered sections */}
 
       {/* Footer */}

@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react';
 import type { ComponentType, CSSProperties } from 'react';
 import type { ThemeId, ThemeProps } from './types';
-import Gallery from './shared/Gallery';
 import type { GallerySectionData } from './shared/Gallery';
 
 const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
@@ -36,11 +35,8 @@ export default function ThemeRenderer({ themeId, galleries, visibleSections, ...
   return (
     <div style={style}>
       <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
-        <Storefront {...props} visibleSections={visibleSections} />
+        <Storefront {...props} visibleSections={visibleSections} galleries={galleries} />
       </Suspense>
-      {galleries?.filter((g) => g.enabled).map((g) => (
-        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
-      ))}
     </div>
   );
 }

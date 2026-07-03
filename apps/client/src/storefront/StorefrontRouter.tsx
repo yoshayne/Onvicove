@@ -135,9 +135,11 @@ export default function StorefrontRouter() {
 
   const tenant = tenantQuery.data;
   const allSections = sectionsQuery.data ?? [];
-  const visibleSections = allSections
-    .filter((s) => s.enabled && s.type !== 'gallery')
-    .map((s) => s.type);
+  // Use section IDs (not types) so galleries with unique IDs sort correctly.
+  // Non-gallery defaults have id === type, so secOrder('hero') etc. still work.
+  const enabledSections = allSections.filter((s) => s.enabled);
+  const visibleSections = enabledSections.map((s) => s.id);
+  const galleries = enabledSections.filter((s) => s.type === 'gallery') as unknown as GallerySectionData[];
 
   return (
     <ThemeRenderer
@@ -146,7 +148,7 @@ export default function StorefrontRouter() {
       products={(productsQuery.data ?? []).map(mapProduct)}
       services={(servicesQuery.data ?? []).map(mapService)}
       staff={(staffQuery.data ?? []).map(mapStaff)}
-      galleries={allSections.filter((s) => s.type === 'gallery') as unknown as GallerySectionData[]}
+      galleries={galleries}
       visibleSections={visibleSections.length > 0 ? visibleSections : undefined}
     />
   );

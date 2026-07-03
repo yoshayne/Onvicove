@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ShoppingCart, Calendar as CalendarIcon } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import ContactBlock from '../shared/ContactBlock';
+import Gallery from '../shared/Gallery';
+import type { GallerySectionData } from '../shared/Gallery';
 import { formatPrice } from '../types';
 import { config, defaults } from './config';
 import CartDrawer from './CartDrawer';
@@ -22,6 +24,7 @@ export default function Storefront({
   services,
   staff,
   visibleSections,
+  galleries,
 }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -215,6 +218,11 @@ export default function Storefront({
         </section>
       )}
 
+      {galleries && galleries.length > 0 && galleries.map((g) => (
+        <div key={g.id} style={{ order: secOrder(g.id) }}>
+          <Gallery layout={g.layout} images={g.images ?? []} title={g.title} />
+        </div>
+      ))}
       </div>{/* end ordered sections */}
 
       {/* Footer */}

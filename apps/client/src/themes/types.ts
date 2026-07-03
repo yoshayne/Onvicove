@@ -99,9 +99,15 @@ export interface ThemeProps {
   products: ProductData[];
   services: ServiceData[];
   staff: StaffData[];
-  /** Ordered list of enabled section type IDs from the Page Builder.
-   *  When absent, themes render their default section order. */
+  /**
+   * Ordered list of enabled section IDs from the Page Builder.
+   * Non-gallery sections use their type as ID (e.g. 'hero', 'featured-products').
+   * Gallery sections use their unique section ID (e.g. 'gallery-default', uuid).
+   * When absent, themes render their default section order.
+   */
   visibleSections?: string[];
+  /** Enabled gallery sections, in order, for inline rendering inside the theme. */
+  galleries?: import('./shared/Gallery').GallerySectionData[];
   onAddToCart?: (product: ProductData) => void;
   onBookService?: (service: ServiceData) => void;
 }
