@@ -12,7 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -32,8 +32,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
+  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
+  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
   const glass = { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' };
@@ -73,8 +75,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         </div>
       </nav>
 
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero */}
-      <section className="aurora-bg" style={{ position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+      {isVis('hero') && (
+      <section className="aurora-bg" style={{ order: secOrder('hero'), position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
         <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.15, mixBlendMode: 'screen' }} />
         <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '80px 24px', display: 'grid', gridTemplateColumns: showServices ? '1fr 1fr' : '1fr', gap: 48, alignItems: 'center' }}>
           <div>
@@ -110,10 +114,11 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           )}
         </div>
       </section>
+      )}
 
       {/* Products */}
       {showProducts && (
-        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 24px' }}>
+        <section id="products" style={{ order: secOrder('featured-products'), maxWidth: 1280, margin: '0 auto', padding: '80px 24px' }}>
           <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Shop</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
             {displayProducts.map((product) => (
@@ -142,7 +147,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
       {/* Services full list */}
       {showServices && (
-        <section id="services" style={{ padding: '80px 24px', background: 'rgba(255,255,255,0.02)' }}>
+        <section id="services" style={{ order: secOrder('services'), padding: '80px 24px', background: 'rgba(255,255,255,0.02)' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Book</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
@@ -195,6 +200,8 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       </div>
 
       {/* Footer */}
+      </div>{/* end ordered sections */}
+
       <footer id="footer" style={{ padding: '48px 24px', textAlign: 'center', borderTop: '1px solid rgba(167,139,250,0.1)' }}>
         <p style={{ fontSize: 18, fontWeight: 700, background: 'linear-gradient(90deg, #a78bfa, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 8 }}>{theme.companyName}</p>
         {theme.city && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{theme.city}</p>}

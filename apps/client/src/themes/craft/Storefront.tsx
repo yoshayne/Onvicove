@@ -12,7 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -32,8 +32,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
+  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
+  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
   const categories = ['Candles', 'Soaps', 'Home Goods', 'Gift Sets'];
@@ -67,8 +69,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         </div>
       </nav>
 
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero — split layout */}
-      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', minHeight: '65vh' }}>
+      {isVis('hero') && (
+      <section style={{ order: secOrder('hero'), maxWidth: 1280, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', minHeight: '65vh' }}>
         <div>
           {/* Stamp badge */}
           <div style={{ position: 'relative', display: 'inline-block', marginBottom: 24 }}>
@@ -100,6 +104,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           <img src={heroImage} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: 8, display: 'block' }} />
         </div>
       </section>
+      )}
 
       {/* Category navigation */}
       {showProducts && (
@@ -116,7 +121,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
       {/* Products */}
       {showProducts && (
-        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
+        <section id="products" style={{ order: secOrder('featured-products'), maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
           <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400, marginBottom: 40, textAlign: 'center' }}>Shop</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 24 }}>
             {displayProducts.map((product) => (
@@ -145,7 +150,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
       {/* Services / Workshops */}
       {showServices && (
-        <section id="services" style={{ background: '#ece5d8', padding: '64px 24px', borderTop: '1px solid #c4b49a' }}>
+        <section id="services" style={{ order: secOrder('services'), background: '#ece5d8', padding: '64px 24px', borderTop: '1px solid #c4b49a' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
               <p style={{ fontSize: 11, letterSpacing: '0.2em', color: '#7a6650', marginBottom: 12, textTransform: 'uppercase' }}>Learn & Create</p>
@@ -188,6 +193,8 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       )}
 
       {/* Footer */}
+      </div>{/* end ordered sections */}
+
       <footer id="footer" style={{ background: '#2c1f14', color: '#f5f0e8', padding: '48px 24px', textAlign: 'center' }}>
         <p style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 18, marginBottom: 8 }}>{theme.companyName}</p>
         {theme.city && <p style={{ fontSize: 12, color: 'rgba(245,240,232,0.5)', marginBottom: 16 }}>{theme.city}</p>}

@@ -12,7 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, visibleSections }: ThemeProps) {
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
     quickViewProduct, openQuickView, closeQuickView,
@@ -35,8 +35,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
 
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
+  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
+  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
   // Load Anton font
@@ -142,8 +144,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         </div>
       )}
 
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* ── Hero ── */}
-      <section className="relative h-screen min-h-[600px] flex flex-col items-center justify-center text-center overflow-hidden">
+      {isVis('hero') && (
+      <section style={{ order: secOrder('hero') }} className="relative h-screen min-h-[600px] flex flex-col items-center justify-center text-center overflow-hidden">
         {/* Background */}
         {heroImage ? (
           <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -209,10 +213,11 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           <div className="w-px h-10 bg-gradient-to-b from-white/40 to-transparent" />
         </div>
       </section>
+      )}
 
       {/* ── Products ── */}
       {showProducts && (
-        <section id="products" className="scroll-mt-20 py-24 bg-[#0a0a0a]">
+        <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 py-24 bg-[#0a0a0a]">
           <div className="max-w-7xl mx-auto px-6">
             {/* Section header */}
             <div className="flex items-end justify-between mb-14">
@@ -284,7 +289,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
       {/* ── Services ── */}
       {showServices && (
-        <section id="services" className="scroll-mt-20 py-24 bg-[#0f0f0f]">
+        <section id="services" style={{ order: secOrder('services') }} className="scroll-mt-20 py-24 bg-[#0f0f0f]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-end justify-between mb-14">
               <div>
@@ -347,10 +352,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       )}
 
       {/* ── Team ── */}
-      {staff.length > 0 && (
+      {staff.length > 0 && isVis('staff') && (
         <>
-          <div className="h-px bg-gradient-to-r from-transparent via-[var(--brand-color,#e8ff00)] to-transparent" />
-          <section id="team" className="scroll-mt-20 py-24 bg-[#0a0a0a]">
+          <div style={{ order: secOrder('staff') }} className="h-px bg-gradient-to-r from-transparent via-[var(--brand-color,#e8ff00)] to-transparent" />
+          <section id="team" style={{ order: secOrder('staff') }} className="scroll-mt-20 py-24 bg-[#0a0a0a]">
             <div className="max-w-7xl mx-auto px-6">
               <div className="mb-14 text-center">
                 <p className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.4em] mb-2">— The Crew</p>
@@ -385,6 +390,8 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           </section>
         </>
       )}
+
+      </div>{/* end ordered sections */}
 
       {/* ── Footer ── */}
       <footer id="footer" className="scroll-mt-20 bg-[#050505] border-t border-white/10">

@@ -15,7 +15,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -35,8 +35,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
 
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
+  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
+  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
 
   return (
     <div className="min-h-screen bg-[#fdf8f3] text-[#3d2314] font-['Inter']">
@@ -70,8 +72,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         </div>
       </nav>
 
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero - split layout */}
-      <section className="bg-[#f5e8d8]">
+      {isVis('hero') && (
+      <section style={{ order: secOrder('hero') }} className="bg-[#f5e8d8]">
         <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 items-center min-h-[70vh]">
           <div className="py-16 md:py-0 md:pr-12">
             <h1 className="font-['Lora'] text-4xl md:text-6xl text-[#3d2314] mb-6 leading-tight">
@@ -84,10 +88,11 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           </div>
         </div>
       </section>
+      )}
 
       {/* Products */}
       {showProducts && (
-        <section id="products" className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
+        <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
           <h2 className="font-['Lora'] text-3xl md:text-4xl mb-12 text-center text-[#3d2314]">Shop</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {displayProducts.map((product) => (
@@ -118,7 +123,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
       {/* Services */}
       {showServices && (
-        <section id="services" className="scroll-mt-20 bg-[#f5e8d8] py-20">
+        <section id="services" style={{ order: secOrder('services') }} className="scroll-mt-20 bg-[#f5e8d8] py-20">
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="font-['Lora'] text-3xl md:text-4xl mb-12 text-center text-[#3d2314]">Book</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -169,6 +174,8 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           </div>
         </section>
       )}
+
+      </div>{/* end ordered sections */}
 
       {/* Footer */}
       <footer id="footer" className="scroll-mt-20 bg-[#3d2314] text-[#fdf8f3] py-12">

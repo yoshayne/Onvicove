@@ -20,6 +20,7 @@ export default function Storefront({
   products,
   services,
   staff,
+  visibleSections,
 }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -34,8 +35,10 @@ export default function Storefront({
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
     bookingClientSecret, bookingAmountCents,
   } = useStorefrontCommerce(theme.slug);
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both');
-  const showServices = (theme.mode === 'book' || theme.mode === 'both');
+  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
+  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
+  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both');
+  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both');
 
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
@@ -76,10 +79,12 @@ export default function Storefront({
         </div>
       </header>
 
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero */}
+      {isVis('hero') && (
       <section
+        style={{ order: secOrder('hero'), backgroundImage: `linear-gradient(rgba(26,58,92,0.75), rgba(26,58,92,0.75)), url(${heroImage})` }}
         className="relative flex min-h-[480px] items-center justify-center bg-[#1a3a5c] bg-cover bg-center text-center"
-        style={{ backgroundImage: `linear-gradient(rgba(26,58,92,0.75), rgba(26,58,92,0.75)), url(${heroImage})` }}
       >
         <div className="px-6 py-24">
           <h1 className="font-['Merriweather'] text-4xl font-bold text-white sm:text-5xl md:text-6xl">
@@ -95,10 +100,11 @@ export default function Storefront({
               <button type="button" onClick={() => setCustomOrderOpen(true)} className="inline-block border-b border-current pb-1 text-sm hover:opacity-60 transition-opacity">Custom Order</button>
         </div>
       </section>
+      )}
 
       {/* Products */}
       {showProducts && displayProducts.length > 0 && (
-        <section id="products" className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
+        <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Shop
           </h2>
@@ -142,7 +148,7 @@ export default function Storefront({
 
       {/* Services */}
       {showServices && displayServices.length > 0 && (
-        <section id="services" className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
+        <section id="services" style={{ order: secOrder('services') }} className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Book
           </h2>
@@ -207,6 +213,8 @@ export default function Storefront({
           )}
         </section>
       )}
+
+      </div>{/* end ordered sections */}
 
       {/* Footer */}
       <footer id="about" className="scroll-mt-20 mt-8 border-t-4 border-[#1a3a5c] bg-[#f5f5f5] py-10">

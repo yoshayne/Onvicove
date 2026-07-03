@@ -93,6 +93,9 @@ export interface ThemeProps {
   products: ProductData[];
   services: ServiceData[];
   staff: StaffData[];
+  /** Ordered list of enabled section type IDs from the Page Builder.
+   *  When absent, themes render their default section order. */
+  visibleSections?: string[];
   onAddToCart?: (product: ProductData) => void;
   onBookService?: (service: ServiceData) => void;
 }

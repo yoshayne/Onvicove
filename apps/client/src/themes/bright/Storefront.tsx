@@ -14,7 +14,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -34,8 +34,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
 
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
+  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
+  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
 
   return (
     <div className="min-h-screen bg-white text-[#111111] font-['Poppins']">
@@ -71,8 +73,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         </div>
       </nav>
 
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero */}
-      <section className="relative min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-gradient-to-br from-[#f0f0ff] to-[#ffe0f0] py-24">
+      {isVis('hero') && (
+      <section style={{ order: secOrder('hero') }} className="relative min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-gradient-to-br from-[#f0f0ff] to-[#ffe0f0] py-24">
         <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full bg-[var(--brand-color,#ff3cac)]/10" />
         <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-[#f0f0ff]/60 translate-x-1/3 translate-y-1/3" />
         <div className="relative z-10 px-6 max-w-3xl">
@@ -82,10 +86,11 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           <p className="text-[#111111]/70 text-lg md:text-xl font-medium">{tagline}</p>
         </div>
       </section>
+      )}
 
       {/* Products */}
       {showProducts && (
-        <section id="products" className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
+        <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
           <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[var(--brand-color,#ff3cac)]">
             Shop
           </h2>
@@ -116,7 +121,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
       {/* Services */}
       {showServices && (
-        <section id="services" className="scroll-mt-20 bg-[#f0f0ff] py-20">
+        <section id="services" style={{ order: secOrder('services') }} className="scroll-mt-20 bg-[#f0f0ff] py-20">
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[var(--brand-color,#ff3cac)]">
               Book
@@ -169,6 +174,8 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
           </div>
         </section>
       )}
+
+      </div>{/* end ordered sections */}
 
       {/* Footer */}
       <footer id="footer" className="scroll-mt-20 bg-white border-t-4 border-[var(--brand-color,#ff3cac)] py-12">

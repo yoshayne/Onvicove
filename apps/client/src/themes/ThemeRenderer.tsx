@@ -25,7 +25,7 @@ interface ThemeRendererProps extends ThemeProps {
   galleries?: GallerySectionData[];
 }
 
-export default function ThemeRenderer({ themeId, galleries, ...props }: ThemeRendererProps) {
+export default function ThemeRenderer({ themeId, galleries, visibleSections, ...props }: ThemeRendererProps) {
   const loader = themeMap[themeId] ?? themeMap.editorial;
   const Storefront = lazy(loader);
 
@@ -36,7 +36,7 @@ export default function ThemeRenderer({ themeId, galleries, ...props }: ThemeRen
   return (
     <div style={style}>
       <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
-        <Storefront {...props} />
+        <Storefront {...props} visibleSections={visibleSections} />
       </Suspense>
       {galleries?.filter((g) => g.enabled).map((g) => (
         <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />

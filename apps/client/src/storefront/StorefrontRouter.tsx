@@ -5,6 +5,8 @@ import Spinner from '../components/shared/Spinner';
 import ThemeRenderer from '../themes/ThemeRenderer';
 import type { ThemeData, ProductData, ProductVariantData, ServiceData, StaffData } from '../themes/types';
 import type { GallerySectionData } from '../themes/shared/Gallery';
+
+interface StoredSection { id: string; type: string; enabled: boolean; [key: string]: unknown; }
 import type { Tenant, Product, Service, Staff } from '../types';
 
 function mapTenant(tenant: Tenant): ThemeData {
@@ -102,7 +104,7 @@ export default function StorefrontRouter() {
   const sectionsQuery = useQuery({
     queryKey: ['public-page-sections', slug],
     queryFn: () =>
-      apiGet<{ sections: GallerySectionData[] }>(`/api/public/${slug}/page-sections/home`)
+      apiGet<{ sections: StoredSection[] }>(`/api/public/${slug}/page-sections/home`)
         .then((r) => r.sections)
         .catch(() => []),
     enabled: !!slug && !!tenantQuery.data,
@@ -126,6 +128,10 @@ export default function StorefrontRouter() {
   }
 
   const tenant = tenantQuery.data;
+  const allSections = sectionsQuery.data ?? [];
+  const visibleSections = allSections
+    .filter((s) => s.enabled && s.type !== 'gallery')
+    .map((s) => s.type);
 
   return (
     <ThemeRenderer
@@ -134,7 +140,8 @@ export default function StorefrontRouter() {
       products={(productsQuery.data ?? []).map(mapProduct)}
       services={(servicesQuery.data ?? []).map(mapService)}
       staff={(staffQuery.data ?? []).map(mapStaff)}
-      galleries={(sectionsQuery.data ?? []).filter((s) => s.type === 'gallery')}
+      galleries={allSections.filter((s) => s.type === 'gallery') as unknown as GallerySectionData[]}
+      visibleSections={visibleSections.length > 0 ? visibleSections : undefined}
     />
   );
 }
