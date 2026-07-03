@@ -505,25 +505,33 @@ export default function PageBuilder() {
   function handleDragStart(index: number) { setDragIndex(index); }
   function handleDragOver(e: React.DragEvent, index: number) {
     e.preventDefault();
-    if (dragIndex === null || dragIndex === index) { setDragOverIndex(index); return; }
     setDragOverIndex(index);
   }
   function handleDrop(index: number) {
-    if (dragIndex === null) return;
-    mutateSections((prev) => {
-      const next = [...prev];
-      const [removed] = next.splice(dragIndex, 1);
-      next.splice(index, 0, removed);
-      return next;
-    });
+    if (dragIndex === null || dragIndex === index) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    // Compute new order synchronously so we can save it immediately
+    const next = [...sections];
+    const [removed] = next.splice(dragIndex, 1);
+    next.splice(index, 0, removed);
+    setSections(next);
+    setIsDirty(false);
     setDragIndex(null);
     setDragOverIndex(null);
+    // Auto-save + refresh preview so the reorder is visible immediately
+    saveMutation.mutate(next);
   }
   function handleDragEnd() { setDragIndex(null); setDragOverIndex(null); }
 
-  // Toggle section visibility
+  // Toggle section visibility — auto-save so preview reflects the change immediately
   function toggleSection(id: string) {
-    mutateSections((prev) => prev.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s)));
+    const next = sections.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s));
+    setSections(next);
+    setIsDirty(false);
+    saveMutation.mutate(next);
   }
 
   // Expand / collapse
