@@ -33,6 +33,39 @@ interface Section {
 type Device = 'desktop' | 'tablet' | 'mobile';
 type EditorTab = 'sections' | 'content' | 'theme';
 
+// ── Theme catalog (mirrors Themes.tsx) ────────────────────────────────────────
+
+interface ThemeOption {
+  id: ThemeId;
+  name: string;
+  description: string;
+  colors: string[];
+  premium?: boolean;
+}
+
+type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft';
+
+const THEMES: ThemeOption[] = [
+  { id: 'editorial',   name: 'Editorial',   description: 'Dark luxury, serif headlines',     colors: ['#1a1a1a', '#d4a96a', '#ffffff'] },
+  { id: 'minimal',     name: 'Minimal',     description: 'Swiss grid, clean whitespace',     colors: ['#ffffff', '#111111', '#f8f8f8'] },
+  { id: 'bold',        name: 'Bold',        description: 'Streetwear, neon accents',         colors: ['#0a0a0a', '#e8ff00', '#ffffff'] },
+  { id: 'warm',        name: 'Warm',        description: 'Wellness & artisan feel',          colors: ['#fdf8f3', '#8b5e3c', '#3d2314'] },
+  { id: 'classic',     name: 'Classic',     description: 'Professional & formal',            colors: ['#1a3a5c', '#c8a850', '#ffffff'] },
+  { id: 'bright',      name: 'Bright',      description: 'Gen Z, playful pastels',           colors: ['#ff3cac', '#f0f0ff', '#ffffff'] },
+  { id: 'obsidian',    name: 'Obsidian',    description: 'Black luxury, gold accents',       colors: ['#000000', '#c9a84c', '#111111'], premium: true },
+  { id: 'aurora',      name: 'Aurora',      description: 'Gradient & glassmorphism',         colors: ['#0d0d1a', '#a78bfa', '#1a0533'], premium: true },
+  { id: 'magazine',    name: 'Magazine',    description: 'Editorial asymmetric grid',        colors: ['#f8f6f1', '#1a1a1a', '#eeece7'], premium: true },
+  { id: 'brutalist',   name: 'Brutalist',   description: 'Raw, bold, unconventional',        colors: ['#ffffff', '#000000', '#0000ff'], premium: true },
+  { id: 'neon-tokyo',  name: 'Neon Tokyo',  description: 'Cyberpunk neon energy',            colors: ['#050510', '#ff2d9b', '#0a0a20'], premium: true },
+  { id: 'craft',       name: 'Craft',       description: 'Handmade paper textures',          colors: ['#f5f0e8', '#5c4a32', '#ece5d8'], premium: true },
+];
+
+const BRAND_COLOR_PRESETS = [
+  '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
+  '#f97316', '#eab308', '#22c55e', '#14b8a6',
+  '#3b82f6', '#0ea5e9', '#64748b', '#000000',
+];
+
 // ── Section metadata ──────────────────────────────────────────────────────────
 
 const SECTION_META: Record<string, { label: string; icon: LucideIcon; color: string }> = {
@@ -338,6 +371,12 @@ export default function PageBuilder() {
   const [contentDirty, setContentDirty] = useState(false);
   const [contentSaving, setContentSaving] = useState(false);
 
+  // Theme tab state
+  const [selectedThemeId, setSelectedThemeId] = useState<ThemeId | null>(null);
+  const [brandColor, setBrandColor] = useState('');
+  const [themeDirty, setThemeDirty] = useState(false);
+  const [themeSaving, setThemeSaving] = useState(false);
+
   // ── Data ───────────────────────────────────────────────────────────────────
   const tenantQ = useQuery({
     queryKey: ['tenant', 'me'],
@@ -362,6 +401,11 @@ export default function PageBuilder() {
       'contact.address': pc['contact.address'] ?? '',
       'contact.hours': pc['contact.hours'] ?? '',
     });
+    // Initialize theme tab (only on first load — don't reset while user is editing)
+    if (!themeDirty) {
+      setSelectedThemeId((t.theme_id as ThemeId) ?? 'editorial');
+      setBrandColor(t.brand_color ?? '');
+    }
   }, [tenantQ.data]);
 
   // Initialize sections from API
@@ -433,6 +477,22 @@ export default function PageBuilder() {
       queryClient.invalidateQueries({ queryKey: ['tenant', 'me'] });
     } finally {
       setContentSaving(false);
+    }
+  }
+
+  async function handleThemeSave() {
+    if (!selectedThemeId) return;
+    setThemeSaving(true);
+    try {
+      await api.patch('/tenants/me', {
+        theme_id: selectedThemeId,
+        brand_color: brandColor || null,
+      });
+      setThemeDirty(false);
+      setPreviewKey((k) => k + 1);
+      queryClient.invalidateQueries({ queryKey: ['tenant', 'me'] });
+    } finally {
+      setThemeSaving(false);
     }
   }
 
@@ -792,22 +852,117 @@ export default function PageBuilder() {
 
             {/* ── Theme tab ── */}
             {tab === 'theme' && (
-              <div className="flex flex-col items-center gap-3 p-6 pt-10 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-100">
-                  <Palette size={24} className="text-purple-600" />
+              <div className="flex flex-col gap-0">
+                {/* Save bar */}
+                {themeDirty && (
+                  <div className="sticky top-0 z-10 flex items-center justify-between border-b border-violet-200 bg-violet-50 px-4 py-2.5">
+                    <span className="text-xs font-medium text-violet-700">Unsaved theme changes</span>
+                    <button
+                      type="button"
+                      onClick={handleThemeSave}
+                      disabled={themeSaving}
+                      className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+                    >
+                      {themeSaving ? <RefreshCw size={11} className="animate-spin" /> : <Save size={11} />}
+                      {themeSaving ? 'Saving…' : 'Apply'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Brand color */}
+                <div className="border-b border-slate-100 px-4 py-4">
+                  <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Brand Color</p>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {BRAND_COLOR_PRESETS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => { setBrandColor(c); setThemeDirty(true); }}
+                        className="h-7 w-7 rounded-full border-2 transition-transform hover:scale-110"
+                        style={{
+                          backgroundColor: c,
+                          borderColor: brandColor === c ? '#6366f1' : 'transparent',
+                          boxShadow: brandColor === c ? '0 0 0 2px white, 0 0 0 4px #6366f1' : 'inset 0 0 0 1px rgba(0,0,0,0.1)',
+                        }}
+                        title={c}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-8 w-8 shrink-0 rounded-lg border border-slate-200"
+                      style={{ backgroundColor: brandColor || '#6366f1' }}
+                    />
+                    <input
+                      type="color"
+                      value={brandColor || '#6366f1'}
+                      onChange={(e) => { setBrandColor(e.target.value); setThemeDirty(true); }}
+                      className="h-8 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-1 py-0.5"
+                      title="Custom color"
+                    />
+                    {brandColor && (
+                      <button
+                        type="button"
+                        onClick={() => { setBrandColor(''); setThemeDirty(true); }}
+                        className="shrink-0 text-xs text-slate-400 hover:text-slate-600"
+                        title="Clear"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  {brandColor && (
+                    <p className="mt-1.5 text-[10px] text-slate-400 font-mono">{brandColor}</p>
+                  )}
                 </div>
-                <h3 className="text-sm font-bold text-slate-800">Theme Customization</h3>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Switch themes and customize colors without leaving the page builder — coming in Phase 3.
-                </p>
-                <div className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-left">
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">Coming soon</p>
-                  {['Live theme switcher', 'Brand color picker', 'Font pairing selector', 'Dark / light mode'].map((item) => (
-                    <div key={item} className="flex items-center gap-2 py-1">
-                      <div className="h-1.5 w-1.5 rounded-full bg-purple-300" />
-                      <span className="text-xs text-slate-500">{item}</span>
-                    </div>
-                  ))}
+
+                {/* Theme list */}
+                <div className="px-4 py-4">
+                  <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Theme</p>
+                  <div className="flex flex-col gap-2">
+                    {THEMES.map((t) => {
+                      const isSelected = selectedThemeId === t.id;
+                      const isPro = tenantQ.data?.tenant?.plan === 'pro' || tenantQ.data?.tenant?.plan === 'business';
+                      const isLocked = t.premium && !isPro;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          disabled={isLocked}
+                          onClick={() => {
+                            if (isLocked) return;
+                            setSelectedThemeId(t.id);
+                            setThemeDirty(true);
+                          }}
+                          className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all ${
+                            isSelected
+                              ? 'border-violet-400 bg-violet-50 ring-1 ring-violet-400'
+                              : isLocked
+                              ? 'border-slate-100 bg-slate-50 opacity-50'
+                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          {/* Color swatch strip */}
+                          <div className="flex shrink-0 overflow-hidden rounded-md" style={{ width: 36, height: 36 }}>
+                            {t.colors.map((c, i) => (
+                              <div key={i} className="flex-1 h-full" style={{ backgroundColor: c }} />
+                            ))}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-slate-800 leading-tight">{t.name}</p>
+                            <p className="text-[10px] text-slate-400 leading-tight mt-0.5 truncate">{t.description}</p>
+                          </div>
+                          <div className="shrink-0">
+                            {isLocked ? (
+                              <span className="text-[9px] font-bold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full">Pro</span>
+                            ) : isSelected ? (
+                              <Check size={14} className="text-violet-600" />
+                            ) : null}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
