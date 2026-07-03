@@ -154,7 +154,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       <section style={{ order: secOrder('hero') }} className="relative h-screen min-h-[600px] flex flex-col items-center justify-center text-center overflow-hidden">
         {/* Background */}
         {heroImage ? (
-          <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: heroOpacity }} />
+          <img src={heroImage} alt="" data-hero-img="1" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: heroOpacity }} />
         ) : (
           <div
             className="absolute inset-0"

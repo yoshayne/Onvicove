@@ -92,7 +92,7 @@ export default function Storefront({
         className="relative flex min-h-[480px] items-center justify-center bg-[#1a3a5c] bg-cover bg-center text-center"
       >
         {/* Hero image layer */}
-        <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: heroOpacity }} />
+        <img src={heroImage} alt="" data-hero-img="1" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: heroOpacity }} />
         {/* Dark overlay so text stays readable */}
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(26,58,92,0.65)' }} />
         <div className="relative z-10 px-6 py-24">

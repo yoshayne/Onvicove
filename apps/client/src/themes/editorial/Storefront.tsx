@@ -81,7 +81,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       {/* Hero */}
       {isVis('hero') && (
       <section style={{ order: secOrder('hero') }} className="relative h-[80vh] min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-[#1a1a1a]">
-        <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: heroOpacity }} />
+        <img src={heroImage} alt="" data-hero-img="1" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: heroOpacity }} />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-[#1a1a1a]/10" />
         <div className="relative z-10 px-6 max-w-3xl">
           <h1 className="font-['Playfair_Display'] text-5xl md:text-7xl text-white mb-6 leading-tight">

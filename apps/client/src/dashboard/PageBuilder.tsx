@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Monitor, Tablet, Smartphone, ExternalLink, Save, RefreshCw,
@@ -358,6 +358,7 @@ export default function PageBuilder() {
   const [isDirty, setIsDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Content tab state
   const [contentFields, setContentFields] = useState({
@@ -374,6 +375,7 @@ export default function PageBuilder() {
   const [heroImageOpacity, setHeroImageOpacity] = useState(100);
   const [heroUploading, setHeroUploading] = useState(false);
   const [heroUploadError, setHeroUploadError] = useState<string | null>(null);
+  const heroOpacitySaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Theme tab state
   const [selectedThemeId, setSelectedThemeId] = useState<ThemeId | null>(null);
@@ -869,7 +871,22 @@ export default function PageBuilder() {
                           min={0}
                           max={100}
                           value={heroImageOpacity}
-                          onChange={(e) => { setHeroImageOpacity(Number(e.target.value)); setContentDirty(true); }}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setHeroImageOpacity(val);
+                            // Instant preview via postMessage
+                            iframeRef.current?.contentWindow?.postMessage({ type: 'hero-opacity', value: val / 100 }, '*');
+                            // Debounced auto-save
+                            if (heroOpacitySaveTimer.current) clearTimeout(heroOpacitySaveTimer.current);
+                            heroOpacitySaveTimer.current = setTimeout(async () => {
+                              try {
+                                await api.put('/tenants/me/page-content', {
+                                  page_content: { 'hero.image_opacity': String(val) },
+                                });
+                                setPreviewKey((k) => k + 1);
+                              } catch { /* silent */ }
+                            }, 600);
+                          }}
                           className="w-full accent-violet-600"
                         />
                         <div className="mt-1 flex justify-between text-[10px] text-slate-400">
@@ -1118,6 +1135,7 @@ export default function PageBuilder() {
             >
               {siteHref ? (
                 <iframe
+                  ref={iframeRef}
                   key={previewKey}
                   src={siteHref}
                   title="Storefront preview"

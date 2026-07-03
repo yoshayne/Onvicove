@@ -101,7 +101,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           </div>
         </div>
         <div style={{ position: 'relative' }}>
-          <img src={heroImage} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', border: '3px solid #000', display: 'block', opacity: heroOpacity }} />
+          <img src={heroImage} alt="" data-hero-img="1" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', border: '3px solid #000', display: 'block', opacity: heroOpacity }} />
           <div style={{ position: 'absolute', bottom: -12, right: -12, background: 'var(--brand-color, #0000ff)', color: '#fff', padding: '8px 16px', fontWeight: 900, fontSize: 12, letterSpacing: '0.15em' }}>
             ★ SELECTED PROJECT
           </div>

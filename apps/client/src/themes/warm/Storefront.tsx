@@ -88,7 +88,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             <p className="text-[#3d2314]/70 text-lg md:text-xl">{tagline}</p>
           </div>
           <div className="h-64 md:h-[70vh] rounded-2xl overflow-hidden">
-            <img src={heroImage} alt="" className="w-full h-full object-cover" style={{ opacity: heroOpacity }} />
+            <img src={heroImage} alt="" data-hero-img="1" className="w-full h-full object-cover" style={{ opacity: heroOpacity }} />
           </div>
         </div>
       </section>

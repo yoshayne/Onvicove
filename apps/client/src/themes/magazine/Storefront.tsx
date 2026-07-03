@@ -86,7 +86,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           <div style={{ position: 'absolute', top: -20, right: -24, fontSize: 11, letterSpacing: '0.2em', color: '#1a1a1a', opacity: 0.3, writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
             PORTRAITS — EDITORIAL — BRAND
           </div>
-          <img src={heroImage} alt="" style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block', opacity: heroOpacity }} />
+          <img src={heroImage} alt="" data-hero-img="1" style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block', opacity: heroOpacity }} />
         </div>
       </section>
       )}
