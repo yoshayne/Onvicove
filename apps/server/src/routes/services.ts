@@ -73,7 +73,7 @@ app.post('/', async (c) => {
       requires_deposit, deposit_cents, sort_order
     ) VALUES (
       ${tenant.id}, ${d.name}, ${d.description ?? null}, ${d.price_cents}, ${d.duration_minutes},
-      ${d.buffer_minutes ?? 0}, ${d.max_bookings_per_slot ?? 1}, ${JSON.stringify(d.image_keys ?? [])},
+      ${d.buffer_minutes ?? 0}, ${d.max_bookings_per_slot ?? 1}, ${db.json(d.image_keys ?? [])},
       ${d.category ?? null}, ${d.is_active ?? true}, ${d.is_featured ?? false},
       ${d.requires_deposit ?? false}, ${d.deposit_cents ?? null}, ${d.sort_order ?? 0}
     )
@@ -95,7 +95,7 @@ app.patch('/:id', async (c) => {
 
   const d = parsed.data;
   const updates: Record<string, unknown> = { ...d };
-  if (d.image_keys !== undefined) updates.image_keys = JSON.stringify(d.image_keys);
+  if (d.image_keys !== undefined) updates.image_keys = db.json(d.image_keys);
 
   const keys = Object.keys(updates);
   if (keys.length === 0) {

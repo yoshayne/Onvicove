@@ -63,7 +63,7 @@ app.post('/', async (c) => {
     INSERT INTO customers (tenant_id, email, first_name, last_name, phone, notes, tags)
     VALUES (
       ${tenant.id}, ${d.email}, ${d.first_name ?? null}, ${d.last_name ?? null},
-      ${d.phone ?? null}, ${d.notes ?? null}, ${JSON.stringify(d.tags ?? [])}
+      ${d.phone ?? null}, ${d.notes ?? null}, ${db.json(d.tags ?? [])}
     )
     ON CONFLICT (tenant_id, email) DO UPDATE SET
       first_name = COALESCE(EXCLUDED.first_name, customers.first_name),

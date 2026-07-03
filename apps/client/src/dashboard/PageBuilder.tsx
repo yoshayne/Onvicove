@@ -411,7 +411,12 @@ export default function PageBuilder() {
   // Initialize sections from API
   useEffect(() => {
     if (!pageSectionsQ.data) return;
-    const raw = pageSectionsQ.data.sections ?? [];
+    let raw = pageSectionsQ.data.sections ?? [];
+    // Guard: server bug (now fixed) could double-encode sections as a JSON string
+    if (typeof raw === 'string') {
+      try { raw = JSON.parse(raw as unknown as string); } catch { raw = []; }
+    }
+    if (!Array.isArray(raw)) { setSections(DEFAULT_SECTIONS); return; }
     if (raw.length === 0) { setSections(DEFAULT_SECTIONS); return; }
 
     const hasThemeSections = raw.some((s) => s.type !== 'gallery');

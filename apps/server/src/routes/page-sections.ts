@@ -29,7 +29,7 @@ app.put('/:page', async (c) => {
 
   await db`
     INSERT INTO page_sections (tenant_id, page, sections, updated_at)
-    VALUES (${tenant.id}, ${page}, ${JSON.stringify(parsed.data)}, NOW())
+    VALUES (${tenant.id}, ${page}, ${db.json(parsed.data as never)}, NOW())
     ON CONFLICT (tenant_id, page) DO UPDATE SET sections = EXCLUDED.sections, updated_at = NOW()
   `;
   return c.json({ sections: parsed.data });
