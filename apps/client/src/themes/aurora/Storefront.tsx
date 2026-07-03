@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ShoppingCart, Leaf, Heart, Star } from 'lucide-react';
 import type { ThemeProps } from '../types';
+import ContactBlock from '../shared/ContactBlock';
 import { formatPrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
@@ -221,6 +222,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             {subscribeStatus === 'success' ? '✓ Subscribed!' : subscribeStatus === 'loading' ? '...' : 'Subscribe'}
           </button>
         </form>
+        <ContactBlock theme={theme} useInlineStyles textColor="rgba(255,255,255,0.5)" />
         <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 24 }}>&copy; {new Date().getFullYear()} {theme.companyName}</p>
       </footer>
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Menu, X, ArrowUp, Clock, ArrowRight } from 'lucide-react';
 import type { ThemeProps } from '../types';
+import ContactBlock from '../shared/ContactBlock';
 import { formatPrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
@@ -442,6 +443,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             </div>
           </div>
 
+          <ContactBlock theme={theme} textColor="rgba(255,255,255,0.5)" />
           <div className="border-t border-white/10 pt-8 flex items-center justify-between flex-wrap gap-4">
             <p className="text-white/20 text-[10px] uppercase tracking-[0.25em]">
               &copy; {new Date().getFullYear()} {theme.companyName}. All rights reserved.

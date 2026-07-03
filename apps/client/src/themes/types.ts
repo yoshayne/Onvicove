@@ -19,6 +19,12 @@ export interface ThemeData {
   slug?: string;
   paymentsEnabled?: boolean;
   stripeAccountId?: string;
+  // Content tab — editable via Page Builder
+  aboutText?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  contactAddress?: string;
+  contactHours?: string;
 }
 
 export interface ProductImage {

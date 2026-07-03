@@ -10,9 +10,10 @@ interface StoredSection { id: string; type: string; enabled: boolean; [key: stri
 import type { Tenant, Product, Service, Staff } from '../types';
 
 function mapTenant(tenant: Tenant): ThemeData {
+  const pc = tenant.page_content ?? {};
   return {
     companyName: tenant.company_name,
-    tagline: tenant.tagline ?? undefined,
+    tagline: pc['hero.subtext'] || tenant.tagline || undefined,
     logoUrl: tenant.logo_url,
     heroImageUrl: tenant.hero_image_url,
     brandColor: tenant.brand_color ?? undefined,
@@ -24,6 +25,11 @@ function mapTenant(tenant: Tenant): ThemeData {
     slug: tenant.slug,
     paymentsEnabled: tenant.stripe_onboarded,
     stripeAccountId: tenant.stripe_account_id ?? undefined,
+    aboutText: pc['about.text'] || undefined,
+    contactEmail: pc['contact.email'] || undefined,
+    contactPhone: pc['contact.phone'] || undefined,
+    contactAddress: pc['contact.address'] || undefined,
+    contactHours: pc['contact.hours'] || undefined,
   };
 }
 

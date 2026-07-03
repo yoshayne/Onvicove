@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Monitor, Tablet, Smartphone, ExternalLink, Save, RefreshCw,
   GripVertical, Eye, EyeOff, ChevronDown, ChevronRight, Plus,
   Home, ShoppingBag, Sparkles, Info, Image as ImageIcon, Users,
   Star, MapPin, Trash2, Upload, Lock, RotateCcw, Check,
-  Palette, Type,
+  Palette, Type, Phone, Mail, Clock,
   type LucideIcon,
 } from 'lucide-react';
 import { useApi } from '../lib/api';
@@ -212,9 +212,18 @@ function SectionRow({
           />
         ) : (
           <div className="border-t border-slate-100 px-3 py-3">
-            <p className="text-xs text-slate-400">
-              Content editing for this section is coming in Phase 2.
-            </p>
+            {section.type === 'hero' && (
+              <p className="text-xs text-slate-500">Edit hero text in the <strong>Content</strong> tab above.</p>
+            )}
+            {section.type === 'about' && (
+              <p className="text-xs text-slate-500">Edit about section copy in the <strong>Content</strong> tab above.</p>
+            )}
+            {section.type === 'contact' && (
+              <p className="text-xs text-slate-500">Edit contact details &amp; hours in the <strong>Content</strong> tab above.</p>
+            )}
+            {!['hero', 'about', 'contact'].includes(section.type) && (
+              <p className="text-xs text-slate-400">This section pulls live data from your products, services, or staff.</p>
+            )}
           </div>
         )
       )}
@@ -274,10 +283,35 @@ function AddSectionMenu({
   );
 }
 
+// ── Content field component ───────────────────────────────────────────────────
+
+function ContentField({
+  label, value, onChange, multiline = false, placeholder = '',
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  multiline?: boolean;
+  placeholder?: string;
+}) {
+  const cls = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none';
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</label>
+      {multiline ? (
+        <textarea rows={3} className={cls} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      ) : (
+        <input type="text" className={cls} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      )}
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function PageBuilder() {
   const api = useApi();
+  const queryClient = useQueryClient();
 
   // ── State ──────────────────────────────────────────────────────────────────
   const [tab, setTab] = useState<EditorTab>('sections');
@@ -292,6 +326,18 @@ export default function PageBuilder() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
 
+  // Content tab state
+  const [contentFields, setContentFields] = useState({
+    tagline: '',
+    'about.text': '',
+    'contact.email': '',
+    'contact.phone': '',
+    'contact.address': '',
+    'contact.hours': '',
+  });
+  const [contentDirty, setContentDirty] = useState(false);
+  const [contentSaving, setContentSaving] = useState(false);
+
   // ── Data ───────────────────────────────────────────────────────────────────
   const tenantQ = useQuery({
     queryKey: ['tenant', 'me'],
@@ -302,6 +348,21 @@ export default function PageBuilder() {
     queryKey: ['page-sections', 'home'],
     queryFn: () => api.get<{ sections: Section[] }>('/page-sections/home'),
   });
+
+  // Initialize content fields from tenant
+  useEffect(() => {
+    const t = tenantQ.data?.tenant;
+    if (!t) return;
+    const pc = (t.page_content as Record<string, string>) ?? {};
+    setContentFields({
+      tagline: t.tagline ?? '',
+      'about.text': pc['about.text'] ?? '',
+      'contact.email': pc['contact.email'] ?? '',
+      'contact.phone': pc['contact.phone'] ?? '',
+      'contact.address': pc['contact.address'] ?? '',
+      'contact.hours': pc['contact.hours'] ?? '',
+    });
+  }, [tenantQ.data]);
 
   // Initialize sections from API
   useEffect(() => {
@@ -348,6 +409,31 @@ export default function PageBuilder() {
     if (!confirm('Reset to default sections? This cannot be undone.')) return;
     setSections(DEFAULT_SECTIONS);
     setIsDirty(true);
+  }
+
+  function setContent(key: keyof typeof contentFields, value: string) {
+    setContentFields((prev) => ({ ...prev, [key]: value }));
+    setContentDirty(true);
+  }
+
+  async function handleContentSave() {
+    setContentSaving(true);
+    try {
+      const { tagline, ...pageContentFields } = contentFields;
+      await Promise.all([
+        api.patch('/tenants/me', { tagline: tagline || null }),
+        api.put('/tenants/me/page-content', {
+          page_content: Object.fromEntries(
+            Object.entries(pageContentFields).filter(([, v]) => v.trim() !== '')
+          ),
+        }),
+      ]);
+      setContentDirty(false);
+      setPreviewKey((k) => k + 1);
+      queryClient.invalidateQueries({ queryKey: ['tenant', 'me'] });
+    } finally {
+      setContentSaving(false);
+    }
   }
 
   // Drag-and-drop
@@ -611,23 +697,96 @@ export default function PageBuilder() {
 
             {/* ── Content tab ── */}
             {tab === 'content' && (
-              <div className="flex flex-col items-center gap-3 p-6 pt-10 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100">
-                  <Type size={24} className="text-violet-600" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-800">Content Editing</h3>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Edit your hero headline, about text, button labels, and more — coming in Phase 2.
-                </p>
-                <div className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-left">
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">Coming soon</p>
-                  {['Hero headline & subtext', 'CTA button labels', 'About section copy', 'Contact details', 'Business hours'].map((item) => (
-                    <div key={item} className="flex items-center gap-2 py-1">
-                      <div className="h-1.5 w-1.5 rounded-full bg-violet-300" />
-                      <span className="text-xs text-slate-500">{item}</span>
+              <div className="flex flex-col gap-0 p-4">
+                <p className="mb-4 text-xs text-slate-400">Edit the text that appears on your storefront. Changes update immediately on save.</p>
+
+                {/* Hero */}
+                <div className="mb-4 rounded-xl border border-slate-200 bg-white overflow-hidden">
+                  <div className="flex items-center gap-2.5 border-b border-slate-100 bg-slate-50 px-3 py-2.5">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-violet-100">
+                      <Home size={12} className="text-violet-600" />
                     </div>
-                  ))}
+                    <span className="text-xs font-bold text-slate-700">Hero Section</span>
+                  </div>
+                  <div className="flex flex-col gap-3 p-3">
+                    <ContentField
+                      label="Tagline / subtext"
+                      value={contentFields.tagline}
+                      onChange={(v) => setContent('tagline', v)}
+                      placeholder="Your brand's main message…"
+                    />
+                  </div>
                 </div>
+
+                {/* About */}
+                <div className="mb-4 rounded-xl border border-slate-200 bg-white overflow-hidden">
+                  <div className="flex items-center gap-2.5 border-b border-slate-100 bg-slate-50 px-3 py-2.5">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-green-100">
+                      <Info size={12} className="text-green-600" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-700">About Section</span>
+                  </div>
+                  <div className="flex flex-col gap-3 p-3">
+                    <ContentField
+                      label="About text"
+                      value={contentFields['about.text']}
+                      onChange={(v) => setContent('about.text', v)}
+                      multiline
+                      placeholder="Tell visitors about your business…"
+                    />
+                  </div>
+                </div>
+
+                {/* Contact */}
+                <div className="mb-4 rounded-xl border border-slate-200 bg-white overflow-hidden">
+                  <div className="flex items-center gap-2.5 border-b border-slate-100 bg-slate-50 px-3 py-2.5">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-red-100">
+                      <MapPin size={12} className="text-red-500" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-700">Contact &amp; Hours</span>
+                  </div>
+                  <div className="flex flex-col gap-3 p-3">
+                    <ContentField
+                      label="Email"
+                      value={contentFields['contact.email']}
+                      onChange={(v) => setContent('contact.email', v)}
+                      placeholder="hello@yourbusiness.com"
+                    />
+                    <ContentField
+                      label="Phone"
+                      value={contentFields['contact.phone']}
+                      onChange={(v) => setContent('contact.phone', v)}
+                      placeholder="+1 (555) 000-0000"
+                    />
+                    <ContentField
+                      label="Address"
+                      value={contentFields['contact.address']}
+                      onChange={(v) => setContent('contact.address', v)}
+                      placeholder="123 Main St, City, State"
+                    />
+                    <ContentField
+                      label="Business hours"
+                      value={contentFields['contact.hours']}
+                      onChange={(v) => setContent('contact.hours', v)}
+                      placeholder="Mon–Fri 9am–6pm"
+                    />
+                  </div>
+                </div>
+
+                {/* Save button */}
+                <button
+                  type="button"
+                  onClick={handleContentSave}
+                  disabled={contentSaving || !contentDirty}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 py-2.5 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  {contentSaving ? <Spinner size="sm" /> : <Save size={14} />}
+                  {contentSaving ? 'Saving…' : contentDirty ? 'Save content' : 'All saved'}
+                </button>
+
+                <p className="mt-3 text-center text-[11px] text-slate-400">
+                  Contact info appears in your storefront footer.
+                </p>
               </div>
             )}
 

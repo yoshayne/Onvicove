@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ShoppingCart, Shield, Award, Gem } from 'lucide-react';
 import type { ThemeProps } from '../types';
+import ContactBlock from '../shared/ContactBlock';
 import { formatPrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
@@ -204,6 +205,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             </button>
           </form>
           <button type="button" onClick={() => setCustomOrderOpen(true)} className="mt-4 border border-white/60 px-5 py-2 text-xs uppercase tracking-widest text-white hover:bg-white/10 transition-opacity">Custom Order</button>
+        <ContactBlock theme={theme} useInlineStyles textColor="rgba(255,255,255,0.5)" />
         <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 32, letterSpacing: '0.15em', textTransform: 'uppercase' }}>&copy; {new Date().getFullYear()} {theme.companyName}. All rights reserved.</p>
       </footer>
 

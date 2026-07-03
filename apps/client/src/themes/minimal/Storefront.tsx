@@ -3,6 +3,7 @@ import { useState } from 'react';
 // <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 import { ShoppingCart } from 'lucide-react';
 import type { ThemeProps } from '../types';
+import ContactBlock from '../shared/ContactBlock';
 import { formatPrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
@@ -190,6 +191,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             </button>
           </form>
           <button type="button" onClick={() => setCustomOrderOpen(true)} className="mt-4 border border-white/60 px-5 py-2 text-xs uppercase tracking-widest text-white hover:bg-white/10 transition-opacity">Custom Order</button>
+          <ContactBlock theme={theme} textColor="rgba(17,17,17,0.5)" />
           <p className="text-[#111111]/40 text-xs mt-6 uppercase tracking-[0.2em] font-medium">
             &copy; {new Date().getFullYear()} {theme.companyName}. All rights reserved.
           </p>
