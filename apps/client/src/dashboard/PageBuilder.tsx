@@ -370,6 +370,9 @@ export default function PageBuilder() {
   });
   const [contentDirty, setContentDirty] = useState(false);
   const [contentSaving, setContentSaving] = useState(false);
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [heroUploading, setHeroUploading] = useState(false);
+  const [heroUploadError, setHeroUploadError] = useState<string | null>(null);
 
   // Theme tab state
   const [selectedThemeId, setSelectedThemeId] = useState<ThemeId | null>(null);
@@ -401,6 +404,7 @@ export default function PageBuilder() {
       'contact.address': pc['contact.address'] ?? '',
       'contact.hours': pc['contact.hours'] ?? '',
     });
+    setHeroImageUrl(t.hero_image_url ?? null);
     // Initialize theme tab (only on first load — don't reset while user is editing)
     if (!themeDirty) {
       setSelectedThemeId((t.theme_id as ThemeId) ?? 'editorial');
@@ -463,6 +467,34 @@ export default function PageBuilder() {
   function setContent(key: keyof typeof contentFields, value: string) {
     setContentFields((prev) => ({ ...prev, [key]: value }));
     setContentDirty(true);
+  }
+
+  async function handleHeroImageUpload(file: File) {
+    setHeroUploading(true);
+    setHeroUploadError(null);
+    try {
+      const res = await api.upload<{ key: string; url: string }>('/uploads', file);
+      await api.patch('/tenants/me', { hero_image_key: res.key });
+      setHeroImageUrl(res.url);
+      setPreviewKey((k) => k + 1);
+      queryClient.invalidateQueries({ queryKey: ['tenant', 'me'] });
+    } catch (err) {
+      setHeroUploadError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setHeroUploading(false);
+    }
+  }
+
+  async function handleHeroImageRemove() {
+    setHeroUploading(true);
+    try {
+      await api.patch('/tenants/me', { hero_image_key: null });
+      setHeroImageUrl(null);
+      setPreviewKey((k) => k + 1);
+      queryClient.invalidateQueries({ queryKey: ['tenant', 'me'] });
+    } finally {
+      setHeroUploading(false);
+    }
   }
 
   async function handleContentSave() {
@@ -782,6 +814,44 @@ export default function PageBuilder() {
                     <span className="text-xs font-bold text-slate-700">Hero Section</span>
                   </div>
                   <div className="flex flex-col gap-3 p-3">
+                    {/* Hero image uploader */}
+                    <div>
+                      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        Background image
+                      </label>
+                      {heroImageUrl ? (
+                        <div className="relative overflow-hidden rounded-lg border border-slate-200">
+                          <img src={heroImageUrl} alt="Hero" className="h-28 w-full object-cover" />
+                          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                            <label className="cursor-pointer rounded-md bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-800 transition-colors hover:bg-white">
+                              {heroUploading ? 'Uploading…' : 'Replace'}
+                              <input type="file" accept="image/*" className="hidden"
+                                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleHeroImageUpload(f); }}
+                                disabled={heroUploading} />
+                            </label>
+                            <button type="button" onClick={handleHeroImageRemove} disabled={heroUploading}
+                              className="rounded-md bg-red-500/90 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-500">
+                              Remove
+                            </button>
+                          </div>
+                          {heroUploading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                              <Spinner size="sm" />
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <label className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 py-6 transition-colors hover:border-violet-400 hover:bg-violet-50 ${heroUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                          {heroUploading ? <Spinner size="sm" /> : <Upload size={18} className="text-slate-400" />}
+                          <span className="text-xs text-slate-500">{heroUploading ? 'Uploading…' : 'Click to upload hero image'}</span>
+                          <input type="file" accept="image/*" className="hidden"
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleHeroImageUpload(f); }}
+                            disabled={heroUploading} />
+                        </label>
+                      )}
+                      {heroUploadError && <p className="mt-1 text-xs text-red-600">{heroUploadError}</p>}
+                    </div>
+
                     <ContentField
                       label="Tagline / subtext"
                       value={contentFields.tagline}
