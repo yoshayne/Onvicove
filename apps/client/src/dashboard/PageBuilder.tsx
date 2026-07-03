@@ -871,6 +871,10 @@ export default function PageBuilder() {
                           min={0}
                           max={100}
                           value={heroImageOpacity}
+                          draggable={false}
+                          onDragStart={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
                           onChange={(e) => {
                             const val = Number(e.target.value);
                             setHeroImageOpacity(val);
