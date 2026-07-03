@@ -36,6 +36,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
+  const heroOpacity = theme.heroImageOpacity !== undefined ? theme.heroImageOpacity / 100 : 1;
   const tagline = theme.tagline || defaults.tagline;
 
   const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
@@ -87,7 +88,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             <p className="text-[#3d2314]/70 text-lg md:text-xl">{tagline}</p>
           </div>
           <div className="h-64 md:h-[70vh] rounded-2xl overflow-hidden">
-            <img src={heroImage} alt="" className="w-full h-full object-cover" />
+            <img src={heroImage} alt="" className="w-full h-full object-cover" style={{ opacity: heroOpacity }} />
           </div>
         </div>
       </section>

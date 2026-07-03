@@ -34,6 +34,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
+  const heroOpacity = theme.heroImageOpacity !== undefined ? theme.heroImageOpacity / 100 : 0.5;
   const tagline = theme.tagline || defaults.tagline;
   const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
   const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
@@ -71,7 +72,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       {/* Hero */}
       {isVis('hero') && (
       <section style={{ order: secOrder('hero'), position: 'relative', height: '90vh', minHeight: 520, overflow: 'hidden', background: '#000', display: 'flex', alignItems: 'flex-end' }}>
-        <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
+        <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: heroOpacity }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #000 0%, rgba(0,0,0,0.4) 50%, transparent 100%)' }} />
         <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '0 24px 80px', width: '100%' }}>
           <p style={{ fontSize: 11, letterSpacing: '0.3em', color: 'var(--brand-color, #c9a84c)', marginBottom: 16, textTransform: 'uppercase' }}>Since 1987</p>

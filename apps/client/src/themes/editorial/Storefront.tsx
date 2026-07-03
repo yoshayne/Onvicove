@@ -37,6 +37,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
+  const heroOpacity = theme.heroImageOpacity !== undefined ? theme.heroImageOpacity / 100 : 0.8;
   const tagline = theme.tagline || defaults.tagline;
 
   const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
@@ -80,7 +81,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       {/* Hero */}
       {isVis('hero') && (
       <section style={{ order: secOrder('hero') }} className="relative h-[80vh] min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-[#1a1a1a]">
-        <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+        <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: heroOpacity }} />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-[#1a1a1a]/10" />
         <div className="relative z-10 px-6 max-w-3xl">
           <h1 className="font-['Playfair_Display'] text-5xl md:text-7xl text-white mb-6 leading-tight">

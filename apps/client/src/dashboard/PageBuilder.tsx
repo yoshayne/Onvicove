@@ -371,6 +371,7 @@ export default function PageBuilder() {
   const [contentDirty, setContentDirty] = useState(false);
   const [contentSaving, setContentSaving] = useState(false);
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [heroImageOpacity, setHeroImageOpacity] = useState(100);
   const [heroUploading, setHeroUploading] = useState(false);
   const [heroUploadError, setHeroUploadError] = useState<string | null>(null);
 
@@ -405,6 +406,7 @@ export default function PageBuilder() {
       'contact.hours': pc['contact.hours'] ?? '',
     });
     setHeroImageUrl(t.hero_image_url ?? null);
+    if (pc['hero.image_opacity'] !== undefined) setHeroImageOpacity(Number(pc['hero.image_opacity']));
     // Initialize theme tab (only on first load — don't reset while user is editing)
     if (!themeDirty) {
       setSelectedThemeId((t.theme_id as ThemeId) ?? 'editorial');
@@ -504,9 +506,12 @@ export default function PageBuilder() {
       await Promise.all([
         api.patch('/tenants/me', { tagline: tagline || null }),
         api.put('/tenants/me/page-content', {
-          page_content: Object.fromEntries(
-            Object.entries(pageContentFields).filter(([, v]) => v.trim() !== '')
-          ),
+          page_content: {
+            ...Object.fromEntries(
+              Object.entries(pageContentFields).filter(([, v]) => v.trim() !== '')
+            ),
+            'hero.image_opacity': String(heroImageOpacity),
+          },
         }),
       ]);
       setContentDirty(false);
@@ -851,6 +856,28 @@ export default function PageBuilder() {
                       )}
                       {heroUploadError && <p className="mt-1 text-xs text-red-600">{heroUploadError}</p>}
                     </div>
+
+                    {/* Opacity slider — only shown when image is set */}
+                    {heroImageUrl && (
+                      <div>
+                        <label className="mb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          <span>Image opacity</span>
+                          <span className="font-mono text-slate-700">{heroImageOpacity}%</span>
+                        </label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={heroImageOpacity}
+                          onChange={(e) => { setHeroImageOpacity(Number(e.target.value)); setContentDirty(true); }}
+                          className="w-full accent-violet-600"
+                        />
+                        <div className="mt-1 flex justify-between text-[10px] text-slate-400">
+                          <span>Hidden</span>
+                          <span>Full</span>
+                        </div>
+                      </div>
+                    )}
 
                     <ContentField
                       label="Tagline / subtext"

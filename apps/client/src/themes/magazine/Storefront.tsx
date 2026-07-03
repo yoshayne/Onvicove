@@ -34,6 +34,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
+  const heroOpacity = theme.heroImageOpacity !== undefined ? theme.heroImageOpacity / 100 : 1;
   const tagline = theme.tagline || defaults.tagline;
   const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
   const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
@@ -85,7 +86,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           <div style={{ position: 'absolute', top: -20, right: -24, fontSize: 11, letterSpacing: '0.2em', color: '#1a1a1a', opacity: 0.3, writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
             PORTRAITS — EDITORIAL — BRAND
           </div>
-          <img src={heroImage} alt="" style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
+          <img src={heroImage} alt="" style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block', opacity: heroOpacity }} />
         </div>
       </section>
       )}

@@ -25,6 +25,7 @@ function mapTenant(tenant: Tenant): ThemeData {
     slug: tenant.slug,
     paymentsEnabled: tenant.stripe_onboarded,
     stripeAccountId: tenant.stripe_account_id ?? undefined,
+    heroImageOpacity: pc['hero.image_opacity'] !== undefined ? Number(pc['hero.image_opacity']) : undefined,
     aboutText: pc['about.text'] || undefined,
     contactEmail: pc['contact.email'] || undefined,
     contactPhone: pc['contact.phone'] || undefined,

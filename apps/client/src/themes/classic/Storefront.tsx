@@ -48,6 +48,7 @@ export default function Storefront({
   const displayServices = services.length > 0 ? services : defaults.services;
   const displayStaff = staff.length > 0 ? staff : defaults.staff;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
+  const heroOpacity = theme.heroImageOpacity !== undefined ? theme.heroImageOpacity / 100 : 1;
   const tagline = theme.tagline || defaults.tagline;
 
   return (
@@ -87,10 +88,14 @@ export default function Storefront({
       {/* Hero */}
       {isVis('hero') && (
       <section
-        style={{ order: secOrder('hero'), backgroundImage: `linear-gradient(rgba(26,58,92,0.75), rgba(26,58,92,0.75)), url(${heroImage})` }}
+        style={{ order: secOrder('hero') }}
         className="relative flex min-h-[480px] items-center justify-center bg-[#1a3a5c] bg-cover bg-center text-center"
       >
-        <div className="px-6 py-24">
+        {/* Hero image layer */}
+        <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: heroOpacity }} />
+        {/* Dark overlay so text stays readable */}
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(26,58,92,0.65)' }} />
+        <div className="relative z-10 px-6 py-24">
           <h1 className="font-['Merriweather'] text-4xl font-bold text-white sm:text-5xl md:text-6xl">
             {theme.companyName}
           </h1>

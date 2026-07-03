@@ -19,6 +19,7 @@ export interface ThemeData {
   slug?: string;
   paymentsEnabled?: boolean;
   stripeAccountId?: string;
+  heroImageOpacity?: number; // 0–100; undefined = use theme default
   // Content tab — editable via Page Builder
   aboutText?: string;
   contactEmail?: string;
