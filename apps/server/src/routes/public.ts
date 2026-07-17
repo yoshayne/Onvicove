@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db/client';
 import { rateLimitPublic } from '../middleware/ratelimit';
-import { enrichWithUrls } from '../services/storage';
+import { enrichWithUrls, getSignedFileUrl } from '../services/storage';
 import { generateOrderNumber } from '../lib/orderNumber';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
 import { computePlatformFee, createBookingPaymentIntent } from '../services/stripe';
@@ -81,6 +81,36 @@ app.get('/:slug/products/:id', async (c) => {
   `;
   if (!rows[0]) return c.json({ error: 'Product not found' }, 404);
   return c.json({ product: await enrichWithUrls(rows[0]) });
+});
+
+// GET /api/public/:slug/page-sections/:page
+app.get('/:slug/page-sections/:page', async (c) => {
+  const slug = c.req.param('slug');
+  const page = c.req.param('page');
+  const tenants = await db`SELECT id FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
+  if (!tenants[0]) return c.json({ sections: [] });
+
+  const rows = await db`
+    SELECT sections FROM page_sections WHERE tenant_id = ${tenants[0].id} AND page = ${page} LIMIT 1
+  `;
+  const raw = (rows[0]?.sections ?? []) as Record<string, unknown>[];
+
+  // Refresh signed URLs for gallery images that store a key
+  const sections = await Promise.all(
+    raw.map(async (s) => {
+      if (s.type !== 'gallery' || !Array.isArray(s.images)) return s;
+      const images = await Promise.all(
+        (s.images as Record<string, unknown>[]).map(async (img) => {
+          if (img.key && typeof img.key === 'string') {
+            return { ...img, url: await getSignedFileUrl(img.key) };
+          }
+          return img;
+        })
+      );
+      return { ...s, images };
+    })
+  );
+  return c.json({ sections });
 });
 
 // GET /api/public/:slug/services

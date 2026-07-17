@@ -13,6 +13,7 @@ export type GalleryLayout =
 
 export interface GalleryImageData {
   url: string;
+  key?: string; // storage key — used to refresh signed URLs server-side
   caption?: string;
 }
 

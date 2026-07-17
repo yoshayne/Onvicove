@@ -598,10 +598,10 @@ export default function PageBuilder() {
     setUploadingFor(id);
     try {
       for (const file of Array.from(files)) {
-        const res = await api.upload<{ url: string }>('/uploads', file);
+        const res = await api.upload<{ key: string; url: string }>('/uploads', file);
         setSections((prev) =>
           prev.map((s) =>
-            s.id === id ? { ...s, images: [...(s.images ?? []), { url: res.url }] } : s
+            s.id === id ? { ...s, images: [...(s.images ?? []), { key: res.key, url: res.url }] } : s
           )
         );
       }
