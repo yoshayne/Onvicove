@@ -135,7 +135,21 @@ export default function StorefrontRouter() {
   }
 
   const tenant = tenantQuery.data;
-  const allSections = sectionsQuery.data ?? [];
+  const rawSections = sectionsQuery.data ?? [];
+  // If only gallery sections are stored (legacy), merge with standard defaults
+  const hasThemeSections = rawSections.some((s) => s.type !== 'gallery');
+  const allSections: StoredSection[] = (!hasThemeSections && rawSections.length > 0)
+    ? [
+        { id: 'hero', type: 'hero', enabled: true },
+        { id: 'featured-products', type: 'featured-products', enabled: true },
+        { id: 'services', type: 'services', enabled: true },
+        { id: 'about', type: 'about', enabled: true },
+        ...rawSections,
+        { id: 'staff', type: 'staff', enabled: false },
+        { id: 'testimonials', type: 'testimonials', enabled: false },
+        { id: 'contact', type: 'contact', enabled: true },
+      ]
+    : rawSections;
   // Use section IDs (not types) so galleries with unique IDs sort correctly.
   // Non-gallery defaults have id === type, so secOrder('hero') etc. still work.
   const enabledSections = allSections.filter((s) => s.enabled);
