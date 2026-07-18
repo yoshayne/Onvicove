@@ -12,6 +12,19 @@ const app = new Hono();
 
 app.use('*', rateLimitPublic);
 
+// Extract the storage key from a presigned S3 URL path (handles legacy images with no stored key)
+// Presigned URL format: https://endpoint/bucket/tenants/id/uploads/uuid.webp?X-Amz-...
+function extractKeyFromUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const pathname = new URL(url).pathname;
+    const match = pathname.match(/(tenants\/[^?]+)/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
 // GET /api/public/config — public runtime config (Stripe publishable key etc.)
 app.get('/config', async (c) => {
   return c.json({
@@ -27,18 +40,6 @@ app.get('/:slug', async (c) => {
   `;
   if (!rows[0]) return c.json({ error: 'Store not found' }, 404);
   return c.json({ tenant: await enrichWithUrls(rows[0]) });
-});
-
-// GET /api/public/:slug/page-sections/:page
-app.get('/:slug/page-sections/:page', async (c) => {
-  const slug = c.req.param('slug');
-  const page = c.req.param('page');
-  const tenants = await db`SELECT id FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
-  if (!tenants[0]) return c.json({ sections: [] });
-  const rows = await db`
-    SELECT sections FROM page_sections WHERE tenant_id = ${tenants[0].id} AND page = ${page} LIMIT 1
-  `;
-  return c.json({ sections: rows[0]?.sections ?? [] });
 });
 
 // GET /api/public/:slug/products
@@ -95,15 +96,15 @@ app.get('/:slug/page-sections/:page', async (c) => {
   `;
   const raw = (rows[0]?.sections ?? []) as Record<string, unknown>[];
 
-  // Refresh signed URLs for gallery images that store a key
+  // Refresh signed URLs for gallery images (use stored key, or extract from legacy URL)
   const sections = await Promise.all(
     raw.map(async (s) => {
       if (s.type !== 'gallery' || !Array.isArray(s.images)) return s;
       const images = await Promise.all(
         (s.images as Record<string, unknown>[]).map(async (img) => {
-          if (img.key && typeof img.key === 'string') {
-            return { ...img, url: await getSignedFileUrl(img.key) };
-          }
+          const key = (img.key as string | undefined)
+            ?? extractKeyFromUrl(img.url as string | undefined);
+          if (key) return { ...img, key, url: await getSignedFileUrl(key) };
           return img;
         })
       );

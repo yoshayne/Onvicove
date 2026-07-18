@@ -8,16 +8,23 @@ import { getSignedFileUrl } from '../services/storage';
 const app = new Hono();
 app.use('*', requireAuth, requireTenant);
 
-// Refresh any gallery image signed URLs from stored keys
+function extractKeyFromUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const pathname = new URL(url).pathname;
+    const match = pathname.match(/(tenants\/[^?]+)/);
+    return match ? match[1] : null;
+  } catch { return null; }
+}
+
 async function refreshGalleryUrls(sections: Record<string, unknown>[]): Promise<Record<string, unknown>[]> {
   return Promise.all(
     sections.map(async (s) => {
       if (s.type !== 'gallery' || !Array.isArray(s.images)) return s;
       const images = await Promise.all(
         (s.images as Record<string, unknown>[]).map(async (img) => {
-          if (img.key && typeof img.key === 'string') {
-            return { ...img, url: await getSignedFileUrl(img.key) };
-          }
+          const key = (img.key as string | undefined) ?? extractKeyFromUrl(img.url as string | undefined);
+          if (key) return { ...img, key, url: await getSignedFileUrl(key) };
           return img;
         })
       );
