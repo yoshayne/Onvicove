@@ -59,9 +59,9 @@ const THEMES: ThemeOption[] = [
   {
     id: 'obsidian',
     name: 'Obsidian',
-    description: 'Black luxury, gold accents',
-    colors: ['#000000', '#c9a84c', '#111111'],
-    hero: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=600&q=70',
+    description: 'Dark luxury, glass cards, gold glow',
+    colors: ['#0a0a0f', '#c9a84c', '#12121a'],
+    hero: 'https://images.unsplash.com/photo-1526045612212-70caf35c14df?auto=format&fit=crop&w=600&q=70',
     premium: true,
   },
   {

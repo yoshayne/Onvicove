@@ -6,7 +6,12 @@ import { enrichWithUrls, getSignedFileUrl } from '../services/storage';
 import { generateOrderNumber } from '../lib/orderNumber';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
 import { computePlatformFee, createBookingPaymentIntent } from '../services/stripe';
-import { sendCustomOrderNotification, sendCustomOrderConfirmation } from '../services/email';
+import {
+  sendCustomOrderNotification, sendCustomOrderConfirmation,
+  sendSubscriberWelcome, sendTenantNewSubscriber,
+  sendOrderConfirmation, sendTenantNewOrder,
+  sendBookingConfirmation, sendBookingAwaitingPayment, sendTenantNewBooking,
+} from '../services/email';
 
 const app = new Hono();
 
@@ -404,7 +409,56 @@ app.post('/:slug/bookings', async (c) => {
     UPDATE customers SET booking_count = booking_count + 1, updated_at = NOW() WHERE id = ${customer.id}
   `;
 
-  return c.json({ booking: rows[0] }, 201);
+  const booking = rows[0];
+  const startFmt = new Date(d.start_time).toLocaleString();
+  const endFmt = new Date(d.end_time).toLocaleString();
+  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+
+  // Fire-and-forget post-booking emails
+  Promise.all([
+    // Customer: confirmed immediately (free or manual-mode bookings)
+    status === 'confirmed'
+      ? sendBookingConfirmation({
+          toEmail: d.customer_email,
+          toName: d.customer_name,
+          serviceName: service.name as string,
+          startTime: startFmt,
+          endTime: endFmt,
+          companyName: tenant.company_name as string,
+        }).catch(() => {})
+      : Promise.resolve(),
+    // Customer: awaiting payment — prompt them to pay
+    status === 'awaiting_payment'
+      ? sendBookingAwaitingPayment({
+          toEmail: d.customer_email,
+          toName: d.customer_name,
+          serviceName: service.name as string,
+          amountCents: amountCents,
+          companyName: tenant.company_name as string,
+          bookingId: booking.id as string,
+          startTime: startFmt,
+        }).catch(() => {})
+      : Promise.resolve(),
+    // Tenant: notify about new booking
+    (async () => {
+      const users = await db`SELECT email FROM users WHERE clerk_user_id = ${tenant.clerk_user_id} LIMIT 1`;
+      const tenantEmail = users[0]?.email as string | null;
+      if (tenantEmail) {
+        await sendTenantNewBooking({
+          tenantEmail,
+          companyName: tenant.company_name as string,
+          serviceName: service.name as string,
+          customerName: d.customer_name,
+          customerEmail: d.customer_email,
+          startTime: startFmt,
+          endTime: endFmt,
+          dashboardUrl: `${baseUrl}/dashboard/bookings`,
+        }).catch(() => {});
+      }
+    })(),
+  ]).catch(() => {});
+
+  return c.json({ booking }, 201);
 });
 
 const validateDiscountSchema = z.object({
@@ -529,6 +583,9 @@ app.post('/:slug/subscribe', async (c) => {
   const tenants = await db`SELECT id FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
   if (!tenants[0]) return c.json({ error: 'Store not found' }, 404);
 
+  const tenantRows = await db`SELECT * FROM tenants WHERE id = ${tenants[0].id} LIMIT 1`;
+  const tenant = tenantRows[0];
+
   await db`
     INSERT INTO customers (tenant_id, email, first_name, last_name, email_optin, email_optin_at)
     VALUES (${tenants[0].id}, ${d.email}, ${d.firstName ?? null}, ${d.lastName ?? null}, TRUE, NOW())
@@ -539,6 +596,27 @@ app.post('/:slug/subscribe', async (c) => {
       last_name = COALESCE(customers.last_name, EXCLUDED.last_name),
       updated_at = NOW()
   `;
+
+  const subscriberName = [d.firstName, d.lastName].filter(Boolean).join(' ') || '';
+  const companyName = (tenant?.company_name as string) ?? '';
+
+  // Email the subscriber a welcome and notify the tenant
+  Promise.all([
+    sendSubscriberWelcome({ toEmail: d.email, toName: subscriberName, companyName }).catch(() => {}),
+    (async () => {
+      if (!tenant) return;
+      const users = await db`SELECT email FROM users WHERE clerk_user_id = ${tenant.clerk_user_id} LIMIT 1`;
+      const tenantEmail = users[0]?.email as string | null;
+      if (tenantEmail) {
+        await sendTenantNewSubscriber({
+          tenantEmail,
+          companyName,
+          subscriberEmail: d.email,
+          subscriberName: subscriberName || null,
+        }).catch(() => {});
+      }
+    })(),
+  ]).catch(() => {});
 
   return c.json({ success: true });
 });

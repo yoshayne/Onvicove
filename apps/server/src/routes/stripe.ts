@@ -3,7 +3,13 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { stripe, computePlatformFee, createBookingPaymentIntent, getOrCreateStripeCustomer } from '../services/stripe';
-import { sendStripeConnected, sendAdminStripeConnected, sendAdminDomainPurchaseRequest, sendTenantDomainRequestReceived } from '../services/email';
+import {
+  sendStripeConnected, sendAdminStripeConnected,
+  sendAdminDomainPurchaseRequest, sendTenantDomainRequestReceived,
+  sendOrderConfirmation, sendTenantNewOrder,
+  sendBookingConfirmation, sendTenantNewBooking,
+  sendPaymentFailed,
+} from '../services/email';
 
 const app = new Hono();
 
@@ -234,6 +240,8 @@ app.post('/webhook', async (c) => {
       }
     }
 
+    const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+
     if (reference_type === 'order') {
       const rows = await db`
         UPDATE orders SET status = 'paid', stripe_charge_id = ${pi.id}, updated_at = NOW()
@@ -252,6 +260,29 @@ app.post('/webhook', async (c) => {
             ${platformFee}, ${stripeFee}, ${(order.total_cents as number) - platformFee - stripeFee}
           )
         `;
+        // Notify customer and tenant
+        const tenantRows = await db`SELECT t.company_name, u.email AS owner_email FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${tenant_id} LIMIT 1`;
+        const t = tenantRows[0];
+        Promise.all([
+          sendOrderConfirmation({
+            toEmail: order.customer_email as string,
+            toName: order.customer_name as string,
+            orderNumber: order.order_number as string,
+            totalCents: order.total_cents as number,
+            companyName: (t?.company_name as string) ?? '',
+          }).catch(() => {}),
+          t?.owner_email
+            ? sendTenantNewOrder({
+                tenantEmail: t.owner_email as string,
+                companyName: t.company_name as string,
+                orderNumber: order.order_number as string,
+                customerName: order.customer_name as string,
+                customerEmail: order.customer_email as string,
+                totalCents: order.total_cents as number,
+                dashboardUrl: `${baseUrl}/dashboard/orders`,
+              }).catch(() => {})
+            : Promise.resolve(),
+        ]).catch(() => {});
       }
     } else if (reference_type === 'booking_balance') {
       const piAmount = pi.amount;
@@ -294,6 +325,77 @@ app.post('/webhook', async (c) => {
             ${platformFee}, ${stripeFee}, ${piAmount - platformFee - stripeFee}
           )
         `;
+        // Confirm the customer and notify the tenant
+        const svcRow = await db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`;
+        const tenantRows = await db`SELECT t.company_name, u.email AS owner_email FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${tenant_id} LIMIT 1`;
+        const t = tenantRows[0];
+        const serviceName = (svcRow[0]?.name as string) ?? 'your appointment';
+        const startFmt = new Date(booking.start_time as string).toLocaleString();
+        const endFmt = new Date(booking.end_time as string).toLocaleString();
+        Promise.all([
+          sendBookingConfirmation({
+            toEmail: booking.customer_email as string,
+            toName: booking.customer_name as string,
+            serviceName,
+            startTime: startFmt,
+            endTime: endFmt,
+            companyName: (t?.company_name as string) ?? '',
+          }).catch(() => {}),
+          t?.owner_email
+            ? sendTenantNewBooking({
+                tenantEmail: t.owner_email as string,
+                companyName: t.company_name as string,
+                serviceName,
+                customerName: booking.customer_name as string,
+                customerEmail: booking.customer_email as string,
+                startTime: startFmt,
+                endTime: endFmt,
+                dashboardUrl: `${baseUrl}/dashboard/bookings`,
+              }).catch(() => {})
+            : Promise.resolve(),
+        ]).catch(() => {});
+      }
+    }
+  }
+
+  if (event.type === 'payment_intent.payment_failed') {
+    const pi = event.data.object as {
+      amount: number;
+      metadata: Record<string, string>;
+      last_payment_error?: { message?: string } | null;
+    };
+    const { reference_type, reference_id } = pi.metadata || {};
+    if (reference_type === 'order' && reference_id) {
+      const rows = await db`SELECT customer_email, customer_name, total_cents FROM orders WHERE id = ${reference_id} LIMIT 1`;
+      const order = rows[0];
+      if (order) {
+        const retryUrl = `${process.env.CLIENT_URL || 'https://shopsuitedirect.com'}/checkout`;
+        const tenantRows = await db`SELECT company_name FROM tenants WHERE id = ${pi.metadata.tenant_id} LIMIT 1`;
+        sendPaymentFailed({
+          toEmail: order.customer_email as string,
+          toName: order.customer_name as string,
+          companyName: (tenantRows[0]?.company_name as string) ?? '',
+          amountCents: order.total_cents as number,
+          retryUrl,
+        }).catch(() => {});
+      }
+    } else if ((reference_type === 'booking' || reference_type === 'booking_balance') && reference_id) {
+      const rows = await db`
+        SELECT b.customer_email, b.customer_name, b.amount_cents, b.id, s.name AS service_name
+        FROM bookings b JOIN services s ON s.id = b.service_id
+        WHERE b.id = ${reference_id} LIMIT 1
+      `;
+      const booking = rows[0];
+      if (booking) {
+        const baseUrl2 = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+        const tenantRows = await db`SELECT company_name FROM tenants WHERE id = ${pi.metadata.tenant_id} LIMIT 1`;
+        sendPaymentFailed({
+          toEmail: booking.customer_email as string,
+          toName: booking.customer_name as string,
+          companyName: (tenantRows[0]?.company_name as string) ?? '',
+          amountCents: booking.amount_cents as number,
+          retryUrl: `${baseUrl2}/pay/booking/${reference_id}`,
+        }).catch(() => {});
       }
     }
   }
