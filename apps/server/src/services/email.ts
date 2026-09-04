@@ -472,6 +472,137 @@ export async function sendTenantDomainPurchased(data: {
   });
 }
 
+// ─── Subscriber notifications ────────────────────────────────────────────────
+
+export async function sendSubscriberWelcome(data: {
+  toEmail: string;
+  toName: string;
+  companyName: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.toEmail, name: data.toName || data.toEmail }],
+    subject: `Thanks for subscribing to ${data.companyName}!`,
+    htmlContent: wrap(`You're on the list!`, `
+      <p>Hi${data.toName ? ` ${data.toName.split(' ')[0]}` : ''},</p>
+      <p>Thanks for subscribing to <strong>${data.companyName}</strong>. You'll be the first to hear about new products, offers, and updates.</p>
+      <p style="font-size:13px;color:#64748b">If you didn't subscribe, you can safely ignore this email.</p>
+    `),
+  });
+}
+
+export async function sendTenantNewSubscriber(data: {
+  tenantEmail: string;
+  companyName: string;
+  subscriberEmail: string;
+  subscriberName: string | null;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.tenantEmail, name: data.companyName }],
+    subject: `New subscriber — ${data.companyName}`,
+    htmlContent: wrap('Someone joined your list', `
+      <p>A new customer subscribed to your email list on <strong>${data.companyName}</strong>.</p>
+      <p><strong>Email:</strong> ${data.subscriberEmail}</p>
+      ${data.subscriberName ? `<p><strong>Name:</strong> ${data.subscriberName}</p>` : ''}
+    `),
+  });
+}
+
+// ─── Tenant order / booking notifications ────────────────────────────────────
+
+export async function sendTenantNewOrder(data: {
+  tenantEmail: string;
+  companyName: string;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  totalCents: number;
+  dashboardUrl: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.tenantEmail, name: data.companyName }],
+    subject: `New order — ${data.orderNumber}`,
+    htmlContent: wrap('You got an order!', `
+      <p>A new order was placed on <strong>${data.companyName}</strong>.</p>
+      <p><strong>Order #:</strong> ${data.orderNumber}</p>
+      <p><strong>Customer:</strong> ${data.customerName} (${data.customerEmail})</p>
+      <p><strong>Total:</strong> $${(data.totalCents / 100).toFixed(2)}</p>
+      ${btn('View order', data.dashboardUrl)}
+    `),
+  });
+}
+
+export async function sendTenantNewBooking(data: {
+  tenantEmail: string;
+  companyName: string;
+  serviceName: string;
+  customerName: string;
+  customerEmail: string;
+  startTime: string;
+  endTime: string;
+  dashboardUrl: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.tenantEmail, name: data.companyName }],
+    subject: `New booking — ${data.serviceName}`,
+    htmlContent: wrap('New appointment booked', `
+      <p>A new booking was made on <strong>${data.companyName}</strong>.</p>
+      <p><strong>Service:</strong> ${data.serviceName}</p>
+      <p><strong>Customer:</strong> ${data.customerName} (${data.customerEmail})</p>
+      <p><strong>Start:</strong> ${data.startTime}</p>
+      <p><strong>End:</strong> ${data.endTime}</p>
+      ${btn('View booking', data.dashboardUrl)}
+    `),
+  });
+}
+
+// ─── Payment failure ─────────────────────────────────────────────────────────
+
+export async function sendPaymentFailed(data: {
+  toEmail: string;
+  toName: string;
+  companyName: string;
+  amountCents: number;
+  retryUrl: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.toEmail, name: data.toName }],
+    subject: `Payment failed — ${data.companyName}`,
+    htmlContent: wrap('Your payment could not be processed', `
+      <p>Hi ${data.toName},</p>
+      <p>Unfortunately we couldn't process your payment of <strong>$${(data.amountCents / 100).toFixed(2)}</strong> for <strong>${data.companyName}</strong>.</p>
+      <p>This can happen if your card was declined, expired, or has insufficient funds. Please try again with a different payment method.</p>
+      ${btn('Try again', data.retryUrl)}
+      <p style="font-size:13px;color:#64748b">If you continue to have trouble, contact ${data.companyName} directly.</p>
+    `),
+  });
+}
+
+// ─── Booking awaiting payment ────────────────────────────────────────────────
+
+export async function sendBookingAwaitingPayment(data: {
+  toEmail: string;
+  toName: string;
+  serviceName: string;
+  amountCents: number;
+  companyName: string;
+  bookingId: string;
+  startTime: string;
+}): Promise<void> {
+  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  const payUrl = `${baseUrl}/pay/booking/${data.bookingId}`;
+  await sendTransacEmail({
+    to: [{ email: data.toEmail, name: data.toName }],
+    subject: `Complete your booking — ${data.companyName}`,
+    htmlContent: wrap('One step left to confirm your booking', `
+      <p>Hi ${data.toName},</p>
+      <p>Your appointment for <strong>${data.serviceName}</strong> with <strong>${data.companyName}</strong> on <strong>${data.startTime}</strong> is reserved but not yet confirmed.</p>
+      <p>Please complete your payment of <strong>$${(data.amountCents / 100).toFixed(2)}</strong> to lock in your spot.</p>
+      ${btn('Pay now to confirm', payUrl)}
+      <p style="font-size:13px;color:#64748b">Your spot is not guaranteed until payment is received.</p>
+    `),
+  });
+}
+
 // ─── Custom order requests ───────────────────────────────────────────────────
 
 export async function sendCustomOrderNotification(data: {
