@@ -4,7 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { createBookingPaymentIntent } from '../services/stripe';
-import { sendPaymentLinkEmail, sendBookingCancelled } from '../services/email';
+import { sendPaymentLinkEmail, sendBookingCancelled, sendBookingConfirmation } from '../services/email';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
 
 const app = new Hono();
@@ -205,6 +205,18 @@ app.patch('/:id', async (c) => {
       endTime: new Date(booking.end_time as string).toLocaleString(),
       companyName: tenant.company_name,
     }).catch((err) => console.error('Booking cancelled email error:', err));
+  }
+
+  if (updates.status === 'confirmed' && before[0]?.status !== 'confirmed') {
+    const svcRows = await db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`;
+    sendBookingConfirmation({
+      toEmail: booking.customer_email as string,
+      toName: booking.customer_name as string,
+      serviceName: (svcRows[0]?.name as string) ?? 'your appointment',
+      startTime: new Date(booking.start_time as string).toLocaleString(),
+      endTime: new Date(booking.end_time as string).toLocaleString(),
+      companyName: tenant.company_name,
+    }).catch((err) => console.error('Booking confirmed email error:', err));
   }
 
   return c.json({ booking });
