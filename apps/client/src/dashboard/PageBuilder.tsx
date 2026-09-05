@@ -43,7 +43,7 @@ interface ThemeOption {
   premium?: boolean;
 }
 
-type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft';
+type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft' | 'lens';
 
 const THEMES: ThemeOption[] = [
   { id: 'editorial',   name: 'Editorial',   description: 'Dark luxury, serif headlines',     colors: ['#1a1a1a', '#d4a96a', '#ffffff'] },
@@ -58,6 +58,7 @@ const THEMES: ThemeOption[] = [
   { id: 'brutalist',   name: 'Brutalist',   description: 'Raw, bold, unconventional',        colors: ['#ffffff', '#000000', '#0000ff'], premium: true },
   { id: 'neon-tokyo',  name: 'Neon Tokyo',  description: 'Cyberpunk neon energy',            colors: ['#050510', '#ff2d9b', '#0a0a20'], premium: true },
   { id: 'craft',       name: 'Craft',       description: 'Handmade paper textures',          colors: ['#f5f0e8', '#5c4a32', '#ece5d8'], premium: true },
+  { id: 'lens',        name: 'Lens',        description: 'Photographers — sessions & prints', colors: ['#0c0c0c', '#c8a96e', '#f0ede8'] },
 ];
 
 const BRAND_COLOR_PRESETS = [

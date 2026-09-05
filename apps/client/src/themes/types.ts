@@ -2,7 +2,7 @@
 // Storefront components are pure presentational components driven by props
 // (no API calls here — data is passed down from parent/dashboard/wizard).
 
-export type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft';
+export type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft' | 'lens';
 export type StoreMode = 'store' | 'book' | 'both';
 
 export interface ThemeData {

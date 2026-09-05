@@ -16,6 +16,7 @@ const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProp
   brutalist: () => import('./brutalist/Storefront'),
   'neon-tokyo': () => import('./neon-tokyo/Storefront'),
   craft: () => import('./craft/Storefront'),
+  lens: () => import('./lens/Storefront'),
 };
 
 interface ThemeRendererProps extends ThemeProps {
