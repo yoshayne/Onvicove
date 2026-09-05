@@ -14,6 +14,7 @@ const THEMES: { id: ThemeId; name: string; desc: string; premium?: boolean }[] =
   { id: 'brutalist', name: 'Brutalist', desc: 'Raw, bold, unconventional', premium: true },
   { id: 'neon-tokyo', name: 'Neon Tokyo', desc: 'Cyberpunk neon energy', premium: true },
   { id: 'craft', name: 'Craft', desc: 'Handmade paper textures', premium: true },
+  { id: 'lens', name: 'Lens', desc: 'Photographers — sessions & prints' },
 ];
 
 // Per-theme color palette for mini mockups
@@ -68,6 +69,10 @@ const MINI_STYLES: Record<ThemeId, {
   craft: {
     bg: '#f5f0e8', nav: '#f5f0e8', hero: '#ece5d8', accent: '#5c4a32',
     text: '#2c1f14', subtext: '#7a6650', headingFont: 'Georgia, serif', bodyFont: 'sans-serif', navText: '#2c1f14',
+  },
+  lens: {
+    bg: '#0c0c0c', nav: '#0c0c0c', hero: '#0c0c0c', accent: '#c8a96e',
+    text: '#f0ede8', subtext: 'rgba(240,237,232,0.6)', headingFont: 'Georgia, serif', bodyFont: 'sans-serif', navText: '#f0ede8',
   },
 };
 
@@ -180,6 +185,15 @@ const THEME_IMAGES: Record<ThemeId, { hero: string; products: [string, string, s
       'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=120&q=60',
     ],
     heroLabel: 'Made by hand.', p1: 'Soy Candle', p2: 'Soap Bar', p3: 'Linen Bag',
+  },
+  lens: {
+    hero: 'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?auto=format&fit=crop&w=400&q=70',
+    products: [
+      'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=120&q=60',
+      'https://images.unsplash.com/photo-1529634806980-85c3dd6d34ac?auto=format&fit=crop&w=120&q=60',
+      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=120&q=60',
+    ],
+    heroLabel: 'Capturing light.', p1: 'Portrait', p2: 'Engagement', p3: 'Fine Art Print',
   },
 };
 
@@ -318,6 +332,19 @@ const THEME_MOCK_DATA: Record<ThemeId, { companyName: string; tagline: string; i
       { id: 's2', name: 'Custom Scent Blending', description: 'Create your signature fragrance.', priceCents: 9500, durationMinutes: 90 },
     ],
   },
+  lens: {
+    companyName: 'Maya Osei Photography', tagline: 'Capturing light, framing life.', industry: 'Photography',
+    products: [
+      { id: '1', name: 'Essential Package', description: '30 edited digital images, 1-hour session.', priceCents: 29900, imageUrls: ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=900&q=80'], isFeatured: true },
+      { id: '2', name: 'Full Day Package', description: '200+ edited images, 8-hour coverage.', priceCents: 189900, imageUrls: ['https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?auto=format&fit=crop&w=900&q=80'] },
+      { id: '3', name: '12×18 Fine Art Print', description: 'Archival pigment print on cotton rag.', priceCents: 14900, imageUrls: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=900&q=80'] },
+      { id: '4', name: 'Canvas Gallery Wrap', description: 'Museum-quality canvas, 24×36.', priceCents: 24900, imageUrls: ['https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=900&q=80'] },
+    ],
+    services: [
+      { id: 's1', name: 'Portrait Session', description: '1-hour studio or outdoor session. 20 edited images.', priceCents: 25000, durationMinutes: 60 },
+      { id: 's2', name: 'Engagement Session', description: 'Two-hour golden-hour session for couples.', priceCents: 45000, durationMinutes: 120 },
+    ],
+  },
 };
 
 const themeLoaders: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
@@ -333,6 +360,7 @@ const themeLoaders: Record<ThemeId, () => Promise<{ default: ComponentType<Theme
   brutalist: () => import('../themes/brutalist/Storefront'),
   'neon-tokyo': () => import('../themes/neon-tokyo/Storefront'),
   craft: () => import('../themes/craft/Storefront'),
+  lens: () => import('../themes/lens/Storefront'),
 };
 
 function MiniMockup({ id }: { id: ThemeId }) {
@@ -556,7 +584,7 @@ function showProducts(id: ThemeId) {
 }
 
 function showBoth(id: ThemeId) {
-  return ['editorial', 'warm', 'classic', 'bright', 'aurora', 'magazine', 'craft'].includes(id);
+  return ['editorial', 'warm', 'classic', 'bright', 'aurora', 'magazine', 'craft', 'lens'].includes(id);
 }
 
 function FullPreview({ themeId }: { themeId: ThemeId }) {
@@ -596,9 +624,9 @@ export default function ThemeShowcase() {
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
-      <h2 className="text-center text-3xl font-bold tracking-tight">Twelve stunning themes</h2>
+      <h2 className="text-center text-3xl font-bold tracking-tight">Thirteen stunning themes</h2>
       <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
-        Six free themes for every brand. Six next-level premium themes for Pro & Business plans.
+        Seven free themes for every brand. Six next-level premium themes for Pro & Business plans.
       </p>
 
       {/* Tab switcher */}
