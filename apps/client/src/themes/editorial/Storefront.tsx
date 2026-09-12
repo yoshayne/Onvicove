@@ -102,8 +102,8 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero */}
       {isVis('hero') && (
-      <section style={{ order: secOrder('hero'), position: 'relative', overflow: 'hidden', background: '#1a1a1a' }}>
-        <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '85vh', objectFit: 'contain', opacity: heroOpacity }} />
+      <section style={{ order: secOrder('hero'), position: 'relative', background: '#1a1a1a' }}>
+        <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity }} />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-transparent pointer-events-none" />
         <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center justify-end text-center px-6 pb-12">
           <h1 className="font-['Playfair_Display'] text-5xl md:text-7xl text-white mb-6 leading-tight">

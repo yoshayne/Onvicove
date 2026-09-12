@@ -99,8 +99,8 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero */}
       {isVis('hero') && (
-      <section className="aurora-bg" style={{ order: secOrder('hero'), position: 'relative', overflow: 'hidden' }}>
-        <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '85vh', objectFit: 'contain', opacity: heroOpacity, mixBlendMode: 'screen' }} />
+      <section className="aurora-bg" style={{ order: secOrder('hero'), position: 'relative' }}>
+        <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity, mixBlendMode: 'screen' }} />
         <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '48px 24px 64px', display: 'grid', gridTemplateColumns: showServices ? '1fr 1fr' : '1fr', gap: 48, alignItems: 'center' }}>
           <div>
             <p style={{ fontSize: 12, letterSpacing: '0.2em', color: 'var(--brand-color, #a78bfa)', marginBottom: 16, textTransform: 'uppercase', opacity: 0.8 }}>Holistic Wellness</p>
