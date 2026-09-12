@@ -80,6 +80,18 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         .lens-card:hover .lens-card-img { transform: scale(1.04); }
         .lens-pkg-card { border: 1px solid rgba(200,169,110,0.15); transition: border-color 0.3s, background 0.3s; }
         .lens-pkg-card:hover { border-color: rgba(200,169,110,0.5); background: rgba(200,169,110,0.04); }
+        @media (max-width: 640px) {
+          .lens-hero { height: 65vh !important; min-height: 420px !important; }
+          .lens-hero img { object-fit: contain !important; object-position: center center !important; background: #0c0c0c; }
+          .lens-sessions-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .lens-service-card { display: flex !important; flex-direction: row !important; overflow: hidden; cursor: pointer; }
+          .lens-service-img-wrap { width: 120px !important; min-width: 120px; aspect-ratio: unset !important; height: 160px !important; }
+          .lens-service-info { position: static !important; padding: 16px !important; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+          .lens-service-info h3 { font-size: 18px !important; margin-bottom: 4px !important; }
+          .lens-sessions-section { padding: 48px 0 !important; }
+          .lens-hero-content { padding: 0 20px 40px !important; }
+          .lens-hero-content h1 { font-size: clamp(2.2rem, 10vw, 3.5rem) !important; }
+        }
       `}</style>
 
       {/* ── Nav ── */}
@@ -129,12 +141,12 @@ export default function Storefront({ theme, products, services, staff, visibleSe
 
         {/* ── Hero ── */}
         {isVis('hero') && (
-          <section style={{ order: secOrder('hero'), position: 'relative', height: '100vh', minHeight: 600, display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+          <section className="lens-hero" style={{ order: secOrder('hero'), position: 'relative', height: '100vh', minHeight: 600, display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
             {heroImage && (
               <img src={heroImage} alt="" data-hero-img="1" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: heroOpacity }} />
             )}
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(12,12,12,0.92) 0%, rgba(12,12,12,0.3) 50%, rgba(12,12,12,0.1) 100%)' }} />
-            <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '0 32px 64px', width: '100%' }}>
+            <div className="lens-hero-content" style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '0 32px 64px', width: '100%' }}>
               <p style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 16, fontWeight: 500 }}>{theme.city || theme.industry || 'Photography'}</p>
               <h1 className="lens-heading" style={{ fontSize: 'clamp(3rem, 8vw, 7rem)', fontWeight: 300, lineHeight: 1.05, marginBottom: 24, letterSpacing: '-0.01em' }}>{theme.companyName}</h1>
               <p style={{ fontSize: 16, color: 'rgba(240,237,232,0.65)', maxWidth: 480, lineHeight: 1.6, marginBottom: 40 }}>{tagline}</p>
@@ -161,16 +173,16 @@ export default function Storefront({ theme, products, services, staff, visibleSe
 
         {/* ── Sessions (Services) ── */}
         {showServices && (
-          <section id="sessions" style={{ order: secOrder('services'), padding: '96px 0', background: '#0c0c0c' }}>
+          <section id="sessions" className="lens-sessions-section" style={{ order: secOrder('services'), padding: '96px 0', background: '#0c0c0c' }}>
             <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
               <div style={{ marginBottom: 64 }}>
                 <p style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 12 }}>— What I Offer</p>
                 <h2 className="lens-heading" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 300, letterSpacing: '0.01em' }}>Sessions</h2>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
+              <div className="lens-sessions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
                 {displayServices.map((service) => (
-                  <div key={service.id} className="lens-card" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }} onClick={() => openBooking(service)}>
-                    <div style={{ aspectRatio: '4/5', overflow: 'hidden', background: '#181818' }}>
+                  <div key={service.id} className="lens-card lens-service-card" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }} onClick={() => openBooking(service)}>
+                    <div className="lens-service-img-wrap" style={{ aspectRatio: '4/5', overflow: 'hidden', background: '#181818' }}>
                       {service.imageUrls?.[0] ? (
                         <img src={service.imageUrls[0]} alt={service.name} className="lens-card-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
@@ -180,7 +192,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
                       )}
                       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(12,12,12,0.9) 0%, transparent 55%)' }} />
                     </div>
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '24px 24px 28px' }}>
+                    <div className="lens-service-info" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '24px 24px 28px' }}>
                       <h3 className="lens-heading" style={{ fontSize: 26, fontWeight: 400, marginBottom: 6, letterSpacing: '0.01em' }}>{service.name}</h3>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: service.description ? 10 : 0 }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'rgba(240,237,232,0.5)', letterSpacing: '0.1em' }}>
