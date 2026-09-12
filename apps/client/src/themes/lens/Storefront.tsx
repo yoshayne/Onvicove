@@ -139,13 +139,13 @@ export default function Storefront({ theme, products, services, staff, visibleSe
 
         {/* ── Hero ── */}
         {isVis('hero') && (
-          <section className="lens-hero" style={{ order: secOrder('hero'), position: 'relative', background: '#0c0c0c' }}>
+          <section className="lens-hero" style={{ order: secOrder('hero'), position: 'relative', background: '#0c0c0c', height: '75vh', overflow: 'hidden' }}>
             {heroImage && (
               <img
                 src={heroImage}
                 alt=""
                 data-hero-img="1"
-                style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block', opacity: heroOpacity }}
               />
             )}
             {/* gradient + text overlay */}

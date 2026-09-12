@@ -109,8 +109,8 @@ export default function Storefront({
       <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero */}
       {isVis('hero') && (
-      <section style={{ order: secOrder('hero'), position: 'relative', background: '#1a3a5c' }}>
-        <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity }} />
+      <section style={{ order: secOrder('hero'), position: 'relative', background: '#1a3a5c', height: '75vh', overflow: 'hidden' }}>
+        <img src={heroImage} alt="" data-hero-img="1" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block', opacity: heroOpacity }} />
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(26,58,92,0.65)', pointerEvents: 'none' }} />
         <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center text-center px-6 pb-12">
           <h1 className="font-['Merriweather'] text-4xl font-bold text-white sm:text-5xl md:text-6xl">
