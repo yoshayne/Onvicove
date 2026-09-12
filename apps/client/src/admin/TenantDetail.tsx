@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Shield } from 'lucide-react';
 import { useApi } from '../lib/api';
+import { ImpersonationProvider, useImpersonation } from '../contexts/ImpersonationContext';
 import type { Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
@@ -18,10 +21,20 @@ interface TenantDetailResponse {
 }
 
 export default function TenantDetail() {
+  return (
+    <ImpersonationProvider>
+      <TenantDetailInner />
+    </ImpersonationProvider>
+  );
+}
+
+function TenantDetailInner() {
   const { id } = useParams<{ id: string }>();
   const api = useApi();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { startImpersonation } = useImpersonation();
+  const [impersonating, setImpersonating] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'tenants', id],
@@ -41,6 +54,26 @@ export default function TenantDetail() {
       navigate('/admin/tenants');
     },
   });
+
+  async function handleImpersonate() {
+    setImpersonating(true);
+    try {
+      const res = await api.post<{ token: string; tenant: { id: string; company_name: string; slug: string } }>(
+        `/admin/tenants/${id}/impersonate`
+      );
+      startImpersonation({
+        tenantId: res.tenant.id,
+        companyName: res.tenant.company_name,
+        slug: res.tenant.slug,
+        token: res.token,
+      });
+      navigate('/dashboard');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to start impersonation');
+    } finally {
+      setImpersonating(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -66,13 +99,22 @@ export default function TenantDetail() {
         <Link to="/admin/tenants" className="text-sm text-slate-500 hover:underline">
           &larr; Back to tenants
         </Link>
-        <div className="mt-1 flex items-center justify-between">
+        <div className="mt-1 flex items-center justify-between gap-3 flex-wrap">
           <h1 className="text-2xl font-bold text-slate-900">{tenant.company_name}</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge tone={tenant.is_active ? 'success' : 'danger'}>{tenant.is_active ? 'active' : 'inactive'}</Badge>
             <Badge tone={tenant.stripe_onboarded ? 'success' : 'warning'}>
               {tenant.stripe_onboarded ? 'Stripe connected' : 'Stripe not connected'}
             </Badge>
+            <button
+              type="button"
+              onClick={handleImpersonate}
+              disabled={impersonating || !tenant.is_active}
+              className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Shield size={15} />
+              {impersonating ? 'Opening…' : 'Enter Dashboard'}
+            </button>
           </div>
         </div>
         <a href={`/${tenant.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:underline">

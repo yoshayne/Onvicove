@@ -11,6 +11,8 @@ import {
 
 interface NavItem { to: string; label: string; icon: LucideIcon; end?: boolean; }
 import { useApi } from '../lib/api';
+import { useImpersonation, ImpersonationProvider } from '../contexts/ImpersonationContext';
+import ImpersonationBanner from './ImpersonationBanner';
 import type { Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
 
@@ -58,23 +60,32 @@ const navGroups: { label: string; items: NavItem[] }[] = [
 ];
 
 export default function Layout() {
+  return (
+    <ImpersonationProvider>
+      <LayoutInner />
+    </ImpersonationProvider>
+  );
+}
+
+function LayoutInner() {
   const api = useApi();
   const navigate = useNavigate();
   const { user } = useUser();
+  const { impersonation } = useImpersonation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const location = useLocation();
   const isPageBuilder = location.pathname === '/dashboard/page-builder';
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['tenant', 'me'],
+    queryKey: ['tenant', 'me', impersonation?.tenantId ?? 'self'],
     queryFn: () => api.get<{ tenant: Tenant }>('/tenants/me'),
     retry: false,
   });
 
   useEffect(() => {
-    if (error) navigate('/onboarding', { replace: true });
-  }, [error, navigate]);
+    if (error && !impersonation) navigate('/onboarding', { replace: true });
+  }, [error, impersonation, navigate]);
 
   const tenant = data?.tenant;
   const isPublished = !!(tenant?.wizard_completed && tenant?.is_active);
@@ -201,6 +212,7 @@ export default function Layout() {
 
       {/* ── Main content ── */}
       <div className="flex min-h-screen flex-1 flex-col overflow-hidden">
+        <ImpersonationBanner />
         {/* Top header */}
         <header className="sticky top-0 z-20 flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
           <div className="flex items-center gap-3">

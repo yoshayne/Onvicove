@@ -4,6 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireAdmin } from '../middleware/admin';
 import { stripe } from '../services/stripe';
+import { generateImpersonationToken } from '../lib/impersonate-token';
 import { getPlatformSettings, savePlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../services/settings';
 import {
   sendPlanUpgraded, sendPlanDowngraded, sendAccountSuspended,
@@ -455,6 +456,43 @@ app.delete('/coupons/:id', async (c) => {
   await logAdminAction(c, 'delete_coupon', 'platform_coupon', id);
 
   return c.json({ deleted: true });
+});
+
+// POST /api/admin/tenants/:id/impersonate — generate a short-lived token to act as this tenant
+app.post('/tenants/:id/impersonate', async (c) => {
+  const id = c.req.param('id');
+  const rows = await db`SELECT id, company_name, slug FROM tenants WHERE id = ${id} LIMIT 1`;
+  if (!rows[0]) return c.json({ error: 'Tenant not found' }, 404);
+
+  const adminEmail = c.get('adminEmail') as string;
+  const token = generateImpersonationToken(id, adminEmail);
+
+  await logAdminAction(c, 'impersonate_start', 'tenant', id, {
+    company_name: rows[0].company_name,
+  });
+
+  return c.json({ token, tenant: rows[0] });
+});
+
+const issueReportSchema = z.object({
+  tenant_id: z.string().uuid(),
+  what_i_fixed: z.string().optional(),
+  root_cause: z.string().optional(),
+});
+
+// POST /api/admin/impersonate/report — log what was found/fixed during impersonation
+app.post('/impersonate/report', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = issueReportSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: 'Invalid request body' }, 400);
+  const { tenant_id, what_i_fixed, root_cause } = parsed.data;
+
+  await logAdminAction(c, 'impersonate_exit_report', 'tenant', tenant_id, {
+    what_i_fixed: what_i_fixed ?? '',
+    root_cause: root_cause ?? '',
+  });
+
+  return c.json({ ok: true });
 });
 
 export default app;
