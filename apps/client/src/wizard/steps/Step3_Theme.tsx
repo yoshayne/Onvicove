@@ -22,6 +22,7 @@ const THEME_OPTIONS: ThemeOption[] = [
   { id: 'brutalist', name: 'Brutalist', description: 'Raw, bold, unconventional', colors: ['#ffffff', '#000000', '#0000ff'], premium: true },
   { id: 'neon-tokyo', name: 'Neon Tokyo', description: 'Cyberpunk neon energy', colors: ['#050510', '#ff2d9b', '#0a0a20'], premium: true },
   { id: 'craft', name: 'Craft', description: 'Handmade paper textures', colors: ['#f5f0e8', '#5c4a32', '#ece5d8'], premium: true },
+  { id: 'lens', name: 'Lens', description: 'Photographers — sessions & prints', colors: ['#0c0c0c', '#c8a96e', '#f0ede8'] },
 ];
 
 export default function Step3_Theme() {
