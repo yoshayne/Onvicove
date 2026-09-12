@@ -104,6 +104,13 @@ const THEMES: ThemeOption[] = [
     hero: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=600&q=70',
     premium: true,
   },
+  {
+    id: 'lens',
+    name: 'Lens',
+    description: 'Photographers — sessions & prints',
+    colors: ['#0c0c0c', '#c8a96e', '#f0ede8'],
+    hero: 'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?auto=format&fit=crop&w=600&q=70',
+  },
 ];
 
 function ThemeCard({
