@@ -109,15 +109,10 @@ export default function Storefront({
       <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero */}
       {isVis('hero') && (
-      <section
-        style={{ order: secOrder('hero') }}
-        className="relative flex min-h-[480px] items-center justify-center bg-[#1a3a5c] bg-cover bg-center text-center"
-      >
-        {/* Hero image layer */}
-        <img src={heroImage} alt="" data-hero-img="1" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: heroOpacity }} />
-        {/* Dark overlay so text stays readable */}
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(26,58,92,0.65)' }} />
-        <div className="relative z-10 px-6 py-24">
+      <section style={{ order: secOrder('hero'), position: 'relative', overflow: 'hidden', background: '#1a3a5c' }}>
+        <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '85vh', objectFit: 'contain', opacity: heroOpacity }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(26,58,92,0.65)', pointerEvents: 'none' }} />
+        <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center text-center px-6 pb-12">
           <h1 className="font-['Merriweather'] text-4xl font-bold text-white sm:text-5xl md:text-6xl">
             {theme.companyName}
           </h1>
@@ -128,7 +123,7 @@ export default function Storefront({
           >
             {showProducts ? 'Shop' : 'Book'}
           </a>
-              <button type="button" onClick={() => setCustomOrderOpen(true)} className="inline-block border-b border-current pb-1 text-sm hover:opacity-60 transition-opacity">Custom Order</button>
+          <button type="button" onClick={() => setCustomOrderOpen(true)} className="mt-3 inline-block border-b border-current pb-1 text-sm text-white hover:opacity-60 transition-opacity">Custom Order</button>
         </div>
       </section>
       )}

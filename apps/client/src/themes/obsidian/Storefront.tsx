@@ -210,7 +210,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       <main style={{ flex: 1, marginLeft: isMobile ? 0 : SIDEBAR_W, paddingTop: isMobile ? 56 : 0, minWidth: 0 }}>
 
         {/* ── HERO: Split screen ── */}
-        <section style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+        <section style={{ display: 'flex', position: 'relative' }}>
           {/* Left: text panel */}
           <div style={{
             width: isMobile ? '100%' : '45%',
@@ -276,8 +276,8 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
 
           {/* Right: full bleed image */}
           {!isMobile && (
-            <div style={{ flex: 1, position: 'relative' }}>
-              <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'stretch' }}>
+              <img src={heroImage} alt="" style={{ display: 'block', width: '100%', height: '100%', maxHeight: '100vh', objectFit: 'contain', background: G.bg }} />
               {/* Inner shadow left edge */}
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(10,10,15,0.6) 0%, transparent 40%)' }} />
               {/* Bottom scrim */}

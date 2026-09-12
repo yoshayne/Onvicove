@@ -99,9 +99,9 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero */}
       {isVis('hero') && (
-      <section className="aurora-bg" style={{ order: secOrder('hero'), position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-        <img src={heroImage} alt="" data-hero-img="1" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: heroOpacity, mixBlendMode: 'screen' }} />
-        <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '80px 24px', display: 'grid', gridTemplateColumns: showServices ? '1fr 1fr' : '1fr', gap: 48, alignItems: 'center' }}>
+      <section className="aurora-bg" style={{ order: secOrder('hero'), position: 'relative', overflow: 'hidden' }}>
+        <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '85vh', objectFit: 'contain', opacity: heroOpacity, mixBlendMode: 'screen' }} />
+        <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '48px 24px 64px', display: 'grid', gridTemplateColumns: showServices ? '1fr 1fr' : '1fr', gap: 48, alignItems: 'center' }}>
           <div>
             <p style={{ fontSize: 12, letterSpacing: '0.2em', color: 'var(--brand-color, #a78bfa)', marginBottom: 16, textTransform: 'uppercase', opacity: 0.8 }}>Holistic Wellness</p>
             <h1 style={{ fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 700, lineHeight: 1.1, marginBottom: 20, letterSpacing: '-0.02em' }}>{tagline}</h1>

@@ -219,24 +219,24 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* ── Hero ── */}
       {isVis('hero') && (
-      <section style={{ order: secOrder('hero') }} className="relative h-screen min-h-[600px] flex flex-col items-center justify-center text-center overflow-hidden">
-        {/* Background */}
+      <section style={{ order: secOrder('hero'), position: 'relative', overflow: 'hidden', background: '#0a0a0a' }}>
         {heroImage ? (
-          <img src={heroImage} alt="" data-hero-img="1" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: heroOpacity }} />
+          <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '85vh', objectFit: 'contain', opacity: heroOpacity }} />
         ) : (
           <div
             className="absolute inset-0"
             style={{
               backgroundImage: 'repeating-linear-gradient(45deg, #1a1a1a 0, #1a1a1a 1px, transparent 0, transparent 50%)',
               backgroundSize: '14px 14px',
+              minHeight: 500,
             }}
           />
         )}
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0a0a0a]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0a0a0a] pointer-events-none" />
 
         {/* Content */}
-        <div className="relative z-10 px-6 max-w-5xl w-full">
+        <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center text-center px-6 pb-10 max-w-5xl mx-auto w-full" style={{ left: 0, right: 0 }}>
           <div className="inline-flex items-center gap-2 border border-[var(--brand-color,#e8ff00)]/60 px-4 py-1.5 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-color,#e8ff00)] animate-pulse" />
             <span className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.35em]">
@@ -279,11 +279,6 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           </div>
         </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30">
-          <span className="text-[9px] uppercase tracking-[0.4em]">Scroll</span>
-          <div className="w-px h-10 bg-gradient-to-b from-white/40 to-transparent" />
-        </div>
       </section>
       )}
 
