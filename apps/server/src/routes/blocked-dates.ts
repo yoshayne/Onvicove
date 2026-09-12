@@ -56,7 +56,7 @@ app.post('/', requireAuth, requireTenant, async (c) => {
 // DELETE /api/blocked-dates/:id
 app.delete('/:id', requireAuth, requireTenant, async (c) => {
   const tenant = c.get('tenant') as { id: string };
-  const id = c.req.param('id');
+  const id = c.req.param('id') as string;
   await db`DELETE FROM blocked_dates WHERE id = ${id} AND tenant_id = ${tenant.id}`;
   return c.json({ ok: true });
 });
