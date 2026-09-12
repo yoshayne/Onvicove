@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   mode TEXT NOT NULL DEFAULT 'both'
     CHECK (mode IN ('store','book','both')),
   theme_id TEXT NOT NULL DEFAULT 'editorial'
-    CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft')),
+    CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens')),
   brand_color TEXT DEFAULT '#3D4F7C',
   city TEXT,
   industry TEXT,
@@ -393,7 +393,7 @@ ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS stripe_session_id 
 -- Expand theme_id CHECK constraint to include 6 premium themes
 ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
 ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
-  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft'));
+  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens'));
 
 -- Email list opt-in
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS email_optin BOOLEAN DEFAULT FALSE;
