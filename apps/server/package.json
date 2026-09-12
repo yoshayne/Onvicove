@@ -5,7 +5,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "migrate": "tsx src/db/migrate.ts"
+    "migrate": "tsx src/db/migrate.ts",
+    "fix-slugs": "tsx src/scripts/fix-slugs.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.0.0",
