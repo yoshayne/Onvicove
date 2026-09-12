@@ -478,7 +478,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                         </span>
                       </div>
                       {service.description && (
-                        <ServiceDesc desc={service.description} mutedColor={G.textMuted} accentColor={G.accent} />
+                        <ServiceDesc desc={service.description} mutedColor={G.textMuted} accentColor={G.gold} />
                       )}
                     </div>
                     {/* Price + action */}
