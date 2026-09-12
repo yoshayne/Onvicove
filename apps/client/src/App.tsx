@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { ClerkProvider, SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Spinner from './components/shared/Spinner';
 
@@ -74,6 +74,35 @@ function PageFallback() {
   );
 }
 
+// Checks whether the signed-in user already has a tenant and routes accordingly.
+function PostAuth() {
+  const { getToken } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch('/api/tenants/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (cancelled) return;
+        if (res.ok) {
+          navigate('/dashboard', { replace: true });
+        } else {
+          navigate('/onboarding', { replace: true });
+        }
+      } catch {
+        if (!cancelled) navigate('/onboarding', { replace: true });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [getToken, navigate]);
+
+  return <PageFallback />;
+}
+
 export default function App() {
   return (
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
@@ -88,6 +117,15 @@ export default function App() {
               <Route path="/sign-in/*" element={<AuthPage mode="sign-in" />} />
               <Route path="/sign-up/*" element={<AuthPage mode="sign-up" />} />
               <Route path="/wizard/*" element={<Navigate to="/onboarding" replace />} />
+              <Route
+                path="/post-auth"
+                element={
+                  <>
+                    <SignedIn><PostAuth /></SignedIn>
+                    <SignedOut><RedirectToSignIn /></SignedOut>
+                  </>
+                }
+              />
 
               <Route
                 path="/onboarding/*"

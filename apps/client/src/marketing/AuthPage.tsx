@@ -25,7 +25,7 @@ interface AuthPageProps {
 
 export default function AuthPage({ mode }: AuthPageProps) {
   const location = useLocation();
-  const defaultRedirect = mode === 'sign-in' ? '/dashboard' : '/onboarding';
+  const defaultRedirect = mode === 'sign-in' ? '/post-auth' : '/onboarding';
   const redirectTo = (location.state as { from?: string } | null)?.from || defaultRedirect;
 
   return (
