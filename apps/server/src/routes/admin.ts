@@ -464,12 +464,13 @@ app.post('/tenants/:id/impersonate', async (c) => {
   const rows = await db`SELECT id, company_name, slug FROM tenants WHERE id = ${id} LIMIT 1`;
   if (!rows[0]) return c.json({ error: 'Tenant not found' }, 404);
 
-  const adminEmail = c.get('adminEmail') as string;
-  const token = generateImpersonationToken(id, adminEmail);
-
   await logAdminAction(c, 'impersonate_start', 'tenant', id, {
     company_name: rows[0].company_name,
   });
+
+  // logAdminAction already captured adminEmail; extract it the same way
+  const adminEmail = (c as unknown as { get: (k: string) => unknown }).get('adminEmail') as string;
+  const token = generateImpersonationToken(id, adminEmail);
 
   return c.json({ token, tenant: rows[0] });
 });
