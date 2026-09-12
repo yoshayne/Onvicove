@@ -17,7 +17,7 @@ interface BookingModalProps {
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
 }
 
-export default function BookingModal({ isOpen, onClose, service, selectedDate, selectedSlot, availableSlots, onSelectDate, onSelectSlot, onConfirm }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, service, selectedDate, selectedSlot, availableSlots, cityLabel, onSelectDate, onSelectSlot, onConfirm }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
