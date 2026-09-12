@@ -174,11 +174,16 @@ export default function Wizard() {
 
   // Persist progress as a draft tenant so uploads and other authenticated
   // wizard actions have a tenant row to attach to from step 1 onward.
+  // Capture the server-assigned slug so the review step shows the real value.
   useEffect(() => {
     if (!hydrated) return;
-    api.post('/wizard/save', {
+    api.post<{ slug?: string }>('/wizard/save', {
       wizard_step: currentStep,
       wizard_data: buildWizardData(state),
+    }).then((res) => {
+      if (res?.slug && res.slug !== state.slug) {
+        useWizardStore.getState().setSlug(res.slug);
+      }
     }).catch((err) => console.error('wizard/save failed:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, hydrated]);
@@ -251,7 +256,7 @@ export default function Wizard() {
           onSubPaymentCancel={() => setSubClientSecret(null)}
           onGoToSite={(slug) => {
             reset();
-            navigate(`/${slug}`);
+            window.open(`https://${slug}.shopsuitedirect.com`, '_blank', 'noopener');
           }}
           onGoToDashboard={() => {
             reset();
@@ -307,7 +312,7 @@ function Step10LaunchControls({
               onClick={() => onGoToSite(launchedSlug)}
               className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
             >
-              View your site /{launchedSlug}
+              View your site
             </button>
             <button
               type="button"

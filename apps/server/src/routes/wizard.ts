@@ -53,7 +53,7 @@ app.post('/save', async (c) => {
           wizard_step = COALESCE(${wizard_step ?? null}, wizard_step),
           updated_at = NOW()
       WHERE id = ${existing[0].id}
-      RETURNING wizard_step, wizard_data, wizard_completed
+      RETURNING wizard_step, wizard_data, wizard_completed, slug
     `;
     return c.json(rows[0]);
   }
@@ -64,7 +64,7 @@ app.post('/save', async (c) => {
   const rows = await db`
     INSERT INTO tenants (clerk_user_id, slug, company_name, wizard_step, wizard_data)
     VALUES (${clerkUserId}, ${slug}, ${companyName}, ${wizard_step ?? 0}, ${db.json(JSON.parse(JSON.stringify(wizard_data)))})
-    RETURNING wizard_step, wizard_data, wizard_completed
+    RETURNING wizard_step, wizard_data, wizard_completed, slug
   `;
   return c.json(rows[0], 201);
 });
@@ -148,7 +148,7 @@ app.post('/complete', async (c) => {
     const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
     Promise.all([
       sendTenantWelcome({ toEmail: user.email as string, toName, companyName: result.company_name as string, dashboardUrl: `${baseUrl}/dashboard` }),
-      sendSiteLive({ toEmail: user.email as string, toName, companyName: result.company_name as string, storefrontUrl: `${baseUrl}/${result.slug}` }),
+      sendSiteLive({ toEmail: user.email as string, toName, companyName: result.company_name as string, storefrontUrl: `https://${result.slug}.shopsuitedirect.com` }),
       sendAdminNewSignup({ companyName: result.company_name as string, ownerEmail: user.email as string, plan: result.plan as string }),
     ]).catch((err) => console.error('Welcome email error:', err));
   }
