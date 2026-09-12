@@ -8,6 +8,117 @@ import Button from '../components/shared/Button';
 import PaymentModal from './PaymentModal';
 import NewBookingModal from './NewBookingModal';
 
+interface BlockedDate {
+  id: string;
+  date: string;
+  city_label: string | null;
+}
+
+function BlockedDatesCalendar() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [labelInput, setLabelInput] = useState<Record<string, string>>({});
+
+  const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+
+  const { data } = useQuery({
+    queryKey: ['blocked-dates', monthStr],
+    queryFn: () => api.get<{ blocked_dates: BlockedDate[] }>(`/blocked-dates?month=${monthStr}`),
+  });
+
+  const blockedMap = new Map<string, BlockedDate>(
+    (data?.blocked_dates ?? []).map((d) => [d.date, d])
+  );
+
+  const blockMutation = useMutation({
+    mutationFn: ({ date, city_label }: { date: string; city_label?: string }) =>
+      api.post('/blocked-dates', { date, city_label: city_label || null }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['blocked-dates'] }),
+  });
+
+  const unblockMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/blocked-dates/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['blocked-dates'] }),
+  });
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const firstDow = new Date(year, month - 1, 1).getDay();
+  const monthLabel = new Date(year, month - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  function prevMonth() {
+    if (month === 1) { setYear(y => y - 1); setMonth(12); } else setMonth(m => m - 1);
+  }
+  function nextMonth() {
+    if (month === 12) { setYear(y => y + 1); setMonth(1); } else setMonth(m => m + 1);
+  }
+
+  function handleDayClick(dateStr: string) {
+    const existing = blockedMap.get(dateStr);
+    if (existing) {
+      unblockMutation.mutate(existing.id);
+    } else {
+      blockMutation.mutate({ date: dateStr, city_label: labelInput['__global__'] || undefined });
+    }
+  }
+
+  const days: (number | null)[] = [...Array(firstDow).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-900">Block Dates</h2>
+        <div className="flex items-center gap-2">
+          <button onClick={prevMonth} className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100">‹</button>
+          <span className="text-sm font-medium text-slate-700 w-36 text-center">{monthLabel}</span>
+          <button onClick={nextMonth} className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100">›</button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-400 mb-1">
+        {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => <div key={d}>{d}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((day, i) => {
+          if (!day) return <div key={i} />;
+          const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const blocked = blockedMap.get(dateStr);
+          return (
+            <div key={dateStr} className="flex flex-col items-center">
+              <button
+                onClick={() => handleDayClick(dateStr)}
+                title={blocked ? `Unblock${blocked.city_label ? ` (${blocked.city_label})` : ''}` : 'Block this date'}
+                className={`w-full rounded-lg py-1.5 text-sm font-medium transition-colors ${
+                  blocked
+                    ? 'bg-red-500 text-white hover:bg-red-600'
+                    : 'bg-slate-50 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {day}
+                {blocked?.city_label && (
+                  <div className="truncate px-0.5 text-[9px] leading-tight opacity-90">{blocked.city_label}</div>
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-4 border-t border-slate-100 pt-4">
+        <p className="text-xs text-slate-500 mb-1">Optional city label applied when blocking a date:</p>
+        <input
+          type="text"
+          placeholder="e.g. New York, LA, Chicago…"
+          className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+          value={labelInput['__global__'] ?? ''}
+          onChange={(e) => setLabelInput({ '__global__': e.target.value })}
+        />
+        <p className="mt-2 text-[11px] text-slate-400">Red = blocked (storefront hides all slots). Click a red date to unblock it.</p>
+      </div>
+    </div>
+  );
+}
+
 const BOOKING_STATUSES: BookingStatus[] = ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'];
 
 const STATUS_TONES: Record<BookingStatus, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
@@ -61,6 +172,8 @@ export default function Bookings() {
         <h1 className="text-2xl font-bold text-slate-900">Bookings</h1>
         <Button onClick={() => setShowNewBooking(true)}>+ New booking</Button>
       </div>
+
+      <BlockedDatesCalendar />
 
       <div className="flex flex-wrap gap-3">
         <select

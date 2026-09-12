@@ -399,6 +399,17 @@ ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS email_optin BOOLEAN DEFAULT FALSE;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS email_optin_at TIMESTAMPTZ;
 
+-- Blocked dates for booking availability
+CREATE TABLE IF NOT EXISTS blocked_dates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  city_label TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(tenant_id, date)
+);
+CREATE INDEX IF NOT EXISTS idx_blocked_dates_tenant ON blocked_dates(tenant_id, date);
+
 -- Custom order requests
 CREATE TABLE IF NOT EXISTS custom_order_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

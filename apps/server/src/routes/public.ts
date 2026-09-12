@@ -200,6 +200,13 @@ app.get('/:slug/availability', async (c) => {
     AND start_time <= ${end.toISOString()}
   `;
 
+  const blocked = await db`
+    SELECT id FROM blocked_dates WHERE tenant_id = ${tenant.id} AND date = ${date}::date LIMIT 1
+  `;
+  if (blocked.length > 0) {
+    return c.json({ slots: [], staff_id: staff.id });
+  }
+
   const slots = computeAvailableSlots({
     date,
     timezone: tenant.timezone as string,
