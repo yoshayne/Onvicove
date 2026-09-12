@@ -14,6 +14,74 @@ import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
+import type { ServiceData } from '../types';
+
+const DESC_LIMIT = 120;
+
+function BoldServiceCard({ service, currency, paymentsEnabled, onBook }: {
+  service: ServiceData;
+  currency?: string;
+  paymentsEnabled: boolean;
+  onBook: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const desc = service.description ?? '';
+  const long = desc.length > DESC_LIMIT;
+
+  return (
+    <div className="group border-l-4 border-[var(--brand-color,#e8ff00)] bg-[#161616] hover:bg-[#1c1c1c] transition-colors overflow-hidden flex flex-col">
+      {service.imageUrls?.[0] && (
+        <div className="aspect-[16/9] overflow-hidden">
+          <img
+            src={service.imageUrls[0]}
+            alt={service.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        </div>
+      )}
+      <div className="p-6 flex flex-col flex-1 gap-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="bold-heading text-2xl uppercase leading-tight break-words">{service.name}</h3>
+            <span className="inline-flex items-center gap-1.5 text-white/40 text-[10px] uppercase tracking-widest mt-1">
+              <Clock size={10} />
+              {service.durationMinutes} min session
+            </span>
+          </div>
+          <span className="bold-heading text-3xl text-[var(--brand-color,#e8ff00)] shrink-0">
+            {formatPrice(service.priceCents, currency)}
+          </span>
+        </div>
+
+        {desc && (
+          <div className="flex-1">
+            <p className="text-white/50 text-sm leading-relaxed">
+              {expanded || !long ? desc : `${desc.slice(0, DESC_LIMIT).trimEnd()}…`}
+            </p>
+            {long && (
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="mt-1 text-[var(--brand-color,#e8ff00)] text-xs font-bold uppercase tracking-widest hover:underline"
+              >
+                {expanded ? 'Show less ↑' : 'Read more ↓'}
+              </button>
+            )}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={onBook}
+          disabled={!paymentsEnabled}
+          className="flex items-center justify-center gap-2 w-full border-2 border-[var(--brand-color,#e8ff00)] text-[var(--brand-color,#e8ff00)] text-xs font-bold uppercase tracking-[0.25em] py-3 hover:bg-[var(--brand-color,#e8ff00)] hover:text-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {paymentsEnabled ? (<>Book Now <ArrowRight size={12} /></>) : 'Coming Soon'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
   const {
@@ -305,50 +373,13 @@ export default function Storefront({ theme, products, services, staff, visibleSe
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayServices.map((service) => (
-                <div
+                <BoldServiceCard
                   key={service.id}
-                  className="group border-l-4 border-[var(--brand-color,#e8ff00)] bg-[#161616] hover:bg-[#1c1c1c] transition-colors overflow-hidden flex flex-col"
-                >
-                  {service.imageUrls?.[0] && (
-                    <div className="aspect-[16/9] overflow-hidden">
-                      <img
-                        src={service.imageUrls[0]}
-                        alt={service.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    </div>
-                  )}
-
-                  <div className="p-6 flex flex-col flex-1 gap-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="bold-heading text-2xl uppercase leading-tight">{service.name}</h3>
-                        <span className="inline-flex items-center gap-1.5 text-white/40 text-[10px] uppercase tracking-widest mt-1">
-                          <Clock size={10} />
-                          {service.durationMinutes} min session
-                        </span>
-                      </div>
-                      <span className="bold-heading text-3xl text-[var(--brand-color,#e8ff00)] shrink-0">
-                        {formatPrice(service.priceCents, theme.currency)}
-                      </span>
-                    </div>
-
-                    {service.description && (
-                      <p className="text-white/50 text-sm leading-relaxed flex-1">{service.description}</p>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => openBooking(service)}
-                      disabled={!theme.paymentsEnabled}
-                      className="flex items-center justify-center gap-2 w-full border-2 border-[var(--brand-color,#e8ff00)] text-[var(--brand-color,#e8ff00)] text-xs font-bold uppercase tracking-[0.25em] py-3 hover:bg-[var(--brand-color,#e8ff00)] hover:text-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {theme.paymentsEnabled ? (
-                        <>Book Now <ArrowRight size={12} /></>
-                      ) : 'Coming Soon'}
-                    </button>
-                  </div>
-                </div>
+                  service={service}
+                  currency={theme.currency}
+                  paymentsEnabled={!!theme.paymentsEnabled}
+                  onBook={() => openBooking(service)}
+                />
               ))}
             </div>
           </div>
