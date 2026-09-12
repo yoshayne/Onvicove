@@ -73,7 +73,7 @@ export default function Layout() {
   });
 
   useEffect(() => {
-    if (error) navigate('/wizard', { replace: true });
+    if (error) navigate('/onboarding', { replace: true });
   }, [error, navigate]);
 
   const tenant = data?.tenant;

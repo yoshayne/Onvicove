@@ -87,6 +87,7 @@ export default function App() {
 
               <Route path="/sign-in/*" element={<AuthPage mode="sign-in" />} />
               <Route path="/sign-up/*" element={<AuthPage mode="sign-up" />} />
+              <Route path="/wizard/*" element={<Navigate to="/onboarding" replace />} />
 
               <Route
                 path="/onboarding/*"
