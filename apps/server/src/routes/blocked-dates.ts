@@ -42,9 +42,10 @@ app.post('/', requireAuth, requireTenant, async (c) => {
   if (!parsed.success) return c.json({ error: 'Invalid body' }, 400);
 
   const { date, city_label } = parsed.data;
+  const label: string | null = city_label ?? null;
   const rows = await db`
     INSERT INTO blocked_dates (tenant_id, date, city_label)
-    VALUES (${tenant.id}, ${date}::date, ${city_label ?? null})
+    VALUES (${tenant.id}, ${date}::date, ${label})
     ON CONFLICT (tenant_id, date)
     DO UPDATE SET city_label = EXCLUDED.city_label
     RETURNING *
