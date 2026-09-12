@@ -11,6 +11,7 @@ interface BookingModalProps {
   selectedDate: Date | null;
   selectedSlot: string | null;
   availableSlots: AvailableSlot[];
+  cityLabel?: string | null;
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
@@ -48,6 +49,13 @@ export default function BookingModal({ isOpen, onClose, service, selectedDate, s
                 <span className="text-[var(--brand-color,#0000ff)]">{formatPrice(service.priceCents)}</span>
               </div>
             </div>
+            {cityLabel && (
+              <div className="flex items-center gap-2 rounded px-3 py-2 bg-blue-50 text-blue-700 text-sm mb-2">
+                <span>📍</span>
+                <span className="font-medium">{cityLabel}</span>
+              </div>
+            )}
+
             <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); if (canConfirm) onConfirm({ name, email, phone }); }}>
               {[{ id: 'bru-bk-name', label: 'NAME', type: 'text', value: name, set: setName, required: true },
                 { id: 'bru-bk-email', label: 'EMAIL', type: 'email', value: email, set: setEmail, required: true },

@@ -209,7 +209,16 @@ app.get('/:slug/availability', async (c) => {
     existingBookings: existingBookings.map((b) => ({ start_time: b.start_time, end_time: b.end_time })),
   });
 
-  return c.json({ slots, staff_id: staff.id });
+  const cityRows = await db`
+    SELECT city_label FROM city_schedules
+    WHERE tenant_id = ${tenant.id}
+      AND date_from <= ${date}::date
+      AND date_to   >= ${date}::date
+    LIMIT 1
+  `;
+  const cityLabel: string | null = cityRows[0]?.city_label ?? null;
+
+  return c.json({ slots, staff_id: staff.id, city_label: cityLabel });
 });
 
 const orderItemSchema = z.object({

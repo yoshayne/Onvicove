@@ -26,6 +26,7 @@ interface PaymentIntentResponse {
 
 interface AvailabilityResponse {
   slots: { start: string; end: string }[];
+  city_label?: string | null;
 }
 
 function toDateParam(date: Date): string {
@@ -156,6 +157,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+  const [bookingCityLabel, setBookingCityLabel] = useState<string | null>(null);
   const [bookingStatus, setBookingStatus] = useState<'idle' | 'submitting' | 'payment' | 'success' | 'error'>('idle');
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingClientSecret, setBookingClientSecret] = useState<string | null>(null);
@@ -168,6 +170,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
     setSelectedDate(null);
     setSelectedSlot(null);
     setAvailableSlots([]);
+    setBookingCityLabel(null);
     setBookingStatus('idle');
     setBookingError(null);
   }
@@ -201,8 +204,10 @@ export function useStorefrontCommerce(slug: string | undefined) {
       });
       slotMapRef.current = map;
       setAvailableSlots(slots);
+      setBookingCityLabel(res.city_label ?? null);
     } catch {
       setAvailableSlots([]);
+      setBookingCityLabel(null);
     }
   }
 
@@ -276,6 +281,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
     selectedDate,
     selectedSlot,
     availableSlots,
+    bookingCityLabel,
     selectBookingDate,
     selectBookingSlot,
     bookingStatus,
