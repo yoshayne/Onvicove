@@ -15,6 +15,23 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
+function ServiceDesc({ desc }: { desc: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const LIMIT = 120;
+  if (desc.length <= LIMIT) {
+    return <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 16, lineHeight: 1.6 }}>{desc}</p>;
+  }
+  return (
+    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 16, lineHeight: 1.6 }}>
+      {expanded ? desc : desc.slice(0, LIMIT) + '…'}
+      {' '}
+      <button onClick={() => setExpanded(!expanded)} style={{ fontSize: 11, color: '#ff2d9b', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', textShadow: '0 0 6px #ff2d9b' }}>
+        {expanded ? 'Show less' : 'Read more'}
+      </button>
+    </p>
+  );
+}
+
 export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -165,7 +182,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
               {displayServices.map((service) => (
                 <div key={service.id} className="neon-border" style={{ borderRadius: 8, padding: 24 }}>
                   <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>{service.name}</h3>
-                  {service.description && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 16, lineHeight: 1.6 }}>{service.description}</p>}
+                  {service.description && <ServiceDesc desc={service.description} />}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{service.durationMinutes > 0 ? `${service.durationMinutes} min` : 'Ongoing'}</span>
                     <span className="neon-pink" style={{ fontWeight: 700 }}>{formatPrice(service.priceCents, theme.currency)}</span>

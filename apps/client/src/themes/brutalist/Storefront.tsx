@@ -15,6 +15,23 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
+function ServiceDesc({ desc }: { desc: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const LIMIT = 120;
+  if (desc.length <= LIMIT) {
+    return <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#000', opacity: 0.5 }}>{desc}</p>;
+  }
+  return (
+    <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#000', opacity: 0.5 }}>
+      {expanded ? desc : desc.slice(0, LIMIT) + '…'}
+      {' '}
+      <button onClick={() => setExpanded(!expanded)} style={{ fontFamily: 'monospace', fontSize: 11, color: '#0000ff', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textTransform: 'uppercase' as const }}>
+        {expanded ? 'SHOW LESS' : 'READ MORE'}
+      </button>
+    </p>
+  );
+}
+
 export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -164,7 +181,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
                 <div key={service.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'center', padding: '24px 0', borderTop: '2px solid #000' }}>
                   <div>
                     <h3 style={{ fontWeight: 900, fontSize: 18, letterSpacing: '-0.01em', marginBottom: 4 }}>{service.name}</h3>
-                    {service.description && <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#000', opacity: 0.5 }}>{service.description}</p>}
+                    {service.description && <ServiceDesc desc={service.description} />}
                     <p style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--brand-color, #0000ff)', marginTop: 8, fontWeight: 700 }}>{formatPrice(service.priceCents, theme.currency)}</p>
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}

@@ -30,6 +30,23 @@ const G = {
 const serif = 'Playfair Display, Georgia, serif';
 const SIDEBAR_W = 72;
 
+function ServiceDesc({ desc, mutedColor, accentColor }: { desc: string; mutedColor: string; accentColor: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const LIMIT = 120;
+  if (desc.length <= LIMIT) {
+    return <p style={{ fontSize: 13, color: mutedColor, lineHeight: 1.65, maxWidth: 480 }}>{desc}</p>;
+  }
+  return (
+    <p style={{ fontSize: 13, color: mutedColor, lineHeight: 1.65, maxWidth: 480 }}>
+      {expanded ? desc : desc.slice(0, LIMIT) + '…'}
+      {' '}
+      <button onClick={() => setExpanded(!expanded)} style={{ fontSize: 11, color: accentColor, cursor: 'pointer', background: 'none', border: 'none', padding: '2px 0', letterSpacing: '0.05em' }}>
+        {expanded ? 'Show less' : 'Read more'}
+      </button>
+    </p>
+  );
+}
+
 export default function Storefront({ theme, products, services, staff }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -461,7 +478,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
                         </span>
                       </div>
                       {service.description && (
-                        <p style={{ fontSize: 13, color: G.textMuted, lineHeight: 1.65, maxWidth: 480 }}>{service.description}</p>
+                        <ServiceDesc desc={service.description} mutedColor={G.textMuted} accentColor={G.accent} />
                       )}
                     </div>
                     {/* Price + action */}

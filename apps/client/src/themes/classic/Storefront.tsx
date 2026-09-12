@@ -18,6 +18,28 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 // Heading font "Merriweather" requires loading Google Fonts in index.html.
 // Body font "Georgia" is a system font (font-serif fallback is fine).
 
+function ServiceDesc({ desc }: { desc: string }) {
+  const LIMIT = 120;
+  const [expanded, setExpanded] = useState(false);
+  if (desc.length <= LIMIT) {
+    return <p className="mt-1 text-sm text-gray-600">{desc}</p>;
+  }
+  return (
+    <>
+      <p className="mt-1 text-sm text-gray-600">
+        {expanded ? desc : desc.slice(0, LIMIT) + '…'}
+      </p>
+      <button
+        type="button"
+        onClick={() => setExpanded(e => !e)}
+        className="text-xs text-gray-400 hover:text-gray-600 underline mt-0.5 block"
+      >
+        {expanded ? 'Show less' : 'Read more'}
+      </button>
+    </>
+  );
+}
+
 export default function Storefront({
   theme,
   products,
@@ -181,9 +203,7 @@ export default function Storefront({
                   <h3 className="font-['Merriweather'] text-lg font-bold text-[#1a3a5c]">
                     {service.name}
                   </h3>
-                  {service.description && (
-                    <p className="mt-1 text-sm text-gray-600">{service.description}</p>
-                  )}
+                  {service.description && <ServiceDesc desc={service.description} />}
                   <div className="mt-2 text-sm font-bold text-[#1a3a5c]">
                     {formatPrice(service.priceCents, theme.currency)} &middot; {service.durationMinutes} min
                   </div>

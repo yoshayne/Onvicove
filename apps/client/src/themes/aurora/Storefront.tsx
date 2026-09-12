@@ -15,6 +15,23 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
+function ServiceDesc({ desc }: { desc: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const LIMIT = 120;
+  if (desc.length <= LIMIT) {
+    return <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 20, lineHeight: 1.6 }}>{desc}</p>;
+  }
+  return (
+    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 20, lineHeight: 1.6 }}>
+      {expanded ? desc : desc.slice(0, LIMIT) + '…'}
+      {' '}
+      <button onClick={() => setExpanded(!expanded)} style={{ fontSize: 11, color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}>
+        {expanded ? 'Show less' : 'Read more'}
+      </button>
+    </p>
+  );
+}
+
 export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -158,7 +175,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
               {displayServices.map((service) => (
                 <div key={service.id} style={{ ...glass, borderRadius: 20, padding: 28 }}>
                   <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{service.name}</h3>
-                  {service.description && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 20, lineHeight: 1.6 }}>{service.description}</p>}
+                  {service.description && <ServiceDesc desc={service.description} />}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{service.durationMinutes} min</span>
                     <span style={{ color: 'var(--brand-color, #a78bfa)', fontWeight: 600 }}>{formatPrice(service.priceCents, theme.currency)}</span>

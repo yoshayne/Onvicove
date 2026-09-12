@@ -15,6 +15,23 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
+function ServiceDesc({ desc }: { desc: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const LIMIT = 120;
+  if (desc.length <= LIMIT) {
+    return <p style={{ fontSize: 13, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.6 }}>{desc}</p>;
+  }
+  return (
+    <p style={{ fontSize: 13, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.6 }}>
+      {expanded ? desc : desc.slice(0, LIMIT) + '…'}
+      {' '}
+      <button onClick={() => setExpanded(!expanded)} style={{ fontSize: 11, color: '#1a1a1a', opacity: 0.4, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', textDecoration: 'underline' }}>
+        {expanded ? 'Show less' : 'Read more'}
+      </button>
+    </p>
+  );
+}
+
 export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -134,7 +151,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
                   <span style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, color: '#1a1a1a', opacity: 0.2, fontWeight: 400 }}>{String(i + 1).padStart(2, '0')}</span>
                   <div>
                     <h3 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 20, fontWeight: 400, marginBottom: 6 }}>{service.name}</h3>
-                    {service.description && <p style={{ fontSize: 13, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.6 }}>{service.description}</p>}
+                    {service.description && <ServiceDesc desc={service.description} />}
                     <p style={{ fontSize: 12, color: '#1a1a1a', opacity: 0.4, marginTop: 8 }}>{service.durationMinutes} min · {formatPrice(service.priceCents, theme.currency)}</p>
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}

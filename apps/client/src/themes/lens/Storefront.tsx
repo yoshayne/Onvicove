@@ -15,6 +15,23 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
+function ServiceDesc({ desc }: { desc: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const LIMIT = 120;
+  if (desc.length <= LIMIT) {
+    return <p style={{ fontSize: 13, color: 'rgba(240,237,232,0.55)', lineHeight: 1.55, marginBottom: 16 }}>{desc}</p>;
+  }
+  return (
+    <p style={{ fontSize: 13, color: 'rgba(240,237,232,0.55)', lineHeight: 1.55, marginBottom: 16 }}>
+      {expanded ? desc : desc.slice(0, LIMIT) + '…'}
+      {' '}
+      <button onClick={() => setExpanded(!expanded)} style={{ fontSize: 11, color: '#c8a96e', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}>
+        {expanded ? 'Show less' : 'Read more'}
+      </button>
+    </p>
+  );
+}
+
 export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -171,7 +188,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
                         </span>
                         <span style={{ color: accent, fontSize: 18, fontWeight: 500 }}>{formatPrice(service.priceCents, theme.currency)}</span>
                       </div>
-                      {service.description && <p style={{ fontSize: 13, color: 'rgba(240,237,232,0.55)', lineHeight: 1.55, marginBottom: 16 }}>{service.description}</p>}
+                      {service.description && <ServiceDesc desc={service.description} />}
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); openBooking(service); }}

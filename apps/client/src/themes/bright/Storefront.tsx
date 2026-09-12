@@ -17,6 +17,28 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
+function ServiceDesc({ desc }: { desc: string }) {
+  const LIMIT = 120;
+  const [expanded, setExpanded] = useState(false);
+  if (desc.length <= LIMIT) {
+    return <p className="text-sm text-[#111111]/60 mb-2 flex-1">{desc}</p>;
+  }
+  return (
+    <>
+      <p className="text-sm text-[#111111]/60 mb-2 flex-1">
+        {expanded ? desc : desc.slice(0, LIMIT) + '…'}
+      </p>
+      <button
+        type="button"
+        onClick={() => setExpanded(e => !e)}
+        className="text-xs font-medium text-[#ff3cac]/60 hover:text-[#ff3cac] underline mb-2"
+      >
+        {expanded ? 'Show less' : 'Read more'}
+      </button>
+    </>
+  );
+}
+
 export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -138,9 +160,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
                     </div>
                   )}
                   <h3 className="font-['Poppins'] font-semibold text-xl mb-2">{service.name}</h3>
-                  {service.description && (
-                    <p className="text-sm text-[#111111]/60 mb-4 flex-1">{service.description}</p>
-                  )}
+                  {service.description && <ServiceDesc desc={service.description} />}
                   <div className="flex items-center justify-between text-sm mb-4">
                     <span className="text-[#111111]/50 font-medium">{service.durationMinutes} min</span>
                     <span className="text-[var(--brand-color,#ff3cac)] font-bold">{formatPrice(service.priceCents, theme.currency)}</span>
