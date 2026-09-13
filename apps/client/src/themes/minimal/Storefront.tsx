@@ -16,6 +16,8 @@ import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
+import TestimonialsBlock from '../shared/TestimonialsBlock';
+import FaqBlock from '../shared/FaqBlock';
 function ServiceDesc({ desc }: { desc: string }) {
   const LIMIT = 120;
   const [expanded, setExpanded] = useState(false);
@@ -195,6 +197,28 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           <Gallery layout={g.layout} images={g.images ?? []} title={g.title} />
         </div>
       ))}
+
+      {visibleSections?.includes('testimonials') && (
+        <section style={{ order: secOrder('testimonials') }} className="py-20 bg-[#f8f8f8]">
+          <TestimonialsBlock
+            testimonials={theme.testimonials}
+            headingStyle={{ fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 300, letterSpacing: '0.04em' }}
+            cardStyle={{ background: '#ffffff', border: '1px solid #eeeeee' }}
+            starColor="#111111"
+          />
+        </section>
+      )}
+
+      {visibleSections?.includes('faq') && (
+        <section style={{ order: secOrder('faq') }} className="py-20 bg-white">
+          <FaqBlock
+            faqs={theme.faqs}
+            headingStyle={{ fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 300, letterSpacing: '0.04em' }}
+            itemStyle={{ borderColor: '#eeeeee', background: '#ffffff' }}
+          />
+        </section>
+      )}
+
       </div>{/* end ordered sections */}
 
       {/* Footer */}

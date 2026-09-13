@@ -5,9 +5,12 @@ import {
   GripVertical, Eye, EyeOff, ChevronDown, ChevronRight, Plus,
   Home, ShoppingBag, Sparkles, Info, Image as ImageIcon, Users,
   Star, MapPin, Trash2, Upload, Lock, RotateCcw, Check,
-  Palette, Type, Phone, Mail, Clock,
+  Palette, Type, Phone, Mail, Clock, HelpCircle,
   type LucideIcon,
 } from 'lucide-react';
+
+interface TestimonialItem { id: string; author: string; role?: string; quote: string; rating?: number; }
+interface FaqItem { id: string; question: string; answer: string; }
 import { useApi } from '../lib/api';
 import type { Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
@@ -18,7 +21,7 @@ import type { GalleryLayout, GalleryImageData } from '../themes/shared/Gallery';
 
 type SectionType =
   | 'hero' | 'featured-products' | 'services' | 'about'
-  | 'gallery' | 'staff' | 'testimonials' | 'contact';
+  | 'gallery' | 'staff' | 'testimonials' | 'faq' | 'contact';
 
 interface Section {
   id: string;
@@ -77,10 +80,11 @@ const SECTION_META: Record<string, { label: string; icon: LucideIcon; color: str
   gallery:            { label: 'Gallery',            icon: ImageIcon, color: 'bg-pink-100 text-pink-600' },
   staff:              { label: 'Meet the Team',      icon: Users,     color: 'bg-teal-100 text-teal-600' },
   testimonials:       { label: 'Testimonials',       icon: Star,      color: 'bg-yellow-100 text-yellow-600' },
+  faq:                { label: 'FAQ',                icon: HelpCircle,  color: 'bg-indigo-100 text-indigo-600' },
   contact:            { label: 'Contact / Location', icon: MapPin,    color: 'bg-red-100 text-red-600' },
 };
 
-const ADDABLE_SECTIONS: SectionType[] = ['hero', 'featured-products', 'services', 'about', 'gallery', 'staff', 'testimonials', 'contact'];
+const ADDABLE_SECTIONS: SectionType[] = ['hero', 'featured-products', 'services', 'about', 'gallery', 'staff', 'testimonials', 'faq', 'contact'];
 
 const DEFAULT_SECTIONS: Section[] = [
   { id: 'hero',              type: 'hero',               enabled: true  },
@@ -90,6 +94,7 @@ const DEFAULT_SECTIONS: Section[] = [
   { id: 'gallery-default',   type: 'gallery',            enabled: false, layout: 'grid', images: [] },
   { id: 'staff',             type: 'staff',              enabled: false },
   { id: 'testimonials',      type: 'testimonials',       enabled: false },
+  { id: 'faq',               type: 'faq',                enabled: false },
   { id: 'contact',           type: 'contact',            enabled: true  },
 ];
 
@@ -255,7 +260,10 @@ function SectionRow({
             {section.type === 'contact' && (
               <p className="text-xs text-slate-500">Edit contact details &amp; hours in the <strong>Content</strong> tab above.</p>
             )}
-            {!['hero', 'about', 'contact'].includes(section.type) && (
+            {['testimonials', 'faq'].includes(section.type) && (
+              <p className="text-xs text-slate-500">Edit {section.type === 'faq' ? 'FAQ items' : 'testimonials'} in the <strong>Content</strong> tab above.</p>
+            )}
+            {!['hero', 'about', 'contact', 'testimonials', 'faq'].includes(section.type) && (
               <p className="text-xs text-slate-400">This section pulls live data from your products, services, or staff.</p>
             )}
           </div>
@@ -372,6 +380,8 @@ export default function PageBuilder() {
   });
   const [contentDirty, setContentDirty] = useState(false);
   const [contentSaving, setContentSaving] = useState(false);
+  const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);
+  const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [heroImageOpacity, setHeroImageOpacity] = useState(100);
   const [heroUploading, setHeroUploading] = useState(false);
@@ -410,6 +420,8 @@ export default function PageBuilder() {
     });
     setHeroImageUrl(t.hero_image_url ?? null);
     if (pc['hero.image_opacity'] !== undefined) setHeroImageOpacity(Number(pc['hero.image_opacity']));
+    try { if (pc['testimonials']) setTestimonials(JSON.parse(pc['testimonials'])); } catch { /* */ }
+    try { if (pc['faqs']) setFaqs(JSON.parse(pc['faqs'])); } catch { /* */ }
     // Initialize theme tab (only on first load — don't reset while user is editing)
     if (!themeDirty) {
       setSelectedThemeId((t.theme_id as ThemeId) ?? 'editorial');
@@ -506,6 +518,12 @@ export default function PageBuilder() {
     setContentSaving(true);
     try {
       const { tagline, ...pageContentFields } = contentFields;
+      const extraContent: Record<string, string> = {
+        'hero.image_opacity': String(heroImageOpacity),
+      };
+      if (testimonials.length > 0) extraContent['testimonials'] = JSON.stringify(testimonials);
+      if (faqs.length > 0) extraContent['faqs'] = JSON.stringify(faqs);
+
       await Promise.all([
         api.patch('/tenants/me', { tagline: tagline || null }),
         api.put('/tenants/me/page-content', {
@@ -513,7 +531,7 @@ export default function PageBuilder() {
             ...Object.fromEntries(
               Object.entries(pageContentFields).filter(([, v]) => v.trim() !== '')
             ),
-            'hero.image_opacity': String(heroImageOpacity),
+            ...extraContent,
           },
         }),
       ]);
@@ -926,6 +944,112 @@ export default function PageBuilder() {
                       multiline
                       placeholder="Tell visitors about your business…"
                     />
+                  </div>
+                </div>
+
+                {/* Testimonials */}
+                <div className="mb-4 rounded-xl border border-slate-200 bg-white overflow-hidden">
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-yellow-100">
+                        <Star size={12} className="text-yellow-600" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-700">Testimonials</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setTestimonials((prev) => [...prev, { id: crypto.randomUUID(), author: '', quote: '', rating: 5 }]); setContentDirty(true); }}
+                      className="flex items-center gap-1 rounded-lg bg-yellow-50 px-2 py-1 text-[11px] font-semibold text-yellow-700 hover:bg-yellow-100"
+                    >
+                      <Plus size={11} /> Add
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-3 p-3">
+                    {testimonials.length === 0 && (
+                      <p className="text-xs text-slate-400 text-center py-2">No testimonials yet. Click &ldquo;Add&rdquo; to create your first.</p>
+                    )}
+                    {testimonials.map((t, i) => (
+                      <div key={t.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <input
+                            className="flex-1 rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                            placeholder="Client name"
+                            value={t.author}
+                            onChange={(e) => { const next = [...testimonials]; next[i] = { ...next[i], author: e.target.value }; setTestimonials(next); setContentDirty(true); }}
+                          />
+                          <button type="button" onClick={() => { setTestimonials((prev) => prev.filter((_, j) => j !== i)); setContentDirty(true); }} className="shrink-0 text-slate-400 hover:text-red-500">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                        <input
+                          className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                          placeholder="Role / title (optional)"
+                          value={t.role ?? ''}
+                          onChange={(e) => { const next = [...testimonials]; next[i] = { ...next[i], role: e.target.value }; setTestimonials(next); setContentDirty(true); }}
+                        />
+                        <textarea
+                          rows={2}
+                          className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 resize-none focus:outline-none focus:ring-1 focus:ring-violet-400"
+                          placeholder="What did they say?"
+                          value={t.quote}
+                          onChange={(e) => { const next = [...testimonials]; next[i] = { ...next[i], quote: e.target.value }; setTestimonials(next); setContentDirty(true); }}
+                        />
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] text-slate-500">Rating:</span>
+                          {[1,2,3,4,5].map((n) => (
+                            <button key={n} type="button" onClick={() => { const next = [...testimonials]; next[i] = { ...next[i], rating: n }; setTestimonials(next); setContentDirty(true); }}>
+                              <Star size={12} fill={(t.rating ?? 5) >= n ? '#f59e0b' : 'transparent'} color="#f59e0b" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* FAQ */}
+                <div className="mb-4 rounded-xl border border-slate-200 bg-white overflow-hidden">
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100">
+                        <HelpCircle size={12} className="text-indigo-600" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-700">FAQ</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setFaqs((prev) => [...prev, { id: crypto.randomUUID(), question: '', answer: '' }]); setContentDirty(true); }}
+                      className="flex items-center gap-1 rounded-lg bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100"
+                    >
+                      <Plus size={11} /> Add
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-3 p-3">
+                    {faqs.length === 0 && (
+                      <p className="text-xs text-slate-400 text-center py-2">No FAQs yet. Click &ldquo;Add&rdquo; to create your first.</p>
+                    )}
+                    {faqs.map((f, i) => (
+                      <div key={f.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2">
+                        <div className="flex items-start gap-2">
+                          <input
+                            className="flex-1 rounded border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                            placeholder="Question"
+                            value={f.question}
+                            onChange={(e) => { const next = [...faqs]; next[i] = { ...next[i], question: e.target.value }; setFaqs(next); setContentDirty(true); }}
+                          />
+                          <button type="button" onClick={() => { setFaqs((prev) => prev.filter((_, j) => j !== i)); setContentDirty(true); }} className="shrink-0 text-slate-400 hover:text-red-500">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                        <textarea
+                          rows={2}
+                          className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 resize-none focus:outline-none focus:ring-1 focus:ring-violet-400"
+                          placeholder="Answer"
+                          value={f.answer}
+                          onChange={(e) => { const next = [...faqs]; next[i] = { ...next[i], answer: e.target.value }; setFaqs(next); setContentDirty(true); }}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
 

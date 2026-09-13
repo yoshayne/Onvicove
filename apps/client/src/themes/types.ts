@@ -26,6 +26,22 @@ export interface ThemeData {
   contactPhone?: string;
   contactAddress?: string;
   contactHours?: string;
+  testimonials?: TestimonialItem[];
+  faqs?: FaqItem[];
+}
+
+export interface TestimonialItem {
+  id: string;
+  author: string;
+  role?: string;
+  quote: string;
+  rating?: number; // 1–5
+}
+
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
 }
 
 export interface ProductImage {

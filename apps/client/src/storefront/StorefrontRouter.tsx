@@ -11,6 +11,10 @@ import { getFontPair } from '../themes/shared/fontPairs';
 interface StoredSection { id: string; type: string; enabled: boolean; [key: string]: unknown; }
 import type { Tenant, Product, Service, Staff } from '../types';
 
+function tryParseJson<T>(s: string): T | undefined {
+  try { return JSON.parse(s) as T; } catch { return undefined; }
+}
+
 function mapTenant(tenant: Tenant): ThemeData {
   const pc = tenant.page_content ?? {};
   return {
@@ -33,6 +37,8 @@ function mapTenant(tenant: Tenant): ThemeData {
     contactPhone: pc['contact.phone'] || undefined,
     contactAddress: pc['contact.address'] || undefined,
     contactHours: pc['contact.hours'] || undefined,
+    testimonials: pc['testimonials'] ? tryParseJson(pc['testimonials']) : undefined,
+    faqs: pc['faqs'] ? tryParseJson(pc['faqs']) : undefined,
   };
 }
 
@@ -149,6 +155,7 @@ export default function StorefrontRouter() {
         ...rawSections,
         { id: 'staff', type: 'staff', enabled: false },
         { id: 'testimonials', type: 'testimonials', enabled: false },
+        { id: 'faq', type: 'faq', enabled: false },
         { id: 'contact', type: 'contact', enabled: true },
       ]
     : rawSections;
