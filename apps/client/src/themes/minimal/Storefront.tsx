@@ -98,21 +98,59 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       </nav>
 
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {/* Hero */}
-      {isVis('hero') && (
-      <section style={{ order: secOrder('hero') }} className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
-        <div>
-          <h1 className="text-4xl md:text-6xl font-light leading-tight mb-6">{theme.companyName}</h1>
-          <p className="text-[#111111]/60 text-lg font-light">{tagline}</p>
-        </div>
-        <div className="aspect-[4/3] overflow-hidden bg-[#f8f8f8]">
-          <img src={heroImage} alt="" data-hero-img="1" className="w-full h-full object-cover" style={{ opacity: heroOpacity }} />
-        </div>
-      </section>
-      )}
 
-      {/* Products */}
-      {showProducts && (
+      {/* ── Hero — layout variants ──────────────────────────── */}
+      {isVis('hero') && theme.layoutId === 'list' ? (
+        /* List: minimal text-only hero, no image */
+        <section style={{ order: secOrder('hero') }} className="border-b border-[#111111]/10 px-6 py-16 md:py-24 max-w-7xl mx-auto w-full">
+          <p className="text-xs uppercase tracking-[0.3em] text-[#111111]/40 mb-4">{theme.city || 'Studio'}</p>
+          <h1 className="text-5xl md:text-8xl font-light leading-none tracking-tight mb-6">{theme.companyName}</h1>
+          <p className="text-[#111111]/50 text-lg font-light max-w-md">{tagline}</p>
+        </section>
+      ) : isVis('hero') && theme.layoutId === 'centered' ? (
+        /* Centered: full-width image, centered overlay text */
+        <section style={{ order: secOrder('hero'), position: 'relative' }}>
+          <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity }} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6" style={{ background: 'rgba(255,255,255,0.55)' }}>
+            <h1 className="text-5xl md:text-7xl font-light leading-tight text-[#111111] mb-4">{theme.companyName}</h1>
+            <p className="text-[#111111]/60 text-lg font-light">{tagline}</p>
+          </div>
+        </section>
+      ) : isVis('hero') ? (
+        /* Classic (default): side-by-side split */
+        <section style={{ order: secOrder('hero') }} className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h1 className="text-4xl md:text-6xl font-light leading-tight mb-6">{theme.companyName}</h1>
+            <p className="text-[#111111]/60 text-lg font-light">{tagline}</p>
+          </div>
+          <div className="aspect-[4/3] overflow-hidden bg-[#f8f8f8]">
+            <img src={heroImage} alt="" data-hero-img="1" className="w-full h-full object-cover" style={{ opacity: heroOpacity }} />
+          </div>
+        </section>
+      ) : null}
+
+      {/* ── Products — layout variants ──────────────────────── */}
+      {showProducts && theme.layoutId === 'list' ? (
+        /* List layout: horizontal rows */
+        <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 max-w-7xl mx-auto px-6 py-16">
+          <h2 className="text-xs uppercase tracking-[0.3em] text-[#111111]/40 mb-8">Shop</h2>
+          <div className="flex flex-col divide-y divide-[#111111]/10">
+            {displayProducts.map((product) => (
+              <div key={product.id} className="flex items-center gap-6 py-5 group cursor-pointer" onClick={() => openQuickView(product)}>
+                <div className="w-16 h-16 shrink-0 overflow-hidden bg-[#f8f8f8]">
+                  <img src={product.imageUrls?.[0] ?? defaults.heroImageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                </div>
+                <span className="flex-1 text-base font-light">{product.name}</span>
+                <span className="text-sm text-[#111111]/60 font-light">{formatPrice(product.priceCents, theme.currency)}</span>
+                <span className="text-xs uppercase tracking-[0.2em] text-[#111111]/40 group-hover:text-[#111111] transition-colors">
+                  {theme.paymentsEnabled ? '+ Cart' : 'View →'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : showProducts ? (
+        /* Classic + Centered: 4-column grid */
         <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
           <h2 className="text-2xl md:text-3xl font-bold mb-12">Shop</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
@@ -138,7 +176,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             ))}
           </div>
         </section>
-      )}
+      ) : null}
 
       {/* Services */}
       {showServices && (

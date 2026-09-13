@@ -39,6 +39,7 @@ function mapTenant(tenant: Tenant): ThemeData {
     contactHours: pc['contact.hours'] || undefined,
     testimonials: pc['testimonials'] ? tryParseJson(pc['testimonials']) : undefined,
     faqs: pc['faqs'] ? tryParseJson(pc['faqs']) : undefined,
+    layoutId: pc['layout_id'] || undefined,
   };
 }
 

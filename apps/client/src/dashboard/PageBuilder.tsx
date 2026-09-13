@@ -16,6 +16,7 @@ import type { Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
 import { GALLERY_LAYOUTS } from '../themes/shared/Gallery';
 import type { GalleryLayout, GalleryImageData } from '../themes/shared/Gallery';
+import { getLayoutVariants } from '../themes/shared/layoutVariants';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -391,6 +392,7 @@ export default function PageBuilder() {
   // Theme tab state
   const [selectedThemeId, setSelectedThemeId] = useState<ThemeId | null>(null);
   const [brandColor, setBrandColor] = useState('');
+  const [selectedLayoutId, setSelectedLayoutId] = useState<string>('classic');
   const [themeDirty, setThemeDirty] = useState(false);
   const [themeSaving, setThemeSaving] = useState(false);
 
@@ -426,6 +428,7 @@ export default function PageBuilder() {
     if (!themeDirty) {
       setSelectedThemeId((t.theme_id as ThemeId) ?? 'editorial');
       setBrandColor(t.brand_color ?? '');
+      setSelectedLayoutId(pc['layout_id'] ?? 'classic');
     }
   }, [tenantQ.data]);
 
@@ -547,10 +550,13 @@ export default function PageBuilder() {
     if (!selectedThemeId) return;
     setThemeSaving(true);
     try {
-      await api.patch('/tenants/me', {
-        theme_id: selectedThemeId,
-        brand_color: brandColor || null,
-      });
+      await Promise.all([
+        api.patch('/tenants/me', {
+          theme_id: selectedThemeId,
+          brand_color: brandColor || null,
+        }),
+        api.put('/tenants/me/page-content', { page_content: { layout_id: selectedLayoutId } }),
+      ]);
       setThemeDirty(false);
       setPreviewKey((k) => k + 1);
       queryClient.invalidateQueries({ queryKey: ['tenant', 'me'] });
@@ -1171,6 +1177,46 @@ export default function PageBuilder() {
                     <p className="mt-1.5 text-[10px] text-slate-400 font-mono">{brandColor}</p>
                   )}
                 </div>
+
+                {/* Layout variants */}
+                {selectedThemeId && (() => {
+                  const variants = getLayoutVariants(selectedThemeId);
+                  if (!variants.length) return null;
+                  return (
+                    <div className="border-b border-slate-100 px-4 py-4">
+                      <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Layout</p>
+                      <div className="flex flex-col gap-2">
+                        {variants.map((v) => (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => { setSelectedLayoutId(v.id); setThemeDirty(true); }}
+                            className={`rounded-xl border px-3 py-2.5 text-left transition-all ${
+                              selectedLayoutId === v.id
+                                ? 'border-violet-400 bg-violet-50 ring-1 ring-violet-400'
+                                : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div className="shrink-0 w-16 rounded bg-slate-100 px-1 py-0.5 font-mono text-[8px] leading-tight text-slate-400 overflow-hidden">
+                                {v.previewLines.map((line, i) => (
+                                  <div key={i} className="truncate">{line}</div>
+                                ))}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-slate-800 leading-tight">{v.name}</p>
+                                <p className="text-[10px] text-slate-400 leading-tight mt-0.5">{v.description}</p>
+                              </div>
+                              {selectedLayoutId === v.id && (
+                                <Check size={14} className="shrink-0 text-violet-600" />
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Theme list */}
                 <div className="px-4 py-4">

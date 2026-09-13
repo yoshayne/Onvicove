@@ -28,6 +28,7 @@ export interface ThemeData {
   contactHours?: string;
   testimonials?: TestimonialItem[];
   faqs?: FaqItem[];
+  layoutId?: string; // theme layout variant, e.g. 'classic' | 'split' | 'centered'
 }
 
 export interface TestimonialItem {

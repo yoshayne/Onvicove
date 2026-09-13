@@ -101,25 +101,67 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       </nav>
 
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {/* Hero - split layout */}
-      {isVis('hero') && (
-      <section style={{ order: secOrder('hero') }} className="bg-[#f5e8d8]">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 items-center min-h-[70vh]">
-          <div className="py-16 md:py-0 md:pr-12">
-            <h1 className="font-['Lora'] text-4xl md:text-6xl text-[#3d2314] mb-6 leading-tight">
-              {theme.companyName}
-            </h1>
-            <p className="text-[#3d2314]/70 text-lg md:text-xl">{tagline}</p>
-          </div>
-          <div className="h-64 md:h-[70vh] rounded-2xl overflow-hidden">
-            <img src={heroImage} alt="" data-hero-img="1" className="w-full h-full object-cover" style={{ opacity: heroOpacity }} />
-          </div>
-        </div>
-      </section>
-      )}
 
-      {/* Products */}
-      {showProducts && (
+      {/* ── Hero — layout variants ──────────────────────────── */}
+      {isVis('hero') && theme.layoutId === 'artisan' ? (
+        /* Artisan: full-width image with warm text block underneath */
+        <section style={{ order: secOrder('hero') }}>
+          <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity }} />
+          <div className="bg-[#f5e8d8] px-8 py-10 text-center">
+            <h1 className="font-['Lora'] text-4xl md:text-6xl text-[#3d2314] mb-4 leading-tight">{theme.companyName}</h1>
+            <p className="text-[#3d2314]/70 text-lg max-w-md mx-auto">{tagline}</p>
+          </div>
+        </section>
+      ) : isVis('hero') && theme.layoutId === 'editorial' ? (
+        /* Editorial: hero fills screen with text on dark overlay */
+        <section style={{ order: secOrder('hero'), position: 'relative', background: '#3d2314' }}>
+          <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity * 0.5 }} />
+          <div className="absolute inset-0 flex flex-col items-start justify-end px-8 md:px-16 pb-14">
+            <div className="w-8 h-px bg-[#8b5e3c] mb-5" />
+            <h1 className="font-['Lora'] text-4xl md:text-6xl text-white mb-4 leading-tight max-w-xl">{theme.companyName}</h1>
+            <p className="text-white/60 text-base max-w-sm">{tagline}</p>
+          </div>
+        </section>
+      ) : isVis('hero') ? (
+        /* Classic (default): side-by-side split */
+        <section style={{ order: secOrder('hero') }} className="bg-[#f5e8d8]">
+          <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 items-center min-h-[70vh]">
+            <div className="py-16 md:py-0 md:pr-12">
+              <h1 className="font-['Lora'] text-4xl md:text-6xl text-[#3d2314] mb-6 leading-tight">{theme.companyName}</h1>
+              <p className="text-[#3d2314]/70 text-lg md:text-xl">{tagline}</p>
+            </div>
+            <div className="h-64 md:h-[70vh] rounded-2xl overflow-hidden">
+              <img src={heroImage} alt="" data-hero-img="1" className="w-full h-full object-cover" style={{ opacity: heroOpacity }} />
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* ── Products — layout variants ──────────────────────── */}
+      {showProducts && theme.layoutId === 'editorial' ? (
+        /* Editorial warm: alternating image + text rows */
+        <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 py-16">
+          <div className="max-w-4xl mx-auto px-6">
+            <h2 className="font-['Lora'] text-3xl md:text-4xl mb-12 text-center text-[#3d2314]">Shop</h2>
+            {displayProducts.map((product, i) => (
+              <div key={product.id} className={`flex flex-col md:flex-row gap-8 mb-16 items-center ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
+                <div className="w-full md:w-1/2 aspect-[4/3] overflow-hidden rounded-2xl">
+                  <img src={product.imageUrls?.[0] ?? defaults.heroImageUrl} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                </div>
+                <div className="w-full md:w-1/2">
+                  <h3 className="font-['Lora'] text-2xl text-[#3d2314] mb-2">{product.name}</h3>
+                  {product.description && <p className="text-[#3d2314]/60 text-sm mb-4 leading-relaxed">{product.description}</p>}
+                  <p className="text-lg text-[#8b5e3c] font-medium mb-5">{formatPrice(product.priceCents, theme.currency)}</p>
+                  <button type="button" onClick={() => openQuickView(product)} className="rounded-full border border-[#8b5e3c] text-[#8b5e3c] px-6 py-2 text-sm hover:bg-[#8b5e3c] hover:text-white transition-colors">
+                    {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : showProducts ? (
+        /* Classic + Artisan: card grid */
         <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
           <h2 className="font-['Lora'] text-3xl md:text-4xl mb-12 text-center text-[#3d2314]">Shop</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
@@ -147,7 +189,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             ))}
           </div>
         </section>
-      )}
+      ) : null}
 
       {/* Services */}
       {showServices && (
