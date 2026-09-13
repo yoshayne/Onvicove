@@ -20,6 +20,7 @@ import Themes from './dashboard/Themes';
 import PageBuilder from './dashboard/PageBuilder';
 import AIPhotos from './dashboard/AIPhotos';
 import Discounts from './dashboard/Discounts';
+import EmailLog from './dashboard/EmailLog';
 import Settings from './dashboard/Settings';
 import Payouts from './dashboard/Payouts';
 import Billing from './dashboard/Billing';
@@ -166,6 +167,7 @@ export default function App() {
                 <Route path="page-builder" element={<PageBuilder />} />
                 <Route path="ai-photos" element={<AIPhotos />} />
                 <Route path="discounts" element={<Discounts />} />
+                <Route path="email-log" element={<EmailLog />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="payouts" element={<Payouts />} />
                 <Route path="billing" element={<Billing />} />

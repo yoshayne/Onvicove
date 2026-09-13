@@ -426,3 +426,21 @@ CREATE TABLE IF NOT EXISTS custom_order_requests (
 
 -- Typography font pairing
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS font_pair_id TEXT DEFAULT 'classic';
+
+-- Email log
+CREATE TABLE IF NOT EXISTS email_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  to_email TEXT NOT NULL,
+  to_name TEXT,
+  subject TEXT NOT NULL,
+  html_content TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'sent' CHECK (status IN ('sent', 'failed')),
+  error_message TEXT,
+  reference_type TEXT,
+  reference_id UUID,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_email_log_tenant_id ON email_log(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_email_log_created_at ON email_log(created_at DESC);

@@ -33,6 +33,7 @@ import domainRoutes from './routes/domains';
 import domainPurchaseRoutes from './routes/domain-purchases';
 import pageSectionRoutes from './routes/page-sections';
 import blockedDateRoutes from './routes/blocked-dates';
+import emailLogRoutes from './routes/email-log';
 
 const app = new Hono();
 
@@ -96,6 +97,7 @@ app.route('/api/domains', domainRoutes);
 app.route('/api/domain-purchases', domainPurchaseRoutes);
 app.route('/api/page-sections', pageSectionRoutes);
 app.route('/api/blocked-dates', blockedDateRoutes);
+app.route('/api/email-log', emailLogRoutes);
 
 // Custom domain middleware — if Host matches a verified tenant domain,
 // inject the tenant slug so the SPA can resolve the storefront.

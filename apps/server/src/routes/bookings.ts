@@ -178,6 +178,8 @@ app.post('/', async (c) => {
       startTime: new Date(booking.start_time as string).toLocaleString(),
       endTime: new Date(booking.end_time as string).toLocaleString(),
       companyName: (tenant as unknown as { company_name: string }).company_name,
+      tenantId: tenant.id,
+      bookingId: booking.id as string,
     }).catch((err) => console.error('Booking confirmation email error:', err));
   }
 
@@ -223,6 +225,8 @@ app.patch('/:id', async (c) => {
       startTime: new Date(booking.start_time as string).toLocaleString(),
       endTime: new Date(booking.end_time as string).toLocaleString(),
       companyName: tenant.company_name,
+      tenantId: tenant.id,
+      bookingId: id,
     }).catch((err) => console.error('Booking cancelled email error:', err));
   }
 
@@ -235,6 +239,8 @@ app.patch('/:id', async (c) => {
       startTime: new Date(booking.start_time as string).toLocaleString(),
       endTime: new Date(booking.end_time as string).toLocaleString(),
       companyName: tenant.company_name,
+      tenantId: tenant.id,
+      bookingId: id,
     }).catch((err) => console.error('Booking confirmed email error:', err));
   }
 

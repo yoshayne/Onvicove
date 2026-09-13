@@ -1,3 +1,5 @@
+import { db } from '../db/client';
+
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
 const SENDER = {
@@ -23,14 +25,23 @@ function wrap(title: string, body: string) {
   </body></html>`;
 }
 
-async function sendTransacEmail(payload: {
+interface EmailMeta {
+  tenantId?: string;
+  type?: string;
+  referenceType?: string;
+  referenceId?: string;
+}
+
+export async function sendTransacEmail(payload: {
   to: { email: string; name: string }[];
   subject: string;
   htmlContent: string;
   replyTo?: { email: string };
-}): Promise<void> {
+}, meta?: EmailMeta): Promise<void> {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) throw new Error('BREVO_API_KEY environment variable is required');
+
+  let sendError: string | null = null;
 
   const response = await fetch(BREVO_API_URL, {
     method: 'POST',
@@ -44,8 +55,23 @@ async function sendTransacEmail(payload: {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Brevo API error (${response.status}): ${text}`);
+    sendError = `Brevo API error (${response.status}): ${text}`;
   }
+
+  if (meta?.tenantId && meta.type) {
+    const recipient = payload.to[0];
+    db`
+      INSERT INTO email_log (tenant_id, type, to_email, to_name, subject, html_content, status, error_message, reference_type, reference_id)
+      VALUES (
+        ${meta.tenantId}, ${meta.type}, ${recipient.email}, ${recipient.name ?? null},
+        ${payload.subject}, ${payload.htmlContent},
+        ${sendError ? 'failed' : 'sent'}, ${sendError ?? null},
+        ${meta.referenceType ?? null}, ${meta.referenceId ? meta.referenceId : null}
+      )
+    `.catch((err: unknown) => console.error('email_log insert error:', err));
+  }
+
+  if (sendError) throw new Error(sendError);
 }
 
 // ─── Tenant lifecycle ────────────────────────────────────────────────────────
@@ -213,6 +239,8 @@ interface BookingEmailData {
   startTime: string;
   endTime: string;
   companyName: string;
+  tenantId?: string;
+  bookingId?: string;
 }
 
 interface OrderEmailData {
@@ -221,6 +249,8 @@ interface OrderEmailData {
   orderNumber: string;
   totalCents: number;
   companyName: string;
+  tenantId?: string;
+  orderId?: string;
 }
 
 export async function sendBookingConfirmation(data: BookingEmailData): Promise<void> {
@@ -234,7 +264,7 @@ export async function sendBookingConfirmation(data: BookingEmailData): Promise<v
       <p><strong>End:</strong> ${data.endTime}</p>
       <p>Thank you — we look forward to seeing you!</p>
     `),
-  });
+  }, data.tenantId ? { tenantId: data.tenantId, type: 'booking_confirmation', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
 
 export async function sendBookingReminder(data: BookingEmailData): Promise<void> {
@@ -248,7 +278,7 @@ export async function sendBookingReminder(data: BookingEmailData): Promise<void>
       <p><strong>End:</strong> ${data.endTime}</p>
       <p>See you soon!</p>
     `),
-  });
+  }, data.tenantId ? { tenantId: data.tenantId, type: 'booking_reminder', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
 
 export async function sendBookingCancelled(data: BookingEmailData): Promise<void> {
@@ -260,7 +290,7 @@ export async function sendBookingCancelled(data: BookingEmailData): Promise<void
       <p>Your appointment for <strong>${data.serviceName}</strong> with <strong>${data.companyName}</strong> has been cancelled.</p>
       <p>If you'd like to rebook or have questions, please contact ${data.companyName} directly.</p>
     `),
-  });
+  }, data.tenantId ? { tenantId: data.tenantId, type: 'booking_cancelled', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
 
 export async function sendOrderConfirmation(data: OrderEmailData): Promise<void> {
@@ -273,7 +303,7 @@ export async function sendOrderConfirmation(data: OrderEmailData): Promise<void>
       <p><strong>Total:</strong> $${(data.totalCents / 100).toFixed(2)}</p>
       <p>We'll send you a shipping confirmation with tracking info once your order is on its way.</p>
     `),
-  });
+  }, data.tenantId ? { tenantId: data.tenantId, type: 'order_confirmation', referenceType: 'order', referenceId: data.orderId } : undefined);
 }
 
 export async function sendOrderShipped(data: {
@@ -323,6 +353,8 @@ export async function sendBookingRefunded(data: {
   serviceName: string;
   amountCents: number;
   companyName: string;
+  tenantId?: string;
+  bookingId?: string;
 }): Promise<void> {
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],
@@ -332,7 +364,7 @@ export async function sendBookingRefunded(data: {
       <p>Your payment of <strong>$${(data.amountCents / 100).toFixed(2)}</strong> for <strong>${data.serviceName}</strong> with <strong>${data.companyName}</strong> has been refunded.</p>
       <p>Funds typically appear in your account within 5–10 business days depending on your bank.</p>
     `),
-  });
+  }, data.tenantId ? { tenantId: data.tenantId, type: 'booking_refunded', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
 
 interface PaymentLinkEmailData {
@@ -342,6 +374,7 @@ interface PaymentLinkEmailData {
   amountCents: number;
   companyName: string;
   bookingId: string;
+  tenantId?: string;
 }
 
 export async function sendPaymentLinkEmail(data: PaymentLinkEmailData): Promise<void> {
@@ -356,7 +389,7 @@ export async function sendPaymentLinkEmail(data: PaymentLinkEmailData): Promise<
       ${btn('Pay now', payUrl)}
       <p style="font-size:13px;color:#64748b">Or copy this link: ${payUrl}</p>
     `),
-  });
+  }, data.tenantId ? { tenantId: data.tenantId, type: 'payment_link', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
 
 // ─── Admin notifications ─────────────────────────────────────────────────────
