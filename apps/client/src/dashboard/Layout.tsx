@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, ShoppingCart, CalendarDays, Package, Sparkles,
   Users, UserCheck, BarChart3, Palette, LayoutTemplate, Camera,
-  Tag, Settings as SettingsIcon, Wallet, CreditCard, Mail,
+  Tag, Settings as SettingsIcon, Wallet, CreditCard, Mail, Image as GalleryIcon,
   Menu, X, Bell, Search, Zap, type LucideIcon,
 } from 'lucide-react';
 
@@ -44,6 +44,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { to: '/dashboard/page-builder', label: 'Page Builder', icon: LayoutTemplate },
       { to: '/dashboard/themes', label: 'Themes', icon: Palette },
+      { to: '/dashboard/gallery', label: 'Gallery', icon: GalleryIcon },
       { to: '/dashboard/ai-photos', label: 'AI Photos', icon: Camera },
     ],
   },
