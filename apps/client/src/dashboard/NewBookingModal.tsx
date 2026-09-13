@@ -35,6 +35,7 @@ export default function NewBookingModal({ isOpen, onClose }: Props) {
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [priceOverride, setPriceOverride] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const { data: servicesData } = useQuery({
@@ -82,7 +83,7 @@ export default function NewBookingModal({ isOpen, onClose }: Props) {
   function handleClose() {
     setServiceId(''); setStaffId(''); setDate(todayLocal());
     setSelectedSlot(null); setCustomerName(''); setCustomerEmail('');
-    setCustomerPhone(''); setNotes(''); setError(null);
+    setCustomerPhone(''); setNotes(''); setPriceOverride(''); setError(null);
     onClose();
   }
 
@@ -92,6 +93,7 @@ export default function NewBookingModal({ isOpen, onClose }: Props) {
     if (!customerName.trim()) { setError('Customer name is required.'); return; }
     if (!customerEmail.trim()) { setError('Customer email is required.'); return; }
     setError(null);
+    const amountCents = priceOverride !== '' ? Math.round(parseFloat(priceOverride) * 100) : undefined;
     createMutation.mutate({
       service_id: serviceId,
       staff_id: staffId || null,
@@ -102,10 +104,12 @@ export default function NewBookingModal({ isOpen, onClose }: Props) {
       customer_phone: customerPhone.trim() || null,
       notes: notes.trim() || null,
       status: 'confirmed',
+      ...(amountCents !== undefined && { amount_cents: amountCents }),
     });
   }
 
   const selectedService = services.find((s) => s.id === serviceId);
+  const defaultPriceDollars = selectedService ? (selectedService.price_cents / 100).toFixed(2) : '';
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="New booking">
@@ -128,6 +132,31 @@ export default function NewBookingModal({ isOpen, onClose }: Props) {
             ))}
           </select>
         </div>
+
+        {/* Price override */}
+        {selectedService && (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">
+              Price
+              <span className="ml-1 text-xs font-normal text-slate-400">(default: ${defaultPriceDollars})</span>
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-3 flex items-center text-sm text-slate-500">$</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={priceOverride}
+                placeholder={defaultPriceDollars}
+                onChange={(e) => setPriceOverride(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 py-2 pl-7 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            {priceOverride !== '' && priceOverride !== defaultPriceDollars && (
+              <p className="text-xs text-amber-600">Custom price — original is ${defaultPriceDollars}</p>
+            )}
+          </div>
+        )}
 
         {/* Staff (optional) */}
         {staffList.length > 0 && (

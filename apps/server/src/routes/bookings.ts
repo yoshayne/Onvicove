@@ -12,6 +12,11 @@ const app = new Hono();
 const updateBookingSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'cancelled', 'completed', 'no_show']).optional(),
   internal_notes: z.string().nullable().optional(),
+  amount_cents: z.number().int().min(0).optional(),
+  customer_name: z.string().min(1).optional(),
+  customer_email: z.string().email().optional(),
+  customer_phone: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
 });
 
 const createBookingSchema = z.object({
@@ -25,6 +30,7 @@ const createBookingSchema = z.object({
   end_time: z.string().datetime(),
   notes: z.string().nullable().optional(),
   status: z.enum(['pending', 'confirmed', 'cancelled', 'completed', 'no_show']).optional(),
+  amount_cents: z.number().int().min(0).optional(),
 });
 
 app.use('*', requireAuth, requireTenant);
@@ -146,7 +152,8 @@ app.post('/', async (c) => {
     }
   }
 
-  const amountCents = service[0].price_cents as number;
+  const amountCents = d.amount_cents ?? (service[0].price_cents as number);
+  const finalStatus = d.status ?? ((tenant as unknown as { booking_mode?: string }).booking_mode === 'manual' ? 'pending' : 'confirmed');
 
   const rows = await db`
     INSERT INTO bookings (
@@ -156,13 +163,25 @@ app.post('/', async (c) => {
       ${tenant.id}, ${d.service_id}, ${d.staff_id ?? null}, ${d.customer_id ?? null},
       ${d.customer_name}, ${d.customer_email}, ${d.customer_phone ?? null},
       ${d.start_time}, ${d.end_time}, ${d.notes ?? null},
-      ${d.status ?? (tenant as unknown as { booking_mode?: string }).booking_mode === 'manual' ? 'pending' : 'confirmed'},
-      ${amountCents}
+      ${finalStatus}, ${amountCents}
     )
     RETURNING *
   `;
 
-  return c.json({ booking: rows[0] }, 201);
+  const booking = rows[0];
+
+  if (finalStatus === 'confirmed') {
+    sendBookingConfirmation({
+      toEmail: booking.customer_email as string,
+      toName: booking.customer_name as string,
+      serviceName: (service[0].name as string) ?? 'your appointment',
+      startTime: new Date(booking.start_time as string).toLocaleString(),
+      endTime: new Date(booking.end_time as string).toLocaleString(),
+      companyName: (tenant as unknown as { company_name: string }).company_name,
+    }).catch((err) => console.error('Booking confirmation email error:', err));
+  }
+
+  return c.json({ booking }, 201);
 });
 
 // PATCH /api/bookings/:id

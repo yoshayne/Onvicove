@@ -7,6 +7,7 @@ import Badge from '../components/shared/Badge';
 import Button from '../components/shared/Button';
 import PaymentModal from './PaymentModal';
 import NewBookingModal from './NewBookingModal';
+import EditBookingModal from './EditBookingModal';
 
 interface CitySchedule {
   id: string;
@@ -245,6 +246,7 @@ export default function Bookings() {
 
   const [paymentBooking, setPaymentBooking] = useState<Booking | null>(null);
   const [showNewBooking, setShowNewBooking] = useState(false);
+  const [editBooking, setEditBooking] = useState<Booking | null>(null);
 
   return (
     <div className="flex flex-col gap-4">
@@ -324,6 +326,13 @@ export default function Bookings() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setEditBooking(b)}
+                      >
+                        Edit
+                      </Button>
                       {b.status !== 'confirmed' && b.status !== 'completed' && (
                         <Button
                           size="sm"
@@ -367,6 +376,7 @@ export default function Bookings() {
       )}
 
       <NewBookingModal isOpen={showNewBooking} onClose={() => setShowNewBooking(false)} />
+      <EditBookingModal booking={editBooking} onClose={() => setEditBooking(null)} />
 
       {paymentBooking && (
         <PaymentModal
