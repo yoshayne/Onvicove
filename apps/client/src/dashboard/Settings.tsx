@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
-import type { Tenant, BookingMode } from '../types';
+import type { Tenant, BookingMode, FontPairId } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Button from '../components/shared/Button';
 import { Input } from '../components/shared/Input';
 import CustomDomainPanel from './CustomDomainPanel';
+import { FONT_PAIRS } from '../themes/shared/fontPairs';
 
 interface SettingsFormState {
   company_name: string;
@@ -17,6 +18,7 @@ interface SettingsFormState {
   currency: string;
   booking_mode: BookingMode;
   show_live_calendar: boolean;
+  font_pair_id: FontPairId;
 }
 
 function tenantToForm(tenant: Tenant): SettingsFormState {
@@ -30,6 +32,7 @@ function tenantToForm(tenant: Tenant): SettingsFormState {
     currency: tenant.currency,
     booking_mode: tenant.booking_mode,
     show_live_calendar: tenant.show_live_calendar,
+    font_pair_id: (tenant.font_pair_id as FontPairId) ?? 'classic',
   };
 }
 
@@ -72,6 +75,7 @@ export default function Settings() {
       currency: form.currency,
       booking_mode: form.booking_mode,
       show_live_calendar: form.show_live_calendar,
+      font_pair_id: form.font_pair_id,
     });
   }
 
@@ -162,6 +166,33 @@ export default function Settings() {
           />
           Show live calendar availability on storefront
         </label>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-700">Typography</label>
+          <p className="text-xs text-slate-500">Heading &amp; body font pairing shown on your storefront.</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {FONT_PAIRS.map((pair) => (
+              <button
+                key={pair.id}
+                type="button"
+                onClick={() => setForm((f) => (f ? { ...f, font_pair_id: pair.id as FontPairId } : f))}
+                className={`flex flex-col gap-1 rounded-lg border p-2.5 text-left transition ${
+                  form.font_pair_id === pair.id
+                    ? 'border-slate-900 ring-1 ring-slate-900 bg-slate-50'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <span className="text-sm font-semibold leading-none text-slate-900" style={{ fontFamily: pair.heading }}>
+                  {pair.previewHeading}
+                </span>
+                <span className="text-[11px] text-slate-500 leading-none" style={{ fontFamily: pair.body }}>
+                  {pair.previewBody}
+                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5">{pair.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="flex items-center justify-end gap-3">
           {saved && <span className="text-sm text-green-600">Saved</span>}

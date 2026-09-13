@@ -42,6 +42,7 @@ function buildWizardData(state: WizardState) {
     tagline: state.tagline,
     mode: state.mode,
     themeId: state.themeId,
+    fontPairId: state.fontPairId,
     brandColor: state.brandColor,
     city: state.city,
     industry: state.industry,
@@ -87,6 +88,7 @@ function applyWizardData(state: WizardState, data: Record<string, unknown>, slug
   if (typeof d.tagline === 'string') state.setTagline(d.tagline);
   if (d.mode) state.setMode(d.mode);
   if (d.themeId) state.setThemeId(d.themeId);
+  if (d.fontPairId) state.setFontPairId(d.fontPairId);
   if (typeof d.brandColor === 'string') state.setBrandColor(d.brandColor);
   if (typeof d.city === 'string') state.setCity(d.city);
   if (typeof d.industry === 'string') state.setIndustry(d.industry);

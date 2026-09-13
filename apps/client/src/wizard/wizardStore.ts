@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ThemeId, StoreMode } from '../themes/types';
+import type { FontPairId } from '../themes/shared/fontPairs';
 
 export interface WizardProduct {
   id: string;
@@ -87,6 +88,8 @@ export interface WizardState {
   setSlug: (slug: string) => void;
   setMode: (mode: StoreMode) => void;
   setThemeId: (themeId: ThemeId) => void;
+  fontPairId: FontPairId;
+  setFontPairId: (id: FontPairId) => void;
 
   setTagline: (tagline: string) => void;
   setBrandColor: (color: string) => void;
@@ -127,6 +130,7 @@ const initialState: Omit<
   | 'setSlug'
   | 'setMode'
   | 'setThemeId'
+  | 'setFontPairId'
   | 'setTagline'
   | 'setBrandColor'
   | 'setCity'
@@ -153,6 +157,7 @@ const initialState: Omit<
   slug: '',
   mode: 'both',
   themeId: 'editorial',
+  fontPairId: 'classic',
   tagline: '',
   brandColor: '#3D4F7C',
   city: '',
@@ -185,6 +190,7 @@ export const useWizardStore = create<WizardState>()(
       setSlug: (slug) => set({ slug }),
       setMode: (mode) => set({ mode }),
       setThemeId: (themeId) => set({ themeId }),
+      setFontPairId: (fontPairId) => set({ fontPairId }),
 
       setTagline: (tagline) => set({ tagline }),
       setBrandColor: (color) => set({ brandColor: color }),

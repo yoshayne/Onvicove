@@ -3,6 +3,7 @@
 export type TenantMode = 'store' | 'book' | 'both';
 export type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft' | 'lens';
 export type PlanId = 'starter' | 'pro' | 'business';
+export type FontPairId = 'classic' | 'modern' | 'elegant' | 'editorial' | 'bold' | 'soft' | 'tech' | 'artisan';
 export type BookingMode = 'instant' | 'manual';
 
 export interface Tenant {
@@ -36,6 +37,7 @@ export interface Tenant {
   custom_domain_verified: boolean;
   custom_domain_verify_token: string | null;
   custom_domain_cname_target: string | null;
+  font_pair_id: FontPairId | null;
   wizard_completed: boolean;
   wizard_step: number;
   wizard_data: Record<string, unknown>;

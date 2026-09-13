@@ -88,6 +88,7 @@ app.post('/complete', async (c) => {
         tagline = ${data.tagline ?? tenant.tagline},
         mode = ${data.mode || tenant.mode},
         theme_id = ${data.themeId || tenant.theme_id},
+        font_pair_id = ${data.fontPairId ?? tenant.font_pair_id ?? 'classic'},
         brand_color = ${data.brandColor ?? tenant.brand_color},
         city = ${data.city ?? tenant.city},
         industry = ${data.industry ?? tenant.industry},

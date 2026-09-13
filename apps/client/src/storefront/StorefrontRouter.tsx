@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '../lib/api';
@@ -5,6 +6,7 @@ import Spinner from '../components/shared/Spinner';
 import ThemeRenderer from '../themes/ThemeRenderer';
 import type { ThemeData, ProductData, ProductVariantData, ServiceData, StaffData } from '../themes/types';
 import type { GallerySectionData } from '../themes/shared/Gallery';
+import { getFontPair } from '../themes/shared/fontPairs';
 
 interface StoredSection { id: string; type: string; enabled: boolean; [key: string]: unknown; }
 import type { Tenant, Product, Service, Staff } from '../types';
@@ -156,15 +158,54 @@ export default function StorefrontRouter() {
   const visibleSections = enabledSections.map((s) => s.id);
   const galleries = enabledSections.filter((s) => s.type === 'gallery') as unknown as GallerySectionData[];
 
+  const fontPair = getFontPair(tenant.font_pair_id);
+
+  useEffect(() => {
+    // Inject Google Fonts link
+    const linkId = 'storefront-google-fonts';
+    let link = document.getElementById(linkId) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+    link.href = fontPair.googleFontsUrl;
+
+    // Inject font override style so all storefront heading/body tags pick up the chosen pair
+    const styleId = 'storefront-font-override';
+    let style = document.getElementById(styleId) as HTMLStyleElement | null;
+    if (!style) {
+      style = document.createElement('style');
+      style.id = styleId;
+      document.head.appendChild(style);
+    }
+    style.textContent = `
+      [data-storefront] h1, [data-storefront] h2, [data-storefront] h3,
+      [data-storefront] h4, [data-storefront] h5 {
+        font-family: ${fontPair.heading} !important;
+      }
+      [data-storefront] {
+        font-family: ${fontPair.body};
+      }
+    `;
+
+    return () => {
+      style?.remove();
+    };
+  }, [fontPair.googleFontsUrl, fontPair.heading, fontPair.body]);
+
   return (
-    <ThemeRenderer
-      themeId={tenant.theme_id}
-      theme={mapTenant(tenant)}
-      products={(productsQuery.data ?? []).map(mapProduct)}
-      services={(servicesQuery.data ?? []).map(mapService)}
-      staff={(staffQuery.data ?? []).map(mapStaff)}
-      galleries={galleries}
-      visibleSections={visibleSections.length > 0 ? visibleSections : undefined}
-    />
+    <div data-storefront>
+      <ThemeRenderer
+        themeId={tenant.theme_id}
+        theme={mapTenant(tenant)}
+        products={(productsQuery.data ?? []).map(mapProduct)}
+        services={(servicesQuery.data ?? []).map(mapService)}
+        staff={(staffQuery.data ?? []).map(mapStaff)}
+        galleries={galleries}
+        visibleSections={visibleSections.length > 0 ? visibleSections : undefined}
+      />
+    </div>
   );
 }

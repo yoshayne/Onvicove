@@ -423,3 +423,6 @@ CREATE TABLE IF NOT EXISTS custom_order_requests (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Typography font pairing
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS font_pair_id TEXT DEFAULT 'classic';

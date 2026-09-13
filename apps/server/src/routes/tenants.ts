@@ -24,6 +24,7 @@ const updateTenantSchema = z.object({
   show_live_calendar: z.boolean().optional(),
   currency: z.string().optional(),
   custom_domain: z.string().nullable().optional(),
+  font_pair_id: z.enum(['classic', 'modern', 'elegant', 'editorial', 'bold', 'soft', 'tech', 'artisan']).nullable().optional(),
 });
 
 const createTenantSchema = z.object({
