@@ -156,6 +156,49 @@ app.use('/*', async (c, next) => {
 // The Vite build outputs to dist/client relative to repo root
 app.use('/*', serveStatic({ root: CLIENT_DIST }));
 
+// Storefront OG meta injection — intercept /store/:slug before generic fallback
+app.get('/store/:slug', async (c) => {
+  const { slug } = c.req.param();
+  let html = await import('fs').then(fs =>
+    fs.promises.readFile(join(CLIENT_DIST, 'index.html'), 'utf-8')
+  );
+  try {
+    const rows = await db`
+      SELECT company_name, tagline, hero_image_key, brand_color
+      FROM tenants WHERE slug = ${slug} AND is_active = true LIMIT 1
+    `;
+    if (rows[0]) {
+      const t = rows[0] as { company_name: string; tagline?: string; hero_image_key?: string; brand_color?: string };
+      const { enrichWithUrls } = await import('./services/storage');
+      const enriched = await enrichWithUrls(t);
+      const title = t.company_name;
+      const description = t.tagline || `Shop ${t.company_name} — powered by Shop Suite Direct`;
+      const image = enriched.hero_image_url || '';
+      const protocol = c.req.header('x-forwarded-proto') || 'https';
+      const host = c.req.header('host') || '';
+      const pageUrl = `${protocol}://${host}${c.req.path}`;
+      const ogTags = [
+        `<meta property="og:type" content="website" />`,
+        `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`,
+        `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />`,
+        `<meta property="og:url" content="${pageUrl}" />`,
+        image ? `<meta property="og:image" content="${image}" />` : '',
+        image ? `<meta property="og:image:width" content="1200" />` : '',
+        image ? `<meta property="og:image:height" content="630" />` : '',
+        `<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}" />`,
+        `<meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />`,
+        `<meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />`,
+        image ? `<meta name="twitter:image" content="${image}" />` : '',
+        `<title>${title.replace(/</g, '&lt;')}</title>`,
+      ].filter(Boolean).join('\n    ');
+      html = html.replace('</head>', `    ${ogTags}\n  </head>`);
+    }
+  } catch {
+    // Fall through and serve plain index.html if lookup fails
+  }
+  return c.html(html);
+});
+
 // SPA fallback — serve index.html for all unmatched routes
 app.get('/*', async (c) => {
   return c.html(await import('fs').then(fs =>
