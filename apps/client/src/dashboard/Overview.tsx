@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-react';
 import { Link } from 'react-router-dom';
@@ -275,10 +276,27 @@ export default function Overview() {
     ? `https://${tenant.custom_domain}`
     : tenant?.slug ? `/${tenant.slug}` : null;
 
-  async function copyLink() {
+  const [shareCopied, setShareCopied] = useState(false);
+
+  async function handleShare() {
     if (!siteHref) return;
     const url = siteHref.startsWith('http') ? siteHref : `${window.location.origin}${siteHref}`;
+    const shareData = {
+      title: tenant?.company_name ?? 'My Store',
+      text: tenant?.tagline ?? `Check out ${tenant?.company_name ?? 'my store'}`,
+      url,
+    };
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // User cancelled or share failed — fall through to clipboard
+      }
+    }
     await navigator.clipboard.writeText(url).catch(() => {});
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
   }
 
   return (
@@ -304,11 +322,11 @@ export default function Overview() {
               Preview Site
             </a>
             <button
-              type="button" onClick={copyLink}
+              type="button" onClick={handleShare}
               className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
             >
               <Share2 size={14} />
-              Share
+              {shareCopied ? 'Link copied!' : 'Share'}
             </button>
             <a
               href={siteHref} target="_blank" rel="noopener noreferrer"
