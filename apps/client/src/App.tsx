@@ -1,8 +1,32 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, Component, type ReactNode, type ErrorInfo } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Spinner from './components/shared/Spinner';
+
+class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(_error: Error, _info: ErrorInfo) {}
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white px-6 text-center">
+          <div className="text-4xl">⚠️</div>
+          <h1 className="text-xl font-bold text-slate-900">Something went wrong</h1>
+          <p className="text-sm text-slate-500">Try refreshing the page.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="rounded-lg bg-violet-600 px-5 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+          >
+            Refresh
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 import Landing from './marketing/Landing';
 import Guide from './marketing/Guide';
@@ -107,6 +131,7 @@ function PostAuth() {
 
 export default function App() {
   return (
+    <AppErrorBoundary>
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
@@ -206,5 +231,6 @@ export default function App() {
         </BrowserRouter>
       </QueryClientProvider>
     </ClerkProvider>
+    </AppErrorBoundary>
   );
 }
