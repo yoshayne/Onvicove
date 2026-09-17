@@ -10,15 +10,11 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
   componentDidCatch(_error: Error, _info: ErrorInfo) {}
   render() {
     if (this.state.error) {
-      const err = this.state.error as Error;
       return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white px-6 text-center">
           <div className="text-4xl">⚠️</div>
           <h1 className="text-xl font-bold text-slate-900">Something went wrong</h1>
-          <p className="text-sm text-slate-500 max-w-sm">{err.message}</p>
-          <pre className="max-w-xs overflow-auto rounded bg-slate-100 p-3 text-left text-[10px] text-slate-600">
-            {err.stack?.slice(0, 400)}
-          </pre>
+          <p className="text-sm text-slate-500">Try refreshing the page.</p>
           <button
             onClick={() => window.location.reload()}
             className="rounded-lg bg-violet-600 px-5 py-2 text-sm font-semibold text-white hover:bg-violet-700"

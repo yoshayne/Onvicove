@@ -151,6 +151,7 @@ export default function Overview() {
   const bookingsQ = useQuery({ queryKey: ['bookings'], queryFn: () => api.get<{ bookings: Booking[] }>('/bookings') });
   const productsQ = useQuery({ queryKey: ['products'], queryFn: () => api.get<{ products: Product[] }>('/products') });
   const servicesQ = useQuery({ queryKey: ['services'], queryFn: () => api.get<{ services: Service[] }>('/services') });
+  const [shareCopied, setShareCopied] = useState(false);
 
   if (tenantQ.isLoading || ordersQ.isLoading || bookingsQ.isLoading) {
     return (
@@ -275,8 +276,6 @@ export default function Overview() {
   const siteHref = tenant?.custom_domain_verified && tenant?.custom_domain
     ? `https://${tenant.custom_domain}`
     : tenant?.slug ? `/${tenant.slug}` : null;
-
-  const [shareCopied, setShareCopied] = useState(false);
 
   async function handleShare() {
     if (!siteHref) return;
