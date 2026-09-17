@@ -1,4 +1,4 @@
-import { useState, useRef, type FormEvent } from 'react';
+import { useState, useRef, useCallback, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
 import type { Product, ProductType } from '../types';
@@ -437,6 +437,8 @@ export default function Products() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductFormState>(emptyForm);
   const colorWheelRef = useRef<HTMLInputElement>(null);
+  const imgDragIndex = useRef<number | null>(null);
+  const [imgDragOver, setImgDragOver] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -526,6 +528,15 @@ export default function Products() {
   function removeImage(index: number) {
     setForm((prev) => ({ ...prev, imageEntries: prev.imageEntries.filter((_, i) => i !== index) }));
   }
+
+  const reorderImages = useCallback((from: number, to: number) => {
+    setForm((prev) => {
+      const next = [...prev.imageEntries];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return { ...prev, imageEntries: next };
+    });
+  }, []);
 
   function toggleSize(size: string) {
     setForm((prev) => ({
@@ -910,16 +921,44 @@ export default function Products() {
           <div className="flex flex-col gap-2">
             <SectionLabel
               label="Photos"
-              tooltip="Upload photos of your product. The first photo is used as the main image in your store. Hover over a photo and click × to remove it."
+              tooltip="The first photo is the main storefront image. Drag to reorder — put your best shot first."
             />
             {form.imageEntries.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {form.imageEntries.map((entry, i) => (
-                  <div key={entry.key} className="group relative">
+                  <div
+                    key={entry.key}
+                    draggable
+                    onDragStart={() => { imgDragIndex.current = i; }}
+                    onDragOver={(e) => { e.preventDefault(); setImgDragOver(i); }}
+                    onDrop={() => {
+                      if (imgDragIndex.current !== null && imgDragIndex.current !== i) {
+                        reorderImages(imgDragIndex.current, i);
+                      }
+                      imgDragIndex.current = null;
+                      setImgDragOver(null);
+                    }}
+                    onDragEnd={() => { imgDragIndex.current = null; setImgDragOver(null); }}
+                    className={`group relative cursor-grab transition-all ${
+                      imgDragOver === i ? 'scale-95 opacity-50 ring-2 ring-violet-400 rounded-lg' : ''
+                    }`}
+                  >
                     {entry.url ? (
-                      <img src={entry.url} alt={`Image ${i + 1}`} className="h-16 w-16 rounded-lg border border-slate-200 object-cover" />
+                      <img src={entry.url} alt={`Image ${i + 1}`} className="h-20 w-20 rounded-lg border border-slate-200 object-cover" />
                     ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-xs text-slate-400">photo</div>
+                      <div className="flex h-20 w-20 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-xs text-slate-400">photo</div>
+                    )}
+                    {/* Main image badge */}
+                    {i === 0 && (
+                      <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[9px] font-semibold text-white leading-none">
+                        Main
+                      </span>
+                    )}
+                    {/* Position number */}
+                    {i > 0 && (
+                      <span className="absolute bottom-1 left-1 rounded bg-black/40 px-1 py-0.5 text-[9px] font-medium text-white leading-none">
+                        {i + 1}
+                      </span>
                     )}
                     <button
                       type="button"
@@ -929,6 +968,9 @@ export default function Products() {
                   </div>
                 ))}
               </div>
+            )}
+            {form.imageEntries.length > 1 && (
+              <p className="text-[11px] text-slate-400">Drag to reorder · first photo is shown on the storefront</p>
             )}
             <div className="flex flex-wrap items-center gap-2">
               <label className="cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
