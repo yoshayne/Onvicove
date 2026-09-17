@@ -94,7 +94,7 @@ function LayoutInner() {
   const siteDisplay = tenant?.custom_domain_verified && tenant?.custom_domain
     ? tenant.custom_domain
     : tenant?.slug
-    ? `${tenant.slug}.shopsuitedirect.com`
+    ? `shopsuitedirect.com/${tenant.slug}`
     : null;
 
   return (

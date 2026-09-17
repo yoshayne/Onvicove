@@ -1242,8 +1242,8 @@ export default function PageBuilder() {
                 {tenant?.custom_domain_verified && tenant?.custom_domain
                   ? `https://${tenant.custom_domain}`
                   : tenant?.slug
-                  ? `${tenant.slug}.shopsuitedirect.com`
-                  : 'your-store.shopsuitedirect.com'}
+                  ? `shopsuitedirect.com/${tenant.slug}`
+                  : 'shopsuitedirect.com/your-store'}
               </span>
               {isPublished && (
                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
