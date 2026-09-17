@@ -213,6 +213,20 @@ export default function StorefrontRouter() {
         galleries={galleries}
         visibleSections={visibleSections.length > 0 ? visibleSections : undefined}
       />
+      {tenant.plan === 'starter' && (
+        <a
+          href="https://shopsuitedirect.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-4 right-4 z-50 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/80 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-sm transition-opacity hover:opacity-80"
+          style={{ fontFamily: 'system-ui, sans-serif' }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Powered by Shop Suite Direct
+        </a>
+      )}
     </div>
   );
 }
