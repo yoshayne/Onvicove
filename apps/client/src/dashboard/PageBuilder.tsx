@@ -17,6 +17,7 @@ import Spinner from '../components/shared/Spinner';
 import { GALLERY_LAYOUTS } from '../themes/shared/Gallery';
 import type { GalleryLayout, GalleryImageData } from '../themes/shared/Gallery';
 import { getLayoutVariants } from '../themes/shared/layoutVariants';
+import ColorPicker from '../components/shared/ColorPicker';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -65,11 +66,6 @@ const THEMES: ThemeOption[] = [
   { id: 'lens',        name: 'Lens',        description: 'Photographers — sessions & prints', colors: ['#0c0c0c', '#c8a96e', '#f0ede8'] },
 ];
 
-const BRAND_COLOR_PRESETS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
-  '#f97316', '#eab308', '#22c55e', '#14b8a6',
-  '#3b82f6', '#0ea5e9', '#64748b', '#000000',
-];
 
 // ── Section metadata ──────────────────────────────────────────────────────────
 
@@ -1133,49 +1129,11 @@ export default function PageBuilder() {
 
                 {/* Brand color */}
                 <div className="border-b border-slate-100 px-4 py-4">
-                  <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Brand Color</p>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {BRAND_COLOR_PRESETS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => { setBrandColor(c); setThemeDirty(true); }}
-                        className="h-7 w-7 rounded-full border-2 transition-transform hover:scale-110"
-                        style={{
-                          backgroundColor: c,
-                          borderColor: brandColor === c ? '#6366f1' : 'transparent',
-                          boxShadow: brandColor === c ? '0 0 0 2px white, 0 0 0 4px #6366f1' : 'inset 0 0 0 1px rgba(0,0,0,0.1)',
-                        }}
-                        title={c}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-8 w-8 shrink-0 rounded-lg border border-slate-200"
-                      style={{ backgroundColor: brandColor || '#6366f1' }}
-                    />
-                    <input
-                      type="color"
-                      value={brandColor || '#6366f1'}
-                      onChange={(e) => { setBrandColor(e.target.value); setThemeDirty(true); }}
-                      className="h-8 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-1 py-0.5"
-                      title="Custom color"
-                    />
-                    {brandColor && (
-                      <button
-                        type="button"
-                        onClick={() => { setBrandColor(''); setThemeDirty(true); }}
-                        className="shrink-0 text-xs text-slate-400 hover:text-slate-600"
-                        title="Clear"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                  {brandColor && (
-                    <p className="mt-1.5 text-[10px] text-slate-400 font-mono">{brandColor}</p>
-                  )}
+                  <ColorPicker
+                    label="Brand Color"
+                    value={brandColor}
+                    onChange={(hex) => { setBrandColor(hex); setThemeDirty(true); }}
+                  />
                 </div>
 
                 {/* Layout variants */}

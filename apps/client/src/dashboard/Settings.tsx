@@ -7,6 +7,7 @@ import Button from '../components/shared/Button';
 import { Input } from '../components/shared/Input';
 import CustomDomainPanel from './CustomDomainPanel';
 import { FONT_PAIRS } from '../themes/shared/fontPairs';
+import ColorPicker from '../components/shared/ColorPicker';
 
 interface SettingsFormState {
   company_name: string;
@@ -110,22 +111,17 @@ export default function Settings() {
           onChange={(e) => setForm((f) => (f ? { ...f, tagline: e.target.value } : f))}
         />
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-slate-700">Brand color</label>
-            <input
-              type="color"
-              value={form.brand_color}
-              onChange={(e) => setForm((f) => (f ? { ...f, brand_color: e.target.value } : f))}
-              className="h-10 w-full rounded-lg border border-slate-300"
-            />
-          </div>
-          <Input
-            label="City"
-            value={form.city}
-            onChange={(e) => setForm((f) => (f ? { ...f, city: e.target.value } : f))}
-          />
-        </div>
+        <ColorPicker
+          label="Brand color"
+          value={form.brand_color}
+          onChange={(hex) => setForm((f) => (f ? { ...f, brand_color: hex } : f))}
+        />
+
+        <Input
+          label="City"
+          value={form.city}
+          onChange={(e) => setForm((f) => (f ? { ...f, city: e.target.value } : f))}
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <Input
