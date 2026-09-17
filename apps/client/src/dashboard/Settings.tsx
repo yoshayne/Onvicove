@@ -123,7 +123,7 @@ export default function Settings() {
           onChange={(e) => setForm((f) => (f ? { ...f, city: e.target.value } : f))}
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input
             label="Industry"
             value={form.industry}

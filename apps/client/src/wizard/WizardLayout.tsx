@@ -76,7 +76,7 @@ export default function WizardLayout({
         </div>
 
         {!hideNav && (
-          <div className="flex items-center justify-between gap-3 border-t border-gray-200 bg-white px-6 py-4">
+          <div className="flex items-center justify-between gap-3 border-t border-gray-200 bg-white px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <button
               type="button"
               onClick={onBack}

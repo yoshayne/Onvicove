@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Monitor, Tablet, Smartphone, ExternalLink, Save, RefreshCw,
-  GripVertical, Eye, EyeOff, ChevronDown, ChevronRight, Plus,
+  GripVertical, Eye, EyeOff, ChevronDown, ChevronRight, ChevronLeft, Plus,
   Home, ShoppingBag, Sparkles, Info, Image as ImageIcon, Users,
   Star, MapPin, Trash2, Upload, Lock, RotateCcw, Check,
   Palette, Type, Phone, Mail, Clock, HelpCircle,
@@ -364,6 +364,7 @@ export default function PageBuilder() {
   const [isDirty, setIsDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
+  const [mobilePanel, setMobilePanel] = useState<'editor' | 'preview'>('editor');
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Content tab state
@@ -733,7 +734,7 @@ export default function PageBuilder() {
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── Left panel ─────────────────────────────────────────────────── */}
-        <div className="flex w-[360px] shrink-0 flex-col border-r border-slate-200 bg-white overflow-hidden">
+        <div className={`flex w-full shrink-0 flex-col border-r border-slate-200 bg-white overflow-hidden md:w-[360px] ${mobilePanel === 'editor' ? 'flex' : 'hidden md:flex'}`}>
 
           {/* Tab switcher */}
           <div className="flex shrink-0 border-b border-slate-200 px-2">
@@ -1231,7 +1232,7 @@ export default function PageBuilder() {
         </div>
 
         {/* ── Right panel: live preview ───────────────────────────────────── */}
-        <div className="flex flex-1 flex-col bg-slate-100 overflow-hidden">
+        <div className={`flex flex-1 flex-col bg-slate-100 overflow-hidden ${mobilePanel === 'preview' ? 'flex' : 'hidden md:flex'}`}>
 
           {/* Preview URL bar */}
           <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5">
@@ -1284,6 +1285,27 @@ export default function PageBuilder() {
           </div>
         </div>
 
+      </div>
+
+      {/* ── Mobile panel toggle ───────────────────────────────────────────── */}
+      <div className="flex shrink-0 items-center justify-center border-t border-slate-200 bg-white py-2 md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobilePanel((p) => p === 'editor' ? 'preview' : 'editor')}
+          className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700"
+        >
+          {mobilePanel === 'editor' ? (
+            <>
+              <span>See Preview</span>
+              <ChevronRight size={14} />
+            </>
+          ) : (
+            <>
+              <ChevronLeft size={14} />
+              <span>Back to Editor</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* ── Bottom status bar ─────────────────────────────────────────────── */}
