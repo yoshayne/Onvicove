@@ -371,13 +371,14 @@ function ServiceListRow({ service, currency, paymentsEnabled, accentColor, textC
   accentColor?: string; textColor?: string; surfaceColor?: string; onBook: (s: ServiceData) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const hasImage = !!service.imageUrls?.[0];
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${textColor ?? '#111'}15` }}>
       <button type="button" className="w-full flex items-center gap-4 px-5 py-4 text-left"
         onClick={() => setOpen((v) => !v)}>
-        {service.imageUrls?.[0] && (
+        {hasImage && (
           <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden">
-            <img src={service.imageUrls[0]} alt={service.name} className="w-full h-full object-cover" />
+            <img src={service.imageUrls![0]} alt={service.name} className="w-full h-full object-cover" />
           </div>
         )}
         <div className="flex-1 min-w-0">
@@ -409,25 +410,36 @@ function ServiceCard({ service, currency, paymentsEnabled, accentColor, textColo
   service: ServiceData; currency?: string; paymentsEnabled?: boolean;
   accentColor?: string; textColor?: string; surfaceColor?: string; onBook: (s: ServiceData) => void;
 }) {
+  const hasImage = !!service.imageUrls?.[0];
   return (
     <div className="rounded-xl overflow-hidden flex flex-col" style={{ border: `1px solid ${textColor ?? '#111'}15`, background: surfaceColor }}>
-      {service.imageUrls?.[0] && (
+      {hasImage && (
         <div className="aspect-[4/3] overflow-hidden">
-          <img src={service.imageUrls[0]} alt={service.name} className="w-full h-full object-cover" />
+          <img src={service.imageUrls![0]} alt={service.name} className="w-full h-full object-cover" />
         </div>
       )}
-      <div className="flex flex-col flex-1 p-5 gap-3">
-        <div>
-          <h3 className="font-semibold text-base" style={{ color: textColor }}>{service.name}</h3>
-          {service.description && <p className="text-sm opacity-60 mt-1 line-clamp-2 leading-relaxed">{service.description}</p>}
+      <div className={`flex flex-col flex-1 gap-3 ${hasImage ? 'p-5' : 'px-5 py-4'}`}>
+        <div className={hasImage ? '' : 'flex items-start justify-between gap-2'}>
+          <div>
+            <h3 className="font-semibold text-base" style={{ color: textColor }}>{service.name}</h3>
+            {service.description && <p className="text-sm opacity-60 mt-1 line-clamp-2 leading-relaxed">{service.description}</p>}
+          </div>
+          {!hasImage && (
+            <div className="shrink-0 text-right">
+              <p className="font-bold text-sm" style={{ color: accentColor ?? textColor }}>{formatPrice(service.priceCents, currency)}</p>
+              <p className="text-xs opacity-40 mt-0.5" style={{ color: textColor }}>{service.durationMinutes} min</p>
+            </div>
+          )}
         </div>
-        <div className="flex items-center justify-between text-sm mt-auto">
-          <span className="opacity-50" style={{ color: textColor }}>{service.durationMinutes} min</span>
-          <span className="font-bold" style={{ color: accentColor ?? textColor }}>{formatPrice(service.priceCents, currency)}</span>
-        </div>
+        {hasImage && (
+          <div className="flex items-center justify-between text-sm mt-auto">
+            <span className="opacity-50" style={{ color: textColor }}>{service.durationMinutes} min</span>
+            <span className="font-bold" style={{ color: accentColor ?? textColor }}>{formatPrice(service.priceCents, currency)}</span>
+          </div>
+        )}
         <button type="button" onClick={() => onBook(service)} disabled={!paymentsEnabled}
           className="w-full rounded-lg py-2.5 text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-30"
-          style={{ background: accentColor ?? textColor, color: surfaceColor === '#fff' || !surfaceColor ? '#fff' : surfaceColor }}>
+          style={{ background: accentColor ?? textColor, color: '#fff' }}>
           {paymentsEnabled ? 'Book Now' : 'Coming Soon'}
         </button>
       </div>

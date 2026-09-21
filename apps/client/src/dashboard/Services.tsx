@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useRef, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
 import type { Service } from '../types';
@@ -21,6 +21,8 @@ interface ServiceFormState {
   requires_deposit: boolean;
   deposit_cents: number | null;
   is_active: boolean;
+  imageKey: string | null;
+  imageUrl: string | null;
 }
 
 const emptyForm: ServiceFormState = {
@@ -32,6 +34,8 @@ const emptyForm: ServiceFormState = {
   requires_deposit: false,
   deposit_cents: null,
   is_active: true,
+  imageKey: null,
+  imageUrl: null,
 };
 
 export default function Services() {
@@ -40,6 +44,8 @@ export default function Services() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
   const [form, setForm] = useState<ServiceFormState>(emptyForm);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['services'],
@@ -85,8 +91,20 @@ export default function Services() {
       requires_deposit: service.requires_deposit,
       deposit_cents: service.deposit_cents,
       is_active: service.is_active,
+      imageKey: service.image_keys?.[0] ?? null,
+      imageUrl: service.image_urls?.[0] ?? null,
     });
     setModalOpen(true);
+  }
+
+  async function handleImageUpload(file: File) {
+    setUploading(true);
+    try {
+      const res = await api.upload<{ key: string; url: string }>('/uploads', file);
+      setForm((f) => ({ ...f, imageKey: res.key, imageUrl: res.url }));
+    } finally {
+      setUploading(false);
+    }
   }
 
   function closeModal() {
@@ -106,6 +124,7 @@ export default function Services() {
       requires_deposit: form.requires_deposit,
       deposit_cents: form.requires_deposit ? form.deposit_cents : null,
       is_active: form.is_active,
+      image_keys: form.imageKey ? [form.imageKey] : [],
     };
     if (editing) {
       updateMutation.mutate({ id: editing.id, body });
@@ -150,7 +169,16 @@ export default function Services() {
             <tbody>
               {data.services.map((s) => (
                 <tr key={s.id} className="border-t border-slate-100">
-                  <td className="px-4 py-3 font-medium text-slate-900">{s.name}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      {s.image_urls?.[0] ? (
+                        <img src={s.image_urls[0]} alt={s.name} className="h-9 w-9 rounded-md object-cover shrink-0" />
+                      ) : (
+                        <div className="h-9 w-9 rounded-md bg-slate-100 shrink-0" />
+                      )}
+                      <span className="font-medium text-slate-900">{s.name}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-slate-700">{formatCents(s.price_cents)}</td>
                   <td className="px-4 py-3 text-slate-700">{s.duration_minutes} min</td>
                   <td className="px-4 py-3 text-slate-700">{s.buffer_minutes} min</td>
@@ -199,6 +227,27 @@ export default function Services() {
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             rows={3}
           />
+
+          {/* Service photo */}
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-slate-700">Photo <span className="font-normal text-slate-400">(optional)</span></p>
+            {form.imageUrl ? (
+              <div className="flex items-center gap-3">
+                <img src={form.imageUrl} alt="" className="h-20 w-20 rounded-lg object-cover border border-slate-200" />
+                <Button type="button" size="sm" variant="secondary" onClick={() => setForm((f) => ({ ...f, imageKey: null, imageUrl: null }))}>
+                  Remove
+                </Button>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 hover:border-violet-400 hover:text-violet-600 transition-colors">
+                {uploading ? <Spinner size="sm" /> : '+ Upload photo'}
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }}
+                  disabled={uploading} />
+              </label>
+            )}
+          </div>
+
           <div className="grid grid-cols-3 gap-3">
             <Input
               label="Price (USD)"
