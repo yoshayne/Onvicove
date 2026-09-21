@@ -132,26 +132,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em' }}>SHOP</h2>
             <span style={{ fontFamily: 'monospace', fontSize: 11 }}>({displayProducts.length} ITEMS)</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 0 }}>
-            {displayProducts.map((product) => (
-              <div key={product.id} style={{ border: '2px solid #000', marginRight: -2, marginBottom: -2 }}>
-                <div style={{ aspectRatio: '1/1', overflow: 'hidden', background: '#f0f0f0', borderBottom: '2px solid #000' }}>
-                  <img src={product.imageUrls?.[0] ?? defaults.heroImageUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                </div>
-                <div style={{ padding: 16 }}>
-                  <p style={{ fontWeight: 900, fontSize: 13, letterSpacing: '0.05em', marginBottom: 4 }}>{product.name}</p>
-                  {product.description && <p style={{ fontFamily: 'monospace', fontSize: 11, color: '#000', opacity: 0.5, marginBottom: 12, lineHeight: 1.4 }}>{product.description}</p>}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 14 }}>{formatPrice(product.priceCents, theme.currency)}</span>
-                    <button type="button" onClick={() => openQuickView(product)}
-                      style={{ padding: '6px 14px', fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', background: '#000', color: '#fff', border: 'none', cursor: 'pointer' }}>
-                      {theme.paymentsEnabled ? 'ADD TO CART' : 'VIEW DETAILS'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <ProductCatalog
+            products={displayProducts}
+            layout={theme.productLayout ?? 'grid-4'}
+            currency={theme.currency}
+            paymentsEnabled={theme.paymentsEnabled}
+            accentColor={theme.brandColor ?? '#0000ff'}
+            textColor="#000000"
+            surfaceColor="#f0f0f0"
+            slug={theme.slug}
+            onSelect={openQuickView}
+          />
         </section>
       )}
 
@@ -160,21 +151,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         <section id="services" style={{ order: secOrder('services'), background: '#f0f0f0', padding: '64px 24px', borderTop: '3px solid #000' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em', marginBottom: 32 }}>BOOK</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {displayServices.map((service) => (
-                <div key={service.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'center', padding: '24px 0', borderTop: '2px solid #000' }}>
-                  <div>
-                    <h3 style={{ fontWeight: 900, fontSize: 18, letterSpacing: '-0.01em', marginBottom: 4 }}>{service.name}</h3>
-                    {service.description && <ServiceDesc desc={service.description} />}
-                    <p style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--brand-color, #0000ff)', marginTop: 8, fontWeight: 700 }}>{formatPrice(service.priceCents, theme.currency)}</p>
-                  </div>
-                  <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
-                    style={{ padding: '12px 24px', fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', background: 'var(--brand-color, #0000ff)', color: '#fff', border: 'none', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4, whiteSpace: 'nowrap' }}>
-                    {theme.paymentsEnabled ? 'BOOK NOW' : 'COMING SOON'}
-                  </button>
-                </div>
-              ))}
-            </div>
+            <ServiceCatalog
+              services={displayServices}
+              layout={theme.serviceLayout ?? 'cards'}
+              currency={theme.currency}
+              paymentsEnabled={theme.paymentsEnabled}
+              accentColor={theme.brandColor ?? '#0000ff'}
+              textColor="#000000"
+              surfaceColor="#f0f0f0"
+              slug={theme.slug}
+              onBook={openBooking}
+            />
           </div>
         </section>
       )}

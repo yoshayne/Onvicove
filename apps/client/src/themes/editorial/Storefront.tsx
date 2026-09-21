@@ -130,93 +130,40 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         </section>
       ) : null}
 
-      {/* ── Products — layout variants ──────────────────────── */}
-      {showProducts && theme.layoutId === 'magazine' ? (
-        /* Magazine: first product is a large feature, rest in a grid */
-        <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 py-16 px-6 max-w-7xl mx-auto w-full">
-          <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-10 text-center">Shop</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            {displayProducts[0] && (
-              <div className="group cursor-pointer md:row-span-2" onClick={() => openQuickView(displayProducts[0])}>
-                <div className="aspect-[4/5] overflow-hidden bg-[#f5f5f5]">
-                  <img src={displayProducts[0].imageUrls?.[0] ?? defaults.heroImageUrl} alt={displayProducts[0].name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                </div>
-                <h3 className="font-['Playfair_Display'] text-2xl mt-4 mb-1">{displayProducts[0].name}</h3>
-                <p className="text-sm text-[#111111]/60">{formatPrice(displayProducts[0].priceCents, theme.currency)}</p>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              {displayProducts.slice(1, 5).map((product) => (
-                <div key={product.id} className="group cursor-pointer" onClick={() => openQuickView(product)}>
-                  <div className="aspect-square overflow-hidden bg-[#f5f5f5]">
-                    <img src={product.imageUrls?.[0] ?? defaults.heroImageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  </div>
-                  <h3 className="font-['Playfair_Display'] text-sm mt-2 mb-0.5">{product.name}</h3>
-                  <p className="text-xs text-[#111111]/60">{formatPrice(product.priceCents, theme.currency)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : showProducts ? (
-        /* Classic + Split: 4-column grid */
+      {/* ── Products ──────────────────────────────────────────── */}
+      {showProducts && (
         <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
           <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Shop</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {displayProducts.map((product) => (
-              <div key={product.id} className="group">
-                <div className="aspect-[3/4] overflow-hidden bg-[#f5f5f5] mb-4">
-                  <img
-                    src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <h3 className="font-['Playfair_Display'] text-lg mb-1">{product.name}</h3>
-                <p className="text-sm text-[#111111]/60 mb-3">{formatPrice(product.priceCents, theme.currency)}</p>
-                <button
-                  type="button"
-                  onClick={() => openQuickView(product)}
-                  className="text-xs uppercase tracking-[0.2em] border-b border-[#111111] pb-1 hover:text-[var(--brand-color,#d4a96a)] hover:border-[var(--brand-color,#d4a96a)] transition-colors"
-                >
-                  {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
-                </button>
-              </div>
-            ))}
-          </div>
+          <ProductCatalog
+            products={displayProducts}
+            layout={theme.productLayout ?? 'grid-4'}
+            currency={theme.currency}
+            paymentsEnabled={theme.paymentsEnabled}
+            accentColor={theme.brandColor ?? '#d4a96a'}
+            textColor="#111111"
+            surfaceColor="#f5f5f5"
+            slug={theme.slug}
+            onSelect={openQuickView}
+          />
         </section>
-      ) : null}
+      )}
 
       {/* Services */}
       {showServices && (
         <section id="services" style={{ order: secOrder('services') }} className="scroll-mt-20 bg-[#f5f5f5] py-20">
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Book</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {displayServices.map((service) => (
-                <div key={service.id} className="bg-white p-6 flex flex-col">
-                  {service.imageUrls?.[0] && (
-                    <div className="aspect-[4/3] overflow-hidden mb-4">
-                      <img src={service.imageUrls[0]} alt={service.name} className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <h3 className="font-['Playfair_Display'] text-xl mb-2">{service.name}</h3>
-                  {service.description && <ServiceDesc desc={service.description} />}
-                  <div className="flex items-center justify-between text-sm mb-4">
-                    <span className="text-[#111111]/50">{service.durationMinutes} min</span>
-                    <span className="text-[var(--brand-color,#d4a96a)] font-medium">{formatPrice(service.priceCents, theme.currency)}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => openBooking(service)}
-                    disabled={!theme.paymentsEnabled}
-                    className="uppercase tracking-[0.2em] text-xs bg-[#1a1a1a] text-white py-3 hover:bg-[var(--brand-color,#d4a96a)] hover:text-[#111111] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#1a1a1a] disabled:hover:text-white"
-                  >
-                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
-                  </button>
-                </div>
-              ))}
-            </div>
+            <ServiceCatalog
+              services={displayServices}
+              layout={theme.serviceLayout ?? 'cards'}
+              currency={theme.currency}
+              paymentsEnabled={theme.paymentsEnabled}
+              accentColor={theme.brandColor ?? '#d4a96a'}
+              textColor="#111111"
+              surfaceColor="#ffffff"
+              slug={theme.slug}
+              onBook={openBooking}
+            />
 
             {staff.length > 0 && (
               <div className="mt-16 flex flex-wrap justify-center gap-12">

@@ -98,28 +98,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[var(--brand-color,#ff3cac)]">
             Shop
           </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {displayProducts.map((product) => (
-              <div key={product.id} className="bg-[#f0f0ff] rounded-2xl p-4 flex flex-col">
-                <div className="aspect-square overflow-hidden rounded-2xl bg-white mb-4">
-                  <img
-                    src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
-                    alt={product.name}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <h3 className="font-['Poppins'] font-semibold text-lg mb-1">{product.name}</h3>
-                <p className="text-sm text-[#111111]/60 mb-3 flex-1">{formatPrice(product.priceCents, theme.currency)}</p>
-                <button
-                  type="button"
-                  onClick={() => openQuickView(product)}
-                  className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-2 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors"
-                >
-                  {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
-                </button>
-              </div>
-            ))}
-          </div>
+          <ProductCatalog
+            products={displayProducts}
+            layout={theme.productLayout ?? 'grid-4'}
+            currency={theme.currency}
+            paymentsEnabled={theme.paymentsEnabled}
+            accentColor={theme.brandColor ?? '#ff3cac'}
+            textColor="#111111"
+            surfaceColor="#f0f0ff"
+            slug={theme.slug}
+            onSelect={openQuickView}
+          />
         </section>
       )}
 
@@ -130,31 +119,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[var(--brand-color,#ff3cac)]">
               Book
             </h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {displayServices.map((service) => (
-                <div key={service.id} className="bg-white p-6 rounded-2xl flex flex-col">
-                  {service.imageUrls?.[0] && (
-                    <div className="aspect-[4/3] overflow-hidden rounded-2xl mb-4">
-                      <img src={service.imageUrls[0]} alt={service.name} className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <h3 className="font-['Poppins'] font-semibold text-xl mb-2">{service.name}</h3>
-                  {service.description && <ServiceDesc desc={service.description} />}
-                  <div className="flex items-center justify-between text-sm mb-4">
-                    <span className="text-[#111111]/50 font-medium">{service.durationMinutes} min</span>
-                    <span className="text-[var(--brand-color,#ff3cac)] font-bold">{formatPrice(service.priceCents, theme.currency)}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => openBooking(service)}
-                    disabled={!theme.paymentsEnabled}
-                    className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-3 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--brand-color,#ff3cac)]"
-                  >
-                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
-                  </button>
-                </div>
-              ))}
-            </div>
+            <ServiceCatalog
+              services={displayServices}
+              layout={theme.serviceLayout ?? 'cards'}
+              currency={theme.currency}
+              paymentsEnabled={theme.paymentsEnabled}
+              accentColor={theme.brandColor ?? '#ff3cac'}
+              textColor="#111111"
+              surfaceColor="#ffffff"
+              slug={theme.slug}
+              onBook={openBooking}
+            />
 
             {staff.length > 0 && (
               <div className="mt-16 flex flex-wrap justify-center gap-12">

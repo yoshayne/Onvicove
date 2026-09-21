@@ -114,39 +114,18 @@ export default function Storefront({
             Shop
           </h2>
           <div className="mx-auto mt-2 h-1 w-16 bg-[var(--brand-color,#c8a850)]" />
-          <div className="mt-10 grid grid-cols-1 gap-px border border-gray-200 bg-gray-200 sm:grid-cols-2 md:grid-cols-3">
-            {displayProducts.map((product) => (
-              <div key={product.id} className="flex flex-col bg-white p-6">
-                {product.imageUrls?.[0] && (
-                  <div className="mb-4 aspect-square w-full overflow-hidden border border-gray-200 bg-[#f5f5f5]">
-                    <img
-                      src={product.imageUrls[0]}
-                      alt={product.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                )}
-                <h3 className="font-['Merriweather'] text-lg font-bold text-[#1a3a5c]">
-                  {product.name}
-                </h3>
-                {product.description && (
-                  <p className="mt-2 flex-1 text-sm text-gray-600">{product.description}</p>
-                )}
-                <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
-                  <span className="font-['Merriweather'] text-lg font-bold text-[#1a3a5c]">
-                    {formatPrice(product.priceCents, theme.currency)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => openQuickView(product)}
-                    className="flex items-center gap-2 border border-[#1a3a5c] px-4 py-2 text-sm font-bold uppercase tracking-wide text-[#1a3a5c] transition hover:bg-[#1a3a5c] hover:text-white"
-                  >
-                    <ShoppingCart size={16} />
-                    {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="mt-10">
+            <ProductCatalog
+              products={displayProducts}
+              layout={theme.productLayout ?? 'grid-4'}
+              currency={theme.currency}
+              paymentsEnabled={theme.paymentsEnabled}
+              accentColor={theme.brandColor ?? '#c8a850'}
+              textColor="#1a3a5c"
+              surfaceColor="#f5f5f5"
+              slug={theme.slug}
+              onSelect={openQuickView}
+            />
           </div>
         </section>
       )}
@@ -158,41 +137,18 @@ export default function Storefront({
             Book
           </h2>
           <div className="mx-auto mt-2 h-1 w-16 bg-[var(--brand-color,#c8a850)]" />
-          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
-            {displayServices.map((service) => (
-              <div
-                key={service.id}
-                className="flex flex-col border border-gray-200 bg-[#f5f5f5] p-6 sm:flex-row sm:items-center sm:gap-6"
-              >
-                {service.imageUrls?.[0] && (
-                  <div className="mb-4 h-32 w-full overflow-hidden border border-gray-200 sm:mb-0 sm:h-24 sm:w-32 sm:flex-shrink-0">
-                    <img
-                      src={service.imageUrls[0]}
-                      alt={service.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <h3 className="font-['Merriweather'] text-lg font-bold text-[#1a3a5c]">
-                    {service.name}
-                  </h3>
-                  {service.description && <ServiceDesc desc={service.description} />}
-                  <div className="mt-2 text-sm font-bold text-[#1a3a5c]">
-                    {formatPrice(service.priceCents, theme.currency)} &middot; {service.durationMinutes} min
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => openBooking(service)}
-                  disabled={!theme.paymentsEnabled}
-                  className="mt-4 flex items-center gap-2 self-start bg-[#1a3a5c] px-4 py-2 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-[#142e49] sm:mt-0 sm:self-center disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#1a3a5c]"
-                >
-                  <CalendarIcon size={16} />
-                  {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
-                </button>
-              </div>
-            ))}
+          <div className="mt-10">
+            <ServiceCatalog
+              services={displayServices}
+              layout={theme.serviceLayout ?? 'cards'}
+              currency={theme.currency}
+              paymentsEnabled={theme.paymentsEnabled}
+              accentColor={theme.brandColor ?? '#c8a850'}
+              textColor="#1a3a5c"
+              surfaceColor="#f5f5f5"
+              slug={theme.slug}
+              onBook={openBooking}
+            />
           </div>
 
           {displayStaff.length > 0 && (

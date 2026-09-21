@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ShoppingCart, Leaf, Heart, Star } from 'lucide-react';
 import type { ThemeProps } from '../types';
+import { formatPrice } from '../types';
 import ContactBlock from '../shared/ContactBlock';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
@@ -125,28 +126,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       {showProducts && (
         <section id="products" style={{ order: secOrder('featured-products'), maxWidth: 1280, margin: '0 auto', padding: '80px 24px' }}>
           <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Shop</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
-            {displayProducts.map((product) => (
-              <div key={product.id} style={{ ...glass, borderRadius: 20, overflow: 'hidden' }}>
-                <div style={{ aspectRatio: '1/1', overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
-                  <img src={product.imageUrls?.[0] ?? defaults.heroImageUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')} />
-                </div>
-                <div style={{ padding: 20 }}>
-                  <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{product.name}</h3>
-                  {product.description && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 12, lineHeight: 1.5 }}>{product.description}</p>}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--brand-color, #a78bfa)', fontSize: 15, fontWeight: 600 }}>{formatPrice(product.priceCents, theme.currency)}</span>
-                    <button type="button" onClick={() => openQuickView(product)}
-                      style={{ fontSize: 12, padding: '6px 16px', borderRadius: 50, background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', color: 'var(--brand-color, #a78bfa)', cursor: 'pointer' }}>
-                      {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <ProductCatalog
+            products={displayProducts}
+            layout={theme.productLayout ?? 'grid-4'}
+            currency={theme.currency}
+            paymentsEnabled={theme.paymentsEnabled}
+            accentColor={theme.brandColor ?? '#a78bfa'}
+            textColor="#ffffff"
+            surfaceColor="rgba(255,255,255,0.05)"
+            slug={theme.slug}
+            onSelect={openQuickView}
+          />
         </section>
       )}
 
@@ -155,22 +145,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         <section id="services" style={{ order: secOrder('services'), padding: '80px 24px', background: 'rgba(255,255,255,0.02)' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Book</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
-              {displayServices.map((service) => (
-                <div key={service.id} style={{ ...glass, borderRadius: 20, padding: 28 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{service.name}</h3>
-                  {service.description && <ServiceDesc desc={service.description} />}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{service.durationMinutes} min</span>
-                    <span style={{ color: 'var(--brand-color, #a78bfa)', fontWeight: 600 }}>{formatPrice(service.priceCents, theme.currency)}</span>
-                  </div>
-                  <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
-                    style={{ width: '100%', padding: '12px', borderRadius: 12, fontSize: 13, fontWeight: 600, background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(96,165,250,0.2))', border: '1px solid rgba(167,139,250,0.3)', color: 'var(--brand-color, #a78bfa)', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4 }}>
-                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
-                  </button>
-                </div>
-              ))}
-            </div>
+            <ServiceCatalog
+              services={displayServices}
+              layout={theme.serviceLayout ?? 'cards'}
+              currency={theme.currency}
+              paymentsEnabled={theme.paymentsEnabled}
+              accentColor={theme.brandColor ?? '#a78bfa'}
+              textColor="#ffffff"
+              surfaceColor="rgba(255,255,255,0.05)"
+              slug={theme.slug}
+              onBook={openBooking}
+            />
             {staff.length > 0 && (
               <div style={{ marginTop: 64, display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap' }}>
                 {staff.map((member) => (

@@ -227,56 +227,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
               <div className="hidden md:block h-px flex-1 bg-white/10 mx-8 mb-3" />
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              {displayProducts.map((product) => (
-                <div key={product.id} className="product-card group relative bg-[#111] overflow-hidden cursor-pointer">
-                  {/* Image */}
-                  <div className="aspect-[3/4] overflow-hidden bg-[#1a1a1a]">
-                    <img
-                      src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Hover overlay */}
-                  <div className="product-overlay absolute inset-0 bg-black/75 flex flex-col items-center justify-end p-5">
-                    {product.description && (
-                      <p className="text-white/70 text-xs text-center mb-4 leading-relaxed">{product.description}</p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => openQuickView(product)}
-                      className="product-overlay-btn w-full bg-[var(--brand-color,#e8ff00)] text-black text-xs font-bold uppercase tracking-[0.2em] py-3 hover:bg-white transition-colors"
-                    >
-                      {theme.paymentsEnabled ? 'Quick View' : 'View Details'}
-                    </button>
-                  </div>
-
-                  {/* Compare-at badge */}
-                  {product.compareAtPriceCents && (
-                    <div className="absolute top-3 left-3 bg-[var(--brand-color,#e8ff00)] text-black text-[9px] font-bold uppercase tracking-wide px-2 py-0.5">
-                      Sale
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Product info row below grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-1">
-              {displayProducts.map((product) => (
-                <div key={product.id} className="px-1 pt-3 pb-1">
-                  <h3 className="font-bold text-sm uppercase tracking-wide leading-tight mb-1">{product.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white text-sm font-bold">{formatPrice(product.priceCents, theme.currency)}</span>
-                    {product.compareAtPriceCents && (
-                      <span className="text-white/30 text-xs line-through">{formatPrice(product.compareAtPriceCents, theme.currency)}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ProductCatalog
+              products={displayProducts}
+              layout={theme.productLayout ?? 'grid-4'}
+              currency={theme.currency}
+              paymentsEnabled={theme.paymentsEnabled}
+              accentColor={theme.brandColor ?? '#e8ff00'}
+              textColor="#ffffff"
+              surfaceColor="#111111"
+              slug={theme.slug}
+              onSelect={openQuickView}
+            />
           </div>
         </section>
       )}
@@ -298,17 +259,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
               <div className="hidden md:block h-px flex-1 bg-white/10 mx-8 mb-3" />
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {displayServices.map((service) => (
-                <BoldServiceCard
-                  key={service.id}
-                  service={service}
-                  currency={theme.currency}
-                  paymentsEnabled={!!theme.paymentsEnabled}
-                  onBook={() => openBooking(service)}
-                />
-              ))}
-            </div>
+            <ServiceCatalog
+              services={displayServices}
+              layout={theme.serviceLayout ?? 'cards'}
+              currency={theme.currency}
+              paymentsEnabled={theme.paymentsEnabled}
+              accentColor={theme.brandColor ?? '#e8ff00'}
+              textColor="#ffffff"
+              surfaceColor="#161616"
+              slug={theme.slug}
+              onBook={openBooking}
+            />
           </div>
         </section>
       )}

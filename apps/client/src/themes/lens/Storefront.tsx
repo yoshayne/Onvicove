@@ -15,22 +15,6 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-function ServiceDesc({ desc }: { desc: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const LIMIT = 120;
-  if (desc.length <= LIMIT) {
-    return <p style={{ fontSize: 13, color: 'rgba(240,237,232,0.55)', lineHeight: 1.55, marginBottom: 16 }}>{desc}</p>;
-  }
-  return (
-    <p style={{ fontSize: 13, color: 'rgba(240,237,232,0.55)', lineHeight: 1.55, marginBottom: 16 }}>
-      {expanded ? desc : desc.slice(0, LIMIT) + '…'}
-      {' '}
-      <button onClick={() => setExpanded(!expanded)} style={{ fontSize: 11, color: '#c8a96e', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}>
-        {expanded ? 'Show less' : 'Read more'}
-      </button>
-    </p>
-  );
-}
 
 export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -178,40 +162,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
                 <p style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 12 }}>— What I Offer</p>
                 <h2 className="lens-heading" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 300, letterSpacing: '0.01em' }}>Sessions</h2>
               </div>
-              <div className="lens-sessions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
-                {displayServices.map((service) => (
-                  <div key={service.id} className="lens-card lens-service-card" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }} onClick={() => openBooking(service)}>
-                    <div className="lens-service-img-wrap" style={{ aspectRatio: '4/5', overflow: 'hidden', background: '#181818' }}>
-                      {service.imageUrls?.[0] ? (
-                        <img src={service.imageUrls[0]} alt={service.name} className="lens-card-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', background: '#181818', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span className="lens-heading" style={{ fontSize: 48, color: 'rgba(240,237,232,0.1)' }}>✦</span>
-                        </div>
-                      )}
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(12,12,12,0.9) 0%, transparent 55%)' }} />
-                    </div>
-                    <div className="lens-service-info" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '24px 24px 28px' }}>
-                      <h3 className="lens-heading" style={{ fontSize: 26, fontWeight: 400, marginBottom: 6, letterSpacing: '0.01em' }}>{service.name}</h3>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: service.description ? 10 : 0 }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'rgba(240,237,232,0.5)', letterSpacing: '0.1em' }}>
-                          <Clock size={11} /> {service.durationMinutes} min
-                        </span>
-                        <span style={{ color: accent, fontSize: 18, fontWeight: 500 }}>{formatPrice(service.priceCents, theme.currency)}</span>
-                      </div>
-                      {service.description && <ServiceDesc desc={service.description} />}
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); openBooking(service); }}
-                        disabled={!theme.paymentsEnabled}
-                        style={{ width: '100%', padding: '12px', background: 'transparent', border: `1px solid ${accent}`, color: accent, fontSize: 11, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', cursor: theme.paymentsEnabled ? 'pointer' : 'default', opacity: theme.paymentsEnabled ? 1 : 0.5 }}
-                      >
-                        {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ServiceCatalog
+                services={displayServices}
+                layout={theme.serviceLayout ?? 'cards'}
+                currency={theme.currency}
+                paymentsEnabled={theme.paymentsEnabled}
+                accentColor={accent}
+                textColor="#f0ede8"
+                surfaceColor="#181818"
+                slug={theme.slug}
+                onBook={openBooking}
+              />
             </div>
           </section>
         )}
@@ -224,38 +185,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
                 <p style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 12 }}>— Take It Home</p>
                 <h2 className="lens-heading" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 300, letterSpacing: '0.01em' }}>Packages & Prints</h2>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
-                {displayProducts.map((product) => (
-                  <div key={product.id} className="lens-pkg-card" style={{ padding: 28, cursor: 'pointer' }} onClick={() => openQuickView(product)}>
-                    <div style={{ aspectRatio: '3/2', overflow: 'hidden', background: '#181818', marginBottom: 20 }}>
-                      {product.imageUrls?.[0] ? (
-                        <img src={product.imageUrls[0]} alt={product.name} className="lens-card-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', background: '#1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span style={{ fontSize: 32, color: 'rgba(240,237,232,0.1)' }}>✦</span>
-                        </div>
-                      )}
-                    </div>
-                    {product.category && (
-                      <p style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: accent, marginBottom: 6 }}>{product.category}</p>
-                    )}
-                    <h3 className="lens-heading" style={{ fontSize: 22, fontWeight: 400, marginBottom: 8 }}>{product.name}</h3>
-                    {product.description && (
-                      <p style={{ fontSize: 13, color: 'rgba(240,237,232,0.5)', lineHeight: 1.6, marginBottom: 16 }}>{product.description}</p>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 20, color: '#f0ede8', fontWeight: 300 }}>{formatPrice(product.priceCents, theme.currency)}</span>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); addToCart(product); }}
-                        style={{ padding: '8px 18px', background: accent, color: '#0c0c0c', border: 'none', fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}
-                      >
-                        Add
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ProductCatalog
+                products={displayProducts}
+                layout={theme.productLayout ?? 'grid-4'}
+                currency={theme.currency}
+                paymentsEnabled={theme.paymentsEnabled}
+                accentColor={accent}
+                textColor="#f0ede8"
+                surfaceColor="#181818"
+                slug={theme.slug}
+                onSelect={openQuickView}
+              />
             </div>
           </section>
         )}

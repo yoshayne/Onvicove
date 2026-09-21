@@ -92,35 +92,23 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       </section>
       )}
 
-      {/* Products — editorial masonry grid */}
+      {/* Products */}
       {showProducts && (
         <section id="products" style={{ order: secOrder('featured-products'), maxWidth: 1280, margin: '0 auto', padding: '80px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 40, borderBottom: '1px solid #d0cdc8', paddingBottom: 16 }}>
             <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400 }}>Shop</h2>
-            <span style={{ fontSize: 11, letterSpacing: '0.2em', color: '#1a1a1a', opacity: 0.4 }}>VIEW ALL</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
-            {displayProducts.map((product, i) => (
-              <div key={product.id} style={{ gridRow: i === 0 ? 'span 2' : 'span 1' }}>
-                <div style={{ overflow: 'hidden', background: '#eeece7', marginBottom: 12, aspectRatio: i === 0 ? '3/5' : '4/3' }}>
-                  <img src={product.imageUrls?.[0] ?? defaults.heroImageUrl} alt={product.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.04)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')} />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <div>
-                    <h3 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 14, fontWeight: 400, marginBottom: 2 }}>{product.name}</h3>
-                    <p style={{ fontSize: 12, color: '#1a1a1a', opacity: 0.45 }}>{formatPrice(product.priceCents, theme.currency)}</p>
-                  </div>
-                  <button type="button" onClick={() => openQuickView(product)}
-                    style={{ fontSize: 11, color: '#1a1a1a', opacity: 0.5, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em' }}>
-                    →
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <ProductCatalog
+            products={displayProducts}
+            layout={theme.productLayout ?? 'grid-4'}
+            currency={theme.currency}
+            paymentsEnabled={theme.paymentsEnabled}
+            accentColor={theme.brandColor ?? '#1a1a1a'}
+            textColor="#1a1a1a"
+            surfaceColor="#eeece7"
+            slug={theme.slug}
+            onSelect={openQuickView}
+          />
         </section>
       )}
 
@@ -129,22 +117,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         <section id="services" style={{ order: secOrder('services'), background: '#eeece7', padding: '80px 24px' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400, marginBottom: 40 }}>Book</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {displayServices.map((service, i) => (
-                <div key={service.id} style={{ display: 'grid', gridTemplateColumns: '60px 1fr auto', gap: 24, alignItems: 'center', padding: '32px 0', borderTop: '1px solid #d0cdc8' }}>
-                  <span style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, color: '#1a1a1a', opacity: 0.2, fontWeight: 400 }}>{String(i + 1).padStart(2, '0')}</span>
-                  <div>
-                    <h3 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 20, fontWeight: 400, marginBottom: 6 }}>{service.name}</h3>
-                    {service.description && <ServiceDesc desc={service.description} />}
-                    <p style={{ fontSize: 12, color: '#1a1a1a', opacity: 0.4, marginTop: 8 }}>{service.durationMinutes} min · {formatPrice(service.priceCents, theme.currency)}</p>
-                  </div>
-                  <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
-                    style={{ padding: '10px 24px', fontSize: 12, letterSpacing: '0.1em', background: '#1a1a1a', color: '#f8f6f1', border: 'none', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4, whiteSpace: 'nowrap' }}>
-                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
-                  </button>
-                </div>
-              ))}
-            </div>
+            <ServiceCatalog
+              services={displayServices}
+              layout={theme.serviceLayout ?? 'cards'}
+              currency={theme.currency}
+              paymentsEnabled={theme.paymentsEnabled}
+              accentColor={theme.brandColor ?? '#1a1a1a'}
+              textColor="#1a1a1a"
+              surfaceColor="#f8f6f1"
+              slug={theme.slug}
+              onBook={openBooking}
+            />
             {staff.length > 0 && (
               <div style={{ marginTop: 64, display: 'flex', gap: 48, flexWrap: 'wrap' }}>
                 {staff.map((member) => (
