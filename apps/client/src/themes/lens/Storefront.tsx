@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, ShoppingCart, Clock, ArrowRight, Instagram } from 'lucide-react';
+import { Menu, X, ShoppingCart, ArrowRight, Instagram } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import ContactBlock from '../shared/ContactBlock';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
-import { formatPrice } from '../types';
+import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';

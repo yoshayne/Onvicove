@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Star, Package, Calendar, Mail, X, Menu } from 'lucide-react';
+import { ShoppingCart, Package, Calendar, Mail, X, Menu } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import { formatPrice } from '../types';
+import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';

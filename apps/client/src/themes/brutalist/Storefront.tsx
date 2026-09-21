@@ -4,7 +4,7 @@ import type { ThemeProps } from '../types';
 import ContactBlock from '../shared/ContactBlock';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
-import { formatPrice } from '../types';
+import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -15,22 +15,6 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-function ServiceDesc({ desc }: { desc: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const LIMIT = 120;
-  if (desc.length <= LIMIT) {
-    return <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#000', opacity: 0.5 }}>{desc}</p>;
-  }
-  return (
-    <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#000', opacity: 0.5 }}>
-      {expanded ? desc : desc.slice(0, LIMIT) + '…'}
-      {' '}
-      <button onClick={() => setExpanded(!expanded)} style={{ fontFamily: 'monospace', fontSize: 11, color: '#0000ff', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textTransform: 'uppercase' as const }}>
-        {expanded ? 'SHOW LESS' : 'READ MORE'}
-      </button>
-    </p>
-  );
-}
 
 export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);

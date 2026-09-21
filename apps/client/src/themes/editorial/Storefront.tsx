@@ -7,7 +7,7 @@ import type { ThemeProps } from '../types';
 import ContactBlock from '../shared/ContactBlock';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
-import { formatPrice } from '../types';
+import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -20,27 +20,6 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
 
-function ServiceDesc({ desc }: { desc: string }) {
-  const LIMIT = 120;
-  const [expanded, setExpanded] = useState(false);
-  if (desc.length <= LIMIT) {
-    return <p className="text-sm text-[#111111]/60 mb-2 flex-1">{desc}</p>;
-  }
-  return (
-    <>
-      <p className="text-sm text-[#111111]/60 mb-2 flex-1">
-        {expanded ? desc : desc.slice(0, LIMIT) + '…'}
-      </p>
-      <button
-        type="button"
-        onClick={() => setExpanded(e => !e)}
-        className="text-xs font-medium text-[#111111]/40 hover:text-[#111111]/70 underline mb-2"
-      >
-        {expanded ? 'Show less' : 'Read more'}
-      </button>
-    </>
-  );
-}
 
 export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);

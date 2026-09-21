@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ShoppingCart, Calendar as CalendarIcon } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import ContactBlock from '../shared/ContactBlock';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
-import { formatPrice } from '../types';
+import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
 import { config, defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -18,27 +18,6 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 // Heading font "Merriweather" requires loading Google Fonts in index.html.
 // Body font "Georgia" is a system font (font-serif fallback is fine).
 
-function ServiceDesc({ desc }: { desc: string }) {
-  const LIMIT = 120;
-  const [expanded, setExpanded] = useState(false);
-  if (desc.length <= LIMIT) {
-    return <p className="mt-1 text-sm text-gray-600">{desc}</p>;
-  }
-  return (
-    <>
-      <p className="mt-1 text-sm text-gray-600">
-        {expanded ? desc : desc.slice(0, LIMIT) + '…'}
-      </p>
-      <button
-        type="button"
-        onClick={() => setExpanded(e => !e)}
-        className="text-xs text-gray-400 hover:text-gray-600 underline mt-0.5 block"
-      >
-        {expanded ? 'Show less' : 'Read more'}
-      </button>
-    </>
-  );
-}
 
 export default function Storefront({
   theme,
