@@ -7,6 +7,7 @@ import ContactBlock from '../shared/ContactBlock';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
 import { formatPrice } from '../types';
+import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -129,85 +130,40 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         </section>
       ) : null}
 
-      {/* ── Products — layout variants ──────────────────────── */}
-      {showProducts && theme.layoutId === 'list' ? (
-        /* List layout: horizontal rows */
-        <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 max-w-7xl mx-auto px-6 py-16">
-          <h2 className="text-xs uppercase tracking-[0.3em] text-[#111111]/40 mb-8">Shop</h2>
-          <div className="flex flex-col divide-y divide-[#111111]/10">
-            {displayProducts.map((product) => (
-              <div key={product.id} className="flex items-center gap-6 py-5 group cursor-pointer" onClick={() => openQuickView(product)}>
-                <div className="w-16 h-16 shrink-0 overflow-hidden bg-[#f8f8f8]">
-                  <img src={product.imageUrls?.[0] ?? defaults.heroImageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                </div>
-                <span className="flex-1 text-base font-light">{product.name}</span>
-                <span className="text-sm text-[#111111]/60 font-light">{formatPrice(product.priceCents, theme.currency)}</span>
-                <span className="text-xs uppercase tracking-[0.2em] text-[#111111]/40 group-hover:text-[#111111] transition-colors">
-                  {theme.paymentsEnabled ? '+ Cart' : 'View →'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : showProducts ? (
-        /* Classic + Centered: 4-column grid */
+      {/* ── Products ─────────────────────────────────────────── */}
+      {showProducts && (
         <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
-          <h2 className="text-2xl md:text-3xl font-bold mb-12">Shop</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
-            {displayProducts.map((product) => (
-              <div key={product.id}>
-                <div className="aspect-[3/4] overflow-hidden bg-[#f8f8f8] mb-4">
-                  <img
-                    src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <h3 className="text-base font-medium mb-1">{product.name}</h3>
-                <p className="text-sm text-[#111111]/60 font-light mb-3">{formatPrice(product.priceCents, theme.currency)}</p>
-                <button
-                  type="button"
-                  onClick={() => openQuickView(product)}
-                  className="text-xs uppercase tracking-[0.2em] font-medium text-[#111111] hover:text-[#111111]/60 transition-colors"
-                >
-                  {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
-                </button>
-              </div>
-            ))}
-          </div>
+          <h2 className="text-2xl md:text-3xl font-bold mb-8">Shop</h2>
+          <ProductCatalog
+            products={displayProducts}
+            layout={theme.productLayout ?? 'grid-4'}
+            currency={theme.currency}
+            paymentsEnabled={theme.paymentsEnabled}
+            accentColor={theme.brandColor ?? '#111111'}
+            textColor="#111111"
+            surfaceColor="#f8f8f8"
+            slug={theme.slug}
+            onSelect={openQuickView}
+          />
         </section>
-      ) : null}
+      )}
 
       {/* Services */}
       {showServices && (
         <section id="services" style={{ order: secOrder('services') }} className="scroll-mt-20 bg-[#f8f8f8] py-20">
           <div className="max-w-7xl mx-auto px-6">
-            <h2 className="text-2xl md:text-3xl font-bold mb-12">Book</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {displayServices.map((service) => (
-                <div key={service.id} className="bg-white p-6 flex flex-col">
-                  {service.imageUrls?.[0] && (
-                    <div className="aspect-[4/3] overflow-hidden mb-4">
-                      <img src={service.imageUrls[0]} alt={service.name} className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <h3 className="text-lg font-medium mb-2">{service.name}</h3>
-                  {service.description && <ServiceDesc desc={service.description} />}
-                  <div className="flex items-center justify-between text-sm mb-4">
-                    <span className="text-[#111111]/50 font-light">{service.durationMinutes} min</span>
-                    <span className="font-bold">{formatPrice(service.priceCents, theme.currency)}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => openBooking(service)}
-                    disabled={!theme.paymentsEnabled}
-                    className="uppercase tracking-[0.2em] text-xs font-medium bg-[var(--brand-color,#111111)] text-white py-3 hover:bg-[#333333] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--brand-color,#111111)]"
-                  >
-                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
-                  </button>
-                </div>
-              ))}
-            </div>
+            <h2 className="text-2xl md:text-3xl font-bold mb-8">Book</h2>
+            <ServiceCatalog
+              services={displayServices}
+              layout={theme.serviceLayout ?? 'cards'}
+              currency={theme.currency}
+              paymentsEnabled={theme.paymentsEnabled}
+              accentColor={theme.brandColor ?? '#111111'}
+              textColor="#111111"
+              surfaceColor="#ffffff"
+              slug={theme.slug}
+              onBook={openBooking}
+            />
 
             {staff.length > 0 && (
               <div className="mt-16 flex flex-wrap justify-center gap-12">

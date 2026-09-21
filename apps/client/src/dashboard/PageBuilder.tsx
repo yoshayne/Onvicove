@@ -390,6 +390,8 @@ export default function PageBuilder() {
   const [selectedThemeId, setSelectedThemeId] = useState<ThemeId | null>(null);
   const [brandColor, setBrandColor] = useState('');
   const [selectedLayoutId, setSelectedLayoutId] = useState<string>('classic');
+  const [productLayout, setProductLayout] = useState<string>('grid-4');
+  const [serviceLayout, setServiceLayout] = useState<string>('cards');
   const [themeDirty, setThemeDirty] = useState(false);
   const [themeSaving, setThemeSaving] = useState(false);
 
@@ -426,6 +428,8 @@ export default function PageBuilder() {
       setSelectedThemeId((t.theme_id as ThemeId) ?? 'editorial');
       setBrandColor(t.brand_color ?? '');
       setSelectedLayoutId(pc['layout_id'] ?? 'classic');
+      setProductLayout(pc['product_layout'] ?? 'grid-4');
+      setServiceLayout(pc['service_layout'] ?? 'cards');
     }
   }, [tenantQ.data]);
 
@@ -552,7 +556,7 @@ export default function PageBuilder() {
           theme_id: selectedThemeId,
           brand_color: brandColor || null,
         }),
-        api.put('/tenants/me/page-content', { page_content: { layout_id: selectedLayoutId } }),
+        api.put('/tenants/me/page-content', { page_content: { layout_id: selectedLayoutId, product_layout: productLayout, service_layout: serviceLayout } }),
       ]);
       setThemeDirty(false);
       setPreviewKey((k) => k + 1);
@@ -1176,6 +1180,62 @@ export default function PageBuilder() {
                     </div>
                   );
                 })()}
+
+                {/* Product layout picker */}
+                <div className="border-b border-slate-100 px-4 py-4">
+                  <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Product Display</p>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {([
+                      { id: 'grid-4', label: 'Grid (4 col)', icon: '⊞', desc: 'Standard 4-column product grid' },
+                      { id: 'grid-2', label: 'Grid (2 col)', icon: '▣', desc: 'Larger cards, 2 per row' },
+                      { id: 'list', label: 'List', icon: '≡', desc: 'Horizontal rows with image + price' },
+                      { id: 'magazine', label: 'Magazine', icon: '◧', desc: 'Hero product featured large, rest small' },
+                      { id: 'masonry', label: 'Masonry', icon: '⬚', desc: 'Pinterest-style varied height grid' },
+                    ] as const).map((opt) => (
+                      <button key={opt.id} type="button"
+                        onClick={() => { setProductLayout(opt.id); setThemeDirty(true); }}
+                        className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all ${
+                          productLayout === opt.id
+                            ? 'border-violet-400 bg-violet-50 ring-1 ring-violet-400'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}>
+                        <span className="shrink-0 text-base">{opt.icon}</span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-slate-800">{opt.label}</p>
+                          <p className="text-[10px] text-slate-400 leading-tight">{opt.desc}</p>
+                        </div>
+                        {productLayout === opt.id && <Check size={13} className="ml-auto shrink-0 text-violet-600" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Service layout picker */}
+                <div className="border-b border-slate-100 px-4 py-4">
+                  <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Service Display</p>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {([
+                      { id: 'cards', label: 'Cards', icon: '▣', desc: 'Image card with book button' },
+                      { id: 'list', label: 'Accordion list', icon: '≡', desc: 'Expandable rows — tap to see details' },
+                      { id: 'pricing-table', label: 'Pricing table', icon: '⊟', desc: 'Clean table: name, duration, price' },
+                    ] as const).map((opt) => (
+                      <button key={opt.id} type="button"
+                        onClick={() => { setServiceLayout(opt.id); setThemeDirty(true); }}
+                        className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all ${
+                          serviceLayout === opt.id
+                            ? 'border-violet-400 bg-violet-50 ring-1 ring-violet-400'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}>
+                        <span className="shrink-0 text-base">{opt.icon}</span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-slate-800">{opt.label}</p>
+                          <p className="text-[10px] text-slate-400 leading-tight">{opt.desc}</p>
+                        </div>
+                        {serviceLayout === opt.id && <Check size={13} className="ml-auto shrink-0 text-violet-600" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Theme list */}
                 <div className="px-4 py-4">

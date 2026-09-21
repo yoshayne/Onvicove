@@ -29,7 +29,12 @@ export interface ThemeData {
   testimonials?: TestimonialItem[];
   faqs?: FaqItem[];
   layoutId?: string; // theme layout variant, e.g. 'classic' | 'split' | 'centered'
+  productLayout?: ProductLayout;
+  serviceLayout?: ServiceLayout;
 }
+
+export type ProductLayout = 'grid-4' | 'grid-2' | 'list' | 'magazine' | 'masonry';
+export type ServiceLayout = 'cards' | 'list' | 'pricing-table';
 
 export interface TestimonialItem {
   id: string;

@@ -40,6 +40,8 @@ function mapTenant(tenant: Tenant): ThemeData {
     testimonials: pc['testimonials'] ? tryParseJson(pc['testimonials']) : undefined,
     faqs: pc['faqs'] ? tryParseJson(pc['faqs']) : undefined,
     layoutId: pc['layout_id'] || undefined,
+    productLayout: (pc['product_layout'] as import('../themes/types').ProductLayout) || undefined,
+    serviceLayout: (pc['service_layout'] as import('../themes/types').ServiceLayout) || undefined,
   };
 }
 
