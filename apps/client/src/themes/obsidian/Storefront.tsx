@@ -59,6 +59,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
   } = commerce;
 
   const displayProducts = products.length > 0 ? products : defaults.products;
+  const featuredProduct = displayProducts.find(p => p.isFeatured) ?? displayProducts[0];
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;

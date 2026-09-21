@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Menu, X, ArrowUp } from 'lucide-react';
+import { ShoppingCart, Menu, X, ArrowUp, ArrowRight } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import ContactBlock from '../shared/ContactBlock';
 import Gallery from '../shared/Gallery';
