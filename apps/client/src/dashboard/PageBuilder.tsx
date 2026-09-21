@@ -1218,6 +1218,7 @@ export default function PageBuilder() {
                       { id: 'cards', label: 'Cards', icon: '▣', desc: 'Image card with book button' },
                       { id: 'list', label: 'Accordion list', icon: '≡', desc: 'Expandable rows — tap to see details' },
                       { id: 'pricing-table', label: 'Pricing table', icon: '⊟', desc: 'Clean table: name, duration, price' },
+                      { id: 'calendar-first', label: 'Calendar first', icon: '📅', desc: 'Pick a date, then choose a service' },
                     ] as const).map((opt) => (
                       <button key={opt.id} type="button"
                         onClick={() => { setServiceLayout(opt.id); setThemeDirty(true); }}

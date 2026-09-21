@@ -34,7 +34,7 @@ export interface ThemeData {
 }
 
 export type ProductLayout = 'grid-4' | 'grid-2' | 'list' | 'magazine' | 'masonry';
-export type ServiceLayout = 'cards' | 'list' | 'pricing-table';
+export type ServiceLayout = 'cards' | 'list' | 'pricing-table' | 'calendar-first';
 
 export interface TestimonialItem {
   id: string;
