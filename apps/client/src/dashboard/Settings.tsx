@@ -199,7 +199,10 @@ export default function Settings() {
       </form>
 
       <CustomDomainPanel tenant={tenant} />
-      <GoogleCalendarPanel tenant={tenant} />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <GoogleCalendarPanel tenant={tenant} />
+        <OutlookCalendarPanel tenant={tenant} />
+      </div>
     </div>
   );
 }
@@ -264,6 +267,71 @@ function GoogleCalendarPanel({ tenant }: { tenant: Tenant }) {
       )}
       <p className="mt-3 text-xs text-slate-400">
         You'll be asked to grant calendar access on Google's sign-in page. We only create events — we never read or delete your calendar.
+      </p>
+    </div>
+  );
+}
+
+function OutlookCalendarPanel({ tenant }: { tenant: Tenant }) {
+  const [disconnecting, setDisconnecting] = useState(false);
+  const queryClient = useQueryClient();
+  const api = useApi();
+  const connected = !!tenant.outlook_cal_enabled;
+  const params = new URLSearchParams(window.location.search);
+  const justConnected = params.get('outlook') === 'connected';
+
+  async function disconnect() {
+    setDisconnecting(true);
+    try {
+      await api.delete('/outlook-cal/disconnect');
+      queryClient.invalidateQueries({ queryKey: ['tenant'] });
+    } finally {
+      setDisconnecting(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-6">
+      <h2 className="text-lg font-semibold text-slate-900 mb-1">Outlook Calendar</h2>
+      <p className="text-sm text-slate-500 mb-4">
+        Automatically create an Outlook event whenever a booking is confirmed.
+      </p>
+      {justConnected && (
+        <div className="mb-4 rounded-lg bg-green-50 border border-green-200 px-4 py-2.5 text-sm text-green-700">
+          ✓ Outlook Calendar connected successfully!
+        </div>
+      )}
+      {connected ? (
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-green-700">
+            <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+            Connected
+          </div>
+          <button
+            type="button"
+            onClick={disconnect}
+            disabled={disconnecting}
+            className="text-sm text-slate-500 underline hover:text-slate-700 disabled:opacity-50"
+          >
+            {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+          </button>
+        </div>
+      ) : (
+        <a
+          href="/api/outlook-cal/connect"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+            <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
+            <rect x="13" y="1" width="10" height="10" fill="#7FBA00"/>
+            <rect x="1" y="13" width="10" height="10" fill="#00A4EF"/>
+            <rect x="13" y="13" width="10" height="10" fill="#FFB900"/>
+          </svg>
+          Connect Outlook Calendar
+        </a>
+      )}
+      <p className="mt-3 text-xs text-slate-400">
+        You'll sign in with your Microsoft account. We only create events — we never read or delete your calendar.
       </p>
     </div>
   );

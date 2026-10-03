@@ -449,3 +449,7 @@ CREATE INDEX IF NOT EXISTS idx_email_log_created_at ON email_log(created_at DESC
 -- Google Calendar integration
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS google_cal_refresh_token TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS google_cal_enabled BOOLEAN DEFAULT FALSE;
+
+-- Outlook/Microsoft Calendar integration
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS outlook_cal_refresh_token TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS outlook_cal_enabled BOOLEAN DEFAULT FALSE;

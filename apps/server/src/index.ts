@@ -35,6 +35,7 @@ import pageSectionRoutes from './routes/page-sections';
 import blockedDateRoutes from './routes/blocked-dates';
 import emailLogRoutes from './routes/email-log';
 import googleCalRoutes from './routes/google-cal';
+import outlookCalRoutes from './routes/outlook-cal';
 
 const app = new Hono();
 
@@ -100,6 +101,7 @@ app.route('/api/page-sections', pageSectionRoutes);
 app.route('/api/blocked-dates', blockedDateRoutes);
 app.route('/api/email-log', emailLogRoutes);
 app.route('/api/google-cal', googleCalRoutes);
+app.route('/api/outlook-cal', outlookCalRoutes);
 
 // Custom domain middleware — if Host matches a verified tenant domain,
 // inject the tenant slug so the SPA can resolve the storefront.

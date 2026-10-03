@@ -33,6 +33,7 @@ export interface Tenant {
   booking_mode: BookingMode;
   show_live_calendar: boolean;
   google_cal_enabled?: boolean;
+  outlook_cal_enabled?: boolean;
   currency: string;
   custom_domain: string | null;
   custom_domain_verified: boolean;
