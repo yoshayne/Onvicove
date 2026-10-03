@@ -444,3 +444,8 @@ CREATE TABLE IF NOT EXISTS email_log (
 );
 CREATE INDEX IF NOT EXISTS idx_email_log_tenant_id ON email_log(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_email_log_created_at ON email_log(created_at DESC);
+
+
+-- Google Calendar integration
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS google_cal_refresh_token TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS google_cal_enabled BOOLEAN DEFAULT FALSE;

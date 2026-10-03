@@ -62,6 +62,7 @@ import AdminDomainRequests from './admin/DomainRequests';
 const Wizard = lazy(() => import('./wizard/Wizard'));
 const StorefrontRouter = lazy(() => import('./storefront/StorefrontRouter'));
 const PayBalance = lazy(() => import('./storefront/PayBalance'));
+const BookingPage = lazy(() => import('./storefront/BookingPage'));
 
 const queryClient = new QueryClient();
 
@@ -201,6 +202,7 @@ export default function App() {
               </Route>
 
               <Route path="/pay/booking/:id" element={<PayBalance />} />
+              <Route path="/book/:slug" element={<BookingPage />} />
 
               <Route
                 path="/admin/*"

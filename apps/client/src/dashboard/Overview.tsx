@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import {
   Package, Sparkles, CalendarDays, LayoutTemplate, Tag, Users,
   TrendingUp, TrendingDown, ShoppingBag, Globe, Share2,
-  CheckCircle2, Circle, ArrowRight, Clock, ExternalLink,
+  CheckCircle2, Circle, ArrowRight, Clock, ExternalLink, Link2,
   type LucideIcon,
 } from 'lucide-react';
 import { useApi } from '../lib/api';
@@ -137,6 +137,31 @@ function CheckItem({ done, label }: { done: boolean; label: string }) {
         : <Circle size={16} className="shrink-0 text-slate-300" />}
       <span className={done ? 'text-slate-700' : 'text-slate-400'}>{label}</span>
     </div>
+  );
+}
+
+// ── Booking link copy button ─────────────────────────────────────────────────
+
+function BookingLinkButton({ slug }: { slug: string }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/book/${slug}`;
+  async function handleCopy() {
+    const shareData = { title: 'Book an appointment', url };
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try { await navigator.share(shareData); return; } catch { /* fallthrough */ }
+    }
+    await navigator.clipboard.writeText(url).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+  return (
+    <button
+      type="button" onClick={handleCopy}
+      className="flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
+    >
+      <Link2 size={14} />
+      {copied ? 'Copied!' : 'Booking Link'}
+    </button>
   );
 }
 
@@ -320,6 +345,9 @@ export default function Overview() {
               <ExternalLink size={14} />
               Preview Site
             </a>
+            {(tenant?.mode === 'book' || tenant?.mode === 'both') && tenant?.slug && (
+              <BookingLinkButton slug={tenant.slug} />
+            )}
             <button
               type="button" onClick={handleShare}
               className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"

@@ -6,6 +6,7 @@ import { requireTenant } from '../middleware/tenant';
 import { createBookingPaymentIntent } from '../services/stripe';
 import { sendPaymentLinkEmail, sendBookingCancelled, sendBookingConfirmation } from '../services/email';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
+import { createGoogleCalendarEvent } from '../services/google-cal';
 
 const app = new Hono();
 
@@ -181,6 +182,20 @@ app.post('/', async (c) => {
       tenantId: tenant.id,
       bookingId: booking.id as string,
     }).catch((err) => console.error('Booking confirmation email error:', err));
+
+    const tenantFull = await db`SELECT google_cal_refresh_token, google_cal_enabled, timezone FROM tenants WHERE id = ${tenant.id} LIMIT 1`;
+    if (tenantFull[0]?.google_cal_enabled && tenantFull[0]?.google_cal_refresh_token) {
+      createGoogleCalendarEvent({
+        refreshToken: tenantFull[0].google_cal_refresh_token as string,
+        summary: `${service[0].name} — ${d.customer_name}`,
+        description: `Booking for ${d.customer_name} (${d.customer_email})${d.notes ? '\n\nNotes: ' + d.notes : ''}`,
+        startIso: d.start_time,
+        endIso: d.end_time,
+        attendeeEmail: d.customer_email,
+        attendeeName: d.customer_name,
+        timezone: (tenantFull[0].timezone as string) || 'America/New_York',
+      }).catch(err => console.error('Google Calendar event error:', err));
+    }
   }
 
   return c.json({ booking }, 201);
@@ -242,6 +257,20 @@ app.patch('/:id', async (c) => {
       tenantId: tenant.id,
       bookingId: id,
     }).catch((err) => console.error('Booking confirmed email error:', err));
+
+    const tenantFull = await db`SELECT google_cal_refresh_token, google_cal_enabled, timezone FROM tenants WHERE id = ${tenant.id} LIMIT 1`;
+    if (tenantFull[0]?.google_cal_enabled && tenantFull[0]?.google_cal_refresh_token) {
+      createGoogleCalendarEvent({
+        refreshToken: tenantFull[0].google_cal_refresh_token as string,
+        summary: `${(svcRows[0]?.name as string) ?? 'Appointment'} — ${booking.customer_name as string}`,
+        description: `Booking for ${booking.customer_name as string} (${booking.customer_email as string})${booking.notes ? '\n\nNotes: ' + (booking.notes as string) : ''}`,
+        startIso: booking.start_time as string,
+        endIso: booking.end_time as string,
+        attendeeEmail: booking.customer_email as string,
+        attendeeName: booking.customer_name as string,
+        timezone: (tenantFull[0].timezone as string) || 'America/New_York',
+      }).catch(err => console.error('Google Calendar event error:', err));
+    }
   }
 
   return c.json({ booking });
