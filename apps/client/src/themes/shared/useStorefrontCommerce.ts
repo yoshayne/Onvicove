@@ -157,6 +157,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+  const [slotsRefreshing, setSlotsRefreshing] = useState(false);
   const [bookingCityLabel, setBookingCityLabel] = useState<string | null>(null);
   const [bookingStatus, setBookingStatus] = useState<'idle' | 'submitting' | 'payment' | 'success' | 'error'>('idle');
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -184,14 +185,11 @@ export function useStorefrontCommerce(slug: string | undefined) {
     setBookingError(null);
   }
 
-  async function selectBookingDate(date: Date) {
-    setSelectedDate(date);
-    setSelectedSlot(null);
-    setAvailableSlots([]);
-    if (!slug || !bookingService) return;
+  async function fetchSlots(service: ServiceData, date: Date) {
+    if (!slug) return;
     try {
       const res = await apiGet<AvailabilityResponse>(
-        `/api/public/${slug}/availability?service_id=${bookingService.id}&date=${toDateParam(date)}`
+        `/api/public/${slug}/availability?service_id=${service.id}&date=${toDateParam(date)}`
       );
       const map = new Map<string, { start: string; end: string }>();
       const slots: AvailableSlot[] = (res.slots ?? []).map((s) => {
@@ -208,6 +206,25 @@ export function useStorefrontCommerce(slug: string | undefined) {
     } catch {
       setAvailableSlots([]);
       setBookingCityLabel(null);
+    }
+  }
+
+  async function selectBookingDate(date: Date) {
+    setSelectedDate(date);
+    setSelectedSlot(null);
+    setAvailableSlots([]);
+    if (!bookingService) return;
+    await fetchSlots(bookingService, date);
+  }
+
+  async function refreshSlots() {
+    if (!bookingService || !selectedDate) return;
+    setSlotsRefreshing(true);
+    setSelectedSlot(null);
+    try {
+      await fetchSlots(bookingService, selectedDate);
+    } finally {
+      setSlotsRefreshing(false);
     }
   }
 
@@ -281,6 +298,8 @@ export function useStorefrontCommerce(slug: string | undefined) {
     selectedDate,
     selectedSlot,
     availableSlots,
+    slotsRefreshing,
+    refreshSlots,
     bookingCityLabel,
     selectBookingDate,
     selectBookingSlot,

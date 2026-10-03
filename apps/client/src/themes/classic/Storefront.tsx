@@ -38,6 +38,7 @@ export default function Storefront({
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
     availableSlots, bookingCityLabel, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
+    refreshSlots, slotsRefreshing,
     bookingClientSecret, bookingAmountCents,
   } = useStorefrontCommerce(theme.slug);
   const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
@@ -257,6 +258,8 @@ export default function Storefront({
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
+        onRefreshSlots={refreshSlots}
+        slotsRefreshing={slotsRefreshing}
       />
 
       <BookingStatusOverlay

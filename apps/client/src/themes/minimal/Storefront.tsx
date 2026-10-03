@@ -53,6 +53,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
     availableSlots, bookingCityLabel, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
+    refreshSlots, slotsRefreshing,
     bookingClientSecret, bookingAmountCents,
   } = useStorefrontCommerce(theme.slug);
 
@@ -290,6 +291,8 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
+        onRefreshSlots={refreshSlots}
+        slotsRefreshing={slotsRefreshing}
       />
 
       <BookingStatusOverlay

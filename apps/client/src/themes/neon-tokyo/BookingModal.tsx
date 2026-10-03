@@ -15,9 +15,11 @@ interface BookingModalProps {
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
+  onRefreshSlots?: () => void;
+  slotsRefreshing?: boolean;
 }
 
-export default function BookingModal({ isOpen, onClose, service, selectedDate, selectedSlot, availableSlots, cityLabel, onSelectDate, onSelectSlot, onConfirm }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, service, selectedDate, selectedSlot, availableSlots, cityLabel, onSelectDate, onSelectSlot, onConfirm, onRefreshSlots, slotsRefreshing = false }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');

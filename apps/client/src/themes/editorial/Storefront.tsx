@@ -291,6 +291,8 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
+        onRefreshSlots={commerce.refreshSlots}
+        slotsRefreshing={commerce.slotsRefreshing}
       />
 
       <BookingStatusOverlay

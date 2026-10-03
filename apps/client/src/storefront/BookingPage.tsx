@@ -139,6 +139,7 @@ function BookingPageInner({ theme, services, staff, accent, fontBody, plan }: {
     selectedDate, selectedSlot, availableSlots, bookingCityLabel,
     selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
+    refreshSlots, slotsRefreshing,
     bookingClientSecret, bookingAmountCents,
   } = useStorefrontCommerce(theme.slug);
 
@@ -211,6 +212,8 @@ function BookingPageInner({ theme, services, staff, accent, fontBody, plan }: {
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
+        onRefreshSlots={refreshSlots}
+        slotsRefreshing={slotsRefreshing}
       />
 
       <BookingStatusOverlay
