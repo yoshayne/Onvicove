@@ -5,6 +5,7 @@ import { rateLimitPublic } from '../middleware/ratelimit';
 import { enrichWithUrls, getSignedFileUrl } from '../services/storage';
 import { generateOrderNumber } from '../lib/orderNumber';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
+import { fetchGoogleCalBusyTimes, fetchOutlookCalBusyTimes } from '../services/cal-busy';
 import { computePlatformFee, createBookingPaymentIntent } from '../services/stripe';
 import {
   sendCustomOrderNotification, sendCustomOrderConfirmation,
@@ -200,13 +201,44 @@ app.get('/:slug/availability', async (c) => {
     AND start_time <= ${end.toISOString()}
   `;
 
+  // Merge in external calendar busy times to prevent double-booking
+  const calBusy: { start_time: string; end_time: string }[] = [];
+  const tenantCalRows = await db`
+    SELECT google_cal_enabled, google_cal_refresh_token,
+           outlook_cal_enabled, outlook_cal_refresh_token
+    FROM tenants WHERE id = ${tenant.id} LIMIT 1
+  `;
+  const tc = tenantCalRows[0];
+  if (tc) {
+    const [googleBusy, outlookBusy] = await Promise.all([
+      (tc.google_cal_enabled && tc.google_cal_refresh_token)
+        ? fetchGoogleCalBusyTimes(
+            tc.google_cal_refresh_token as string,
+            start.toISOString(),
+            end.toISOString(),
+          ).catch(() => [])
+        : Promise.resolve([]),
+      (tc.outlook_cal_enabled && tc.outlook_cal_refresh_token)
+        ? fetchOutlookCalBusyTimes(
+            tc.outlook_cal_refresh_token as string,
+            start.toISOString(),
+            end.toISOString(),
+          ).catch(() => [])
+        : Promise.resolve([]),
+    ]);
+    calBusy.push(...googleBusy, ...outlookBusy);
+  }
+
   const slots = computeAvailableSlots({
     date,
     timezone: tenant.timezone as string,
     availability: staff.availability as any,
     durationMinutes: service.duration_minutes as number,
     bufferMinutes: service.buffer_minutes as number,
-    existingBookings: existingBookings.map((b) => ({ start_time: b.start_time, end_time: b.end_time })),
+    existingBookings: [
+      ...existingBookings.map((b) => ({ start_time: b.start_time, end_time: b.end_time })),
+      ...calBusy,
+    ],
   });
 
   const cityRows = await db`
