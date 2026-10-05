@@ -6,7 +6,7 @@ import { requireAdmin } from '../middleware/admin';
 import { stripe } from '../services/stripe';
 import { getPlatformSettings, savePlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../services/settings';
 import {
-  sendPlanUpgraded, sendPlanDowngraded, sendAccountSuspended,
+  sendPlanUpgraded, sendPlanDowngraded, sendAccountSuspended, sendAccountReactivated,
   sendOrderRefunded, sendBookingRefunded, sendAdminRefund,
   sendInvite,
 } from '../services/email';
@@ -155,6 +155,10 @@ app.patch('/tenants/:id', async (c) => {
     if (updates.is_active === false && before.is_active !== false) {
       sendAccountSuspended({ toEmail: ownerEmail, toName, companyName })
         .catch((err) => console.error('Suspended email error:', err));
+    }
+    if (updates.is_active === true && before.is_active === false) {
+      sendAccountReactivated({ toEmail: ownerEmail, toName, companyName, dashboardUrl: `${baseUrl}/dashboard` })
+        .catch((err) => console.error('Reactivated email error:', err));
     }
   }
 

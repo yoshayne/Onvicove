@@ -299,6 +299,33 @@ app.post('/:slug/orders', async (c) => {
     WHERE id = ${customer.id}
   `;
 
+  // Notify customer and tenant
+  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  sendOrderConfirmation({
+    toEmail: d.customer_email,
+    toName: d.customer_name,
+    orderNumber,
+    totalCents,
+    companyName: tenant.company_name as string,
+    tenantId: tenant.id as string,
+    orderId: order.id as string,
+  }).catch((err) => console.error('Order confirmation email error:', err));
+  if (tenant.clerk_user_id) {
+    const ownerRows = await db`SELECT email FROM users WHERE clerk_user_id = ${tenant.clerk_user_id} LIMIT 1`;
+    const tenantEmail = ownerRows[0]?.email as string | null;
+    if (tenantEmail) {
+      sendTenantNewOrder({
+        tenantEmail,
+        companyName: tenant.company_name as string,
+        orderNumber,
+        customerName: d.customer_name,
+        customerEmail: d.customer_email,
+        totalCents,
+        dashboardUrl: `${baseUrl}/dashboard/orders`,
+      }).catch((err) => console.error('Tenant new order email error:', err));
+    }
+  }
+
   return c.json({ order }, 201);
 });
 

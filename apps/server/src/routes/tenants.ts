@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { enrichWithUrls } from '../services/storage';
 import { generateUniqueSlug, isSlugAvailable } from '../lib/slugify';
+import { sendTenantWelcome, sendAdminNewSignup } from '../services/email';
 
 const app = new Hono();
 
@@ -74,7 +75,28 @@ app.post('/create-or-get', requireAuth, async (c) => {
     RETURNING *
   `;
 
-  return c.json({ tenant: await enrichWithUrls(result[0]) }, 201);
+  const tenant = result[0];
+
+  // Send welcome + admin notification for direct self-serve signup
+  const userRows = await db`SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
+  const user = userRows[0];
+  if (user?.email) {
+    const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+    const toName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || (user.email as string);
+    sendTenantWelcome({
+      toEmail: user.email as string,
+      toName,
+      companyName: tenant.company_name as string,
+      dashboardUrl: `${baseUrl}/dashboard`,
+    }).catch((err) => console.error('Self-serve welcome email error:', err));
+    sendAdminNewSignup({
+      companyName: tenant.company_name as string,
+      ownerEmail: user.email as string,
+      plan: tenant.plan as string,
+    }).catch((err) => console.error('Self-serve admin signup email error:', err));
+  }
+
+  return c.json({ tenant: await enrichWithUrls(tenant) }, 201);
 });
 
 // GET /api/tenants/me

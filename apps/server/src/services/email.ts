@@ -175,6 +175,24 @@ export async function sendAccountSuspended(data: {
 
 // ─── Stripe nudges ───────────────────────────────────────────────────────────
 
+export async function sendAccountReactivated(data: {
+  toEmail: string;
+  toName: string;
+  companyName: string;
+  dashboardUrl: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.toEmail, name: data.toName }],
+    subject: `Your ${data.companyName} account has been reactivated`,
+    htmlContent: wrap('Your account is active again', `
+      <p>Hi ${data.toName.split(' ')[0]},</p>
+      <p>Your <strong>${data.companyName}</strong> account has been reactivated. Your storefront is live and accepting customers again.</p>
+      ${btn('Go to dashboard', data.dashboardUrl)}
+      <p style="font-size:13px;color:#64748b">Questions? Reply to this email and we'll help.</p>
+    `),
+  });
+}
+
 export async function sendStripeNudge(data: {
   toEmail: string;
   toName: string;

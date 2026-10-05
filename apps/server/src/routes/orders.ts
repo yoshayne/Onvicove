@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
-import { sendOrderShipped } from '../services/email';
+import { sendOrderShipped, sendOrderRefunded } from '../services/email';
 
 const app = new Hono();
 
@@ -72,7 +72,7 @@ app.patch('/:id', async (c) => {
     return c.json({ order: existing[0] });
   }
 
-  const before = await db`SELECT tracking_number FROM orders WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
+  const before = await db`SELECT tracking_number, status FROM orders WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
 
   const rows = await db`
     UPDATE orders
@@ -94,6 +94,17 @@ app.patch('/:id', async (c) => {
       trackingNumber: updates.tracking_number,
       trackingUrl: (order.tracking_url as string | null) ?? null,
     }).catch((err) => console.error('Shipped email error:', err));
+  }
+
+  // Send refund notice when status transitions to refunded
+  if (updates.status === 'refunded' && before[0]?.status !== 'refunded') {
+    sendOrderRefunded({
+      toEmail: order.customer_email as string,
+      toName: order.customer_name as string,
+      orderNumber: order.order_number as string,
+      totalCents: order.total_cents as number,
+      companyName: tenant.company_name,
+    }).catch((err) => console.error('Order refunded email error:', err));
   }
 
   return c.json({ order });

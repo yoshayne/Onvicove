@@ -4,7 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { createBookingPaymentIntent } from '../services/stripe';
-import { sendPaymentLinkEmail, sendBookingCancelled, sendTenantBookingCancelled } from '../services/email';
+import { sendPaymentLinkEmail, sendBookingCancelled, sendTenantBookingCancelled, sendBookingConfirmation, sendTenantNewBooking } from '../services/email';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
 
 const app = new Hono();
@@ -148,6 +148,9 @@ app.post('/', async (c) => {
 
   const amountCents = service[0].price_cents as number;
 
+  const tenantFull = tenant as unknown as { id: string; company_name: string; booking_mode?: string; clerk_user_id?: string };
+  const bookingStatus = d.status ?? (tenantFull.booking_mode === 'manual' ? 'pending' : 'confirmed');
+
   const rows = await db`
     INSERT INTO bookings (
       tenant_id, service_id, staff_id, customer_id, customer_name, customer_email,
@@ -156,13 +159,44 @@ app.post('/', async (c) => {
       ${tenant.id}, ${d.service_id}, ${d.staff_id ?? null}, ${d.customer_id ?? null},
       ${d.customer_name}, ${d.customer_email}, ${d.customer_phone ?? null},
       ${d.start_time}, ${d.end_time}, ${d.notes ?? null},
-      ${d.status ?? (tenant as unknown as { booking_mode?: string }).booking_mode === 'manual' ? 'pending' : 'confirmed'},
-      ${amountCents}
+      ${bookingStatus}, ${amountCents}
     )
     RETURNING *
   `;
+  const booking = rows[0];
 
-  return c.json({ booking: rows[0] }, 201);
+  if (bookingStatus === 'confirmed' && d.customer_email) {
+    const fmt = (t: string) => new Date(t).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+    const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+    sendBookingConfirmation({
+      toEmail: d.customer_email,
+      toName: d.customer_name,
+      serviceName: service[0].name as string,
+      startTime: fmt(d.start_time),
+      endTime: fmt(d.end_time),
+      companyName: tenantFull.company_name,
+      tenantId: tenant.id,
+      bookingId: booking.id as string,
+    }).catch((err) => console.error('Dashboard booking confirmation email error:', err));
+    if (tenantFull.clerk_user_id) {
+      const ownerRows = await db`SELECT email FROM users WHERE clerk_user_id = ${tenantFull.clerk_user_id} LIMIT 1`;
+      const tenantEmail = ownerRows[0]?.email as string | null;
+      if (tenantEmail) {
+        sendTenantNewBooking({
+          tenantEmail,
+          companyName: tenantFull.company_name,
+          serviceName: service[0].name as string,
+          customerName: d.customer_name,
+          customerEmail: d.customer_email,
+          startTime: fmt(d.start_time),
+          endTime: fmt(d.end_time),
+          dashboardUrl: `${baseUrl}/dashboard/bookings`,
+        }).catch((err) => console.error('Dashboard tenant new booking email error:', err));
+      }
+    }
+  }
+
+  return c.json({ booking }, 201);
 });
 
 // PATCH /api/bookings/:id
@@ -195,14 +229,32 @@ app.patch('/:id', async (c) => {
   if (!rows[0]) return c.json({ error: 'Booking not found' }, 404);
   const booking = rows[0];
 
-  if (updates.status === 'cancelled' && before[0]?.status !== 'cancelled') {
+  const statusChanged = updates.status && before[0]?.status !== updates.status;
+  if (statusChanged && (updates.status === 'cancelled' || updates.status === 'confirmed')) {
     const [svcRows, tenantUserRows] = await Promise.all([
       db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`,
       db`SELECT u.email FROM users u JOIN tenants t ON t.clerk_user_id = u.clerk_user_id WHERE t.id = ${tenant.id} LIMIT 1`,
     ]);
     const serviceName = (svcRows[0]?.name as string) ?? 'your appointment';
-    const startTime = new Date(booking.start_time as string).toLocaleString();
-    const endTime = new Date(booking.end_time as string).toLocaleString();
+    const fmt = (t: string) => new Date(t).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+    const startTime = fmt(booking.start_time as string);
+    const endTime = fmt(booking.end_time as string);
+    const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+
+    if (updates.status === 'confirmed') {
+      sendBookingConfirmation({
+        toEmail: booking.customer_email as string,
+        toName: booking.customer_name as string,
+        serviceName,
+        startTime,
+        endTime,
+        companyName: tenant.company_name,
+        tenantId: tenant.id,
+        bookingId: booking.id as string,
+      }).catch((err) => console.error('Booking confirmed email error:', err));
+    }
+
+    if (updates.status === 'cancelled') {
     sendBookingCancelled({
       toEmail: booking.customer_email as string,
       toName: booking.customer_name as string,
@@ -221,6 +273,8 @@ app.patch('/:id', async (c) => {
         startTime,
       }).catch((err) => console.error('Booking cancelled tenant email error:', err));
     }
+    }
+    void baseUrl; // used in confirmed branch above
   }
 
   return c.json({ booking });
