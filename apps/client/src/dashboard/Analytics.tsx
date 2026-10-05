@@ -112,6 +112,7 @@ export default function Analytics() {
           {topProducts.length === 0 ? (
             <p className="text-sm text-slate-500">No product sales yet.</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-slate-500">
                 <tr>
@@ -128,6 +129,7 @@ export default function Analytics() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 
