@@ -251,12 +251,7 @@ const PLANS = [
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Landing() {
-  const { isLoaded, isSignedIn } = useAuth();
-  if (!isLoaded) return (
-    <div className="flex min-h-screen items-center justify-center bg-white">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-violet-600" />
-    </div>
-  );
+  const { isSignedIn } = useAuth();
   if (isSignedIn) return <Navigate to="/dashboard" replace />;
 
   return (

@@ -3,65 +3,56 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
-import { getSignedFileUrl } from '../services/storage';
 
 const app = new Hono();
+
 app.use('*', requireAuth, requireTenant);
 
-function extractKeyFromUrl(url: string | undefined): string | null {
-  if (!url) return null;
-  try {
-    const pathname = new URL(url).pathname;
-    const match = pathname.match(/(tenants\/[^?]+)/);
-    return match ? match[1] : null;
-  } catch { return null; }
-}
+const sectionSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  label: z.string(),
+  enabled: z.boolean(),
+});
 
-async function refreshGalleryUrls(sections: Record<string, unknown>[]): Promise<Record<string, unknown>[]> {
-  return Promise.all(
-    sections.map(async (s) => {
-      if (s.type !== 'gallery' || !Array.isArray(s.images)) return s;
-      const images = await Promise.all(
-        (s.images as Record<string, unknown>[]).map(async (img) => {
-          const key = (img.key as string | undefined) ?? extractKeyFromUrl(img.url as string | undefined);
-          if (key) return { ...img, key, url: await getSignedFileUrl(key) };
-          return img;
-        })
-      );
-      return { ...s, images };
-    })
-  );
-}
+const upsertSectionsSchema = z.object({
+  sections: z.array(sectionSchema),
+});
 
-// GET /api/page-sections/:page — tenant's own sections for a page (e.g. "home")
+// GET /api/page-sections/:page
 app.get('/:page', async (c) => {
   const tenant = c.get('tenant') as { id: string };
   const page = c.req.param('page');
+
   const rows = await db`
-    SELECT sections FROM page_sections WHERE tenant_id = ${tenant.id} AND page = ${page} LIMIT 1
+    SELECT sections FROM page_sections
+    WHERE tenant_id = ${tenant.id} AND page = ${page}
+    LIMIT 1
   `;
-  const raw = (rows[0]?.sections ?? []) as Record<string, unknown>[];
-  const sections = await refreshGalleryUrls(raw);
-  return c.json({ sections });
+
+  return c.json({ sections: rows[0]?.sections ?? [] });
 });
 
-const sectionsSchema = z.array(z.record(z.string(), z.unknown()));
-
-// PUT /api/page-sections/:page — upsert full sections array for a page
+// PUT /api/page-sections/:page — replace all sections for a page
 app.put('/:page', async (c) => {
   const tenant = c.get('tenant') as { id: string };
   const page = c.req.param('page');
-  const body = await c.req.json().catch(() => null);
-  const parsed = sectionsSchema.safeParse(body?.sections);
-  if (!parsed.success) return c.json({ error: 'Invalid sections payload' }, 400);
 
-  await db`
-    INSERT INTO page_sections (tenant_id, page, sections, updated_at)
-    VALUES (${tenant.id}, ${page}, ${db.json(parsed.data as never)}, NOW())
-    ON CONFLICT (tenant_id, page) DO UPDATE SET sections = EXCLUDED.sections, updated_at = NOW()
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = upsertSectionsSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid sections', details: parsed.error.flatten() }, 400);
+  }
+
+  const rows = await db`
+    INSERT INTO page_sections (tenant_id, page, sections)
+    VALUES (${tenant.id}, ${page}, ${db.json(parsed.data.sections as never)})
+    ON CONFLICT (tenant_id, page)
+    DO UPDATE SET sections = EXCLUDED.sections, updated_at = NOW()
+    RETURNING sections
   `;
-  const sections = await refreshGalleryUrls(parsed.data);
-  return c.json({ sections });
+
+  return c.json({ sections: rows[0].sections });
 });
 
 export default app;

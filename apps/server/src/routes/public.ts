@@ -5,7 +5,6 @@ import { rateLimitPublic } from '../middleware/ratelimit';
 import { enrichWithUrls, getSignedFileUrl } from '../services/storage';
 import { generateOrderNumber } from '../lib/orderNumber';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
-import { fetchGoogleCalBusyTimes, fetchOutlookCalBusyTimes } from '../services/cal-busy';
 import { computePlatformFee, createBookingPaymentIntent } from '../services/stripe';
 import {
   sendCustomOrderNotification, sendCustomOrderConfirmation,
@@ -17,19 +16,6 @@ import {
 const app = new Hono();
 
 app.use('*', rateLimitPublic);
-
-// Extract the storage key from a presigned S3 URL path (handles legacy images with no stored key)
-// Presigned URL format: https://endpoint/bucket/tenants/id/uploads/uuid.webp?X-Amz-...
-function extractKeyFromUrl(url: string | undefined): string | null {
-  if (!url) return null;
-  try {
-    const pathname = new URL(url).pathname;
-    const match = pathname.match(/(tenants\/[^?]+)/);
-    return match ? match[1] : null;
-  } catch {
-    return null;
-  }
-}
 
 // GET /api/public/config — public runtime config (Stripe publishable key etc.)
 app.get('/config', async (c) => {
@@ -88,36 +74,6 @@ app.get('/:slug/products/:id', async (c) => {
   `;
   if (!rows[0]) return c.json({ error: 'Product not found' }, 404);
   return c.json({ product: await enrichWithUrls(rows[0]) });
-});
-
-// GET /api/public/:slug/page-sections/:page
-app.get('/:slug/page-sections/:page', async (c) => {
-  const slug = c.req.param('slug');
-  const page = c.req.param('page');
-  const tenants = await db`SELECT id FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
-  if (!tenants[0]) return c.json({ sections: [] });
-
-  const rows = await db`
-    SELECT sections FROM page_sections WHERE tenant_id = ${tenants[0].id} AND page = ${page} LIMIT 1
-  `;
-  const raw = (rows[0]?.sections ?? []) as Record<string, unknown>[];
-
-  // Refresh signed URLs for gallery images (use stored key, or extract from legacy URL)
-  const sections = await Promise.all(
-    raw.map(async (s) => {
-      if (s.type !== 'gallery' || !Array.isArray(s.images)) return s;
-      const images = await Promise.all(
-        (s.images as Record<string, unknown>[]).map(async (img) => {
-          const key = (img.key as string | undefined)
-            ?? extractKeyFromUrl(img.url as string | undefined);
-          if (key) return { ...img, key, url: await getSignedFileUrl(key) };
-          return img;
-        })
-      );
-      return { ...s, images };
-    })
-  );
-  return c.json({ sections });
 });
 
 // GET /api/public/:slug/services
@@ -201,56 +157,16 @@ app.get('/:slug/availability', async (c) => {
     AND start_time <= ${end.toISOString()}
   `;
 
-  // Merge in external calendar busy times to prevent double-booking
-  const calBusy: { start_time: string; end_time: string }[] = [];
-  const tenantCalRows = await db`
-    SELECT google_cal_enabled, google_cal_refresh_token,
-           outlook_cal_enabled, outlook_cal_refresh_token
-    FROM tenants WHERE id = ${tenant.id} LIMIT 1
-  `;
-  const tc = tenantCalRows[0];
-  if (tc) {
-    const [googleBusy, outlookBusy] = await Promise.all([
-      (tc.google_cal_enabled && tc.google_cal_refresh_token)
-        ? fetchGoogleCalBusyTimes(
-            tc.google_cal_refresh_token as string,
-            start.toISOString(),
-            end.toISOString(),
-          ).catch(() => [])
-        : Promise.resolve([]),
-      (tc.outlook_cal_enabled && tc.outlook_cal_refresh_token)
-        ? fetchOutlookCalBusyTimes(
-            tc.outlook_cal_refresh_token as string,
-            start.toISOString(),
-            end.toISOString(),
-          ).catch(() => [])
-        : Promise.resolve([]),
-    ]);
-    calBusy.push(...googleBusy, ...outlookBusy);
-  }
-
   const slots = computeAvailableSlots({
     date,
     timezone: tenant.timezone as string,
     availability: staff.availability as any,
     durationMinutes: service.duration_minutes as number,
     bufferMinutes: service.buffer_minutes as number,
-    existingBookings: [
-      ...existingBookings.map((b) => ({ start_time: b.start_time, end_time: b.end_time })),
-      ...calBusy,
-    ],
+    existingBookings: existingBookings.map((b) => ({ start_time: b.start_time, end_time: b.end_time })),
   });
 
-  const cityRows = await db`
-    SELECT city_label FROM city_schedules
-    WHERE tenant_id = ${tenant.id}
-      AND date_from <= ${date}::date
-      AND date_to   >= ${date}::date
-    LIMIT 1
-  `;
-  const cityLabel: string | null = cityRows[0]?.city_label ?? null;
-
-  return c.json({ slots, staff_id: staff.id, city_label: cityLabel });
+  return c.json({ slots, staff_id: staff.id });
 });
 
 const orderItemSchema = z.object({

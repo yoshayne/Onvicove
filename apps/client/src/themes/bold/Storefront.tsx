@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Menu, X, ArrowUp, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Menu, X, ArrowUp, Clock, ArrowRight } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import ContactBlock from '../shared/ContactBlock';
-import Gallery from '../shared/Gallery';
-import type { GallerySectionData } from '../shared/Gallery';
-import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
+import { formatPrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -15,16 +12,15 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff }: ThemeProps) {
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
     quickViewProduct, openQuickView, closeQuickView,
     checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
     orderClientSecret, orderAmountCents, confirmOrderPayment, cancelOrderPayment,
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
-    availableSlots, bookingCityLabel, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
+    availableSlots, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
-    refreshSlots, slotsRefreshing,
     bookingClientSecret, bookingAmountCents,
   } = useStorefrontCommerce(theme.slug);
 
@@ -37,13 +33,10 @@ export default function Storefront({ theme, products, services, staff, visibleSe
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
-  const heroOpacity = theme.heroImageOpacity !== undefined ? theme.heroImageOpacity / 100 : 1;
   const tagline = theme.tagline || defaults.tagline;
 
-  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
-  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
-  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
   // Load Anton font
@@ -149,27 +142,25 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* ── Hero ── */}
-      {isVis('hero') && (
-      <section style={{ order: secOrder('hero'), position: 'relative', background: '#0a0a0a' }}>
+      <section className="relative h-screen min-h-[600px] flex flex-col items-center justify-center text-center overflow-hidden">
+        {/* Background */}
         {heroImage ? (
-          <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity }} />
+          <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
           <div
             className="absolute inset-0"
             style={{
               backgroundImage: 'repeating-linear-gradient(45deg, #1a1a1a 0, #1a1a1a 1px, transparent 0, transparent 50%)',
               backgroundSize: '14px 14px',
-              minHeight: 500,
             }}
           />
         )}
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0a0a0a] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0a0a0a]" />
 
         {/* Content */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center text-center px-6 pb-10 max-w-5xl mx-auto w-full" style={{ left: 0, right: 0 }}>
+        <div className="relative z-10 px-6 max-w-5xl w-full">
           <div className="inline-flex items-center gap-2 border border-[var(--brand-color,#e8ff00)]/60 px-4 py-1.5 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-color,#e8ff00)] animate-pulse" />
             <span className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.35em]">
@@ -199,7 +190,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
                 href="#services"
                 className="border-2 border-white text-white font-bold uppercase tracking-[0.2em] text-xs px-8 py-4 hover:border-[var(--brand-color,#e8ff00)] hover:text-[var(--brand-color,#e8ff00)] transition-colors"
               >
-                Book
+                Book a Session
               </a>
             )}
             <button
@@ -212,33 +203,76 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           </div>
         </div>
 
+        {/* Scroll indicator */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30">
+          <span className="text-[9px] uppercase tracking-[0.4em]">Scroll</span>
+          <div className="w-px h-10 bg-gradient-to-b from-white/40 to-transparent" />
+        </div>
       </section>
-      )}
 
       {/* ── Products ── */}
       {showProducts && (
-        <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 py-24 bg-[#0a0a0a]">
+        <section id="products" className="scroll-mt-20 py-24 bg-[#0a0a0a]">
           <div className="max-w-7xl mx-auto px-6">
             {/* Section header */}
             <div className="flex items-end justify-between mb-14">
               <div>
                 <p className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.4em] mb-2">— The Drop</p>
-                <h2 className="bold-heading text-5xl md:text-6xl uppercase leading-none">Shop</h2>
+                <h2 className="bold-heading text-5xl md:text-6xl uppercase leading-none">Shop The Drop</h2>
               </div>
               <div className="hidden md:block h-px flex-1 bg-white/10 mx-8 mb-3" />
             </div>
 
-            <ProductCatalog
-              products={displayProducts}
-              layout={theme.productLayout ?? 'grid-4'}
-              currency={theme.currency}
-              paymentsEnabled={theme.paymentsEnabled}
-              accentColor={theme.brandColor ?? '#e8ff00'}
-              textColor="#ffffff"
-              surfaceColor="#111111"
-              slug={theme.slug}
-              onSelect={openQuickView}
-            />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+              {displayProducts.map((product) => (
+                <div key={product.id} className="product-card group relative bg-[#111] overflow-hidden cursor-pointer">
+                  {/* Image */}
+                  <div className="aspect-[3/4] overflow-hidden bg-[#1a1a1a]">
+                    <img
+                      src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Hover overlay */}
+                  <div className="product-overlay absolute inset-0 bg-black/75 flex flex-col items-center justify-end p-5">
+                    {product.description && (
+                      <p className="text-white/70 text-xs text-center mb-4 leading-relaxed">{product.description}</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => openQuickView(product)}
+                      className="product-overlay-btn w-full bg-[var(--brand-color,#e8ff00)] text-black text-xs font-bold uppercase tracking-[0.2em] py-3 hover:bg-white transition-colors"
+                    >
+                      {theme.paymentsEnabled ? 'Quick View' : 'View Details'}
+                    </button>
+                  </div>
+
+                  {/* Compare-at badge */}
+                  {product.compareAtPriceCents && (
+                    <div className="absolute top-3 left-3 bg-[var(--brand-color,#e8ff00)] text-black text-[9px] font-bold uppercase tracking-wide px-2 py-0.5">
+                      Sale
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Product info row below grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-1">
+              {displayProducts.map((product) => (
+                <div key={product.id} className="px-1 pt-3 pb-1">
+                  <h3 className="font-bold text-sm uppercase tracking-wide leading-tight mb-1">{product.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-sm font-bold">{formatPrice(product.priceCents, theme.currency)}</span>
+                    {product.compareAtPriceCents && (
+                      <span className="text-white/30 text-xs line-through">{formatPrice(product.compareAtPriceCents, theme.currency)}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -250,36 +284,73 @@ export default function Storefront({ theme, products, services, staff, visibleSe
 
       {/* ── Services ── */}
       {showServices && (
-        <section id="services" style={{ order: secOrder('services') }} className="scroll-mt-20 py-24 bg-[#0f0f0f]">
+        <section id="services" className="scroll-mt-20 py-24 bg-[#0f0f0f]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-end justify-between mb-14">
               <div>
                 <p className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.4em] mb-2">— Appointments</p>
-                <h2 className="bold-heading text-5xl md:text-6xl uppercase leading-none">Book</h2>
+                <h2 className="bold-heading text-5xl md:text-6xl uppercase leading-none">Book a Session</h2>
               </div>
               <div className="hidden md:block h-px flex-1 bg-white/10 mx-8 mb-3" />
             </div>
 
-            <ServiceCatalog
-              services={displayServices}
-              layout={theme.serviceLayout ?? 'cards'}
-              currency={theme.currency}
-              paymentsEnabled={theme.paymentsEnabled}
-              accentColor={theme.brandColor ?? '#e8ff00'}
-              textColor="#ffffff"
-              surfaceColor="#161616"
-              slug={theme.slug}
-              onBook={openBooking}
-            />
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayServices.map((service) => (
+                <div
+                  key={service.id}
+                  className="group border-l-4 border-[var(--brand-color,#e8ff00)] bg-[#161616] hover:bg-[#1c1c1c] transition-colors overflow-hidden flex flex-col"
+                >
+                  {service.imageUrls?.[0] && (
+                    <div className="aspect-[16/9] overflow-hidden">
+                      <img
+                        src={service.imageUrls[0]}
+                        alt={service.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
+
+                  <div className="p-6 flex flex-col flex-1 gap-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="bold-heading text-2xl uppercase leading-tight">{service.name}</h3>
+                        <span className="inline-flex items-center gap-1.5 text-white/40 text-[10px] uppercase tracking-widest mt-1">
+                          <Clock size={10} />
+                          {service.durationMinutes} min session
+                        </span>
+                      </div>
+                      <span className="bold-heading text-3xl text-[var(--brand-color,#e8ff00)] shrink-0">
+                        {formatPrice(service.priceCents, theme.currency)}
+                      </span>
+                    </div>
+
+                    {service.description && (
+                      <p className="text-white/50 text-sm leading-relaxed flex-1">{service.description}</p>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => openBooking(service)}
+                      disabled={!theme.paymentsEnabled}
+                      className="flex items-center justify-center gap-2 w-full border-2 border-[var(--brand-color,#e8ff00)] text-[var(--brand-color,#e8ff00)] text-xs font-bold uppercase tracking-[0.25em] py-3 hover:bg-[var(--brand-color,#e8ff00)] hover:text-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {theme.paymentsEnabled ? (
+                        <>Book Now <ArrowRight size={12} /></>
+                      ) : 'Coming Soon'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
       {/* ── Team ── */}
-      {staff.length > 0 && isVis('staff') && (
+      {staff.length > 0 && (
         <>
-          <div style={{ order: secOrder('staff') }} className="h-px bg-gradient-to-r from-transparent via-[var(--brand-color,#e8ff00)] to-transparent" />
-          <section id="team" style={{ order: secOrder('staff') }} className="scroll-mt-20 py-24 bg-[#0a0a0a]">
+          <div className="h-px bg-gradient-to-r from-transparent via-[var(--brand-color,#e8ff00)] to-transparent" />
+          <section id="team" className="scroll-mt-20 py-24 bg-[#0a0a0a]">
             <div className="max-w-7xl mx-auto px-6">
               <div className="mb-14 text-center">
                 <p className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.4em] mb-2">— The Crew</p>
@@ -315,13 +386,6 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         </>
       )}
 
-      {galleries && galleries.length > 0 && galleries.map((g) => (
-        <div key={g.id} style={{ order: secOrder(g.id) }}>
-          <Gallery layout={g.layout} images={g.images ?? []} title={g.title} />
-        </div>
-      ))}
-      </div>{/* end ordered sections */}
-
       {/* ── Footer ── */}
       <footer id="footer" className="scroll-mt-20 bg-[#050505] border-t border-white/10">
         {/* Top accent bar */}
@@ -343,7 +407,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
               <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/30 mb-5">Navigate</p>
               <div className="flex flex-col gap-3">
                 {showProducts && <a href="#products" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Shop</a>}
-                {showServices && <a href="#services" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Book</a>}
+                {showServices && <a href="#services" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Book a Session</a>}
                 {staff.length > 0 && <a href="#team" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Team</a>}
               </div>
             </div>
@@ -371,7 +435,6 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             </div>
           </div>
 
-          <ContactBlock theme={theme} textColor="rgba(255,255,255,0.5)" />
           <div className="border-t border-white/10 pt-8 flex items-center justify-between flex-wrap gap-4">
             <p className="text-white/20 text-[10px] uppercase tracking-[0.25em]">
               &copy; {new Date().getFullYear()} {theme.companyName}. All rights reserved.
@@ -442,12 +505,9 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         selectedDate={selectedDate}
         selectedSlot={selectedSlot}
         availableSlots={availableSlots}
-        cityLabel={bookingCityLabel}
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
-        onRefreshSlots={refreshSlots}
-        slotsRefreshing={slotsRefreshing}
       />
 
       <BookingStatusOverlay

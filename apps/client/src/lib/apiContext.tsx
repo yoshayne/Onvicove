@@ -1,16 +1,19 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import { useApi } from './api';
+import { useApi, useImpersonateApi } from './api';
 
 type ApiInstance = ReturnType<typeof useApi>;
 
 const ApiContext = createContext<ApiInstance | null>(null);
 
 export function ApiProvider({ children }: { children: ReactNode }) {
-  // useApi() already picks up the active impersonation token via ImpersonationContext.
-  const api = useApi();
+  const impersonateToken = sessionStorage.getItem('impersonate_token');
+  const normalApi = useApi();
+  // useImpersonateApi is called unconditionally to satisfy React rules;
+  // we only use the result when a token is present.
+  const impersonateApi = useImpersonateApi(impersonateToken ?? '');
 
   return (
-    <ApiContext.Provider value={api}>
+    <ApiContext.Provider value={impersonateToken ? impersonateApi : normalApi}>
       {children}
     </ApiContext.Provider>
   );

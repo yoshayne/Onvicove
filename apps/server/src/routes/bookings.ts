@@ -4,21 +4,14 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { createBookingPaymentIntent } from '../services/stripe';
-import { sendPaymentLinkEmail, sendBookingCancelled, sendBookingConfirmation } from '../services/email';
+import { sendPaymentLinkEmail, sendBookingCancelled } from '../services/email';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
-import { createGoogleCalendarEvent } from '../services/google-cal';
-import { createOutlookCalendarEvent } from '../services/outlook-cal';
 
 const app = new Hono();
 
 const updateBookingSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'cancelled', 'completed', 'no_show']).optional(),
   internal_notes: z.string().nullable().optional(),
-  amount_cents: z.number().int().min(0).optional(),
-  customer_name: z.string().min(1).optional(),
-  customer_email: z.string().email().optional(),
-  customer_phone: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
 });
 
 const createBookingSchema = z.object({
@@ -32,7 +25,6 @@ const createBookingSchema = z.object({
   end_time: z.string().datetime(),
   notes: z.string().nullable().optional(),
   status: z.enum(['pending', 'confirmed', 'cancelled', 'completed', 'no_show']).optional(),
-  amount_cents: z.number().int().min(0).optional(),
 });
 
 app.use('*', requireAuth, requireTenant);
@@ -154,8 +146,7 @@ app.post('/', async (c) => {
     }
   }
 
-  const amountCents = d.amount_cents ?? (service[0].price_cents as number);
-  const finalStatus = d.status ?? ((tenant as unknown as { booking_mode?: string }).booking_mode === 'manual' ? 'pending' : 'confirmed');
+  const amountCents = service[0].price_cents as number;
 
   const rows = await db`
     INSERT INTO bookings (
@@ -165,46 +156,13 @@ app.post('/', async (c) => {
       ${tenant.id}, ${d.service_id}, ${d.staff_id ?? null}, ${d.customer_id ?? null},
       ${d.customer_name}, ${d.customer_email}, ${d.customer_phone ?? null},
       ${d.start_time}, ${d.end_time}, ${d.notes ?? null},
-      ${finalStatus}, ${amountCents}
+      ${d.status ?? (tenant as unknown as { booking_mode?: string }).booking_mode === 'manual' ? 'pending' : 'confirmed'},
+      ${amountCents}
     )
     RETURNING *
   `;
 
-  const booking = rows[0];
-
-  if (finalStatus === 'confirmed') {
-    sendBookingConfirmation({
-      toEmail: booking.customer_email as string,
-      toName: booking.customer_name as string,
-      serviceName: (service[0].name as string) ?? 'your appointment',
-      startTime: new Date(booking.start_time as string).toLocaleString(),
-      endTime: new Date(booking.end_time as string).toLocaleString(),
-      companyName: (tenant as unknown as { company_name: string }).company_name,
-      tenantId: tenant.id,
-      bookingId: booking.id as string,
-    }).catch((err) => console.error('Booking confirmation email error:', err));
-
-    const tenantFull = await db`SELECT google_cal_refresh_token, google_cal_enabled, outlook_cal_refresh_token, outlook_cal_enabled, timezone FROM tenants WHERE id = ${tenant.id} LIMIT 1`;
-    const calParams = {
-      summary: `${service[0].name} — ${d.customer_name}`,
-      description: `Booking for ${d.customer_name} (${d.customer_email})${d.notes ? '\n\nNotes: ' + d.notes : ''}`,
-      startIso: d.start_time,
-      endIso: d.end_time,
-      attendeeEmail: d.customer_email,
-      attendeeName: d.customer_name,
-      timezone: (tenantFull[0]?.timezone as string) || 'America/New_York',
-    };
-    if (tenantFull[0]?.google_cal_enabled && tenantFull[0]?.google_cal_refresh_token) {
-      createGoogleCalendarEvent({ refreshToken: tenantFull[0].google_cal_refresh_token as string, ...calParams })
-        .catch(err => console.error('Google Calendar event error:', err));
-    }
-    if (tenantFull[0]?.outlook_cal_enabled && tenantFull[0]?.outlook_cal_refresh_token) {
-      createOutlookCalendarEvent({ refreshToken: tenantFull[0].outlook_cal_refresh_token as string, ...calParams })
-        .catch(err => console.error('Outlook Calendar event error:', err));
-    }
-  }
-
-  return c.json({ booking }, 201);
+  return c.json({ booking: rows[0] }, 201);
 });
 
 // PATCH /api/bookings/:id
@@ -246,42 +204,7 @@ app.patch('/:id', async (c) => {
       startTime: new Date(booking.start_time as string).toLocaleString(),
       endTime: new Date(booking.end_time as string).toLocaleString(),
       companyName: tenant.company_name,
-      tenantId: tenant.id,
-      bookingId: id,
     }).catch((err) => console.error('Booking cancelled email error:', err));
-  }
-
-  if (updates.status === 'confirmed' && before[0]?.status !== 'confirmed') {
-    const svcRows = await db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`;
-    sendBookingConfirmation({
-      toEmail: booking.customer_email as string,
-      toName: booking.customer_name as string,
-      serviceName: (svcRows[0]?.name as string) ?? 'your appointment',
-      startTime: new Date(booking.start_time as string).toLocaleString(),
-      endTime: new Date(booking.end_time as string).toLocaleString(),
-      companyName: tenant.company_name,
-      tenantId: tenant.id,
-      bookingId: id,
-    }).catch((err) => console.error('Booking confirmed email error:', err));
-
-    const tenantFull = await db`SELECT google_cal_refresh_token, google_cal_enabled, outlook_cal_refresh_token, outlook_cal_enabled, timezone FROM tenants WHERE id = ${tenant.id} LIMIT 1`;
-    const calParams = {
-      summary: `${(svcRows[0]?.name as string) ?? 'Appointment'} — ${booking.customer_name as string}`,
-      description: `Booking for ${booking.customer_name as string} (${booking.customer_email as string})${booking.notes ? '\n\nNotes: ' + (booking.notes as string) : ''}`,
-      startIso: booking.start_time as string,
-      endIso: booking.end_time as string,
-      attendeeEmail: booking.customer_email as string,
-      attendeeName: booking.customer_name as string,
-      timezone: (tenantFull[0]?.timezone as string) || 'America/New_York',
-    };
-    if (tenantFull[0]?.google_cal_enabled && tenantFull[0]?.google_cal_refresh_token) {
-      createGoogleCalendarEvent({ refreshToken: tenantFull[0].google_cal_refresh_token as string, ...calParams })
-        .catch(err => console.error('Google Calendar event error:', err));
-    }
-    if (tenantFull[0]?.outlook_cal_enabled && tenantFull[0]?.outlook_cal_refresh_token) {
-      createOutlookCalendarEvent({ refreshToken: tenantFull[0].outlook_cal_refresh_token as string, ...calParams })
-        .catch(err => console.error('Outlook Calendar event error:', err));
-    }
   }
 
   return c.json({ booking });

@@ -37,34 +37,34 @@ export default function Calendar({
   const monthLabel = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="bg-white text-[#111111] p-6 border border-[#111111]/10">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-[#111] border border-white/10 p-5">
+      <div className="flex items-center justify-between mb-5">
         <button
           type="button"
           aria-label="Previous month"
           onClick={() => setViewDate(new Date(year, month - 1, 1))}
-          className="p-2 text-[#111111]/40 hover:text-[#111111] transition-colors"
+          className="p-1.5 text-white/40 hover:text-[var(--brand-color,#c8b8a2)] transition-colors"
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={16} />
         </button>
-        <span className="font-medium text-lg">{monthLabel}</span>
+        <span className="text-xs tracking-[0.2em] uppercase text-white/70">{monthLabel}</span>
         <button
           type="button"
           aria-label="Next month"
           onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="p-2 text-[#111111]/40 hover:text-[#111111] transition-colors"
+          className="p-1.5 text-white/40 hover:text-[var(--brand-color,#c8b8a2)] transition-colors"
         >
-          <ChevronRight size={18} />
+          <ChevronRight size={16} />
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 mb-2 text-center text-xs uppercase tracking-widest text-[#111111]/40 font-medium">
+      <div className="grid grid-cols-7 mb-1 text-center">
         {WEEKDAYS.map((w, i) => (
-          <div key={`${w}-${i}`}>{w}</div>
+          <div key={`${w}-${i}`} className="text-[10px] uppercase tracking-widest text-white/30 pb-2">{w}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 mb-8">
+      <div className="grid grid-cols-7 gap-y-1 mb-6">
         {cells.map((date, i) => {
           if (!date) return <div key={`empty-${i}`} />;
           const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -75,12 +75,12 @@ export default function Calendar({
               type="button"
               disabled={isPast}
               onClick={() => onSelectDate(date)}
-              className={`aspect-square rounded-full text-sm flex items-center justify-center transition-colors font-light ${
+              className={`aspect-square text-xs flex items-center justify-center transition-all ${
                 isSelected
-                  ? 'bg-[#111111] text-white font-medium'
+                  ? 'bg-[var(--brand-color,#c8b8a2)] text-[#0d0d0d] font-semibold'
                   : isPast
-                    ? 'text-[#111111]/20 cursor-not-allowed'
-                    : 'text-[#111111]/80 hover:bg-[#f8f8f8]'
+                  ? 'text-white/15 cursor-not-allowed'
+                  : 'text-white/60 hover:text-white hover:bg-white/8'
               }`}
             >
               {date.getDate()}
@@ -90,23 +90,23 @@ export default function Calendar({
       </div>
 
       <div>
-        <h4 className="text-xs uppercase tracking-widest text-[#111111]/40 font-medium mb-3">Available Times</h4>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-3">Times</p>
         {availableSlots.length === 0 ? (
-          <p className="text-sm text-[#111111]/40 font-light">Select a date to view available times.</p>
+          <p className="text-xs text-white/30 italic">Select a date above.</p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {availableSlots.map((slot) => (
               <button
                 key={slot.time}
                 type="button"
                 disabled={!slot.available}
                 onClick={() => onSelectSlot(slot.time)}
-                className={`w-full text-left py-3 px-4 text-sm border transition-colors ${
+                className={`py-1.5 text-xs border transition-colors ${
                   selectedSlot === slot.time
-                    ? 'bg-[#111111] border-[#111111] text-white font-medium'
+                    ? 'border-[var(--brand-color,#c8b8a2)] bg-[var(--brand-color,#c8b8a2)] text-[#0d0d0d] font-medium'
                     : slot.available
-                      ? 'border-[#111111]/10 text-[#111111]/80 hover:border-[#111111] font-light'
-                      : 'border-[#111111]/5 text-[#111111]/20 cursor-not-allowed line-through font-light'
+                    ? 'border-white/15 text-white/60 hover:border-[var(--brand-color,#c8b8a2)] hover:text-[var(--brand-color,#c8b8a2)]'
+                    : 'border-white/5 text-white/15 cursor-not-allowed line-through'
                 }`}
               >
                 {slot.time}

@@ -2,10 +2,6 @@ import { useState } from 'react';
 import { ShoppingCart, Leaf, Heart, Star } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import { formatPrice } from '../types';
-import ContactBlock from '../shared/ContactBlock';
-import Gallery from '../shared/Gallery';
-import type { GallerySectionData } from '../shared/Gallery';
-import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -16,8 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-
-export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -28,7 +23,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
     checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
     orderClientSecret, orderAmountCents, confirmOrderPayment, cancelOrderPayment,
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
-    availableSlots, bookingCityLabel, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
+    availableSlots, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
     bookingClientSecret, bookingAmountCents,
   } = commerce;
@@ -36,12 +31,9 @@ export default function Storefront({ theme, products, services, staff, visibleSe
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
-  const heroOpacity = theme.heroImageOpacity !== undefined ? theme.heroImageOpacity / 100 : 0.15;
   const tagline = theme.tagline || defaults.tagline;
-  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
-  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
-  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
   const glass = { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' };
@@ -69,7 +61,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 32, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
             {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>Shop</a>}
-            {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Book</a>}
+            {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Sessions</a>}
             <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>Contact</a>
             {showProducts && (
               <button type="button" aria-label="Open cart" onClick={() => setCartOpen(true)} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', padding: 0 }}>
@@ -81,19 +73,17 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         </div>
       </nav>
 
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero */}
-      {isVis('hero') && (
-      <section className="aurora-bg" style={{ order: secOrder('hero'), position: 'relative' }}>
-        <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity, mixBlendMode: 'screen' }} />
-        <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '48px 24px 64px', display: 'grid', gridTemplateColumns: showServices ? '1fr 1fr' : '1fr', gap: 48, alignItems: 'center' }}>
+      <section className="aurora-bg" style={{ position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+        <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.15, mixBlendMode: 'screen' }} />
+        <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '80px 24px', display: 'grid', gridTemplateColumns: showServices ? '1fr 1fr' : '1fr', gap: 48, alignItems: 'center' }}>
           <div>
             <p style={{ fontSize: 12, letterSpacing: '0.2em', color: 'var(--brand-color, #a78bfa)', marginBottom: 16, textTransform: 'uppercase', opacity: 0.8 }}>Holistic Wellness</p>
             <h1 style={{ fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 700, lineHeight: 1.1, marginBottom: 20, letterSpacing: '-0.02em' }}>{tagline}</h1>
             <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', marginBottom: 32, lineHeight: 1.7, maxWidth: 480 }}>Holistic treatments and products to help you glow from within.</p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              {showServices && <a href="#services" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(167,139,250,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(167,139,250,0.4)', color: 'var(--brand-color, #a78bfa)', borderRadius: 50, textDecoration: 'none' }}>Book</a>}
-              {showProducts && <a href="#products" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 50, textDecoration: 'none' }}>Shop</a>}
+              {showServices && <a href="#services" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(167,139,250,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(167,139,250,0.4)', color: 'var(--brand-color, #a78bfa)', borderRadius: 50, textDecoration: 'none' }}>Book a Session</a>}
+              {showProducts && <a href="#products" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 50, textDecoration: 'none' }}>Shop Products</a>}
               <button type="button" onClick={() => setCustomOrderOpen(true)} style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)', borderRadius: 50, cursor: 'pointer' }}>Custom Order</button>
             </div>
           </div>
@@ -120,42 +110,57 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           )}
         </div>
       </section>
-      )}
 
       {/* Products */}
       {showProducts && (
-        <section id="products" style={{ order: secOrder('featured-products'), maxWidth: 1280, margin: '0 auto', padding: '80px 24px' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Shop</h2>
-          <ProductCatalog
-            products={displayProducts}
-            layout={theme.productLayout ?? 'grid-4'}
-            currency={theme.currency}
-            paymentsEnabled={theme.paymentsEnabled}
-            accentColor={theme.brandColor ?? '#a78bfa'}
-            textColor="#ffffff"
-            surfaceColor="rgba(255,255,255,0.05)"
-            slug={theme.slug}
-            onSelect={openQuickView}
-          />
+        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 24px' }}>
+          <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Ritual Essentials</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
+            {displayProducts.map((product) => (
+              <div key={product.id} style={{ ...glass, borderRadius: 20, overflow: 'hidden' }}>
+                <div style={{ aspectRatio: '1/1', overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
+                  <img src={product.imageUrls?.[0] ?? defaults.heroImageUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')} />
+                </div>
+                <div style={{ padding: 20 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{product.name}</h3>
+                  {product.description && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 12, lineHeight: 1.5 }}>{product.description}</p>}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--brand-color, #a78bfa)', fontSize: 15, fontWeight: 600 }}>{formatPrice(product.priceCents, theme.currency)}</span>
+                    <button type="button" onClick={() => openQuickView(product)}
+                      style={{ fontSize: 12, padding: '6px 16px', borderRadius: 50, background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', color: 'var(--brand-color, #a78bfa)', cursor: 'pointer' }}>
+                      {theme.paymentsEnabled ? 'Add' : 'View'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
       {/* Services full list */}
       {showServices && (
-        <section id="services" style={{ order: secOrder('services'), padding: '80px 24px', background: 'rgba(255,255,255,0.02)' }}>
+        <section id="services" style={{ padding: '80px 24px', background: 'rgba(255,255,255,0.02)' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Book</h2>
-            <ServiceCatalog
-              services={displayServices}
-              layout={theme.serviceLayout ?? 'cards'}
-              currency={theme.currency}
-              paymentsEnabled={theme.paymentsEnabled}
-              accentColor={theme.brandColor ?? '#a78bfa'}
-              textColor="#ffffff"
-              surfaceColor="rgba(255,255,255,0.05)"
-              slug={theme.slug}
-              onBook={openBooking}
-            />
+            <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Healing Sessions</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+              {displayServices.map((service) => (
+                <div key={service.id} style={{ ...glass, borderRadius: 20, padding: 28 }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{service.name}</h3>
+                  {service.description && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 20, lineHeight: 1.6 }}>{service.description}</p>}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{service.durationMinutes} min</span>
+                    <span style={{ color: 'var(--brand-color, #a78bfa)', fontWeight: 600 }}>{formatPrice(service.priceCents, theme.currency)}</span>
+                  </div>
+                  <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
+                    style={{ width: '100%', padding: '12px', borderRadius: 12, fontSize: 13, fontWeight: 600, background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(96,165,250,0.2))', border: '1px solid rgba(167,139,250,0.3)', color: 'var(--brand-color, #a78bfa)', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4 }}>
+                    {theme.paymentsEnabled ? 'Book Session' : 'Coming Soon'}
+                  </button>
+                </div>
+              ))}
+            </div>
             {staff.length > 0 && (
               <div style={{ marginTop: 64, display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap' }}>
                 {staff.map((member) => (
@@ -190,13 +195,6 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       </div>
 
       {/* Footer */}
-      {galleries && galleries.length > 0 && galleries.map((g) => (
-        <div key={g.id} style={{ order: secOrder(g.id) }}>
-          <Gallery layout={g.layout} images={g.images ?? []} title={g.title} />
-        </div>
-      ))}
-      </div>{/* end ordered sections */}
-
       <footer id="footer" style={{ padding: '48px 24px', textAlign: 'center', borderTop: '1px solid rgba(167,139,250,0.1)' }}>
         <p style={{ fontSize: 18, fontWeight: 700, background: 'linear-gradient(90deg, #a78bfa, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 8 }}>{theme.companyName}</p>
         {theme.city && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{theme.city}</p>}
@@ -216,14 +214,13 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             {subscribeStatus === 'success' ? '✓ Subscribed!' : subscribeStatus === 'loading' ? '...' : 'Subscribe'}
           </button>
         </form>
-        <ContactBlock theme={theme} useInlineStyles textColor="rgba(255,255,255,0.5)" />
         <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 24 }}>&copy; {new Date().getFullYear()} {theme.companyName}</p>
       </footer>
 
       <ProductQuickView product={quickViewProduct} onClose={closeQuickView} onAddToCart={(p, v) => { addToCart(p, v); closeQuickView(); }} currency={theme.currency} paymentsEnabled={theme.paymentsEnabled} />
       {showProducts && <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} onCheckout={openCheckout} />}
       <CheckoutModal isOpen={checkoutOpen} onClose={closeCheckout} items={cart} status={orderStatus} error={orderError} orderNumber={orderNumber} clientSecret={orderClientSecret} amountCents={orderAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onSubmit={submitOrder} onPaymentSuccess={confirmOrderPayment} onPaymentCancel={cancelOrderPayment} />
-      <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} cityLabel={bookingCityLabel} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} onRefreshSlots={commerce.refreshSlots} slotsRefreshing={commerce.slotsRefreshing} />
+      <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} />
       <BookingStatusOverlay status={bookingStatus} error={bookingError} clientSecret={bookingClientSecret} amountCents={bookingAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onClose={closeBooking} onDismiss={dismissBookingStatus} onPaymentSuccess={confirmBookingPayment} onPaymentCancel={cancelBookingPayment} />
       <CustomOrderModal
         isOpen={customOrderOpen}

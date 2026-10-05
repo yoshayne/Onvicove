@@ -1,290 +1,348 @@
-import { useState, useEffect } from 'react';
-import { Menu, X, ShoppingCart, ArrowRight, Instagram } from 'lucide-react';
+// Lens theme — photo-forward dark storefront for photographers & creatives
+// Fonts: DM Serif Display (headings) + DM Sans (body) — load via index.html
+import { useState } from 'react';
+import { ShoppingCart, Menu, X as XIcon } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import ContactBlock from '../shared/ContactBlock';
-import Gallery from '../shared/Gallery';
-import type { GallerySectionData } from '../shared/Gallery';
-import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
+import { formatPrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
 import CheckoutModal from '../shared/CheckoutModal';
 import BookingStatusOverlay from '../shared/BookingStatusOverlay';
 import ProductQuickView from '../shared/ProductQuickView';
+import CustomOrderModal from '../shared/CustomOrderModal';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
-import CustomOrderModal from '../shared/CustomOrderModal';
 
-
-export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [emailInput, setEmailInput] = useState('');
+export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
-
+  const commerce = useStorefrontCommerce(theme.slug);
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
     quickViewProduct, openQuickView, closeQuickView,
     checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
     orderClientSecret, orderAmountCents, confirmOrderPayment, cancelOrderPayment,
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
-    availableSlots, bookingCityLabel, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
+    availableSlots, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
-    refreshSlots, slotsRefreshing,
     bookingClientSecret, bookingAmountCents,
-  } = useStorefrontCommerce(theme.slug);
+  } = commerce;
 
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
+  const displayStaff    = staff.length > 0 ? staff : defaults.staff;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
-  const heroOpacity = theme.heroImageOpacity !== undefined ? theme.heroImageOpacity / 100 : 1;
-  const tagline = theme.tagline || defaults.tagline;
-  const accent = theme.brandColor || '#c8a96e';
+  const tagline   = theme.tagline || defaults.tagline;
 
-  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
-  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
-  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = (theme.mode === 'book'  || theme.mode === 'both') && displayServices.length > 0;
+
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
-  useEffect(() => {
-    const el = document.querySelector('link[data-font="cormorant"]');
-    if (el) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap';
-    link.setAttribute('data-font', 'cormorant');
-    document.head.appendChild(link);
-  }, []);
+  const navLinks = [
+    showProducts && { href: '#work', label: 'Work' },
+    showServices && { href: '#sessions', label: 'Sessions' },
+    { href: '#about', label: 'About' },
+    { href: '#contact', label: 'Contact' },
+  ].filter(Boolean) as { href: string; label: string }[];
 
   return (
-    <div style={{ background: '#0c0c0c', color: '#f0ede8', fontFamily: 'Inter, sans-serif', minHeight: '100vh' }}>
-      <style>{`
-        .lens-heading { font-family: 'Cormorant Garamond', Georgia, serif; }
-        .lens-card-img { transition: transform 0.7s ease; }
-        .lens-card:hover .lens-card-img { transform: scale(1.04); }
-        .lens-pkg-card { border: 1px solid rgba(200,169,110,0.15); transition: border-color 0.3s, background 0.3s; }
-        .lens-pkg-card:hover { border-color: rgba(200,169,110,0.5); background: rgba(200,169,110,0.04); }
-        @media (max-width: 640px) {
-          .lens-sessions-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
-          .lens-service-card { display: flex !important; flex-direction: row !important; overflow: hidden; cursor: pointer; }
-          .lens-service-img-wrap { width: 120px !important; min-width: 120px; aspect-ratio: unset !important; height: 160px !important; }
-          .lens-service-info { position: static !important; padding: 16px !important; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
-          .lens-service-info h3 { font-size: 18px !important; margin-bottom: 4px !important; }
-          .lens-sessions-section { padding: 48px 0 !important; }
-          .lens-hero-content { padding: 16px 20px 32px !important; }
-          .lens-hero-content h1 { font-size: clamp(2rem, 9vw, 3rem) !important; }
-        }
-      `}</style>
+    <div className="min-h-screen bg-[#0d0d0d] text-[#f0ede8] font-['DM_Sans']">
 
-      {/* ── Nav ── */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(12,12,12,0.95)', backdropFilter: 'blur(8px)', borderBottom: '1px solid rgba(240,237,232,0.08)' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span className="lens-heading" style={{ fontSize: 22, letterSpacing: '0.04em', fontWeight: 400 }}>{theme.companyName}</span>
+      {/* ── Nav ─────────────────────────────────────────────────────── */}
+      <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-4 bg-[#0d0d0d]/90 backdrop-blur-sm border-b border-white/5">
+        <a href="#" className="font-['DM_Serif_Display'] text-xl tracking-wide text-[#f0ede8]">
+          {theme.companyName}
+        </a>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-            <div style={{ display: 'none', alignItems: 'center', gap: 32, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(240,237,232,0.5)' }} className="lens-nav-links">
-              {showServices && <a href="#sessions" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = accent)} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(240,237,232,0.5)')}>Sessions</a>}
-              {showProducts && <a href="#packages" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = accent)} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(240,237,232,0.5)')}>Packages</a>}
-              {galleries && galleries.length > 0 && <a href="#gallery" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = accent)} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(240,237,232,0.5)')}>Gallery</a>}
-              <a href="#contact" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = accent)} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(240,237,232,0.5)')}>Contact</a>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {showProducts && (
-                <button type="button" onClick={() => setCartOpen(true)} style={{ position: 'relative', background: 'none', border: 'none', color: '#f0ede8', cursor: 'pointer', padding: 8 }}>
-                  <ShoppingCart size={18} />
-                  {cartCount > 0 && <span style={{ position: 'absolute', top: 2, right: 2, width: 14, height: 14, borderRadius: '50%', background: accent, color: '#0c0c0c', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{cartCount}</span>}
-                </button>
+        {/* Desktop links */}
+        <div className="hidden md:flex items-center gap-8">
+          {navLinks.map((l) => (
+            <a key={l.href} href={l.href}
+              className="text-xs uppercase tracking-[0.2em] text-white/50 hover:text-[var(--brand-color,#c8b8a2)] transition-colors">
+              {l.label}
+            </a>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-4">
+          {showProducts && (
+            <button
+              type="button"
+              aria-label="Open cart"
+              onClick={() => setCartOpen(true)}
+              className="relative text-white/60 hover:text-[var(--brand-color,#c8b8a2)] transition-colors"
+            >
+              <ShoppingCart size={18} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center bg-[var(--brand-color,#c8b8a2)] text-[#0d0d0d] text-[9px] font-bold rounded-full">
+                  {cartCount}
+                </span>
               )}
-              <button type="button" onClick={() => setMobileMenuOpen(true)} style={{ background: 'none', border: 'none', color: '#f0ede8', cursor: 'pointer', display: 'block', padding: 8 }}>
-                <Menu size={20} />
-              </button>
-            </div>
-          </div>
+            </button>
+          )}
+          <button
+            type="button"
+            className="md:hidden text-white/60 hover:text-white transition-colors"
+            aria-label="Menu"
+            onClick={() => setMobileNavOpen(true)}
+          >
+            <Menu size={20} />
+          </button>
         </div>
       </nav>
 
-      {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: '#0c0c0c', display: 'flex', flexDirection: 'column', padding: 32 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 48 }}>
-            <span className="lens-heading" style={{ fontSize: 22 }}>{theme.companyName}</span>
-            <button type="button" onClick={() => setMobileMenuOpen(false)} style={{ background: 'none', border: 'none', color: '#f0ede8', cursor: 'pointer' }}><X size={24} /></button>
+      {/* Mobile nav overlay */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 bg-[#0d0d0d] flex flex-col p-8">
+          <div className="flex items-center justify-between mb-12">
+            <span className="font-['DM_Serif_Display'] text-xl">{theme.companyName}</span>
+            <button type="button" onClick={() => setMobileNavOpen(false)} aria-label="Close" className="text-white/50 hover:text-white">
+              <XIcon size={22} />
+            </button>
           </div>
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {showServices && <a href="#sessions" onClick={() => setMobileMenuOpen(false)} className="lens-heading" style={{ fontSize: 44, color: '#f0ede8', textDecoration: 'none', fontWeight: 300, letterSpacing: '0.02em' }}>Sessions</a>}
-            {showProducts && <a href="#packages" onClick={() => setMobileMenuOpen(false)} className="lens-heading" style={{ fontSize: 44, color: '#f0ede8', textDecoration: 'none', fontWeight: 300, letterSpacing: '0.02em' }}>Packages</a>}
-            {galleries && galleries.length > 0 && <a href="#gallery" onClick={() => setMobileMenuOpen(false)} className="lens-heading" style={{ fontSize: 44, color: '#f0ede8', textDecoration: 'none', fontWeight: 300, letterSpacing: '0.02em' }}>Gallery</a>}
-            <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="lens-heading" style={{ fontSize: 44, color: '#f0ede8', textDecoration: 'none', fontWeight: 300, letterSpacing: '0.02em' }}>Contact</a>
+          <nav className="flex flex-col gap-8">
+            {navLinks.map((l) => (
+              <a key={l.href} href={l.href}
+                onClick={() => setMobileNavOpen(false)}
+                className="font-['DM_Serif_Display'] text-4xl text-white/80 hover:text-[var(--brand-color,#c8b8a2)] transition-colors">
+                {l.label}
+              </a>
+            ))}
           </nav>
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-
-        {/* ── Hero ── */}
-        {isVis('hero') && (
-          <section className="lens-hero" style={{ order: secOrder('hero'), position: 'relative', background: '#0c0c0c' }}>
-            {heroImage && (
-              <img
-                src={heroImage}
-                alt=""
-                data-hero-img="1"
-                style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity }}
-              />
+      {/* ── Hero ────────────────────────────────────────────────────── */}
+      <section className="relative h-screen min-h-[600px] flex items-end pb-16 overflow-hidden">
+        <img
+          src={heroImage}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* dual gradient: bottom-up fade + subtle top-down */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0d0d0d]/40 to-transparent" />
+        <div className="relative z-10 px-8 max-w-5xl">
+          <p className="text-xs uppercase tracking-[0.3em] text-[var(--brand-color,#c8b8a2)] mb-4">
+            {theme.city || 'Photography'}
+          </p>
+          <h1 className="font-['DM_Serif_Display'] text-5xl sm:text-7xl md:text-8xl leading-[0.9] text-white mb-6">
+            {theme.companyName}
+          </h1>
+          <p className="text-white/60 text-base md:text-lg max-w-lg leading-relaxed">
+            {tagline}
+          </p>
+          <div className="flex items-center gap-5 mt-8">
+            {showServices && (
+              <a href="#sessions"
+                className="bg-[var(--brand-color,#c8b8a2)] text-[#0d0d0d] text-xs uppercase tracking-[0.2em] px-6 py-3 font-medium hover:bg-white transition-colors">
+                Book a Session
+              </a>
             )}
-            {/* gradient + text overlay */}
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(12,12,12,0.88) 0%, rgba(12,12,12,0.15) 60%, transparent 100%)', pointerEvents: 'none' }} />
-            <div className="lens-hero-content" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '0 32px 56px', width: '100%', boxSizing: 'border-box' }}>
-              <p style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 16, fontWeight: 500 }}>{theme.city || theme.industry || 'Photography'}</p>
-              <h1 className="lens-heading" style={{ fontSize: 'clamp(3rem, 8vw, 7rem)', fontWeight: 300, lineHeight: 1.05, marginBottom: 24, letterSpacing: '-0.01em' }}>{theme.companyName}</h1>
-              <p style={{ fontSize: 16, color: 'rgba(240,237,232,0.65)', maxWidth: 480, lineHeight: 1.6, marginBottom: 40 }}>{tagline}</p>
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                {showServices && (
-                  <a href="#sessions" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', background: accent, color: '#0c0c0c', textDecoration: 'none', fontSize: 12, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-                    Book a Session <ArrowRight size={14} />
-                  </a>
-                )}
-                {showProducts && (
-                  <a href="#packages" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', border: '1px solid rgba(240,237,232,0.3)', color: '#f0ede8', textDecoration: 'none', fontSize: 12, fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-                    View Packages
-                  </a>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ── Sessions (Services) ── */}
-        {showServices && (
-          <section id="sessions" className="lens-sessions-section" style={{ order: secOrder('services'), padding: '96px 0', background: '#0c0c0c' }}>
-            <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
-              <div style={{ marginBottom: 64 }}>
-                <p style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 12 }}>— What I Offer</p>
-                <h2 className="lens-heading" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 300, letterSpacing: '0.01em' }}>Sessions</h2>
-              </div>
-              <ServiceCatalog
-                services={displayServices}
-                layout={theme.serviceLayout ?? 'cards'}
-                currency={theme.currency}
-                paymentsEnabled={theme.paymentsEnabled}
-                accentColor={accent}
-                textColor="#f0ede8"
-                surfaceColor="#181818"
-                slug={theme.slug}
-                onBook={openBooking}
-              />
-            </div>
-          </section>
-        )}
-
-        {/* ── Packages / Products ── */}
-        {showProducts && (
-          <section id="packages" style={{ order: secOrder('featured-products'), padding: '96px 0', background: '#0f0f0f' }}>
-            <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
-              <div style={{ marginBottom: 64 }}>
-                <p style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 12 }}>— Take It Home</p>
-                <h2 className="lens-heading" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 300, letterSpacing: '0.01em' }}>Packages & Prints</h2>
-              </div>
-              <ProductCatalog
-                products={displayProducts}
-                layout={theme.productLayout ?? 'grid-4'}
-                currency={theme.currency}
-                paymentsEnabled={theme.paymentsEnabled}
-                accentColor={accent}
-                textColor="#f0ede8"
-                surfaceColor="#181818"
-                slug={theme.slug}
-                onSelect={openQuickView}
-              />
-            </div>
-          </section>
-        )}
-
-        {/* ── Team / Photographer bio ── */}
-        {staff.length > 0 && isVis('staff') && (
-          <section style={{ order: secOrder('staff'), padding: '96px 0', background: '#0c0c0c' }}>
-            <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 24px' }}>
-              <p style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 12 }}>— The Photographer</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
-                {staff.map((member) => (
-                  <div key={member.id} style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 40, alignItems: 'start' }}>
-                    {member.avatarUrl ? (
-                      <img src={member.avatarUrl} alt={member.name} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', filter: 'grayscale(20%)' }} />
-                    ) : (
-                      <div style={{ width: '100%', aspectRatio: '1', background: '#1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span className="lens-heading" style={{ fontSize: 48, color: 'rgba(240,237,232,0.1)' }}>{member.name[0]}</span>
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="lens-heading" style={{ fontSize: 36, fontWeight: 300, marginBottom: 16, letterSpacing: '0.01em' }}>{member.name}</h3>
-                      {member.bio && <p style={{ fontSize: 15, color: 'rgba(240,237,232,0.6)', lineHeight: 1.75 }}>{member.bio}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ── Galleries ── */}
-        {galleries && galleries.length > 0 && galleries.map((g) => (
-          <div key={g.id} id={g === galleries[0] ? 'gallery' : undefined} style={{ order: secOrder(g.id) }}>
-            <Gallery layout={g.layout} images={g.images ?? []} title={g.title} />
+            {showProducts && (
+              <a href="#work"
+                className="border border-white/30 text-white/80 text-xs uppercase tracking-[0.2em] px-6 py-3 hover:border-white hover:text-white transition-colors">
+                View Work
+              </a>
+            )}
           </div>
-        ))}
+        </div>
 
-      </div>{/* end ordered sections */}
+        {/* scroll indicator */}
+        <div className="absolute bottom-8 right-8 flex flex-col items-center gap-2 text-white/30">
+          <div className="h-12 w-px bg-gradient-to-b from-transparent to-white/30" />
+          <span className="text-[9px] uppercase tracking-[0.3em] rotate-90 origin-center translate-y-3">Scroll</span>
+        </div>
+      </section>
 
-      {/* ── Footer / Contact ── */}
-      <footer id="contact" style={{ background: '#080808', borderTop: '1px solid rgba(240,237,232,0.06)', padding: '80px 0 48px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 48, marginBottom: 64 }}>
-            <div>
-              <span className="lens-heading" style={{ fontSize: 28, fontWeight: 300, display: 'block', marginBottom: 12 }}>{theme.companyName}</span>
-              <p style={{ fontSize: 13, color: 'rgba(240,237,232,0.4)', lineHeight: 1.7 }}>{tagline}</p>
-              {theme.city && <p style={{ marginTop: 12, fontSize: 12, color: 'rgba(240,237,232,0.3)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>{theme.city}</p>}
+      {/* ── Products / Work ─────────────────────────────────────────── */}
+      {showProducts && (
+        <section id="work" className="scroll-mt-16 py-20 px-6 max-w-7xl mx-auto">
+          <div className="flex items-end justify-between mb-10">
+            <h2 className="font-['DM_Serif_Display'] text-4xl md:text-5xl">Work</h2>
+            <span className="text-xs uppercase tracking-[0.2em] text-white/30 hidden sm:block">
+              {displayProducts.length} pieces
+            </span>
+          </div>
+
+          {/* Asymmetric masonry-style grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-px bg-white/5">
+            {displayProducts.map((product, idx) => {
+              // Make every 5th item span 2 cols on desktop
+              const isWide = idx % 5 === 0;
+              return (
+                <div
+                  key={product.id}
+                  className={`group relative overflow-hidden bg-[#0d0d0d] cursor-pointer ${
+                    isWide ? 'md:col-span-2' : ''
+                  }`}
+                  onClick={() => openQuickView(product)}
+                >
+                  <div className={`${isWide ? 'aspect-[2/1]' : 'aspect-square'} overflow-hidden`}>
+                    <img
+                      src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                  </div>
+                  {/* hover overlay */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
+                    <p className="text-white text-sm font-medium">{product.name}</p>
+                    <p className="text-[var(--brand-color,#c8b8a2)] text-sm mt-1">{formatPrice(product.priceCents, theme.currency)}</p>
+                    <p className="text-white/60 text-xs mt-1 uppercase tracking-widest">
+                      {theme.paymentsEnabled ? 'Add to cart →' : 'View →'}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── Services / Sessions ─────────────────────────────────────── */}
+      {showServices && (
+        <section id="sessions" className="scroll-mt-16 py-20 bg-[#111] border-y border-white/5">
+          <div className="max-w-7xl mx-auto px-6">
+            <h2 className="font-['DM_Serif_Display'] text-4xl md:text-5xl mb-2">Sessions</h2>
+            <p className="text-white/40 text-sm mb-12 max-w-xl">
+              Every shoot is a collaboration. Tell me what you're after.
+            </p>
+
+            <div className="grid md:grid-cols-3 gap-px bg-white/5">
+              {displayServices.map((service) => (
+                <div key={service.id} className="bg-[#111] p-8 flex flex-col group">
+                  {service.imageUrls?.[0] && (
+                    <div className="aspect-[4/3] overflow-hidden mb-6">
+                      <img
+                        src={service.imageUrls[0]}
+                        alt={service.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                    </div>
+                  )}
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--brand-color,#c8b8a2)] mb-2">
+                    {service.durationMinutes < 60
+                      ? `${service.durationMinutes} min`
+                      : `${service.durationMinutes / 60}h`}
+                  </p>
+                  <h3 className="font-['DM_Serif_Display'] text-2xl mb-3">{service.name}</h3>
+                  {service.description && (
+                    <p className="text-sm text-white/50 leading-relaxed mb-6 flex-1">{service.description}</p>
+                  )}
+                  <div className="flex items-center justify-between mt-auto">
+                    <span className="font-['DM_Serif_Display'] text-2xl text-[var(--brand-color,#c8b8a2)]">
+                      {formatPrice(service.priceCents, theme.currency)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => openBooking(service)}
+                      disabled={!theme.paymentsEnabled}
+                      className="text-xs uppercase tracking-[0.2em] border border-white/20 px-5 py-2.5 hover:border-[var(--brand-color,#c8b8a2)] hover:text-[var(--brand-color,#c8b8a2)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      {theme.paymentsEnabled ? 'Book' : 'Enquire'}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div>
-              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(240,237,232,0.25)', marginBottom: 20 }}>Navigate</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {showServices && <a href="#sessions" style={{ color: 'rgba(240,237,232,0.5)', textDecoration: 'none', fontSize: 14, transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = accent)} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(240,237,232,0.5)')}>Sessions</a>}
-                {showProducts && <a href="#packages" style={{ color: 'rgba(240,237,232,0.5)', textDecoration: 'none', fontSize: 14, transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = accent)} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(240,237,232,0.5)')}>Packages & Prints</a>}
-                <button type="button" onClick={() => setCustomOrderOpen(true)} style={{ background: 'none', border: 'none', color: 'rgba(240,237,232,0.5)', fontSize: 14, cursor: 'pointer', padding: 0, textAlign: 'left', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = accent)} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(240,237,232,0.5)')}>Custom Project</button>
-              </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── About / Team ────────────────────────────────────────────── */}
+      <section id="about" className="scroll-mt-16 py-24 px-6 max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-16 items-center">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--brand-color,#c8b8a2)] mb-4">About</p>
+            <h2 className="font-['DM_Serif_Display'] text-4xl md:text-5xl mb-6 leading-tight">
+              {theme.companyName}
+            </h2>
+            {theme.city && (
+              <p className="text-white/40 text-sm mb-6 uppercase tracking-[0.15em]">{theme.city}</p>
+            )}
+            <p className="text-white/60 text-base leading-relaxed max-w-md">
+              {tagline}
+            </p>
+          </div>
+
+          {displayStaff.length > 0 && (
+            <div className="flex flex-col gap-8">
+              {displayStaff.map((member) => (
+                <div key={member.id} className="flex items-start gap-5">
+                  {member.avatarUrl && (
+                    <img
+                      src={member.avatarUrl}
+                      alt={member.name}
+                      className="w-20 h-20 object-cover shrink-0 grayscale hover:grayscale-0 transition-all duration-500"
+                    />
+                  )}
+                  <div>
+                    <h4 className="font-['DM_Serif_Display'] text-xl mb-1">{member.name}</h4>
+                    {member.bio && <p className="text-sm text-white/50 leading-relaxed">{member.bio}</p>}
+                  </div>
+                </div>
+              ))}
             </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── Contact / Footer ────────────────────────────────────────── */}
+      <footer id="contact" className="scroll-mt-16 bg-[#080808] border-t border-white/5 py-20 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-12 mb-16">
             <div>
-              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(240,237,232,0.25)', marginBottom: 20 }}>Stay Connected</p>
-              <p style={{ fontSize: 13, color: 'rgba(240,237,232,0.4)', marginBottom: 16, lineHeight: 1.6 }}>Get session openings and new work straight to your inbox.</p>
-              <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} style={{ display: 'flex', gap: 0 }}>
+              <p className="font-['DM_Serif_Display'] text-2xl mb-2">{theme.companyName}</p>
+              {theme.city && <p className="text-white/40 text-sm">{theme.city}</p>}
+            </div>
+
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-4">Stay in touch</p>
+              <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} className="flex gap-2">
                 <input
                   type="email"
                   placeholder="your@email.com"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
-                  style={{ flex: 1, background: '#141414', border: '1px solid rgba(240,237,232,0.12)', borderRight: 'none', padding: '12px 16px', color: '#f0ede8', fontSize: 13, outline: 'none' }}
+                  className="flex-1 bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-[var(--brand-color,#c8b8a2)] transition-colors"
                 />
                 <button
                   type="submit"
                   disabled={subscribeStatus === 'loading' || subscribeStatus === 'success'}
-                  style={{ padding: '12px 20px', background: accent, border: 'none', color: '#0c0c0c', fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', opacity: subscribeStatus === 'loading' ? 0.6 : 1 }}
+                  className="bg-[var(--brand-color,#c8b8a2)] text-[#0d0d0d] px-4 text-xs font-medium uppercase tracking-widest hover:bg-white transition-colors disabled:opacity-40"
                 >
-                  {subscribeStatus === 'success' ? '✓' : subscribeStatus === 'loading' ? '…' : 'Join'}
+                  {subscribeStatus === 'success' ? '✓' : '→'}
                 </button>
               </form>
             </div>
-          </div>
-          <ContactBlock theme={theme} textColor="rgba(240,237,232,0.4)" />
-          <div style={{ borderTop: '1px solid rgba(240,237,232,0.06)', marginTop: 40, paddingTop: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-            <p style={{ fontSize: 12, color: 'rgba(240,237,232,0.2)', letterSpacing: '0.1em' }}>© {new Date().getFullYear()} {theme.companyName}</p>
-            <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-              <Instagram size={16} style={{ color: 'rgba(240,237,232,0.25)', cursor: 'pointer' }} />
+
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-4">Enquiries</p>
+              <button
+                type="button"
+                onClick={() => setCustomOrderOpen(true)}
+                className="text-sm text-white/60 hover:text-[var(--brand-color,#c8b8a2)] transition-colors underline underline-offset-4"
+              >
+                Send a project brief →
+              </button>
             </div>
+          </div>
+
+          <div className="border-t border-white/5 pt-8 flex flex-col sm:flex-row justify-between gap-4">
+            <p className="text-white/20 text-xs uppercase tracking-[0.2em]">
+              &copy; {new Date().getFullYear()} {theme.companyName}
+            </p>
+            <p className="text-white/20 text-xs">All rights reserved.</p>
           </div>
         </div>
       </footer>
 
-      {/* ── Commerce overlays ── */}
+      {/* ── Modals & overlays ───────────────────────────────────────── */}
       <ProductQuickView
         product={quickViewProduct}
         onClose={closeQuickView}
@@ -292,6 +350,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         currency={theme.currency}
         paymentsEnabled={theme.paymentsEnabled}
       />
+
       {showProducts && (
         <CartDrawer
           isOpen={cartOpen}
@@ -302,6 +361,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           onCheckout={openCheckout}
         />
       )}
+
       <CheckoutModal
         isOpen={checkoutOpen}
         onClose={closeCheckout}
@@ -317,6 +377,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         onPaymentSuccess={confirmOrderPayment}
         onPaymentCancel={cancelOrderPayment}
       />
+
       <BookingModal
         isOpen={bookingOpen}
         onClose={closeBooking}
@@ -324,13 +385,11 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         selectedDate={selectedDate}
         selectedSlot={selectedSlot}
         availableSlots={availableSlots}
-        cityLabel={bookingCityLabel}
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
-        onRefreshSlots={refreshSlots}
-        slotsRefreshing={slotsRefreshing}
       />
+
       <BookingStatusOverlay
         status={bookingStatus}
         error={bookingError}
@@ -343,6 +402,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         onPaymentSuccess={confirmBookingPayment}
         onPaymentCancel={cancelBookingPayment}
       />
+
       <CustomOrderModal
         isOpen={customOrderOpen}
         onClose={() => setCustomOrderOpen(false)}

@@ -33,10 +33,6 @@ import domainRoutes from './routes/domains';
 import domainPurchaseRoutes from './routes/domain-purchases';
 import inviteRoutes from './routes/invite';
 import pageSectionRoutes from './routes/page-sections';
-import blockedDateRoutes from './routes/blocked-dates';
-import emailLogRoutes from './routes/email-log';
-import googleCalRoutes from './routes/google-cal';
-import outlookCalRoutes from './routes/outlook-cal';
 
 const app = new Hono();
 
@@ -48,18 +44,11 @@ app.onError((err, c) => {
 // Middleware
 app.use('*', logger());
 app.use('/api/*', cors({
-  origin: (origin) => {
-    if (!origin) return origin;
-    const allowed = [
-      process.env.CLIENT_URL || 'http://localhost:5173',
-      `https://${PLATFORM_DOMAIN}`,
-      `https://www.${PLATFORM_DOMAIN}`,
-    ];
-    if (allowed.includes(origin)) return origin;
-    // Allow any subdomain of the platform domain
-    if (origin.endsWith(`.${PLATFORM_DOMAIN}`)) return origin;
-    return null;
-  },
+  origin: [
+    process.env.CLIENT_URL || 'http://localhost:5173',
+    'https://shopsuitedirect.com',
+    'https://www.shopsuitedirect.com',
+  ],
   credentials: true,
 }));
 
@@ -100,45 +89,25 @@ app.route('/api/domains', domainRoutes);
 app.route('/api/domain-purchases', domainPurchaseRoutes);
 app.route('/api/invite', inviteRoutes);
 app.route('/api/page-sections', pageSectionRoutes);
-app.route('/api/blocked-dates', blockedDateRoutes);
-app.route('/api/email-log', emailLogRoutes);
-app.route('/api/google-cal', googleCalRoutes);
-app.route('/api/outlook-cal', outlookCalRoutes);
 
 // Custom domain middleware — if Host matches a verified tenant domain,
 // inject the tenant slug so the SPA can resolve the storefront.
 // Must come before the static file handler.
-const PLATFORM_DOMAIN = process.env.PLATFORM_DOMAIN || 'shopsuitedirect.com';
-const RESERVED_SUBDOMAINS = new Set(['www', 'api', 'app', 'admin', 'mail', 'ftp']);
-
 app.use('/*', async (c, next) => {
   const host = c.req.header('host') ?? '';
-  const hostNoPort = host.replace(/:\d+$/, '');
-
-  // ── Platform subdomain: {slug}.shopsuitedirect.com ──────────────────────────
-  if (hostNoPort.endsWith(`.${PLATFORM_DOMAIN}`)) {
-    const sub = hostNoPort.slice(0, hostNoPort.length - PLATFORM_DOMAIN.length - 1);
-    if (sub && !RESERVED_SUBDOMAINS.has(sub)) {
-      const originalPath = new URL(c.req.url).pathname;
-      const rewritten = originalPath === '/' ? `/store/${sub}` : `/store/${sub}${originalPath}`;
-      c.req.raw = new Request(new URL(rewritten, c.req.url).toString(), c.req.raw);
-      return next();
-    }
-  }
-
   const ownHosts = [
     'localhost',
     '127.0.0.1',
     process.env.RAILWAY_PUBLIC_DOMAIN ?? '',
-    PLATFORM_DOMAIN,
-    `www.${PLATFORM_DOMAIN}`,
+    'shopsuitedirect.com',
+    'www.shopsuitedirect.com',
   ].filter(Boolean);
 
   const isOwnHost = ownHosts.some((h) => host === h || host.endsWith(`.${h}`));
   if (isOwnHost) return next();
 
-  // ── Custom tenant domain ─────────────────────────────────────────────────────
-  const domain = hostNoPort;
+  // Strip port for local dev
+  const domain = host.replace(/:\d+$/, '');
   const tenantId = await domainCache.resolve(domain);
   if (!tenantId) return next();
 
@@ -161,90 +130,6 @@ app.use('/*', async (c, next) => {
 // Serve React client for all non-API routes
 // The Vite build outputs to dist/client relative to repo root
 app.use('/*', serveStatic({ root: CLIENT_DIST }));
-
-// Booking link — /book/:slug — focused booking-only page
-app.get('/book/:slug', async (c) => {
-  const { slug } = c.req.param();
-  let html = await import('fs').then(fs =>
-    fs.promises.readFile(join(CLIENT_DIST, 'index.html'), 'utf-8')
-  );
-  try {
-    const rows = await db`
-      SELECT company_name, tagline, hero_image_key, brand_color
-      FROM tenants WHERE slug = ${slug} AND is_active = true LIMIT 1
-    `;
-    if (rows[0]) {
-      const t = rows[0] as { company_name: string; tagline?: string; hero_image_key?: string; brand_color?: string };
-      const { enrichWithUrls } = await import('./services/storage');
-      const enriched = await enrichWithUrls(t);
-      const title = `Book — ${t.company_name}`;
-      const description = t.tagline ? `Book with ${t.company_name} — ${t.tagline}` : `Book an appointment with ${t.company_name}`;
-      const image = enriched.hero_image_url || '';
-      const protocol = c.req.header('x-forwarded-proto') || 'https';
-      const host = c.req.header('host') || '';
-      const pageUrl = `${protocol}://${host}${c.req.path}`;
-      const ogTags = [
-        `<meta property="og:type" content="website" />`,
-        `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`,
-        `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />`,
-        `<meta property="og:url" content="${pageUrl}" />`,
-        image ? `<meta property="og:image" content="${image}" />` : '',
-        `<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}" />`,
-        `<meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />`,
-        `<meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />`,
-        image ? `<meta name="twitter:image" content="${image}" />` : '',
-        `<title>${title.replace(/</g, '&lt;')}</title>`,
-      ].filter(Boolean).join('\n    ');
-      html = html.replace('</head>', `    ${ogTags}\n  </head>`);
-    }
-  } catch {
-    // Fall through
-  }
-  return c.html(html);
-});
-
-// Storefront OG meta injection — intercept /store/:slug before generic fallback
-app.get('/store/:slug', async (c) => {
-  const { slug } = c.req.param();
-  let html = await import('fs').then(fs =>
-    fs.promises.readFile(join(CLIENT_DIST, 'index.html'), 'utf-8')
-  );
-  try {
-    const rows = await db`
-      SELECT company_name, tagline, hero_image_key, brand_color
-      FROM tenants WHERE slug = ${slug} AND is_active = true LIMIT 1
-    `;
-    if (rows[0]) {
-      const t = rows[0] as { company_name: string; tagline?: string; hero_image_key?: string; brand_color?: string };
-      const { enrichWithUrls } = await import('./services/storage');
-      const enriched = await enrichWithUrls(t);
-      const title = t.company_name;
-      const description = t.tagline || `Shop ${t.company_name} — powered by Shop Suite Direct`;
-      const image = enriched.hero_image_url || '';
-      const protocol = c.req.header('x-forwarded-proto') || 'https';
-      const host = c.req.header('host') || '';
-      const pageUrl = `${protocol}://${host}${c.req.path}`;
-      const ogTags = [
-        `<meta property="og:type" content="website" />`,
-        `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`,
-        `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />`,
-        `<meta property="og:url" content="${pageUrl}" />`,
-        image ? `<meta property="og:image" content="${image}" />` : '',
-        image ? `<meta property="og:image:width" content="1200" />` : '',
-        image ? `<meta property="og:image:height" content="630" />` : '',
-        `<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}" />`,
-        `<meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />`,
-        `<meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />`,
-        image ? `<meta name="twitter:image" content="${image}" />` : '',
-        `<title>${title.replace(/</g, '&lt;')}</title>`,
-      ].filter(Boolean).join('\n    ');
-      html = html.replace('</head>', `    ${ogTags}\n  </head>`);
-    }
-  } catch {
-    // Fall through and serve plain index.html if lookup fails
-  }
-  return c.html(html);
-});
 
 // SPA fallback — serve index.html for all unmatched routes
 app.get('/*', async (c) => {

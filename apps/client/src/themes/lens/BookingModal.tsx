@@ -11,140 +11,86 @@ interface BookingModalProps {
   selectedDate: Date | null;
   selectedSlot: string | null;
   availableSlots: AvailableSlot[];
-  cityLabel?: string | null;
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
-  onRefreshSlots?: () => void;
-  slotsRefreshing?: boolean;
 }
 
 export default function BookingModal({
-  isOpen,
-  onClose,
-  service,
-  selectedDate,
-  selectedSlot,
-  availableSlots,
-  cityLabel,
-  onSelectDate,
-  onSelectSlot,
-  onConfirm,
-  onRefreshSlots,
-  slotsRefreshing = false,
+  isOpen, onClose, service,
+  selectedDate, selectedSlot, availableSlots,
+  onSelectDate, onSelectSlot, onConfirm,
 }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
 
   if (!isOpen || !service) return null;
-
   const canConfirm = Boolean(selectedDate && selectedSlot && name && email);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white text-[#111111] w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between border-b border-[#111111]/10 p-6">
-          <h2 className="text-2xl font-light">Book: <span className="font-medium">{service.name}</span></h2>
-          <button type="button" aria-label="Close" onClick={onClose} className="text-[#111111]/40 hover:text-[#111111]">
-            <X size={22} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="bg-[#0d0d0d] border border-white/10 text-[#f0ede8] w-full max-w-3xl max-h-[90vh] overflow-y-auto font-['DM_Sans']">
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+          <h2 className="font-['DM_Serif_Display'] text-2xl">{service.name}</h2>
+          <button type="button" aria-label="Close" onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+            <X size={20} />
           </button>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 p-6">
-          <div>
-            <Calendar
-              selectedDate={selectedDate}
-              selectedSlot={selectedSlot}
-              availableSlots={availableSlots}
-              onSelectDate={onSelectDate}
-              onSelectSlot={onSelectSlot}
-            />
-            {selectedDate && onRefreshSlots && (
-              <button
-                type="button"
-                onClick={onRefreshSlots}
-                disabled={slotsRefreshing}
-                className="mt-3 flex items-center gap-1.5 text-xs opacity-40 hover:opacity-70 transition-opacity disabled:opacity-30"
-              >
-                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" className={slotsRefreshing ? 'animate-spin' : ''} aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5a5.5 5.5 0 0 1 4.1 1.85" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M12.5 1v3.5H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                {slotsRefreshing ? 'Checking…' : 'Sync now'}
-              </button>
-            )}
-          </div>
+          <Calendar
+            selectedDate={selectedDate}
+            selectedSlot={selectedSlot}
+            availableSlots={availableSlots}
+            onSelectDate={onSelectDate}
+            onSelectSlot={onSelectSlot}
+          />
 
-          <div className="flex flex-col gap-4">
-            <div className="bg-[#f8f8f8] p-4">
-              {service.description && <p className="text-sm text-[#111111]/60 mb-2 font-light">{service.description}</p>}
+          <div className="flex flex-col gap-5">
+            <div className="border border-white/10 p-4 bg-white/3">
+              {service.description && (
+                <p className="text-sm text-white/60 mb-4 leading-relaxed">{service.description}</p>
+              )}
               <div className="flex justify-between text-sm">
-                <span className="uppercase tracking-widest text-[#111111]/40 text-xs font-medium">Duration</span>
-                <span className="font-light">{service.durationMinutes} min</span>
+                <span className="text-white/40 uppercase tracking-widest text-xs">Duration</span>
+                <span className="text-white/80">{service.durationMinutes} min</span>
               </div>
-              <div className="flex justify-between text-sm mt-1">
-                <span className="uppercase tracking-widest text-[#111111]/40 text-xs font-medium">Price</span>
-                <span className="font-bold">{formatPrice(service.priceCents)}</span>
+              <div className="flex justify-between text-sm mt-2">
+                <span className="text-white/40 uppercase tracking-widest text-xs">Rate</span>
+                <span className="font-['DM_Serif_Display'] text-lg text-[var(--brand-color,#c8b8a2)]">
+                  {formatPrice(service.priceCents)}
+                </span>
               </div>
             </div>
 
-            {cityLabel && (
-              <div className="flex items-center gap-2 rounded px-3 py-2 bg-blue-50 text-blue-700 text-sm mb-2">
-                <span>📍</span>
-                <span className="font-medium">{cityLabel}</span>
-              </div>
-            )}
-
             <form
               className="flex flex-col gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (canConfirm) onConfirm({ name, email, phone });
-              }}
+              onSubmit={(e) => { e.preventDefault(); if (canConfirm) onConfirm({ name, email, phone }); }}
             >
-              <div>
-                <label className="block text-xs uppercase tracking-widest text-[#111111]/40 font-medium mb-1" htmlFor="min-name">
-                  Name
-                </label>
-                <input
-                  id="min-name"
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full border border-[#111111]/20 px-3 py-2 text-sm focus:outline-none focus:border-[#111111]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs uppercase tracking-widest text-[#111111]/40 font-medium mb-1" htmlFor="min-email">
-                  Email
-                </label>
-                <input
-                  id="min-email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-[#111111]/20 px-3 py-2 text-sm focus:outline-none focus:border-[#111111]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs uppercase tracking-widest text-[#111111]/40 font-medium mb-1" htmlFor="min-phone">
-                  Phone
-                </label>
-                <input
-                  id="min-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full border border-[#111111]/20 px-3 py-2 text-sm focus:outline-none focus:border-[#111111]"
-                />
-              </div>
+              {[
+                { id: 'ln-name', label: 'Name', type: 'text', value: name, set: setName, required: true },
+                { id: 'ln-email', label: 'Email', type: 'email', value: email, set: setEmail, required: true },
+                { id: 'ln-phone', label: 'Phone', type: 'tel', value: phone, set: setPhone, required: false },
+              ].map(({ id, label, type, value, set, required }) => (
+                <div key={id}>
+                  <label className="block text-[10px] uppercase tracking-[0.2em] text-white/40 mb-1.5" htmlFor={id}>
+                    {label}
+                  </label>
+                  <input
+                    id={id} type={type} required={required} value={value}
+                    onChange={(e) => set(e.target.value)}
+                    className="w-full bg-white/5 border border-white/15 px-3 py-2.5 text-sm text-white/90 placeholder-white/25 focus:outline-none focus:border-[var(--brand-color,#c8b8a2)] transition-colors"
+                  />
+                </div>
+              ))}
 
               <button
                 type="submit"
                 disabled={!canConfirm}
-                className="mt-2 bg-[var(--brand-color,#111111)] text-white uppercase tracking-widest text-sm font-medium py-3 hover:bg-[#333333] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="mt-1 bg-[var(--brand-color,#c8b8a2)] text-[#0d0d0d] text-xs uppercase tracking-[0.2em] py-3 font-medium hover:bg-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                Confirm Booking
+                Book Session
               </button>
             </form>
           </div>

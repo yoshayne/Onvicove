@@ -3,10 +3,7 @@ import { useState } from 'react';
 // <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 import { ShoppingCart } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import ContactBlock from '../shared/ContactBlock';
-import Gallery from '../shared/Gallery';
-import type { GallerySectionData } from '../shared/Gallery';
-import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
+import { formatPrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -17,8 +14,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-
-export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -28,9 +24,8 @@ export default function Storefront({ theme, products, services, staff, visibleSe
     checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
     orderClientSecret, orderAmountCents, confirmOrderPayment, cancelOrderPayment,
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
-    availableSlots, bookingCityLabel, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
+    availableSlots, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
-    refreshSlots, slotsRefreshing,
     bookingClientSecret, bookingAmountCents,
   } = useStorefrontCommerce(theme.slug);
 
@@ -39,10 +34,8 @@ export default function Storefront({ theme, products, services, staff, visibleSe
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
 
-  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
-  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
-  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
 
   return (
     <div className="min-h-screen bg-white text-[#111111] font-['Poppins']">
@@ -78,10 +71,8 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         </div>
       </nav>
 
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero */}
-      {isVis('hero') && (
-      <section style={{ order: secOrder('hero') }} className="relative min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-gradient-to-br from-[#f0f0ff] to-[#ffe0f0] py-24">
+      <section className="relative min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-gradient-to-br from-[#f0f0ff] to-[#ffe0f0] py-24">
         <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full bg-[var(--brand-color,#ff3cac)]/10" />
         <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-[#f0f0ff]/60 translate-x-1/3 translate-y-1/3" />
         <div className="relative z-10 px-6 max-w-3xl">
@@ -91,46 +82,72 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           <p className="text-[#111111]/70 text-lg md:text-xl font-medium">{tagline}</p>
         </div>
       </section>
-      )}
 
       {/* Products */}
       {showProducts && (
-        <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
+        <section id="products" className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
           <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[var(--brand-color,#ff3cac)]">
-            Shop
+            Shop Our Faves
           </h2>
-          <ProductCatalog
-            products={displayProducts}
-            layout={theme.productLayout ?? 'grid-4'}
-            currency={theme.currency}
-            paymentsEnabled={theme.paymentsEnabled}
-            accentColor={theme.brandColor ?? '#ff3cac'}
-            textColor="#111111"
-            surfaceColor="#f0f0ff"
-            slug={theme.slug}
-            onSelect={openQuickView}
-          />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {displayProducts.map((product) => (
+              <div key={product.id} className="bg-[#f0f0ff] rounded-2xl p-4 flex flex-col">
+                <div className="aspect-square overflow-hidden rounded-2xl bg-white mb-4">
+                  <img
+                    src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
+                    alt={product.name}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <h3 className="font-['Poppins'] font-semibold text-lg mb-1">{product.name}</h3>
+                <p className="text-sm text-[#111111]/60 mb-3 flex-1">{formatPrice(product.priceCents, theme.currency)}</p>
+                <button
+                  type="button"
+                  onClick={() => openQuickView(product)}
+                  className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-2 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors"
+                >
+                  {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
+                </button>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
       {/* Services */}
       {showServices && (
-        <section id="services" style={{ order: secOrder('services') }} className="scroll-mt-20 bg-[#f0f0ff] py-20">
+        <section id="services" className="scroll-mt-20 bg-[#f0f0ff] py-20">
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="font-['Poppins'] font-bold text-3xl md:text-4xl mb-12 text-center text-[var(--brand-color,#ff3cac)]">
-              Book
+              Book a Session
             </h2>
-            <ServiceCatalog
-              services={displayServices}
-              layout={theme.serviceLayout ?? 'cards'}
-              currency={theme.currency}
-              paymentsEnabled={theme.paymentsEnabled}
-              accentColor={theme.brandColor ?? '#ff3cac'}
-              textColor="#111111"
-              surfaceColor="#ffffff"
-              slug={theme.slug}
-              onBook={openBooking}
-            />
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {displayServices.map((service) => (
+                <div key={service.id} className="bg-white p-6 rounded-2xl flex flex-col">
+                  {service.imageUrls?.[0] && (
+                    <div className="aspect-[4/3] overflow-hidden rounded-2xl mb-4">
+                      <img src={service.imageUrls[0]} alt={service.name} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <h3 className="font-['Poppins'] font-semibold text-xl mb-2">{service.name}</h3>
+                  {service.description && (
+                    <p className="text-sm text-[#111111]/60 mb-4 flex-1">{service.description}</p>
+                  )}
+                  <div className="flex items-center justify-between text-sm mb-4">
+                    <span className="text-[#111111]/50 font-medium">{service.durationMinutes} min</span>
+                    <span className="text-[var(--brand-color,#ff3cac)] font-bold">{formatPrice(service.priceCents, theme.currency)}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openBooking(service)}
+                    disabled={!theme.paymentsEnabled}
+                    className="bg-[var(--brand-color,#ff3cac)] text-white font-bold text-sm rounded-full py-3 hover:bg-[var(--brand-color,#ff3cac)]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--brand-color,#ff3cac)]"
+                  >
+                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
+                  </button>
+                </div>
+              ))}
+            </div>
 
             {staff.length > 0 && (
               <div className="mt-16 flex flex-wrap justify-center gap-12">
@@ -152,13 +169,6 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           </div>
         </section>
       )}
-
-      {galleries && galleries.length > 0 && galleries.map((g) => (
-        <div key={g.id} style={{ order: secOrder(g.id) }}>
-          <Gallery layout={g.layout} images={g.images ?? []} title={g.title} />
-        </div>
-      ))}
-      </div>{/* end ordered sections */}
 
       {/* Footer */}
       <footer id="footer" className="scroll-mt-20 bg-white border-t-4 border-[var(--brand-color,#ff3cac)] py-12">
@@ -182,7 +192,6 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             </button>
           </form>
           <button type="button" onClick={() => setCustomOrderOpen(true)} className="mt-4 border border-white/60 px-5 py-2 text-xs uppercase tracking-widest text-white hover:bg-white/10 transition-opacity">Custom Order</button>
-          <ContactBlock theme={theme} textColor="rgba(17,17,17,0.5)" />
           <p className="text-[#111111]/40 text-xs mt-6">
             &copy; {new Date().getFullYear()} {theme.companyName}. All rights reserved.
           </p>
@@ -231,12 +240,9 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         selectedDate={selectedDate}
         selectedSlot={selectedSlot}
         availableSlots={availableSlots}
-        cityLabel={bookingCityLabel}
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
-        onRefreshSlots={refreshSlots}
-        slotsRefreshing={slotsRefreshing}
       />
 
       <BookingStatusOverlay

@@ -11,12 +11,9 @@ interface BookingModalProps {
   selectedDate: Date | null;
   selectedSlot: string | null;
   availableSlots: AvailableSlot[];
-  cityLabel?: string | null;
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
-  onRefreshSlots?: () => void;
-  slotsRefreshing?: boolean;
 }
 
 export default function BookingModal({
@@ -26,12 +23,9 @@ export default function BookingModal({
   selectedDate,
   selectedSlot,
   availableSlots,
-  cityLabel,
   onSelectDate,
   onSelectSlot,
   onConfirm,
-  onRefreshSlots,
-  slotsRefreshing = false,
 }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -78,17 +72,6 @@ export default function BookingModal({
               onSelectDate={onSelectDate}
               onSelectSlot={onSelectSlot}
             />
-            {selectedDate && onRefreshSlots && (
-              <button
-                type="button"
-                onClick={onRefreshSlots}
-                disabled={slotsRefreshing}
-                className="mt-3 flex items-center gap-1.5 text-xs opacity-40 hover:opacity-70 transition-opacity disabled:opacity-30"
-              >
-                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" className={slotsRefreshing ? 'animate-spin' : ''} aria-hidden="true"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5a5.5 5.5 0 0 1 4.1 1.85" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M12.5 1v3.5H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                {slotsRefreshing ? 'Checking…' : 'Sync now'}
-              </button>
-            )}
           </div>
 
           {/* Right — Details + Form */}
@@ -120,13 +103,6 @@ export default function BookingModal({
             )}
 
             {/* Form */}
-            {cityLabel && (
-              <div className="flex items-center gap-2 rounded px-3 py-2 bg-blue-50 text-blue-700 text-sm mb-2">
-                <span>📍</span>
-                <span className="font-medium">{cityLabel}</span>
-              </div>
-            )}
-
             <form
               className="flex flex-col gap-4 flex-1"
               onSubmit={(e) => {

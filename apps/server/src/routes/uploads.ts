@@ -16,7 +16,7 @@ app.post('/', async (c) => {
   const tenant = c.get('tenant') as { id: string };
 
   const body = await c.req.parseBody();
-  const file = body['image'];
+  const file = body['image'] ?? body['file'];
 
   if (!(file instanceof File)) {
     return c.json({ error: 'No image file provided' }, 400);

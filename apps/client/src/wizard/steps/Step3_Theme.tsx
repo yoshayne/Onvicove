@@ -1,7 +1,5 @@
 import { useWizardStore } from '../wizardStore';
 import type { ThemeId } from '../../themes/types';
-import { FONT_PAIRS } from '../../themes/shared/fontPairs';
-import type { FontPairId } from '../../themes/shared/fontPairs';
 
 interface ThemeOption {
   id: ThemeId;
@@ -24,14 +22,11 @@ const THEME_OPTIONS: ThemeOption[] = [
   { id: 'brutalist', name: 'Brutalist', description: 'Raw, bold, unconventional', colors: ['#ffffff', '#000000', '#0000ff'], premium: true },
   { id: 'neon-tokyo', name: 'Neon Tokyo', description: 'Cyberpunk neon energy', colors: ['#050510', '#ff2d9b', '#0a0a20'], premium: true },
   { id: 'craft', name: 'Craft', description: 'Handmade paper textures', colors: ['#f5f0e8', '#5c4a32', '#ece5d8'], premium: true },
-  { id: 'lens', name: 'Lens', description: 'Photographers — sessions & prints', colors: ['#0c0c0c', '#c8a96e', '#f0ede8'] },
 ];
 
 export default function Step3_Theme() {
   const themeId = useWizardStore((s) => s.themeId);
   const setThemeId = useWizardStore((s) => s.setThemeId);
-  const fontPairId = useWizardStore((s) => s.fontPairId);
-  const setFontPairId = useWizardStore((s) => s.setFontPairId);
   const plan = useWizardStore((s) => s.plan);
   const isPro = plan === 'pro' || plan === 'business';
 
@@ -120,36 +115,6 @@ export default function Step3_Theme() {
               </button>
             );
           })}
-        </div>
-      </div>
-
-      {/* Font pairing picker */}
-      <div className="flex flex-col gap-4 pt-2">
-        <div>
-          <h3 className="text-base font-semibold text-gray-900">Typography</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Choose a font pairing for your headings and body text.</p>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {FONT_PAIRS.map((pair) => (
-            <button
-              key={pair.id}
-              type="button"
-              onClick={() => setFontPairId(pair.id as FontPairId)}
-              className={`flex flex-col gap-1.5 rounded-xl border p-3 text-left transition ${
-                fontPairId === pair.id
-                  ? 'border-gray-900 ring-1 ring-gray-900 bg-gray-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <p className="text-sm font-semibold text-gray-900 leading-none" style={{ fontFamily: pair.heading }}>
-                {pair.previewHeading}
-              </p>
-              <p className="text-xs text-gray-500 leading-none" style={{ fontFamily: pair.body }}>
-                {pair.previewBody}
-              </p>
-              <p className="text-[11px] text-gray-400 mt-0.5">{pair.description}</p>
-            </button>
-          ))}
         </div>
       </div>
     </div>

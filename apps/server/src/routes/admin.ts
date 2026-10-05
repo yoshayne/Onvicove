@@ -4,13 +4,14 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireAdmin } from '../middleware/admin';
 import { stripe } from '../services/stripe';
-import { generateImpersonationToken } from '../lib/impersonate-token';
 import { getPlatformSettings, savePlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../services/settings';
 import {
   sendPlanUpgraded, sendPlanDowngraded, sendAccountSuspended,
-  sendOrderRefunded, sendBookingRefunded, sendAdminRefund, sendInvite,
+  sendOrderRefunded, sendBookingRefunded, sendAdminRefund,
+  sendInvite,
 } from '../services/email';
-import crypto from 'crypto';
+import { generateImpersonationToken } from '../lib/impersonate-token';
+import { randomBytes } from 'crypto';
 
 const app = new Hono();
 
@@ -71,10 +72,14 @@ app.get('/tenants', async (c) => {
   const whereClause = conditions.reduce((acc, cond) => db`${acc} AND ${cond}`);
 
   const tenants = await db`
-    SELECT id, company_name, slug, plan, plan_expires_at, is_active, stripe_onboarded, industry, city, created_at
-    FROM tenants
+    SELECT t.id, t.company_name, t.slug, t.plan, t.plan_expires_at, t.is_active,
+           t.stripe_onboarded, t.industry, t.city, t.created_at,
+           t.created_by_admin, t.admin_created_by,
+           (t.clerk_user_id IS NULL) AS unclaimed,
+           (SELECT ti.invite_email FROM tenant_invites ti WHERE ti.tenant_id = t.id AND ti.claimed_at IS NULL AND ti.expires_at > NOW() ORDER BY ti.created_at DESC LIMIT 1) AS pending_invite_email
+    FROM tenants t
     WHERE ${whereClause}
-    ORDER BY created_at DESC
+    ORDER BY t.created_at DESC
     LIMIT 100
   `;
 
@@ -98,90 +103,6 @@ app.get('/tenants/:id', async (c) => {
   `;
 
   return c.json({ tenant, counts });
-});
-
-const createTenantSchema = z.object({
-  company_name: z.string().min(1),
-  slug: z.string().min(1).regex(/^[a-z0-9-]+$/),
-  mode: z.enum(['store', 'book', 'both']).optional(),
-  plan: z.enum(['starter', 'pro', 'business']).optional(),
-  theme_id: z.string().optional(),
-  brand_color: z.string().optional(),
-  city: z.string().optional(),
-  industry: z.string().optional(),
-});
-
-// POST /api/admin/tenants — create a new tenant (admin-initiated, no owner yet)
-app.post('/tenants', async (c) => {
-  const body = await c.req.json().catch(() => ({}));
-  const parsed = createTenantSchema.safeParse(body);
-  if (!parsed.success) return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
-
-  const d = parsed.data;
-
-  const existing = await db`SELECT id FROM tenants WHERE slug = ${d.slug} LIMIT 1`;
-  if (existing[0]) return c.json({ error: 'A site with that URL slug already exists' }, 409);
-
-  const rows = await db`
-    INSERT INTO tenants (
-      company_name, slug, mode, plan, theme_id, brand_color, city, industry,
-      wizard_completed, is_active
-    ) VALUES (
-      ${d.company_name},
-      ${d.slug},
-      ${d.mode ?? 'both'},
-      ${d.plan ?? 'starter'},
-      ${d.theme_id ?? 'editorial'},
-      ${d.brand_color ?? '#3D4F7C'},
-      ${d.city ?? null},
-      ${d.industry ?? null},
-      TRUE,
-      TRUE
-    )
-    RETURNING *
-  `;
-
-  await logAdminAction(c, 'create_tenant', 'tenant', rows[0].id as string, { company_name: d.company_name, slug: d.slug });
-
-  return c.json({ tenant: rows[0] }, 201);
-});
-
-const inviteTenantSchema = z.object({
-  invite_email: z.string().email(),
-});
-
-// POST /api/admin/tenants/:id/invite — create invite token and email the client
-app.post('/tenants/:id/invite', async (c) => {
-  const id = c.req.param('id');
-  const body = await c.req.json().catch(() => ({}));
-  const parsed = inviteTenantSchema.safeParse(body);
-  if (!parsed.success) return c.json({ error: 'A valid invite_email is required' }, 400);
-
-  const tenantRows = await db`SELECT id, company_name, slug FROM tenants WHERE id = ${id} LIMIT 1`;
-  if (!tenantRows[0]) return c.json({ error: 'Tenant not found' }, 404);
-  const tenant = tenantRows[0] as { id: string; company_name: string; slug: string };
-
-  const token = crypto.randomBytes(32).toString('hex');
-  const { invite_email } = parsed.data;
-
-  await db`
-    INSERT INTO tenant_invites (tenant_id, invite_email, token)
-    VALUES (${tenant.id}, ${invite_email}, ${token})
-    ON CONFLICT DO NOTHING
-  `;
-
-  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
-  const inviteUrl = `${baseUrl}/claim/${token}`;
-
-  await sendInvite({
-    toEmail: invite_email,
-    companyName: tenant.company_name,
-    inviteUrl,
-  }).catch((err) => console.error('Invite email error:', err));
-
-  await logAdminAction(c, 'send_invite', 'tenant', id, { invite_email });
-
-  return c.json({ ok: true, invite_url: inviteUrl });
 });
 
 const updateTenantSchema = z.object({
@@ -553,32 +474,116 @@ app.post('/tenants/:id/impersonate', async (c) => {
     company_name: rows[0].company_name,
   });
 
-  // logAdminAction already captured adminEmail; extract it the same way
   const adminEmail = (c as unknown as { get: (k: string) => unknown }).get('adminEmail') as string;
   const token = generateImpersonationToken(id, adminEmail);
 
   return c.json({ token, tenant: rows[0] });
 });
 
-const issueReportSchema = z.object({
-  tenant_id: z.string().uuid(),
-  what_i_fixed: z.string().optional(),
-  root_cause: z.string().optional(),
+const createTenantSchema = z.object({
+  company_name: z.string().min(1).max(200),
+  slug: z.string().min(1).max(80).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only'),
+  mode: z.enum(['store', 'book', 'both']).default('both'),
+  theme_id: z.enum(['editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens']).default('editorial'),
+  brand_color: z.string().optional(),
+  city: z.string().optional(),
+  industry: z.string().optional(),
+  plan: z.enum(['starter', 'pro', 'business']).default('starter'),
 });
 
-// POST /api/admin/impersonate/report — log what was found/fixed during impersonation
-app.post('/impersonate/report', async (c) => {
+// POST /api/admin/tenants — create an unclaimed tenant on behalf of a client
+app.post('/tenants', async (c) => {
   const body = await c.req.json().catch(() => ({}));
-  const parsed = issueReportSchema.safeParse(body);
-  if (!parsed.success) return c.json({ error: 'Invalid request body' }, 400);
-  const { tenant_id, what_i_fixed, root_cause } = parsed.data;
+  const parsed = createTenantSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+  }
+  const d = parsed.data;
 
-  await logAdminAction(c, 'impersonate_exit_report', 'tenant', tenant_id, {
-    what_i_fixed: what_i_fixed ?? '',
-    root_cause: root_cause ?? '',
+  const existing = await db`SELECT id FROM tenants WHERE slug = ${d.slug} LIMIT 1`;
+  if (existing[0]) return c.json({ error: 'A tenant with this slug already exists' }, 409);
+
+  const adminEmailAddr = (c as unknown as { get: (k: string) => unknown }).get('adminEmail') as string;
+
+  const rows = await db`
+    INSERT INTO tenants (
+      slug, company_name, mode, theme_id, brand_color, city, industry, plan,
+      created_by_admin, admin_created_by, wizard_completed
+    ) VALUES (
+      ${d.slug}, ${d.company_name}, ${d.mode}, ${d.theme_id},
+      ${d.brand_color ?? '#3D4F7C'}, ${d.city ?? null}, ${d.industry ?? null}, ${d.plan},
+      TRUE, ${adminEmailAddr}, TRUE
+    )
+    RETURNING *
+  `;
+
+  await logAdminAction(c, 'create_tenant', 'tenant', rows[0].id as string, {
+    company_name: d.company_name, slug: d.slug, mode: d.mode,
   });
 
-  return c.json({ ok: true });
+  return c.json({ tenant: rows[0] }, 201);
+});
+
+const inviteSchema = z.object({
+  invite_email: z.string().email(),
+});
+
+// POST /api/admin/tenants/:id/invite — generate (or re-send) a client claim invite
+app.post('/tenants/:id/invite', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = inviteSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+  }
+  const { invite_email } = parsed.data;
+
+  const rows = await db`SELECT id, company_name FROM tenants WHERE id = ${id} LIMIT 1`;
+  if (!rows[0]) return c.json({ error: 'Tenant not found' }, 404);
+  const tenant = rows[0];
+
+  // Expire any existing unclaimed invites for this tenant
+  await db`
+    UPDATE tenant_invites
+    SET expires_at = NOW()
+    WHERE tenant_id = ${id} AND claimed_at IS NULL
+  `;
+
+  const token = randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  await db`
+    INSERT INTO tenant_invites (tenant_id, invite_email, token, expires_at)
+    VALUES (${id}, ${invite_email}, ${token}, ${expiresAt})
+  `;
+
+  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  const claimUrl = `${baseUrl}/claim/${token}`;
+  const adminEmailAddr = (c as unknown as { get: (k: string) => unknown }).get('adminEmail') as string;
+
+  sendInvite({
+    toEmail: invite_email,
+    companyName: tenant.company_name as string,
+    inviteUrl: claimUrl,
+  }).catch((err: unknown) => console.error('Invite email error:', err));
+
+  await logAdminAction(c, 'send_invite', 'tenant', id, {
+    invite_email, admin: adminEmailAddr,
+  });
+
+  return c.json({ invite_email, claim_url: claimUrl, expires_at: expiresAt });
+});
+
+// GET /api/admin/tenants/:id/invites — list invites for a tenant
+app.get('/tenants/:id/invites', async (c) => {
+  const id = c.req.param('id');
+  const invites = await db`
+    SELECT id, invite_email, expires_at, claimed_at, claimed_by, created_at
+    FROM tenant_invites
+    WHERE tenant_id = ${id}
+    ORDER BY created_at DESC
+  `;
+  return c.json({ invites });
 });
 
 export default app;

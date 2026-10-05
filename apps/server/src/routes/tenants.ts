@@ -24,7 +24,6 @@ const updateTenantSchema = z.object({
   show_live_calendar: z.boolean().optional(),
   currency: z.string().optional(),
   custom_domain: z.string().nullable().optional(),
-  font_pair_id: z.enum(['classic', 'modern', 'elegant', 'editorial', 'bold', 'soft', 'tech', 'artisan']).nullable().optional(),
 });
 
 const createTenantSchema = z.object({
@@ -109,29 +108,24 @@ app.patch('/me', requireAuth, requireTenant, async (c) => {
   return c.json({ tenant: await enrichWithUrls(result[0]) });
 });
 
-// PUT /api/tenants/me/page-content — save editable storefront text overrides.
-// page_content is a JSONB map of section/field -> string, edited via the page builder.
-const pageContentSchema = z.object({
-  page_content: z.record(z.string(), z.string()),
-});
-
+// PUT /api/tenants/me/page-content — replace entire page_content JSONB map
 app.put('/me/page-content', requireAuth, requireTenant, async (c) => {
   const tenant = c.get('tenant') as { id: string };
-  const body = await c.req.json().catch(() => ({}));
-  const parsed = pageContentSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+  const body = await c.req.json().catch(() => null);
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return c.json({ error: 'Body must be a flat key/value object' }, 400);
   }
 
-  const content = parsed.data.page_content;
-  const result = await db`
+  // Merge into existing page_content rather than replace
+  const rows = await db`
     UPDATE tenants
-    SET page_content = ${db.json(content)}, updated_at = NOW()
+    SET page_content = COALESCE(page_content, '{}'::jsonb) || ${db.json(body as never)},
+        updated_at = NOW()
     WHERE id = ${tenant.id}
-    RETURNING *
+    RETURNING page_content
   `;
 
-  return c.json({ tenant: await enrichWithUrls(result[0]) });
+  return c.json({ page_content: rows[0].page_content });
 });
 
 export default app;

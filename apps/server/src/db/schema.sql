@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   mode TEXT NOT NULL DEFAULT 'both'
     CHECK (mode IN ('store','book','both')),
   theme_id TEXT NOT NULL DEFAULT 'editorial'
-    CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens')),
+    CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft')),
   brand_color TEXT DEFAULT '#3D4F7C',
   city TEXT,
   industry TEXT,
@@ -42,7 +42,6 @@ CREATE TABLE IF NOT EXISTS tenants (
   wizard_completed BOOLEAN DEFAULT FALSE,
   wizard_step INTEGER DEFAULT 0,
   wizard_data JSONB DEFAULT '{}',
-  page_content JSONB DEFAULT '{}',
   is_active BOOLEAN DEFAULT TRUE,
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
@@ -299,8 +298,6 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_url TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_nudge_sent_at TIMESTAMPTZ;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_reminder_sent_at TIMESTAMPTZ;
--- Per-tenant editable storefront text (page builder live editor). Keyed by section/field.
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS page_content JSONB DEFAULT '{}';
 ALTER TABLE platform_transactions DROP CONSTRAINT IF EXISTS platform_transactions_tenant_id_fkey;
 ALTER TABLE platform_transactions ADD CONSTRAINT platform_transactions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE;
 ALTER TABLE order_items DROP CONSTRAINT IF EXISTS order_items_product_id_fkey;
@@ -393,23 +390,11 @@ ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS stripe_session_id 
 -- Expand theme_id CHECK constraint to include 6 premium themes
 ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
 ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
-  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens'));
+  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft'));
 
 -- Email list opt-in
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS email_optin BOOLEAN DEFAULT FALSE;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS email_optin_at TIMESTAMPTZ;
-
--- City schedule ranges (where the tenant is working during a date range)
-CREATE TABLE IF NOT EXISTS city_schedules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  date_from DATE NOT NULL,
-  date_to DATE NOT NULL,
-  city_label TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  CHECK (date_to >= date_from)
-);
-CREATE INDEX IF NOT EXISTS idx_city_schedules_tenant ON city_schedules(tenant_id, date_from, date_to);
 
 -- Custom order requests
 CREATE TABLE IF NOT EXISTS custom_order_requests (
@@ -424,46 +409,33 @@ CREATE TABLE IF NOT EXISTS custom_order_requests (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Typography font pairing
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS font_pair_id TEXT DEFAULT 'classic';
+-- Agency admin: allow tenants to be created without a Clerk user (unclaimed)
+ALTER TABLE tenants ALTER COLUMN clerk_user_id DROP NOT NULL;
+ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_clerk_user_id_key;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tenants_clerk_user_id ON tenants(clerk_user_id) WHERE clerk_user_id IS NOT NULL;
 
--- Email log
-CREATE TABLE IF NOT EXISTS email_log (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
-  type TEXT NOT NULL,
-  to_email TEXT NOT NULL,
-  to_name TEXT,
-  subject TEXT NOT NULL,
-  html_content TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'sent' CHECK (status IN ('sent', 'failed')),
-  error_message TEXT,
-  reference_type TEXT,
-  reference_id UUID,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS idx_email_log_tenant_id ON email_log(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_email_log_created_at ON email_log(created_at DESC);
+-- Flag tenants built by the platform admin on behalf of a client
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS created_by_admin BOOLEAN DEFAULT FALSE;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_created_by TEXT;
 
-
--- Tenant invite links (admin-created, claimed by the client after sign-up)
+-- Client invite tokens: admin sends a link; client claims the tenant on sign-up
 CREATE TABLE IF NOT EXISTS tenant_invites (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   invite_email TEXT NOT NULL,
-  token TEXT NOT NULL UNIQUE,
-  expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
-  claimed_at TIMESTAMPTZ,
-  claimed_by TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  token       TEXT NOT NULL UNIQUE,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  claimed_at  TIMESTAMPTZ,
+  claimed_by  TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_tenant_invites_token ON tenant_invites(token);
-CREATE INDEX IF NOT EXISTS idx_tenant_invites_tenant_id ON tenant_invites(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_invites_tenant ON tenant_invites(tenant_id);
 
--- Google Calendar integration
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS google_cal_refresh_token TEXT;
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS google_cal_enabled BOOLEAN DEFAULT FALSE;
+-- Page content: key/value text store for about text, contact info, etc.
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS page_content JSONB DEFAULT '{}';
 
--- Outlook/Microsoft Calendar integration
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS outlook_cal_refresh_token TEXT;
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS outlook_cal_enabled BOOLEAN DEFAULT FALSE;
+-- Allow lens theme
+ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
+ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
+  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens'));

@@ -1,25 +1,15 @@
-import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '../lib/api';
 import Spinner from '../components/shared/Spinner';
 import ThemeRenderer from '../themes/ThemeRenderer';
 import type { ThemeData, ProductData, ProductVariantData, ServiceData, StaffData } from '../themes/types';
-import type { GallerySectionData } from '../themes/shared/Gallery';
-import { getFontPair } from '../themes/shared/fontPairs';
-
-interface StoredSection { id: string; type: string; enabled: boolean; [key: string]: unknown; }
 import type { Tenant, Product, Service, Staff } from '../types';
 
-function tryParseJson<T>(s: string): T | undefined {
-  try { return JSON.parse(s) as T; } catch { return undefined; }
-}
-
 function mapTenant(tenant: Tenant): ThemeData {
-  const pc = tenant.page_content ?? {};
   return {
     companyName: tenant.company_name,
-    tagline: pc['hero.subtext'] || tenant.tagline || undefined,
+    tagline: tenant.tagline ?? undefined,
     logoUrl: tenant.logo_url,
     heroImageUrl: tenant.hero_image_url,
     brandColor: tenant.brand_color ?? undefined,
@@ -31,17 +21,6 @@ function mapTenant(tenant: Tenant): ThemeData {
     slug: tenant.slug,
     paymentsEnabled: tenant.stripe_onboarded,
     stripeAccountId: tenant.stripe_account_id ?? undefined,
-    heroImageOpacity: pc['hero.image_opacity'] !== undefined ? Number(pc['hero.image_opacity']) : undefined,
-    aboutText: pc['about.text'] || undefined,
-    contactEmail: pc['contact.email'] || undefined,
-    contactPhone: pc['contact.phone'] || undefined,
-    contactAddress: pc['contact.address'] || undefined,
-    contactHours: pc['contact.hours'] || undefined,
-    testimonials: pc['testimonials'] ? tryParseJson(pc['testimonials']) : undefined,
-    faqs: pc['faqs'] ? tryParseJson(pc['faqs']) : undefined,
-    layoutId: pc['layout_id'] || undefined,
-    productLayout: (pc['product_layout'] as import('../themes/types').ProductLayout) || undefined,
-    serviceLayout: (pc['service_layout'] as import('../themes/types').ServiceLayout) || undefined,
   };
 }
 
@@ -119,51 +98,6 @@ export default function StorefrontRouter() {
     enabled: !!slug && !!tenantQuery.data,
   });
 
-  const sectionsQuery = useQuery({
-    queryKey: ['public-page-sections', slug],
-    queryFn: () =>
-      apiGet<{ sections: StoredSection[] }>(`/api/public/${slug}/page-sections/home`)
-        .then((r) => r.sections)
-        .catch(() => []),
-    enabled: !!slug && !!tenantQuery.data,
-  });
-
-  const fontPair = getFontPair(tenantQuery.data?.font_pair_id);
-
-  useEffect(() => {
-    if (!tenantQuery.data) return;
-    const linkId = 'storefront-google-fonts';
-    let link = document.getElementById(linkId) as HTMLLinkElement | null;
-    if (!link) {
-      link = document.createElement('link');
-      link.id = linkId;
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
-    }
-    link.href = fontPair.googleFontsUrl;
-
-    const styleId = 'storefront-font-override';
-    let style = document.getElementById(styleId) as HTMLStyleElement | null;
-    if (!style) {
-      style = document.createElement('style');
-      style.id = styleId;
-      document.head.appendChild(style);
-    }
-    style.textContent = `
-      [data-storefront] h1, [data-storefront] h2, [data-storefront] h3,
-      [data-storefront] h4, [data-storefront] h5 {
-        font-family: ${fontPair.heading} !important;
-      }
-      [data-storefront] {
-        font-family: ${fontPair.body};
-      }
-    `;
-
-    return () => {
-      style?.remove();
-    };
-  }, [tenantQuery.data, fontPair.googleFontsUrl, fontPair.heading, fontPair.body]);
-
   if (tenantQuery.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -182,53 +116,14 @@ export default function StorefrontRouter() {
   }
 
   const tenant = tenantQuery.data;
-  const rawSections = sectionsQuery.data ?? [];
-  // If only gallery sections are stored (legacy), merge with standard defaults
-  const hasThemeSections = rawSections.some((s) => s.type !== 'gallery');
-  const allSections: StoredSection[] = (!hasThemeSections && rawSections.length > 0)
-    ? [
-        { id: 'hero', type: 'hero', enabled: true },
-        { id: 'featured-products', type: 'featured-products', enabled: true },
-        { id: 'services', type: 'services', enabled: true },
-        { id: 'about', type: 'about', enabled: true },
-        ...rawSections,
-        { id: 'staff', type: 'staff', enabled: false },
-        { id: 'testimonials', type: 'testimonials', enabled: false },
-        { id: 'faq', type: 'faq', enabled: false },
-        { id: 'contact', type: 'contact', enabled: true },
-      ]
-    : rawSections;
-  // Use section IDs (not types) so galleries with unique IDs sort correctly.
-  // Non-gallery defaults have id === type, so secOrder('hero') etc. still work.
-  const enabledSections = allSections.filter((s) => s.enabled);
-  const visibleSections = enabledSections.map((s) => s.id);
-  const galleries = enabledSections.filter((s) => s.type === 'gallery') as unknown as GallerySectionData[];
 
   return (
-    <div data-storefront>
-      <ThemeRenderer
-        themeId={tenant.theme_id}
-        theme={mapTenant(tenant)}
-        products={(productsQuery.data ?? []).map(mapProduct)}
-        services={(servicesQuery.data ?? []).map(mapService)}
-        staff={(staffQuery.data ?? []).map(mapStaff)}
-        galleries={galleries}
-        visibleSections={visibleSections.length > 0 ? visibleSections : undefined}
-      />
-      {tenant.plan === 'starter' && (
-        <a
-          href="https://shopsuitedirect.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="fixed bottom-4 right-4 z-50 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/80 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-sm transition-opacity hover:opacity-80"
-          style={{ fontFamily: 'system-ui, sans-serif' }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Powered by Shop Suite Direct
-        </a>
-      )}
-    </div>
+    <ThemeRenderer
+      themeId={tenant.theme_id}
+      theme={mapTenant(tenant)}
+      products={(productsQuery.data ?? []).map(mapProduct)}
+      services={(servicesQuery.data ?? []).map(mapService)}
+      staff={(staffQuery.data ?? []).map(mapStaff)}
+    />
   );
 }

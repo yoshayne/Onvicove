@@ -4,10 +4,7 @@
 import { useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import ContactBlock from '../shared/ContactBlock';
-import Gallery from '../shared/Gallery';
-import type { GallerySectionData } from '../shared/Gallery';
-import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
+import { formatPrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -17,11 +14,8 @@ import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
-import TestimonialsBlock from '../shared/TestimonialsBlock';
-import FaqBlock from '../shared/FaqBlock';
 
-
-export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -32,7 +26,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
     checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
     orderClientSecret, orderAmountCents, confirmOrderPayment, cancelOrderPayment,
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
-    availableSlots, bookingCityLabel, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
+    availableSlots, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
     bookingClientSecret, bookingAmountCents,
   } = commerce;
@@ -40,13 +34,10 @@ export default function Storefront({ theme, products, services, staff, visibleSe
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
-  const heroOpacity = theme.heroImageOpacity !== undefined ? theme.heroImageOpacity / 100 : 0.8;
   const tagline = theme.tagline || defaults.tagline;
 
-  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
-  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
-  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
 
   return (
     <div className="min-h-screen bg-white text-[#111111] font-['Inter']">
@@ -80,90 +71,79 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         </div>
       </nav>
 
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
+      {/* Hero */}
+      <section className="relative h-[80vh] min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-[#1a1a1a]">
+        <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-[#1a1a1a]/10" />
+        <div className="relative z-10 px-6 max-w-3xl">
+          <h1 className="font-['Playfair_Display'] text-5xl md:text-7xl text-white mb-6 leading-tight">
+            {theme.companyName}
+          </h1>
+          <p className="text-white/80 text-lg md:text-xl tracking-wide">{tagline}</p>
+        </div>
+      </section>
 
-      {/* ── Hero — layout variants ──────────────────────────── */}
-      {isVis('hero') && theme.layoutId === 'split' ? (
-        /* Split: brand name left panel, hero image right panel */
-        <section style={{ order: secOrder('hero'), background: '#1a1a1a' }} className="grid grid-cols-1 md:grid-cols-2 min-h-[60vh]">
-          <div className="flex flex-col items-start justify-center px-12 py-16 gap-6">
-            <p className="text-[var(--brand-color,#d4a96a)] text-xs uppercase tracking-[0.3em] font-light">Est. {new Date().getFullYear()}</p>
-            <h1 className="font-['Playfair_Display'] text-5xl md:text-6xl text-white leading-tight">
-              {theme.companyName}
-            </h1>
-            <p className="text-white/60 text-base leading-relaxed max-w-xs">{tagline}</p>
-            {showProducts && (
-              <a href="#products" className="mt-2 border border-[var(--brand-color,#d4a96a)] text-[var(--brand-color,#d4a96a)] px-6 py-2.5 text-xs uppercase tracking-[0.2em] hover:bg-[var(--brand-color,#d4a96a)] hover:text-black transition-colors">
-                Shop Now
-              </a>
-            )}
-          </div>
-          <div className="relative overflow-hidden min-h-[40vh]">
-            <img src={heroImage} alt="" data-hero-img="1" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: heroOpacity }} />
-          </div>
-        </section>
-      ) : isVis('hero') && theme.layoutId === 'magazine' ? (
-        /* Magazine: text left, stacked images right */
-        <section style={{ order: secOrder('hero'), background: '#1a1a1a' }} className="relative overflow-hidden">
-          <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity * 0.4 }} />
-          <div className="absolute inset-0 flex flex-col md:flex-row items-end md:items-center justify-end md:justify-start pointer-events-none">
-            <div className="p-8 md:p-16 max-w-xl">
-              <div className="w-12 h-px bg-[var(--brand-color,#d4a96a)] mb-6" />
-              <h1 className="font-['Playfair_Display'] text-4xl md:text-6xl text-white leading-tight mb-4">
-                {theme.companyName}
-              </h1>
-              <p className="text-white/70 text-base">{tagline}</p>
-            </div>
-          </div>
-        </section>
-      ) : isVis('hero') ? (
-        /* Classic (default): full-width, centered overlay */
-        <section style={{ order: secOrder('hero'), position: 'relative', background: '#1a1a1a' }}>
-          <img src={heroImage} alt="" data-hero-img="1" style={{ display: 'block', width: '100%', height: 'auto', opacity: heroOpacity }} />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-transparent pointer-events-none" />
-          <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center justify-end text-center px-6 pb-12">
-            <h1 className="font-['Playfair_Display'] text-5xl md:text-7xl text-white mb-6 leading-tight">
-              {theme.companyName}
-            </h1>
-            <p className="text-white/80 text-lg md:text-xl tracking-wide">{tagline}</p>
-          </div>
-        </section>
-      ) : null}
-
-      {/* ── Products ──────────────────────────────────────────── */}
+      {/* Products */}
       {showProducts && (
-        <section id="products" style={{ order: secOrder('featured-products') }} className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
-          <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Shop</h2>
-          <ProductCatalog
-            products={displayProducts}
-            layout={theme.productLayout ?? 'grid-4'}
-            currency={theme.currency}
-            paymentsEnabled={theme.paymentsEnabled}
-            accentColor={theme.brandColor ?? '#d4a96a'}
-            textColor="#111111"
-            surfaceColor="#f5f5f5"
-            slug={theme.slug}
-            onSelect={openQuickView}
-          />
+        <section id="products" className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
+          <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Shop the Collection</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {displayProducts.map((product) => (
+              <div key={product.id} className="group">
+                <div className="aspect-[3/4] overflow-hidden bg-[#f5f5f5] mb-4">
+                  <img
+                    src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <h3 className="font-['Playfair_Display'] text-lg mb-1">{product.name}</h3>
+                <p className="text-sm text-[#111111]/60 mb-3">{formatPrice(product.priceCents, theme.currency)}</p>
+                <button
+                  type="button"
+                  onClick={() => openQuickView(product)}
+                  className="text-xs uppercase tracking-[0.2em] border-b border-[#111111] pb-1 hover:text-[var(--brand-color,#d4a96a)] hover:border-[var(--brand-color,#d4a96a)] transition-colors"
+                >
+                  {theme.paymentsEnabled ? 'Add to Cart' : 'View Details'}
+                </button>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
       {/* Services */}
       {showServices && (
-        <section id="services" style={{ order: secOrder('services') }} className="scroll-mt-20 bg-[#f5f5f5] py-20">
+        <section id="services" className="scroll-mt-20 bg-[#f5f5f5] py-20">
           <div className="max-w-7xl mx-auto px-6">
-            <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Book</h2>
-            <ServiceCatalog
-              services={displayServices}
-              layout={theme.serviceLayout ?? 'cards'}
-              currency={theme.currency}
-              paymentsEnabled={theme.paymentsEnabled}
-              accentColor={theme.brandColor ?? '#d4a96a'}
-              textColor="#111111"
-              surfaceColor="#ffffff"
-              slug={theme.slug}
-              onBook={openBooking}
-            />
+            <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Reservations</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {displayServices.map((service) => (
+                <div key={service.id} className="bg-white p-6 flex flex-col">
+                  {service.imageUrls?.[0] && (
+                    <div className="aspect-[4/3] overflow-hidden mb-4">
+                      <img src={service.imageUrls[0]} alt={service.name} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <h3 className="font-['Playfair_Display'] text-xl mb-2">{service.name}</h3>
+                  {service.description && (
+                    <p className="text-sm text-[#111111]/60 mb-4 flex-1">{service.description}</p>
+                  )}
+                  <div className="flex items-center justify-between text-sm mb-4">
+                    <span className="text-[#111111]/50">{service.durationMinutes} min</span>
+                    <span className="text-[var(--brand-color,#d4a96a)] font-medium">{formatPrice(service.priceCents, theme.currency)}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openBooking(service)}
+                    disabled={!theme.paymentsEnabled}
+                    className="uppercase tracking-[0.2em] text-xs bg-[#1a1a1a] text-white py-3 hover:bg-[var(--brand-color,#d4a96a)] hover:text-[#111111] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#1a1a1a] disabled:hover:text-white"
+                  >
+                    {theme.paymentsEnabled ? 'Book Now' : 'Coming Soon'}
+                  </button>
+                </div>
+              ))}
+            </div>
 
             {staff.length > 0 && (
               <div className="mt-16 flex flex-wrap justify-center gap-12">
@@ -185,36 +165,6 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           </div>
         </section>
       )}
-
-      {galleries && galleries.length > 0 && galleries.map((g) => (
-        <div key={g.id} style={{ order: secOrder(g.id) }}>
-          <Gallery layout={g.layout} images={g.images ?? []} title={g.title} />
-        </div>
-      ))}
-
-      {visibleSections?.includes('testimonials') && (
-        <section style={{ order: secOrder('testimonials') }} className="py-20 bg-[#f5f5f5]">
-          <TestimonialsBlock
-            testimonials={theme.testimonials}
-            headingStyle={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-            cardStyle={{ background: '#ffffff', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
-            starColor="#d4a96a"
-          />
-        </section>
-      )}
-
-      {visibleSections?.includes('faq') && (
-        <section style={{ order: secOrder('faq') }} className="py-20 bg-white">
-          <FaqBlock
-            faqs={theme.faqs}
-            headingStyle={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-            itemStyle={{ borderColor: '#e8e8e8', background: '#fafafa' }}
-            questionStyle={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-          />
-        </section>
-      )}
-
-      </div>{/* end ordered sections */}
 
       {/* Footer */}
       <footer id="footer" className="scroll-mt-20 bg-[#1a1a1a] text-white py-12">
@@ -238,7 +188,6 @@ export default function Storefront({ theme, products, services, staff, visibleSe
             </button>
           </form>
           <button type="button" onClick={() => setCustomOrderOpen(true)} className="mt-4 inline-block border border-white/60 px-6 py-2 text-xs uppercase tracking-[0.2em] text-white hover:bg-white hover:text-[#111111] transition-colors">Custom Order</button>
-          <ContactBlock theme={theme} textColor="rgba(255,255,255,0.6)" />
           <p className="text-white/40 text-xs mt-6 uppercase tracking-[0.2em]">
             &copy; {new Date().getFullYear()} {theme.companyName}. All rights reserved.
           </p>
@@ -287,12 +236,9 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         selectedDate={selectedDate}
         selectedSlot={selectedSlot}
         availableSlots={availableSlots}
-        cityLabel={bookingCityLabel}
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
-        onRefreshSlots={commerce.refreshSlots}
-        slotsRefreshing={commerce.slotsRefreshing}
       />
 
       <BookingStatusOverlay

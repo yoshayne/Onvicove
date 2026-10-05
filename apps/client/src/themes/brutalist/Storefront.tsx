@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import ContactBlock from '../shared/ContactBlock';
-import Gallery from '../shared/Gallery';
-import type { GallerySectionData } from '../shared/Gallery';
-import { ProductCatalog, ServiceCatalog } from '../shared/CatalogGrid';
+import { formatPrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -15,8 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 
-
-export default function Storefront({ theme, products, services, staff, visibleSections, galleries }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -27,7 +23,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
     checkoutOpen, openCheckout, closeCheckout, orderStatus, orderError, orderNumber, submitOrder,
     orderClientSecret, orderAmountCents, confirmOrderPayment, cancelOrderPayment,
     bookingService, bookingOpen, openBooking, closeBooking, selectedDate, selectedSlot,
-    availableSlots, bookingCityLabel, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
+    availableSlots, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
     bookingClientSecret, bookingAmountCents,
   } = commerce;
@@ -35,12 +31,9 @@ export default function Storefront({ theme, products, services, staff, visibleSe
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
-  const heroOpacity = theme.heroImageOpacity !== undefined ? theme.heroImageOpacity / 100 : 1;
   const tagline = theme.tagline || defaults.tagline;
-  const isVis = (s: string) => !visibleSections || visibleSections.includes(s);
-  const secOrder = (s: string) => visibleSections ? (visibleSections.indexOf(s) + 1 || 99) : 0;
-  const showProducts = isVis('featured-products') && (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = isVis('services') && (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
   return (
@@ -58,8 +51,8 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
             <div style={{ display: 'flex', gap: 24, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em' }}>
-              {showProducts && <a href="#products" style={{ textDecoration: 'none', color: '#000' }}>SHOP</a>}
-              {showServices && <a href="#services" style={{ textDecoration: 'none', color: '#000' }}>BOOK</a>}
+              {showProducts && <a href="#products" style={{ textDecoration: 'none', color: '#000' }}>WORK</a>}
+              {showServices && <a href="#services" style={{ textDecoration: 'none', color: '#000' }}>SERVICES</a>}
               <a href="#footer" style={{ textDecoration: 'none', color: '#000' }}>CONTACT</a>
             </div>
             {showProducts && (
@@ -72,10 +65,8 @@ export default function Storefront({ theme, products, services, staff, visibleSe
         </div>
       </nav>
 
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Hero */}
-      {isVis('hero') && (
-      <section style={{ order: secOrder('hero'), maxWidth: 1280, margin: '0 auto', padding: '48px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '60vh', alignItems: 'center' }}>
+      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '60vh', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontWeight: 900, fontSize: 'clamp(48px, 7vw, 96px)', lineHeight: 0.92, letterSpacing: '-0.03em', marginBottom: 20 }}>
             {tagline.split('.').map((part, i) => (
@@ -88,12 +79,12 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 32 }}>
             {showProducts && (
               <a href="#products" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 12, fontWeight: 900, letterSpacing: '0.1em', textDecoration: 'none', background: '#000', color: '#fff' }}>
-                SHOP
+                VIEW OUR WORK
               </a>
             )}
             {showServices && (
               <a href="#services" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 12, fontWeight: 900, letterSpacing: '0.1em', textDecoration: 'none', border: '2px solid #000', color: '#000' }}>
-                BOOK
+                SERVICES
               </a>
             )}
             <button type="button" onClick={() => setCustomOrderOpen(true)} style={{ display: 'inline-block', padding: '14px 28px', fontSize: 12, fontWeight: 900, letterSpacing: '0.1em', border: '4px solid #000', color: '#000', background: 'none', cursor: 'pointer' }}>
@@ -102,13 +93,12 @@ export default function Storefront({ theme, products, services, staff, visibleSe
           </div>
         </div>
         <div style={{ position: 'relative' }}>
-          <img src={heroImage} alt="" data-hero-img="1" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', border: '3px solid #000', display: 'block', opacity: heroOpacity }} />
+          <img src={heroImage} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', border: '3px solid #000', display: 'block' }} />
           <div style={{ position: 'absolute', bottom: -12, right: -12, background: 'var(--brand-color, #0000ff)', color: '#fff', padding: '8px 16px', fontWeight: 900, fontSize: 12, letterSpacing: '0.15em' }}>
             ★ SELECTED PROJECT
           </div>
         </div>
       </section>
-      )}
 
       {/* Marquee ticker */}
       <div style={{ background: '#000', color: '#fff', padding: '12px 0', overflow: 'hidden' }}>
@@ -127,53 +117,59 @@ export default function Storefront({ theme, products, services, staff, visibleSe
 
       {/* Products */}
       {showProducts && (
-        <section id="products" style={{ order: secOrder('featured-products'), maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
+        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '3px solid #000', paddingBottom: 16, marginBottom: 32 }}>
-            <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em' }}>SHOP</h2>
+            <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em' }}>THE DROP</h2>
             <span style={{ fontFamily: 'monospace', fontSize: 11 }}>({displayProducts.length} ITEMS)</span>
           </div>
-          <ProductCatalog
-            products={displayProducts}
-            layout={theme.productLayout ?? 'grid-4'}
-            currency={theme.currency}
-            paymentsEnabled={theme.paymentsEnabled}
-            accentColor={theme.brandColor ?? '#0000ff'}
-            textColor="#000000"
-            surfaceColor="#f0f0f0"
-            slug={theme.slug}
-            onSelect={openQuickView}
-          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 0 }}>
+            {displayProducts.map((product) => (
+              <div key={product.id} style={{ border: '2px solid #000', marginRight: -2, marginBottom: -2 }}>
+                <div style={{ aspectRatio: '1/1', overflow: 'hidden', background: '#f0f0f0', borderBottom: '2px solid #000' }}>
+                  <img src={product.imageUrls?.[0] ?? defaults.heroImageUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                </div>
+                <div style={{ padding: 16 }}>
+                  <p style={{ fontWeight: 900, fontSize: 13, letterSpacing: '0.05em', marginBottom: 4 }}>{product.name}</p>
+                  {product.description && <p style={{ fontFamily: 'monospace', fontSize: 11, color: '#000', opacity: 0.5, marginBottom: 12, lineHeight: 1.4 }}>{product.description}</p>}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 14 }}>{formatPrice(product.priceCents, theme.currency)}</span>
+                    <button type="button" onClick={() => openQuickView(product)}
+                      style={{ padding: '6px 14px', fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', background: '#000', color: '#fff', border: 'none', cursor: 'pointer' }}>
+                      {theme.paymentsEnabled ? 'ADD' : 'VIEW'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
       {/* Services */}
       {showServices && (
-        <section id="services" style={{ order: secOrder('services'), background: '#f0f0f0', padding: '64px 24px', borderTop: '3px solid #000' }}>
+        <section id="services" style={{ background: '#f0f0f0', padding: '64px 24px', borderTop: '3px solid #000' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-            <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em', marginBottom: 32 }}>BOOK</h2>
-            <ServiceCatalog
-              services={displayServices}
-              layout={theme.serviceLayout ?? 'cards'}
-              currency={theme.currency}
-              paymentsEnabled={theme.paymentsEnabled}
-              accentColor={theme.brandColor ?? '#0000ff'}
-              textColor="#000000"
-              surfaceColor="#f0f0f0"
-              slug={theme.slug}
-              onBook={openBooking}
-            />
+            <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em', marginBottom: 32 }}>SERVICES</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {displayServices.map((service) => (
+                <div key={service.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'center', padding: '24px 0', borderTop: '2px solid #000' }}>
+                  <div>
+                    <h3 style={{ fontWeight: 900, fontSize: 18, letterSpacing: '-0.01em', marginBottom: 4 }}>{service.name}</h3>
+                    {service.description && <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#000', opacity: 0.5 }}>{service.description}</p>}
+                    <p style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--brand-color, #0000ff)', marginTop: 8, fontWeight: 700 }}>{formatPrice(service.priceCents, theme.currency)}</p>
+                  </div>
+                  <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
+                    style={{ padding: '12px 24px', fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', background: 'var(--brand-color, #0000ff)', color: '#fff', border: 'none', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4, whiteSpace: 'nowrap' }}>
+                    {theme.paymentsEnabled ? 'GET A QUOTE' : 'COMING SOON'}
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
       {/* Footer */}
-      {galleries && galleries.length > 0 && galleries.map((g) => (
-        <div key={g.id} style={{ order: secOrder(g.id) }}>
-          <Gallery layout={g.layout} images={g.images ?? []} title={g.title} />
-        </div>
-      ))}
-      </div>{/* end ordered sections */}
-
       <footer id="footer" style={{ background: '#000', color: '#fff', padding: '48px 24px', borderTop: '3px solid var(--brand-color, #0000ff)' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <p style={{ fontWeight: 900, fontSize: 20, letterSpacing: '-0.02em' }}>{theme.companyName.toUpperCase()}</p>
@@ -184,7 +180,6 @@ export default function Storefront({ theme, products, services, staff, visibleSe
               {subscribeStatus === 'success' ? '✓ Subscribed!' : subscribeStatus === 'loading' ? '...' : 'Subscribe'}
             </button>
           </form>
-          <ContactBlock theme={theme} useInlineStyles textColor="rgba(255,255,255,0.5)" />
           <p style={{ fontFamily: 'monospace', fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 16 }}>&copy; {new Date().getFullYear()}</p>
         </div>
       </footer>
@@ -192,7 +187,7 @@ export default function Storefront({ theme, products, services, staff, visibleSe
       <ProductQuickView product={quickViewProduct} onClose={closeQuickView} onAddToCart={(p, v) => { addToCart(p, v); closeQuickView(); }} currency={theme.currency} paymentsEnabled={theme.paymentsEnabled} />
       {showProducts && <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} onCheckout={openCheckout} />}
       <CheckoutModal isOpen={checkoutOpen} onClose={closeCheckout} items={cart} status={orderStatus} error={orderError} orderNumber={orderNumber} clientSecret={orderClientSecret} amountCents={orderAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onSubmit={submitOrder} onPaymentSuccess={confirmOrderPayment} onPaymentCancel={cancelOrderPayment} />
-      <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} cityLabel={bookingCityLabel} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} onRefreshSlots={commerce.refreshSlots} slotsRefreshing={commerce.slotsRefreshing} />
+      <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} />
       <BookingStatusOverlay status={bookingStatus} error={bookingError} clientSecret={bookingClientSecret} amountCents={bookingAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onClose={closeBooking} onDismiss={dismissBookingStatus} onPaymentSuccess={confirmBookingPayment} onPaymentCancel={cancelBookingPayment} />
       <CustomOrderModal isOpen={customOrderOpen} onClose={() => setCustomOrderOpen(false)} companyName={theme.companyName} status={customOrderStatus} onSubmit={submitCustomOrder} />
     </div>

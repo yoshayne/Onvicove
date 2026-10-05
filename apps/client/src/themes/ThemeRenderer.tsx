@@ -1,7 +1,6 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense } from 'react';
 import type { ComponentType, CSSProperties } from 'react';
 import type { ThemeId, ThemeProps } from './types';
-import type { GallerySectionData } from './shared/Gallery';
 
 const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
   editorial: () => import('./editorial/Storefront'),
@@ -21,11 +20,9 @@ const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProp
 
 interface ThemeRendererProps extends ThemeProps {
   themeId: ThemeId;
-  /** Gallery sections to render after the storefront body. */
-  galleries?: GallerySectionData[];
 }
 
-export default function ThemeRenderer({ themeId, galleries, visibleSections, ...props }: ThemeRendererProps) {
+export default function ThemeRenderer({ themeId, ...props }: ThemeRendererProps) {
   const loader = themeMap[themeId] ?? themeMap.editorial;
   const Storefront = lazy(loader);
 
@@ -33,25 +30,10 @@ export default function ThemeRenderer({ themeId, galleries, visibleSections, ...
     ? ({ '--brand-color': props.theme.brandColor } as CSSProperties)
     : undefined;
 
-  // Listen for live-preview messages from the Page Builder iframe parent
-  const heroImgRef = useRef<HTMLImageElement | null>(null);
-  useEffect(() => {
-    function onMessage(e: MessageEvent) {
-      if (!e.data || e.data.type !== 'hero-opacity') return;
-      // Find all hero img elements (themes render the hero img as the first absolute/cover img in the hero section)
-      const imgs = document.querySelectorAll<HTMLImageElement>('[data-hero-img]');
-      imgs.forEach((img) => { img.style.opacity = String(e.data.value); });
-    }
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, []);
-  // suppress unused ref warning
-  void heroImgRef;
-
   return (
     <div style={style}>
       <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
-        <Storefront {...props} visibleSections={visibleSections} galleries={galleries} />
+        <Storefront {...props} />
       </Suspense>
     </div>
   );

@@ -2,6 +2,12 @@ import { verifyToken } from '@clerk/backend';
 import type { Context, Next } from 'hono';
 
 export async function requireAuth(c: Context, next: Next) {
+  // Impersonation tokens bypass Clerk auth — requireTenant will validate them
+  if (c.req.header('X-Impersonate-Token')) {
+    await next();
+    return;
+  }
+
   const authHeader = c.req.header('Authorization');
   const token = authHeader?.replace('Bearer ', '').trim();
 
