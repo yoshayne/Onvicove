@@ -698,6 +698,24 @@ export async function sendCustomOrderConfirmation(data: {
   });
 }
 
+export async function sendAdminInviteClaimed(data: {
+  companyName: string;
+  claimedByEmail: string;
+  dashboardUrl: string;
+}): Promise<void> {
+  const email = adminEmail();
+  if (!email) return;
+  await sendTransacEmail({
+    to: [{ email, name: 'Shop Suite Direct Admin' }],
+    subject: `Invite claimed: ${data.companyName}`,
+    htmlContent: wrap('A client claimed their site', `
+      <p><strong>Company:</strong> ${data.companyName}</p>
+      <p><strong>Claimed by:</strong> ${data.claimedByEmail}</p>
+      ${btn('View tenant', data.dashboardUrl)}
+    `),
+  });
+}
+
 export async function sendInvite(data: {
   toEmail: string;
   companyName: string;

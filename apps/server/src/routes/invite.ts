@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
+import { sendTenantWelcome, sendAdminInviteClaimed } from '../services/email';
 
 const app = new Hono();
 
@@ -81,6 +82,32 @@ app.post('/claim', requireAuth, async (c) => {
     SET claimed_at = NOW(), claimed_by = ${clerkUserId}
     WHERE id = ${invite.id}
   `;
+
+  // Fetch tenant + Clerk user details for notifications
+  const [tenantRows, userRows] = await Promise.all([
+    db`SELECT company_name, slug FROM tenants WHERE id = ${invite.tenant_id} LIMIT 1`,
+    db`SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${clerkUserId} LIMIT 1`,
+  ]);
+  const tenant = tenantRows[0];
+  const user = userRows[0];
+  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+
+  if (tenant && user?.email) {
+    const toName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || (user.email as string);
+    // Welcome the new client
+    sendTenantWelcome({
+      toEmail: user.email as string,
+      toName,
+      companyName: tenant.company_name as string,
+      dashboardUrl: `${baseUrl}/dashboard`,
+    }).catch((err) => console.error('Invite claimed welcome email error:', err));
+    // Notify admin
+    sendAdminInviteClaimed({
+      companyName: tenant.company_name as string,
+      claimedByEmail: user.email as string,
+      dashboardUrl: `${baseUrl}/admin/tenants/${invite.tenant_id}`,
+    }).catch((err) => console.error('Invite claimed admin email error:', err));
+  }
 
   return c.json({ claimed: true, tenant_id: invite.tenant_id });
 });
