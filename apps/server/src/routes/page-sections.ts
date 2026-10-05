@@ -11,9 +11,9 @@ app.use('*', requireAuth, requireTenant);
 const sectionSchema = z.object({
   id: z.string(),
   type: z.string(),
-  label: z.string(),
+  label: z.string().optional(),
   enabled: z.boolean(),
-});
+}).passthrough();
 
 const upsertSectionsSchema = z.object({
   sections: z.array(sectionSchema),
