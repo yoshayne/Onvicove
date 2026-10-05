@@ -644,3 +644,24 @@ export async function sendCustomOrderConfirmation(data: {
     `),
   });
 }
+
+// ─── Client site invite ──────────────────────────────────────────────────────
+
+export async function sendClientSiteInvite(data: {
+  toEmail: string;
+  companyName: string;
+  claimUrl: string;
+  adminName: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.toEmail, name: data.toEmail }],
+    subject: `Your ${data.companyName} site is ready — claim it now`,
+    htmlContent: wrap(`Your site is ready`, `
+      <p>Hi there,</p>
+      <p><strong>${data.adminName}</strong> has built a site for <strong>${data.companyName}</strong> on Shop Suite Direct and is handing it over to you.</p>
+      <p>Click the button below to create your account and take ownership of the site. Once you're in, you can connect Stripe, upload photos, customize your branding, and manage everything yourself.</p>
+      ${btn('Claim your site', data.claimUrl)}
+      <p style="font-size:13px;color:#94a3b8">This invite link expires in 7 days. If you didn't expect this email, you can safely ignore it.</p>
+    `),
+  });
+}

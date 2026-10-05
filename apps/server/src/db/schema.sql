@@ -408,3 +408,26 @@ CREATE TABLE IF NOT EXISTS custom_order_requests (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Agency admin: allow tenants to be created without a Clerk user (unclaimed)
+ALTER TABLE tenants ALTER COLUMN clerk_user_id DROP NOT NULL;
+ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_clerk_user_id_key;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tenants_clerk_user_id ON tenants(clerk_user_id) WHERE clerk_user_id IS NOT NULL;
+
+-- Flag tenants built by the platform admin on behalf of a client
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS created_by_admin BOOLEAN DEFAULT FALSE;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_created_by TEXT;
+
+-- Client invite tokens: admin sends a link; client claims the tenant on sign-up
+CREATE TABLE IF NOT EXISTS tenant_invites (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  invite_email TEXT NOT NULL,
+  token       TEXT NOT NULL UNIQUE,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  claimed_at  TIMESTAMPTZ,
+  claimed_by  TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_tenant_invites_token ON tenant_invites(token);
+CREATE INDEX IF NOT EXISTS idx_tenant_invites_tenant ON tenant_invites(tenant_id);
