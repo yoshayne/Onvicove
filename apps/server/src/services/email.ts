@@ -779,16 +779,76 @@ export async function sendInvite(data: {
   agencyName?: string;
 }): Promise<void> {
   const from = data.agencyName || 'Shop Suite Direct';
+  const heroHtml = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:32px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+        <!-- Hero banner -->
+        <tr><td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#0f172a 100%);border-radius:16px 16px 0 0;padding:48px 40px 40px;text-align:center;">
+          <p style="margin:0 0 20px;font-size:13px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">${from}</p>
+          <h1 style="margin:0 0 12px;font-size:32px;font-weight:800;color:#ffffff;line-height:1.2;">Your site is ready.</h1>
+          <p style="margin:0;font-size:17px;color:#94a3b8;font-weight:400;">
+            <span style="color:#ffffff;font-weight:600;">${data.companyName}</span> is live and waiting for you.
+          </p>
+          <!-- Decorative dots -->
+          <div style="margin-top:28px;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6366f1;margin:0 3px;"></span>
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8b5cf6;margin:0 3px;"></span>
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#a78bfa;margin:0 3px;"></span>
+          </div>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="background:#ffffff;padding:40px;border-radius:0 0 16px 16px;border:1px solid #e2e8f0;border-top:none;">
+          <p style="margin:0 0 16px;font-size:16px;color:#334155;">Hi there,</p>
+          <p style="margin:0 0 28px;font-size:15px;color:#475569;line-height:1.6;">
+            <strong style="color:#0f172a;">${from}</strong> has built your online store. Create your free account below to take full ownership of your site — manage products, bookings, orders, and more from your own dashboard.
+          </p>
+
+          <!-- CTA button -->
+          <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
+            <tr><td align="center" style="background:#0f172a;border-radius:10px;">
+              <a href="${data.inviteUrl}" style="display:inline-block;padding:16px 36px;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;letter-spacing:0.02em;">
+                Set Up My Account &rarr;
+              </a>
+            </td></tr>
+          </table>
+
+          <!-- What you get -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:10px;padding:20px;margin-bottom:28px;">
+            <tr>
+              <td style="padding:6px 12px;font-size:13px;color:#475569;">✦ &nbsp;Your own storefront URL</td>
+              <td style="padding:6px 12px;font-size:13px;color:#475569;">✦ &nbsp;Order &amp; booking management</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 12px;font-size:13px;color:#475569;">✦ &nbsp;Customer email notifications</td>
+              <td style="padding:6px 12px;font-size:13px;color:#475569;">✦ &nbsp;Analytics &amp; reporting</td>
+            </tr>
+          </table>
+
+          <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;">
+            This invite link expires in 7 days. If you weren't expecting this, you can safely ignore it.
+          </p>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:24px 0;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#94a3b8;">${from} &middot; Powered by Shop Suite Direct</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toEmail }],
     subject: `Your ${data.companyName} site is ready — set up your account`,
-    htmlContent: wrap(`Your site is ready!`, `
-      <p>Hi there,</p>
-      <p><strong>${from}</strong> has built your <strong>${data.companyName}</strong> online store. Click the button below to create your account and take ownership of your site.</p>
-      <p style="text-align:center;margin:32px 0">
-        <a href="${data.inviteUrl}" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px">Set Up My Account</a>
-      </p>
-      <p style="font-size:13px;color:#64748b">This link expires in 7 days. If you weren't expecting this, you can safely ignore it.</p>
-    `),
+    htmlContent: heroHtml,
   });
 }
