@@ -1,4 +1,5 @@
 import { useAuth } from '@clerk/clerk-react';
+import { useImpersonation } from '../contexts/ImpersonationContext';
 
 export type TokenGetter = () => Promise<string | null>;
 
@@ -6,7 +7,8 @@ async function request<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
-  getToken?: TokenGetter
+  getToken?: TokenGetter,
+  impersonateToken?: string | null
 ): Promise<T> {
   const headers: Record<string, string> = {};
   let payload: BodyInit | undefined;
@@ -18,7 +20,9 @@ async function request<T>(
     payload = body;
   }
 
-  if (getToken) {
+  if (impersonateToken) {
+    headers['X-Impersonate-Token'] = impersonateToken;
+  } else if (getToken) {
     const token = await getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
   }
@@ -51,42 +55,44 @@ async function request<T>(
   return (await res.json()) as T;
 }
 
-export function apiGet<T>(path: string, getToken?: TokenGetter): Promise<T> {
-  return request<T>('GET', path, undefined, getToken);
+export function apiGet<T>(path: string, getToken?: TokenGetter, imp?: string | null): Promise<T> {
+  return request<T>('GET', path, undefined, getToken, imp);
 }
 
-export function apiPost<T>(path: string, body?: unknown, getToken?: TokenGetter): Promise<T> {
-  return request<T>('POST', path, body, getToken);
+export function apiPost<T>(path: string, body?: unknown, getToken?: TokenGetter, imp?: string | null): Promise<T> {
+  return request<T>('POST', path, body, getToken, imp);
 }
 
-export function apiPut<T>(path: string, body?: unknown, getToken?: TokenGetter): Promise<T> {
-  return request<T>('PUT', path, body, getToken);
+export function apiPut<T>(path: string, body?: unknown, getToken?: TokenGetter, imp?: string | null): Promise<T> {
+  return request<T>('PUT', path, body, getToken, imp);
 }
 
-export function apiPatch<T>(path: string, body?: unknown, getToken?: TokenGetter): Promise<T> {
-  return request<T>('PATCH', path, body, getToken);
+export function apiPatch<T>(path: string, body?: unknown, getToken?: TokenGetter, imp?: string | null): Promise<T> {
+  return request<T>('PATCH', path, body, getToken, imp);
 }
 
-export function apiDelete<T>(path: string, getToken?: TokenGetter): Promise<T> {
-  return request<T>('DELETE', path, undefined, getToken);
+export function apiDelete<T>(path: string, getToken?: TokenGetter, imp?: string | null): Promise<T> {
+  return request<T>('DELETE', path, undefined, getToken, imp);
 }
 
-export function apiUpload<T>(path: string, file: File, getToken?: TokenGetter): Promise<T> {
+export function apiUpload<T>(path: string, file: File, getToken?: TokenGetter, imp?: string | null): Promise<T> {
   const formData = new FormData();
   formData.append('image', file);
-  return request<T>('POST', path, formData, getToken);
+  return request<T>('POST', path, formData, getToken, imp);
 }
 
 export function useApi() {
   const { getToken } = useAuth();
+  const { impersonation } = useImpersonation();
+  const imp = impersonation?.token ?? null;
 
   return {
-    get: <T>(path: string) => apiGet<T>(path, getToken),
-    post: <T>(path: string, body?: unknown) => apiPost<T>(path, body, getToken),
-    put: <T>(path: string, body?: unknown) => apiPut<T>(path, body, getToken),
-    patch: <T>(path: string, body?: unknown) => apiPatch<T>(path, body, getToken),
-    delete: <T>(path: string) => apiDelete<T>(path, getToken),
-    upload: <T>(path: string, file: File) => apiUpload<T>(path, file, getToken),
+    get: <T>(path: string) => apiGet<T>(path, getToken, imp),
+    post: <T>(path: string, body?: unknown) => apiPost<T>(path, body, getToken, imp),
+    put: <T>(path: string, body?: unknown) => apiPut<T>(path, body, getToken, imp),
+    patch: <T>(path: string, body?: unknown) => apiPatch<T>(path, body, getToken, imp),
+    delete: <T>(path: string) => apiDelete<T>(path, getToken, imp),
+    upload: <T>(path: string, file: File) => apiUpload<T>(path, file, getToken, imp),
   };
 }
 
