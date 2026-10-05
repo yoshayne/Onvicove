@@ -58,8 +58,10 @@ import AdminAuditLog from './admin/AuditLog';
 import AdminSettings from './admin/Settings';
 import AdminCoupons from './admin/Coupons';
 import AdminDomainRequests from './admin/DomainRequests';
+import AdminCreateTenant from './admin/CreateTenant';
 
 const Wizard = lazy(() => import('./wizard/Wizard'));
+const ClaimPage = lazy(() => import('./storefront/ClaimPage'));
 const StorefrontRouter = lazy(() => import('./storefront/StorefrontRouter'));
 const PayBalance = lazy(() => import('./storefront/PayBalance'));
 const BookingPage = lazy(() => import('./storefront/BookingPage'));
@@ -219,6 +221,7 @@ export default function App() {
               >
                 <Route index element={<AdminOverview />} />
                 <Route path="tenants" element={<AdminTenants />} />
+                <Route path="tenants/new" element={<AdminCreateTenant />} />
                 <Route path="tenants/:id" element={<AdminTenantDetail />} />
                 <Route path="transactions" element={<AdminTransactions />} />
                 <Route path="audit-log" element={<AdminAuditLog />} />
@@ -227,6 +230,7 @@ export default function App() {
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
+              <Route path="/claim/:token" element={<Suspense fallback={null}><ClaimPage /></Suspense>} />
               <Route path="/:slug/*" element={<StorefrontRouter />} />
             </Routes>
           </Suspense>

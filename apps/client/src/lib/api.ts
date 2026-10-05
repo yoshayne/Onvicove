@@ -94,3 +94,9 @@ export function useApi() {
     upload: <T>(path: string, file: File) => apiUpload<T>(path, file, getToken, imp),
   };
 }
+
+// No-op hook kept for backward compatibility with components that call it at the top level.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function useImpersonateApi(_token: string) {
+  // Intentional no-op — impersonation is handled via ImpersonationContext / useApi.
+}
