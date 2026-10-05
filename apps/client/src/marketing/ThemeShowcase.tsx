@@ -14,6 +14,7 @@ const THEMES: { id: ThemeId; name: string; desc: string; premium?: boolean }[] =
   { id: 'brutalist', name: 'Brutalist', desc: 'Raw, bold, unconventional', premium: true },
   { id: 'neon-tokyo', name: 'Neon Tokyo', desc: 'Cyberpunk neon energy', premium: true },
   { id: 'craft', name: 'Craft', desc: 'Handmade paper textures', premium: true },
+  { id: 'lens', name: 'Lens', desc: 'Photo-forward dark aesthetic', premium: true },
 ];
 
 // Per-theme color palette for mini mockups
@@ -68,6 +69,10 @@ const MINI_STYLES: Record<ThemeId, {
   craft: {
     bg: '#f5f0e8', nav: '#f5f0e8', hero: '#ece5d8', accent: '#5c4a32',
     text: '#2c1f14', subtext: '#7a6650', headingFont: 'Georgia, serif', bodyFont: 'sans-serif', navText: '#2c1f14',
+  },
+  lens: {
+    bg: '#0d0d0d', nav: '#0d0d0d', hero: '#0d0d0d', accent: '#c8b8a2',
+    text: '#f0ede8', subtext: 'rgba(240,237,232,0.5)', headingFont: 'Georgia, serif', bodyFont: 'sans-serif', navText: '#f0ede8',
   },
 };
 
@@ -180,6 +185,15 @@ const THEME_IMAGES: Record<ThemeId, { hero: string; products: [string, string, s
       'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=120&q=60',
     ],
     heroLabel: 'Made by hand.', p1: 'Soy Candle', p2: 'Soap Bar', p3: 'Linen Bag',
+  },
+  lens: {
+    hero: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=400&q=70',
+    products: [
+      'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=120&q=60',
+      'https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&w=120&q=60',
+      'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=120&q=60',
+    ],
+    heroLabel: 'The world, unfiltered.', p1: 'Fine Art Print', p2: 'Photo Zine', p3: 'Monograph',
   },
 };
 
@@ -305,6 +319,20 @@ const THEME_MOCK_DATA: Record<ThemeId, { companyName: string; tagline: string; i
     ],
     services: [{ id: 's1', name: 'VIP Drop Access', description: 'Early access to all limited releases.', priceCents: 9900, durationMinutes: 0 }],
   },
+  lens: {
+    companyName: 'Halide Studio', tagline: 'The world, unfiltered.', industry: 'Photography',
+    products: [
+      { id: '1', name: 'Silver Gelatin Print', description: 'Darkroom-made, signed & numbered.', priceCents: 42000, imageUrls: ['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=900&q=80'], isFeatured: true },
+      { id: '2', name: 'Photo Zine Vol. 4', description: 'Risograph-printed, 48 pages.', priceCents: 2800, imageUrls: ['https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=900&q=80'] },
+      { id: '3', name: 'City Monograph', description: 'Hardcover, 120 photographs.', priceCents: 9500, imageUrls: ['https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=900&q=80'] },
+      { id: '4', name: 'Handmade Camera Strap', description: 'Vegetable-tanned leather.', priceCents: 8500, imageUrls: ['https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&w=900&q=80'] },
+    ],
+    services: [
+      { id: 's1', name: 'Portrait Session', description: 'Natural light studio or location.', priceCents: 55000, durationMinutes: 120 },
+      { id: 's2', name: 'Brand Shoot', description: 'Full editorial day rate.', priceCents: 140000, durationMinutes: 480 },
+      { id: 's3', name: 'Film Development', description: '35mm or 120, scan included.', priceCents: 4500, durationMinutes: 0 },
+    ],
+  },
   craft: {
     companyName: 'Willow & Co.', tagline: 'Made by hand. Made to love.', industry: 'Handmade Goods',
     products: [
@@ -333,6 +361,7 @@ const themeLoaders: Record<ThemeId, () => Promise<{ default: ComponentType<Theme
   brutalist: () => import('../themes/brutalist/Storefront'),
   'neon-tokyo': () => import('../themes/neon-tokyo/Storefront'),
   craft: () => import('../themes/craft/Storefront'),
+  lens: () => import('../themes/lens/Storefront'),
 };
 
 function MiniMockup({ id }: { id: ThemeId }) {
@@ -556,7 +585,7 @@ function showProducts(id: ThemeId) {
 }
 
 function showBoth(id: ThemeId) {
-  return ['editorial', 'warm', 'classic', 'bright', 'aurora', 'magazine', 'craft'].includes(id);
+  return ['editorial', 'warm', 'classic', 'bright', 'aurora', 'magazine', 'craft', 'lens'].includes(id);
 }
 
 function FullPreview({ themeId }: { themeId: ThemeId }) {
@@ -596,7 +625,7 @@ export default function ThemeShowcase() {
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
-      <h2 className="text-center text-3xl font-bold tracking-tight">Twelve stunning themes</h2>
+      <h2 className="text-center text-3xl font-bold tracking-tight">Thirteen stunning themes</h2>
       <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
         Six free themes for every brand. Six next-level premium themes for Pro & Business plans.
       </p>
