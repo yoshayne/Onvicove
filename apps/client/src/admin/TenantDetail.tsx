@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
+import { useImpersonation } from '../contexts/ImpersonationContext';
 import type { Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
@@ -23,6 +24,7 @@ export default function TenantDetail() {
   const api = useApi();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { startImpersonation } = useImpersonation();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'tenants', id],
@@ -54,10 +56,9 @@ export default function TenantDetail() {
   });
 
   const impersonateMutation = useMutation({
-    mutationFn: () => api.post<{ token: string }>(`/admin/tenants/${id}/impersonate`),
-    onSuccess: ({ token }) => {
-      sessionStorage.setItem('impersonate_token', token);
-      sessionStorage.setItem('impersonate_tenant_id', id!);
+    mutationFn: () => api.post<{ token: string; tenant: { id: string; company_name: string; slug: string } }>(`/admin/tenants/${id}/impersonate`),
+    onSuccess: ({ token, tenant }) => {
+      startImpersonation({ tenantId: tenant.id, companyName: tenant.company_name, slug: tenant.slug, token });
       window.location.href = '/dashboard';
     },
   });
