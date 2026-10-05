@@ -264,7 +264,7 @@ export default function Settings() {
         </div>
       </form>
 
-      <CustomDomainPanel tenant={tenant} />
+      {tenant && <CustomDomainPanel tenant={tenant} />}
     </div>
   );
 }
