@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth, SignIn } from '@clerk/clerk-react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@clerk/clerk-react';
 import { apiGet, apiPost } from '../lib/api';
 import Spinner from '../components/shared/Spinner';
 
@@ -102,32 +102,43 @@ export default function ClaimPage() {
     );
   }
 
-  // Not signed in yet — show sign-in/up with context
+  // Not signed in yet — prompt to sign in / sign up, then return here
   if (!isSignedIn) {
+    const returnTo = `/claim/${token}`;
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-        <div className="max-w-md w-full flex flex-col gap-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm text-center">
-            <div className="text-3xl mb-3">🏪</div>
-            <h1 className="text-xl font-bold text-slate-900">Claim your site</h1>
+        <div className="max-w-md w-full flex flex-col gap-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm text-center">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-slate-100 mb-4">
+              <span className="text-2xl">🏪</span>
+            </div>
+            <h1 className="text-xl font-bold text-slate-900">Your site is ready</h1>
             <p className="mt-2 text-slate-500 text-sm">
-              <strong>{invite.company_name}</strong> has been built for you on Shop Suite Direct.
-              Sign in or create a free account to take ownership.
+              <strong className="text-slate-800">{invite.company_name}</strong> has been built for you on Shop Suite Direct.
+              Create a free account or sign in to take ownership.
             </p>
             {invite.invite_email && (
               <p className="mt-3 text-xs text-slate-400">
-                This invite was sent to <strong>{invite.invite_email}</strong>. Use that email for your account.
+                Invite sent to <strong>{invite.invite_email}</strong> — use that email when signing up.
               </p>
             )}
-          </div>
 
-          <div className="flex justify-center">
-            <SignIn
-              routing="hash"
-              signUpUrl={`/claim/${token}#sign-up`}
-              afterSignInUrl={`/claim/${token}`}
-              afterSignUpUrl={`/claim/${token}`}
-            />
+            <div className="mt-6 flex flex-col gap-2">
+              <Link
+                to="/sign-up"
+                state={{ from: returnTo }}
+                className="block w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white text-center hover:bg-slate-700 transition"
+              >
+                Create my free account
+              </Link>
+              <Link
+                to="/sign-in"
+                state={{ from: returnTo }}
+                className="block w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 text-center hover:bg-slate-50 transition"
+              >
+                I already have an account
+              </Link>
+            </div>
           </div>
 
           {claimError && (
