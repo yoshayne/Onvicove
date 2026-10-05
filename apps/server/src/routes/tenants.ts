@@ -25,6 +25,8 @@ const updateTenantSchema = z.object({
   show_live_calendar: z.boolean().optional(),
   currency: z.string().optional(),
   custom_domain: z.string().nullable().optional(),
+  slug: z.string().min(1).max(60).regex(/^[a-z0-9-]+$/).optional(),
+  font_pair_id: z.string().optional(),
 });
 
 const createTenantSchema = z.object({
@@ -118,6 +120,14 @@ app.patch('/me', requireAuth, requireTenant, async (c) => {
   const keys = Object.keys(updates) as (keyof typeof updates)[];
   if (keys.length === 0) {
     return c.json({ tenant: await enrichWithUrls(tenant) });
+  }
+
+  // If slug is being changed, verify it's still available (race-condition guard)
+  if (updates.slug) {
+    const conflict = await db`SELECT id FROM tenants WHERE slug = ${updates.slug} AND id != ${tenant.id} LIMIT 1`;
+    if (conflict[0]) {
+      return c.json({ error: 'That URL is already taken. Please choose another name.' }, 409);
+    }
   }
 
   const result = await db`

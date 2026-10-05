@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, useRef, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
 import type { Tenant, BookingMode, FontPairId } from '../types';
@@ -8,6 +8,10 @@ import { Input } from '../components/shared/Input';
 import CustomDomainPanel from './CustomDomainPanel';
 import { FONT_PAIRS } from '../themes/shared/fontPairs';
 import ColorPicker from '../components/shared/ColorPicker';
+
+function toSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+}
 
 interface SettingsFormState {
   company_name: string;
@@ -42,22 +46,57 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<SettingsFormState | null>(null);
   const [saved, setSaved] = useState(false);
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [slugChecking, setSlugChecking] = useState(false);
+  const slugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['tenant', 'me'],
     queryFn: () => api.get<{ tenant: Tenant }>('/tenants/me'),
   });
 
+  const tenant = data?.tenant;
+
   useEffect(() => {
-    if (data?.tenant && !form) {
-      setForm(tenantToForm(data.tenant));
+    if (tenant && !form) {
+      setForm(tenantToForm(tenant));
     }
-  }, [data, form]);
+  }, [tenant, form]);
+
+  // When company name changes, compute a slug and check availability
+  function handleNameChange(name: string) {
+    setForm((f) => (f ? { ...f, company_name: name } : f));
+    if (!tenant) return;
+    const newSlug = toSlug(name);
+    if (newSlug === tenant.slug) {
+      setPendingSlug(null);
+      setSlugAvailable(null);
+      return;
+    }
+    setPendingSlug(newSlug);
+    setSlugAvailable(null);
+    if (slugTimer.current) clearTimeout(slugTimer.current);
+    if (!newSlug) return;
+    slugTimer.current = setTimeout(async () => {
+      setSlugChecking(true);
+      try {
+        const res = await api.get<{ available: boolean }>(`/tenants/slug-available?slug=${encodeURIComponent(newSlug)}`);
+        setSlugAvailable(res.available);
+      } catch {
+        setSlugAvailable(null);
+      } finally {
+        setSlugChecking(false);
+      }
+    }, 500);
+  }
 
   const updateMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) => api.patch<{ tenant: Tenant }>('/tenants/me', body),
     onSuccess: (res) => {
       queryClient.setQueryData(['tenant', 'me'], res);
+      setPendingSlug(null);
+      setSlugAvailable(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     },
@@ -66,7 +105,7 @@ export default function Settings() {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form) return;
-    updateMutation.mutate({
+    const body: Record<string, unknown> = {
       company_name: form.company_name,
       tagline: form.tagline || null,
       brand_color: form.brand_color,
@@ -77,7 +116,12 @@ export default function Settings() {
       booking_mode: form.booking_mode,
       show_live_calendar: form.show_live_calendar,
       font_pair_id: form.font_pair_id,
-    });
+    };
+    // Include slug update if new slug is available and different
+    if (pendingSlug && slugAvailable && tenant && !tenant.custom_domain_verified) {
+      body.slug = pendingSlug;
+    }
+    updateMutation.mutate(body);
   }
 
   if (isLoading || !form) {
@@ -92,19 +136,41 @@ export default function Settings() {
     return <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">Failed to load settings.</div>;
   }
 
-  const tenant = data!.tenant;
+  const hasCustomDomain = !!(tenant?.custom_domain_verified && tenant?.custom_domain);
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
       <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6">
-        <Input
-          label="Company name"
-          value={form.company_name}
-          onChange={(e) => setForm((f) => (f ? { ...f, company_name: e.target.value } : f))}
-          required
-        />
+        <div className="flex flex-col gap-1">
+          <Input
+            label="Company name"
+            value={form.company_name}
+            onChange={(e) => handleNameChange(e.target.value)}
+            required
+          />
+          {/* Slug preview — only when no custom domain */}
+          {!hasCustomDomain && (
+            <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+              <span>URL:</span>
+              <span className="font-mono">
+                {pendingSlug
+                  ? <><span className="line-through text-slate-300">{tenant?.slug}</span>{' → '}<span className={slugAvailable === false ? 'text-red-500' : 'text-slate-700'}>{pendingSlug}</span></>
+                  : <span className="text-slate-700">{tenant?.slug}</span>
+                }
+                <span>.shopsuitedirect.com</span>
+              </span>
+              {slugChecking && <Spinner size="sm" />}
+              {pendingSlug && !slugChecking && slugAvailable === true && (
+                <span className="text-emerald-600 font-medium">available — will update on save</span>
+              )}
+              {pendingSlug && !slugChecking && slugAvailable === false && (
+                <span className="text-red-500 font-medium">taken — slug won't change</span>
+              )}
+            </div>
+          )}
+        </div>
         <Input
           label="Tagline"
           value={form.tagline}
