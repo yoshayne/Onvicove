@@ -148,10 +148,29 @@ export default function ClaimPage() {
     );
   }
 
-  // Signed in but claim hasn't fired yet (shouldn't normally render)
+  // Signed in — claim is in progress or failed
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Spinner size="lg" />
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        {claimError ? (
+          <>
+            <div className="text-4xl mb-4">⚠️</div>
+            <h1 className="text-xl font-bold text-slate-900 mb-2">Couldn't claim site</h1>
+            <p className="text-slate-500 text-sm">{claimError}</p>
+            <button
+              onClick={() => { setClaimError(''); setClaiming(false); }}
+              className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Try again
+            </button>
+          </>
+        ) : (
+          <>
+            <Spinner size="lg" />
+            <p className="mt-4 text-slate-500 text-sm">Setting up your site…</p>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,9 +1,32 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, Component, type ReactNode, type ErrorInfo } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Spinner from './components/shared/Spinner';
 import { ImpersonationProvider } from './contexts/ImpersonationContext';
+
+class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error('App error:', error, info); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">
+          <p className="text-lg font-semibold text-slate-800">Something went wrong</p>
+          <p className="text-sm text-slate-500">{this.state.error.message}</p>
+          <button onClick={() => window.location.reload()} className="mt-2 rounded-lg bg-slate-900 px-4 py-2 text-sm text-white">
+            Reload page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 import Landing from './marketing/Landing';
 import Guide from './marketing/Guide';
@@ -81,6 +104,7 @@ function PageFallback() {
 
 export default function App() {
   return (
+    <AppErrorBoundary>
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
       <QueryClientProvider client={queryClient}>
         <ImpersonationProvider>
@@ -175,5 +199,6 @@ export default function App() {
         </ImpersonationProvider>
       </QueryClientProvider>
     </ClerkProvider>
+    </AppErrorBoundary>
   );
 }
