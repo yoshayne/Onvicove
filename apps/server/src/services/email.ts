@@ -588,6 +588,26 @@ export async function sendTenantNewBooking(data: {
   });
 }
 
+export async function sendTenantBookingCancelled(data: {
+  tenantEmail: string;
+  companyName: string;
+  serviceName: string;
+  customerName: string;
+  customerEmail: string;
+  startTime: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.tenantEmail, name: data.companyName }],
+    subject: `Booking cancelled — ${data.serviceName}`,
+    htmlContent: wrap('A booking was cancelled', `
+      <p>A booking was cancelled on <strong>${data.companyName}</strong>.</p>
+      <p><strong>Service:</strong> ${data.serviceName}</p>
+      <p><strong>Customer:</strong> ${data.customerName} (${data.customerEmail})</p>
+      <p><strong>Was scheduled for:</strong> ${data.startTime}</p>
+    `),
+  });
+}
+
 // ─── Payment failure ─────────────────────────────────────────────────────────
 
 export async function sendPaymentFailed(data: {

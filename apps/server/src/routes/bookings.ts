@@ -4,7 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { createBookingPaymentIntent } from '../services/stripe';
-import { sendPaymentLinkEmail, sendBookingCancelled } from '../services/email';
+import { sendPaymentLinkEmail, sendBookingCancelled, sendTenantBookingCancelled } from '../services/email';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
 
 const app = new Hono();
@@ -196,15 +196,31 @@ app.patch('/:id', async (c) => {
   const booking = rows[0];
 
   if (updates.status === 'cancelled' && before[0]?.status !== 'cancelled') {
-    const svcRows = await db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`;
+    const [svcRows, tenantUserRows] = await Promise.all([
+      db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`,
+      db`SELECT u.email FROM users u JOIN tenants t ON t.clerk_user_id = u.clerk_user_id WHERE t.id = ${tenant.id} LIMIT 1`,
+    ]);
+    const serviceName = (svcRows[0]?.name as string) ?? 'your appointment';
+    const startTime = new Date(booking.start_time as string).toLocaleString();
+    const endTime = new Date(booking.end_time as string).toLocaleString();
     sendBookingCancelled({
       toEmail: booking.customer_email as string,
       toName: booking.customer_name as string,
-      serviceName: (svcRows[0]?.name as string) ?? 'your appointment',
-      startTime: new Date(booking.start_time as string).toLocaleString(),
-      endTime: new Date(booking.end_time as string).toLocaleString(),
+      serviceName,
+      startTime,
+      endTime,
       companyName: tenant.company_name,
-    }).catch((err) => console.error('Booking cancelled email error:', err));
+    }).catch((err) => console.error('Booking cancelled customer email error:', err));
+    if (tenantUserRows[0]?.email) {
+      sendTenantBookingCancelled({
+        tenantEmail: tenantUserRows[0].email as string,
+        companyName: tenant.company_name,
+        serviceName,
+        customerName: booking.customer_name as string,
+        customerEmail: booking.customer_email as string,
+        startTime,
+      }).catch((err) => console.error('Booking cancelled tenant email error:', err));
+    }
   }
 
   return c.json({ booking });
