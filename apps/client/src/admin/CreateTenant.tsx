@@ -570,7 +570,7 @@ export default function CreateTenant() {
               form.city ? ['City', form.city] : null,
               form.industry ? ['Industry', form.industry] : null,
               form.client_email ? ['Invite to', form.client_email] : null,
-            ].filter(Boolean).map(([label, value]) => (
+            ].filter((x): x is [string, string] => x !== null).map(([label, value]) => (
               <div key={label as string} className="rounded-lg bg-slate-50 p-3">
                 <div className="text-xs text-slate-400">{label}</div>
                 <div className="font-medium text-slate-800 truncate">{value}</div>

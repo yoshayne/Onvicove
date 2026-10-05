@@ -119,7 +119,7 @@ app.put('/me/page-content', requireAuth, requireTenant, async (c) => {
   // Merge into existing page_content rather than replace
   const rows = await db`
     UPDATE tenants
-    SET page_content = COALESCE(page_content, '{}'::jsonb) || ${db.json(body as Record<string, unknown>)},
+    SET page_content = COALESCE(page_content, '{}'::jsonb) || ${db.json(body as never)},
         updated_at = NOW()
     WHERE id = ${tenant.id}
     RETURNING page_content
