@@ -446,6 +446,20 @@ CREATE INDEX IF NOT EXISTS idx_email_log_tenant_id ON email_log(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_email_log_created_at ON email_log(created_at DESC);
 
 
+-- Tenant invite links (admin-created, claimed by the client after sign-up)
+CREATE TABLE IF NOT EXISTS tenant_invites (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  invite_email TEXT NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
+  claimed_at TIMESTAMPTZ,
+  claimed_by TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_tenant_invites_token ON tenant_invites(token);
+CREATE INDEX IF NOT EXISTS idx_tenant_invites_tenant_id ON tenant_invites(tenant_id);
+
 -- Google Calendar integration
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS google_cal_refresh_token TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS google_cal_enabled BOOLEAN DEFAULT FALSE;

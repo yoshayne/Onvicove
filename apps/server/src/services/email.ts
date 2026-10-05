@@ -677,3 +677,24 @@ export async function sendCustomOrderConfirmation(data: {
     `),
   });
 }
+
+export async function sendInvite(data: {
+  toEmail: string;
+  companyName: string;
+  inviteUrl: string;
+  agencyName?: string;
+}): Promise<void> {
+  const from = data.agencyName || 'Shop Suite Direct';
+  await sendTransacEmail({
+    to: [{ email: data.toEmail, name: data.toEmail }],
+    subject: `Your ${data.companyName} site is ready — set up your account`,
+    htmlContent: wrap(`Your site is ready!`, `
+      <p>Hi there,</p>
+      <p><strong>${from}</strong> has built your <strong>${data.companyName}</strong> online store. Click the button below to create your account and take ownership of your site.</p>
+      <p style="text-align:center;margin:32px 0">
+        <a href="${data.inviteUrl}" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px">Set Up My Account</a>
+      </p>
+      <p style="font-size:13px;color:#64748b">This link expires in 7 days. If you weren't expecting this, you can safely ignore it.</p>
+    `),
+  });
+}
