@@ -25,6 +25,7 @@ import Settings from './dashboard/Settings';
 import Payouts from './dashboard/Payouts';
 import Billing from './dashboard/Billing';
 import GalleryManager from './dashboard/GalleryManager';
+import EmailLog from './dashboard/EmailLog';
 import AdminLayout from './admin/Layout';
 import AdminOverview from './admin/Overview';
 import AdminTenants from './admin/Tenants';
@@ -133,6 +134,7 @@ export default function App() {
                 <Route path="gallery" element={<GalleryManager />} />
                 <Route path="ai-photos" element={<AIPhotos />} />
                 <Route path="discounts" element={<Discounts />} />
+                <Route path="email-log" element={<EmailLog />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="payouts" element={<Payouts />} />
                 <Route path="billing" element={<Billing />} />
@@ -155,13 +157,13 @@ export default function App() {
               >
                 <Route index element={<AdminOverview />} />
                 <Route path="tenants" element={<AdminTenants />} />
+                <Route path="tenants/new" element={<AdminCreateTenant />} />
                 <Route path="tenants/:id" element={<AdminTenantDetail />} />
                 <Route path="transactions" element={<AdminTransactions />} />
                 <Route path="audit-log" element={<AdminAuditLog />} />
                 <Route path="domain-requests" element={<AdminDomainRequests />} />
                 <Route path="coupons" element={<AdminCoupons />} />
                 <Route path="settings" element={<AdminSettings />} />
-                <Route path="tenants/new" element={<AdminCreateTenant />} />
               </Route>
 
               <Route path="/claim/:token" element={<ClaimPage />} />
