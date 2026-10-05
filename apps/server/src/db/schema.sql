@@ -387,10 +387,13 @@ CREATE TABLE IF NOT EXISTS domain_purchase_requests (
 );
 ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS stripe_session_id TEXT;
 
--- Expand theme_id CHECK constraint to include 6 premium themes
+-- Expand theme_id CHECK constraint to include 6 premium themes (sanitize first)
 ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
+UPDATE tenants
+  SET theme_id = 'editorial'
+  WHERE theme_id NOT IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens');
 ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
-  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft'));
+  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens'));
 
 -- Email list opt-in
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS email_optin BOOLEAN DEFAULT FALSE;
@@ -435,7 +438,10 @@ CREATE INDEX IF NOT EXISTS idx_tenant_invites_tenant ON tenant_invites(tenant_id
 -- Page content: key/value text store for about text, contact info, etc.
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS page_content JSONB DEFAULT '{}';
 
--- Allow lens theme
+-- Allow lens theme; sanitize any rows with invalid theme_id before re-adding constraint
 ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
+UPDATE tenants
+  SET theme_id = 'editorial'
+  WHERE theme_id NOT IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens');
 ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
   CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens'));
