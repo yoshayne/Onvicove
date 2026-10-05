@@ -698,6 +698,44 @@ export async function sendCustomOrderConfirmation(data: {
   });
 }
 
+export async function sendInviteFollowUp(data: {
+  toEmail: string;
+  companyName: string;
+  inviteUrl: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.toEmail, name: data.toEmail }],
+    subject: `Reminder: your ${data.companyName} site is waiting for you`,
+    htmlContent: wrap('Your site is still waiting', `
+      <p>Hi there,</p>
+      <p>Just a reminder — your <strong>${data.companyName}</strong> online store has been built and is ready for you to claim. You haven't set up your account yet.</p>
+      <p>Your invite link expires in a few days. Click below to create your account and take ownership of your site.</p>
+      <p style="text-align:center;margin:32px 0">
+        <a href="${data.inviteUrl}" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px">Set Up My Account</a>
+      </p>
+      <p style="font-size:13px;color:#64748b">If you weren't expecting this or need help, just reply to this email.</p>
+    `),
+  });
+}
+
+export async function sendAdminInviteExpired(data: {
+  companyName: string;
+  inviteEmail: string;
+  adminUrl: string;
+}): Promise<void> {
+  const email = adminEmail();
+  if (!email) return;
+  await sendTransacEmail({
+    to: [{ email, name: 'Shop Suite Direct Admin' }],
+    subject: `Invite expired unclaimed — ${data.companyName}`,
+    htmlContent: wrap('An invite expired without being claimed', `
+      <p>The invite sent to <strong>${data.inviteEmail}</strong> for <strong>${data.companyName}</strong> has expired and was never claimed.</p>
+      <p>You may want to follow up with the client and send a fresh invite.</p>
+      ${btn('View tenant & resend invite', data.adminUrl)}
+    `),
+  });
+}
+
 export async function sendAdminInviteClaimed(data: {
   companyName: string;
   claimedByEmail: string;

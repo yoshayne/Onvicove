@@ -434,6 +434,8 @@ CREATE TABLE IF NOT EXISTS tenant_invites (
 );
 CREATE INDEX IF NOT EXISTS idx_tenant_invites_token ON tenant_invites(token);
 CREATE INDEX IF NOT EXISTS idx_tenant_invites_tenant ON tenant_invites(tenant_id);
+ALTER TABLE tenant_invites ADD COLUMN IF NOT EXISTS followup_sent_at TIMESTAMPTZ;
+ALTER TABLE tenant_invites ADD COLUMN IF NOT EXISTS expiry_notified_at TIMESTAMPTZ;
 
 -- Page content: key/value text store for about text, contact info, etc.
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS page_content JSONB DEFAULT '{}';
