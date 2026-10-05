@@ -149,6 +149,17 @@ export default function Wizard() {
 
   const StepComponent = STEP_COMPONENTS[currentStep] ?? Step1_BusinessName;
 
+  // If the user arrived here after clicking an invite link, send them back to claim their site
+  // instead of creating a brand-new store.
+  useEffect(() => {
+    try {
+      const pendingToken = sessionStorage.getItem('pending_claim_token');
+      if (pendingToken) {
+        navigate(`/claim/${pendingToken}`, { replace: true });
+      }
+    } catch { /* ignore */ }
+  }, [navigate]);
+
   // On first load, restore any progress saved to the server so the wizard
   // can pick up where the user left off (e.g. on a new device or after
   // clearing local storage). Only applies if local state looks empty.

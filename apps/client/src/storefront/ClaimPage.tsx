@@ -22,9 +22,10 @@ export default function ClaimPage() {
   const [claimError, setClaimError] = useState('');
   const [claimed, setClaimed] = useState(false);
 
-  // Validate the token on load
+  // Validate the token on load and stash it so the onboarding wizard can detect a pending claim
   useEffect(() => {
     if (!token) return;
+    try { sessionStorage.setItem('pending_claim_token', token); } catch { /* ignore */ }
     apiGet<InviteInfo>(`/invite/${token}`)
       .then(setInvite)
       .catch((err) => setInviteError(err instanceof Error ? err.message : 'Invalid invite link'));
@@ -40,8 +41,8 @@ export default function ClaimPage() {
       try {
         const clerkToken = await getToken();
         await apiPost('/invite/claim', { token }, () => Promise.resolve(clerkToken));
+        try { sessionStorage.removeItem('pending_claim_token'); } catch { /* ignore */ }
         setClaimed(true);
-        // Give the server a moment, then redirect to dashboard
         setTimeout(() => navigate('/dashboard'), 1500);
       } catch (err) {
         setClaimError(err instanceof Error ? err.message : 'Could not claim site');
@@ -102,43 +103,39 @@ export default function ClaimPage() {
     );
   }
 
-  // Not signed in yet — prompt to sign in / sign up, then return here
+  // Not signed in yet — send to sign-in (which handles sign-up too) with return URL
   if (!isSignedIn) {
     const returnTo = `/claim/${token}`;
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
         <div className="max-w-md w-full flex flex-col gap-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-slate-100 mb-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-slate-900 mb-4">
               <span className="text-2xl">🏪</span>
             </div>
-            <h1 className="text-xl font-bold text-slate-900">Your site is ready</h1>
-            <p className="mt-2 text-slate-500 text-sm">
-              <strong className="text-slate-800">{invite.company_name}</strong> has been built for you on Shop Suite Direct.
-              Create a free account or sign in to take ownership.
+            <h1 className="text-xl font-bold text-slate-900">
+              Your <span className="text-slate-600">{invite.company_name}</span> site is ready
+            </h1>
+            <p className="mt-3 text-slate-500 text-sm leading-relaxed">
+              We've already built your store — you just need to log in to access it.
+              No setup required.
             </p>
             {invite.invite_email && (
               <p className="mt-3 text-xs text-slate-400">
-                Invite sent to <strong>{invite.invite_email}</strong> — use that email when signing up.
+                This invite was sent to <strong>{invite.invite_email}</strong>.
               </p>
             )}
 
-            <div className="mt-6 flex flex-col gap-2">
-              <Link
-                to="/sign-up"
-                state={{ from: returnTo }}
-                className="block w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white text-center hover:bg-slate-700 transition"
-              >
-                Create my free account
-              </Link>
-              <Link
-                to="/sign-in"
-                state={{ from: returnTo }}
-                className="block w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 text-center hover:bg-slate-50 transition"
-              >
-                I already have an account
-              </Link>
-            </div>
+            <Link
+              to="/sign-in"
+              state={{ from: returnTo, isInviteClaim: true }}
+              className="mt-6 block w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white text-center hover:bg-slate-700 transition"
+            >
+              Log in to access my site →
+            </Link>
+            <p className="mt-3 text-xs text-slate-400">
+              New to Shop Suite Direct? You can create an account on the next screen.
+            </p>
           </div>
 
           {claimError && (
