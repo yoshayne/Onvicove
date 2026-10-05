@@ -431,3 +431,11 @@ CREATE TABLE IF NOT EXISTS tenant_invites (
 );
 CREATE INDEX IF NOT EXISTS idx_tenant_invites_token ON tenant_invites(token);
 CREATE INDEX IF NOT EXISTS idx_tenant_invites_tenant ON tenant_invites(tenant_id);
+
+-- Page content: key/value text store for about text, contact info, etc.
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS page_content JSONB DEFAULT '{}';
+
+-- Allow lens theme
+ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
+ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
+  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens'));

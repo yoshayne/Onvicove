@@ -15,7 +15,7 @@ const updateTenantSchema = z.object({
   hero_image_key: z.string().nullable().optional(),
   favicon_key: z.string().nullable().optional(),
   mode: z.enum(['store', 'book', 'both']).optional(),
-  theme_id: z.enum(['editorial', 'minimal', 'bold', 'warm', 'classic', 'bright', 'obsidian', 'aurora', 'magazine', 'brutalist', 'neon-tokyo', 'craft']).optional(),
+  theme_id: z.enum(['editorial', 'minimal', 'bold', 'warm', 'classic', 'bright', 'obsidian', 'aurora', 'magazine', 'brutalist', 'neon-tokyo', 'craft', 'lens']).optional(),
   brand_color: z.string().optional(),
   city: z.string().nullable().optional(),
   industry: z.string().nullable().optional(),
@@ -29,7 +29,7 @@ const updateTenantSchema = z.object({
 const createTenantSchema = z.object({
   company_name: z.string().min(1),
   mode: z.enum(['store', 'book', 'both']).optional(),
-  theme_id: z.enum(['editorial', 'minimal', 'bold', 'warm', 'classic', 'bright', 'obsidian', 'aurora', 'magazine', 'brutalist', 'neon-tokyo', 'craft']).optional(),
+  theme_id: z.enum(['editorial', 'minimal', 'bold', 'warm', 'classic', 'bright', 'obsidian', 'aurora', 'magazine', 'brutalist', 'neon-tokyo', 'craft', 'lens']).optional(),
 });
 
 // GET /api/tenants/slug-available?slug=foo
@@ -106,6 +106,26 @@ app.patch('/me', requireAuth, requireTenant, async (c) => {
   `;
 
   return c.json({ tenant: await enrichWithUrls(result[0]) });
+});
+
+// PUT /api/tenants/me/page-content — replace entire page_content JSONB map
+app.put('/me/page-content', requireAuth, requireTenant, async (c) => {
+  const tenant = c.get('tenant') as { id: string };
+  const body = await c.req.json().catch(() => null);
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return c.json({ error: 'Body must be a flat key/value object' }, 400);
+  }
+
+  // Merge into existing page_content rather than replace
+  const rows = await db`
+    UPDATE tenants
+    SET page_content = COALESCE(page_content, '{}'::jsonb) || ${db.json(body as Record<string, unknown>)},
+        updated_at = NOW()
+    WHERE id = ${tenant.id}
+    RETURNING page_content
+  `;
+
+  return c.json({ page_content: rows[0].page_content });
 });
 
 export default app;
