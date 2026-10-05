@@ -24,6 +24,7 @@ import Discounts from './dashboard/Discounts';
 import Settings from './dashboard/Settings';
 import Payouts from './dashboard/Payouts';
 import Billing from './dashboard/Billing';
+import GalleryManager from './dashboard/GalleryManager';
 import AdminLayout from './admin/Layout';
 import AdminOverview from './admin/Overview';
 import AdminTenants from './admin/Tenants';
@@ -129,6 +130,7 @@ export default function App() {
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="themes" element={<Themes />} />
                 <Route path="page-builder" element={<PageBuilder />} />
+                <Route path="gallery" element={<GalleryManager />} />
                 <Route path="ai-photos" element={<AIPhotos />} />
                 <Route path="discounts" element={<Discounts />} />
                 <Route path="settings" element={<Settings />} />
