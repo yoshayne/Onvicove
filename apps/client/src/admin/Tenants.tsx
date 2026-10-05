@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { useApi } from '../lib/api';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
@@ -16,10 +17,14 @@ interface AdminTenant {
   industry: string | null;
   city: string | null;
   created_at: string;
+  created_by_admin: boolean;
+  unclaimed: boolean;
+  pending_invite_email: string | null;
 }
 
 export default function Tenants() {
   const api = useApi();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [plan, setPlan] = useState('');
@@ -45,18 +50,23 @@ export default function Tenants() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Tenants</h1>
-        <Button
-          variant="danger"
-          size="sm"
-          disabled={deleteAllMutation.isPending || !data?.tenants.length}
-          onClick={() => {
-            if (window.confirm(`Permanently delete ALL ${data?.tenants.length} tenant accounts? This cannot be undone.`)) {
-              deleteAllMutation.mutate();
-            }
-          }}
-        >
-          {deleteAllMutation.isPending ? 'Deleting…' : 'Delete all'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="primary" size="sm" onClick={() => navigate('/admin/tenants/new')}>
+            + New client site
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            disabled={deleteAllMutation.isPending || !data?.tenants.length}
+            onClick={() => {
+              if (window.confirm(`Permanently delete ALL ${data?.tenants.length} tenant accounts? This cannot be undone.`)) {
+                deleteAllMutation.mutate();
+              }
+            }}
+          >
+            {deleteAllMutation.isPending ? 'Deleting…' : 'Delete all'}
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -101,6 +111,7 @@ export default function Tenants() {
                 <th className="px-4 py-3 font-medium">Plan</th>
                 <th className="px-4 py-3 font-medium">Stripe</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Ownership</th>
                 <th className="px-4 py-3 font-medium">Created</th>
               </tr>
             </thead>
@@ -109,10 +120,15 @@ export default function Tenants() {
                 <tr
                   key={t.id}
                   className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
-                  onClick={() => (window.location.href = `/admin/tenants/${t.id}`)}
+                  onClick={() => navigate(`/admin/tenants/${t.id}`)}
                 >
                   <td className="px-4 py-3">
-                    <div className="font-medium text-slate-900">{t.company_name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-slate-900">{t.company_name}</span>
+                      {t.created_by_admin && (
+                        <span className="rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-700">admin-built</span>
+                      )}
+                    </div>
                     <div className="text-xs text-slate-400">/{t.slug}</div>
                   </td>
                   <td className="px-4 py-3">
@@ -125,6 +141,18 @@ export default function Tenants() {
                   </td>
                   <td className="px-4 py-3">
                     <Badge tone={t.is_active ? 'success' : 'danger'}>{t.is_active ? 'active' : 'inactive'}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    {t.unclaimed ? (
+                      <div>
+                        <Badge tone="warning">unclaimed</Badge>
+                        {t.pending_invite_email && (
+                          <div className="mt-0.5 text-xs text-slate-400 truncate max-w-[140px]">{t.pending_invite_email}</div>
+                        )}
+                      </div>
+                    ) : (
+                      <Badge tone="success">claimed</Badge>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-slate-700">{new Date(t.created_at).toLocaleDateString()}</td>
                 </tr>

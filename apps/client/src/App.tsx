@@ -32,10 +32,12 @@ import AdminAuditLog from './admin/AuditLog';
 import AdminSettings from './admin/Settings';
 import AdminCoupons from './admin/Coupons';
 import AdminDomainRequests from './admin/DomainRequests';
+import AdminCreateTenant from './admin/CreateTenant';
 
 const Wizard = lazy(() => import('./wizard/Wizard'));
 const StorefrontRouter = lazy(() => import('./storefront/StorefrontRouter'));
 const PayBalance = lazy(() => import('./storefront/PayBalance'));
+const ClaimPage = lazy(() => import('./storefront/ClaimPage'));
 
 const queryClient = new QueryClient();
 
@@ -155,7 +157,10 @@ export default function App() {
                 <Route path="domain-requests" element={<AdminDomainRequests />} />
                 <Route path="coupons" element={<AdminCoupons />} />
                 <Route path="settings" element={<AdminSettings />} />
+                <Route path="tenants/new" element={<AdminCreateTenant />} />
               </Route>
+
+              <Route path="/claim/:token" element={<ClaimPage />} />
 
               <Route path="/:slug/*" element={<StorefrontRouter />} />
             </Routes>

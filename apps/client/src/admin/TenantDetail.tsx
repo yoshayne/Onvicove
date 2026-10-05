@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
@@ -42,6 +43,34 @@ export default function TenantDetail() {
     },
   });
 
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [inviteResult, setInviteResult] = useState<{ claim_url: string; invite_email: string } | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
+
+  const inviteMutation = useMutation({
+    mutationFn: () => api.post<{ claim_url: string; invite_email: string; expires_at: string }>(`/admin/tenants/${id}/invite`, { invite_email: inviteEmail }),
+    onSuccess: (data) => { setInviteResult(data); setShowInviteForm(false); },
+  });
+
+  const impersonateMutation = useMutation({
+    mutationFn: () => api.post<{ token: string }>(`/admin/tenants/${id}/impersonate`),
+    onSuccess: ({ token }) => {
+      sessionStorage.setItem('impersonate_token', token);
+      sessionStorage.setItem('impersonate_tenant_id', id!);
+      window.location.href = '/dashboard';
+    },
+  });
+
+  function copyInviteLink() {
+    if (inviteResult) {
+      navigator.clipboard.writeText(inviteResult.claim_url).then(() => {
+        setInviteCopied(true);
+        setTimeout(() => setInviteCopied(false), 2000);
+      });
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -67,12 +96,30 @@ export default function TenantDetail() {
           &larr; Back to tenants
         </Link>
         <div className="mt-1 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-900">{tenant.company_name}</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">{tenant.company_name}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge tone={tenant.is_active ? 'success' : 'danger'}>{tenant.is_active ? 'active' : 'inactive'}</Badge>
+              <Badge tone={tenant.stripe_onboarded ? 'success' : 'warning'}>
+                {tenant.stripe_onboarded ? 'Stripe connected' : 'Stripe not connected'}
+              </Badge>
+              {!(tenant as unknown as { clerk_user_id: string | null }).clerk_user_id && (
+                <Badge tone="warning">unclaimed</Badge>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-2">
-            <Badge tone={tenant.is_active ? 'success' : 'danger'}>{tenant.is_active ? 'active' : 'inactive'}</Badge>
-            <Badge tone={tenant.stripe_onboarded ? 'success' : 'warning'}>
-              {tenant.stripe_onboarded ? 'Stripe connected' : 'Stripe not connected'}
-            </Badge>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={impersonateMutation.isPending}
+              onClick={() => impersonateMutation.mutate()}
+            >
+              {impersonateMutation.isPending ? 'Opening…' : '✏️ Edit site'}
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => setShowInviteForm(true)}>
+              📨 Invite client
+            </Button>
           </div>
         </div>
         <a href={`/${tenant.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:underline">
@@ -88,6 +135,58 @@ export default function TenantDetail() {
           </div>
         ))}
       </div>
+
+      {/* Invite panel */}
+      {(showInviteForm || inviteResult) && (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="font-medium text-indigo-900 text-sm">Send client invite</p>
+            <button onClick={() => { setShowInviteForm(false); setInviteResult(null); }} className="text-indigo-400 hover:text-indigo-700 text-lg leading-none">&times;</button>
+          </div>
+
+          {inviteResult ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-indigo-800">Invite sent to <strong>{inviteResult.invite_email}</strong>. Share this link too:</p>
+              <div className="flex items-center gap-2">
+                <input
+                  readOnly
+                  value={inviteResult.claim_url}
+                  className="flex-1 rounded border border-indigo-200 bg-white px-3 py-1.5 text-xs font-mono text-slate-700"
+                />
+                <Button size="sm" variant="primary" onClick={copyInviteLink}>
+                  {inviteCopied ? 'Copied!' : 'Copy'}
+                </Button>
+              </div>
+              <p className="text-xs text-indigo-600">Link expires in 7 days. You can resend a fresh one anytime.</p>
+            </div>
+          ) : (
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-indigo-700 mb-1">Client email</label>
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="client@example.com"
+                  className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={!inviteEmail.includes('@') || inviteMutation.isPending}
+                onClick={() => inviteMutation.mutate()}
+              >
+                {inviteMutation.isPending ? 'Sending…' : 'Send invite'}
+              </Button>
+            </div>
+          )}
+
+          {inviteMutation.isError && (
+            <p className="text-xs text-red-600">{inviteMutation.error instanceof Error ? inviteMutation.error.message : 'Failed to send invite'}</p>
+          )}
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="mb-3 text-sm font-medium text-slate-500">Plan</div>

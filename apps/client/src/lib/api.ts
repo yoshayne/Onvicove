@@ -89,3 +89,49 @@ export function useApi() {
     upload: <T>(path: string, file: File) => apiUpload<T>(path, file, getToken),
   };
 }
+
+// Returns an api instance that attaches X-Impersonate-Token to every request
+// instead of a Clerk bearer token. Used when an admin opens a tenant's dashboard.
+export function useImpersonateApi(impersonateToken: string) {
+  const impersonateGetter = async () => null; // no Clerk token
+  const withHeader = (path: string, method: string, body?: unknown): Promise<Response> => {
+    const headers: Record<string, string> = { 'X-Impersonate-Token': impersonateToken };
+    let payload: BodyInit | undefined;
+    if (body !== undefined && !(body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+      payload = JSON.stringify(body);
+    } else if (body instanceof FormData) {
+      payload = body;
+    }
+    const url = path.startsWith('/api') ? path : `/api${path}`;
+    return fetch(url, { method, headers, body: payload });
+  };
+
+  async function imp<T>(method: string, path: string, body?: unknown): Promise<T> {
+    const res = await withHeader(path, method, body);
+    if (!res.ok) {
+      let message = `Request failed with status ${res.status}`;
+      try {
+        const data = await res.json();
+        if (data && typeof data === 'object' && 'error' in data) message = String((data as { error: unknown }).error);
+      } catch { /* ignore */ }
+      throw new Error(message);
+    }
+    if (res.status === 204) return undefined as T;
+    return (await res.json()) as T;
+  }
+
+  return {
+    get: <T>(path: string) => imp<T>('GET', path),
+    post: <T>(path: string, body?: unknown) => imp<T>('POST', path, body),
+    put: <T>(path: string, body?: unknown) => imp<T>('PUT', path, body),
+    patch: <T>(path: string, body?: unknown) => imp<T>('PATCH', path, body),
+    delete: <T>(path: string) => imp<T>('DELETE', path),
+    upload: <T>(path: string, file: File) => {
+      const fd = new FormData(); fd.append('image', file);
+      return imp<T>('POST', path, fd);
+    },
+    // pass-through so impersonation getter is available to hooks that need it
+    getToken: impersonateGetter,
+  };
+}

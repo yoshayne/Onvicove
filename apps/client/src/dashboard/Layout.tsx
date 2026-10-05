@@ -23,6 +23,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { useApi } from '../lib/api';
+import { ApiProvider } from '../lib/apiContext';
 import type { Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
 
@@ -45,10 +46,19 @@ const navItems = [
 ];
 
 export default function Layout() {
+  return (
+    <ApiProvider>
+      <LayoutInner />
+    </ApiProvider>
+  );
+}
+
+function LayoutInner() {
   const api = useApi();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const impersonating = !!sessionStorage.getItem('impersonate_token');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['tenant', 'me'],
@@ -82,7 +92,23 @@ export default function Layout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex flex-col min-h-screen bg-slate-50">
+      {impersonating && (
+        <div className="flex items-center justify-between bg-amber-400 px-4 py-2 text-sm font-medium text-amber-900 z-50">
+          <span>🔑 Admin mode — you are editing this site on behalf of the client</span>
+          <button
+            className="rounded bg-amber-500 px-3 py-1 text-xs font-semibold hover:bg-amber-600"
+            onClick={() => {
+              sessionStorage.removeItem('impersonate_token');
+              sessionStorage.removeItem('impersonate_tenant_id');
+              window.location.href = '/admin/tenants';
+            }}
+          >
+            Exit admin mode
+          </button>
+        </div>
+      )}
+    <div className="flex flex-1 min-h-0">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -186,6 +212,7 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+    </div>
     </div>
   );
 }
