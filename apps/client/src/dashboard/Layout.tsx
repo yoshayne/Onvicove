@@ -11,7 +11,7 @@ import {
 
 interface NavItem { to: string; label: string; icon: LucideIcon; end?: boolean; }
 import { useApi } from '../lib/api';
-import { useImpersonation, ImpersonationProvider } from '../contexts/ImpersonationContext';
+import { useImpersonation } from '../contexts/ImpersonationContext';
 import ImpersonationBanner from './ImpersonationBanner';
 import type { Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
@@ -62,11 +62,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
 ];
 
 export default function Layout() {
-  return (
-    <ImpersonationProvider>
-      <LayoutInner />
-    </ImpersonationProvider>
-  );
+  return <LayoutInner />;
 }
 
 function LayoutInner() {

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Spinner from './components/shared/Spinner';
+import { ImpersonationProvider } from './contexts/ImpersonationContext';
 
 import Landing from './marketing/Landing';
 import Guide from './marketing/Guide';
@@ -80,6 +81,7 @@ export default function App() {
   return (
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
       <QueryClientProvider client={queryClient}>
+        <ImpersonationProvider>
         <BrowserRouter>
           <HashScroller />
           <Suspense fallback={<PageFallback />}>
@@ -166,6 +168,7 @@ export default function App() {
             </Routes>
           </Suspense>
         </BrowserRouter>
+        </ImpersonationProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );
