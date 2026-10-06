@@ -95,8 +95,8 @@ app.post('/', async (c) => {
   if (!parsed.success) return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   const d = parsed.data;
 
-  const limit = await checkItemLimit(tenant);
-  if (!limit.ok) return c.json({ error: `Your plan allows up to ${limit.limit} products and services. Upgrade your plan to add more.` }, 402);
+  const limit = await checkItemLimit(tenant, 'product');
+  if (!limit.ok) return c.json({ error: `Your plan allows up to ${limit.limit} products. Upgrade your plan to add more.` }, 402);
 
   const rows = await db`
     INSERT INTO products (

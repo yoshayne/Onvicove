@@ -16,7 +16,7 @@ const PLANS: PlanOption[] = [
     description: 'Everything you need to get online and start selling.',
     features: [
       'Online store or booking page',
-      'Up to 25 products or services',
+      'Up to 5 products & 10 services',
       'Standard themes',
       'Shop Suite Direct branding',
     ],

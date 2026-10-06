@@ -222,7 +222,7 @@ const PLANS = [
     desc: 'Get started with no credit card required.',
     price: 'Free',
     priceNote: 'forever',
-    features: ['Free subdomain', 'Up to 5 products or services', '1 theme', 'Stripe payments', 'Basic analytics'],
+    features: ['Free subdomain', 'Up to 5 products & 10 services', '1 theme', 'Stripe payments', 'Basic analytics'],
     cta: 'Start for free',
     highlight: false,
   },

@@ -61,9 +61,9 @@ app.post('/', async (c) => {
   }
   const d = parsed.data;
 
-  const limit = await checkItemLimit(tenant);
+  const limit = await checkItemLimit(tenant, 'service');
   if (!limit.ok) {
-    return c.json({ error: `Your plan allows up to ${limit.limit} products and services. Upgrade your plan to add more.` }, 402);
+    return c.json({ error: `Your plan allows up to ${limit.limit} services. Upgrade your plan to add more.` }, 402);
   }
 
   const rows = await db`

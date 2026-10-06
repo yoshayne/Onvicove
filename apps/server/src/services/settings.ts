@@ -5,7 +5,8 @@ export type PlanId = 'starter' | 'pro' | 'business';
 export interface PlanConfig {
   name: string;
   price_cents: number;
-  item_limit: number | null;
+  product_limit: number | null;
+  service_limit: number | null;
   ai_credits: number;
 }
 
@@ -18,9 +19,9 @@ export interface PlatformSettings {
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   plans: {
-    starter: { name: 'Starter', price_cents: 0, item_limit: 25, ai_credits: 0 },
-    pro: { name: 'Pro', price_cents: 2900, item_limit: null, ai_credits: 10 },
-    business: { name: 'Business', price_cents: 7900, item_limit: null, ai_credits: 50 },
+    starter: { name: 'Starter', price_cents: 0, product_limit: 5, service_limit: 10, ai_credits: 0 },
+    pro: { name: 'Pro', price_cents: 2900, product_limit: null, service_limit: null, ai_credits: 10 },
+    business: { name: 'Business', price_cents: 7900, product_limit: null, service_limit: null, ai_credits: 50 },
   },
   ai_photo_cost_cents: parseInt(process.env.AI_PHOTO_COST_CENTS || '299'),
   platform_fee_percent: parseFloat(process.env.PLATFORM_FEE_PERCENT || '0.049'),
@@ -52,18 +53,27 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
   return value;
 }
 
-export async function checkItemLimit(tenant: { id: string; plan: string }): Promise<{ ok: true } | { ok: false; limit: number }> {
+export type ItemKind = 'product' | 'service';
+
+export async function getPlanLimits(planId: string): Promise<Record<ItemKind, number | null>> {
   const settings = await getPlatformSettings();
-  const plan = settings.plans[tenant.plan as PlanId] ?? settings.plans.starter;
-  if (plan.item_limit == null) return { ok: true };
+  const plan = settings.plans[planId as PlanId] ?? settings.plans.starter;
+  return { product: plan.product_limit, service: plan.service_limit };
+}
 
-  const [{ count }] = await db`
-    SELECT
-      (SELECT COUNT(*) FROM products WHERE tenant_id = ${tenant.id}) +
-      (SELECT COUNT(*) FROM services WHERE tenant_id = ${tenant.id}) AS count
-  `;
+export async function checkItemLimit(
+  tenant: { id: string; plan: string },
+  kind: ItemKind,
+  adding = 1,
+): Promise<{ ok: true } | { ok: false; limit: number }> {
+  const limit = (await getPlanLimits(tenant.plan))[kind];
+  if (limit == null) return { ok: true };
 
-  if (Number(count) >= plan.item_limit) return { ok: false, limit: plan.item_limit };
+  const [{ count }] = kind === 'product'
+    ? await db`SELECT COUNT(*) AS count FROM products WHERE tenant_id = ${tenant.id}`
+    : await db`SELECT COUNT(*) AS count FROM services WHERE tenant_id = ${tenant.id}`;
+
+  if (Number(count) + adding > limit) return { ok: false, limit };
   return { ok: true };
 }
 

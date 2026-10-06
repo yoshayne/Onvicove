@@ -359,7 +359,8 @@ app.post('/refunds', async (c) => {
 const planConfigSchema = z.object({
   name: z.string().min(1),
   price_cents: z.number().int().min(0),
-  item_limit: z.number().int().min(0).nullable(),
+  product_limit: z.number().int().min(0).nullable(),
+  service_limit: z.number().int().min(0).nullable(),
   ai_credits: z.number().int().min(0),
 });
 

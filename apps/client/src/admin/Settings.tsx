@@ -7,7 +7,8 @@ import Button from '../components/shared/Button';
 interface PlanConfig {
   name: string;
   price_cents: number;
-  item_limit: number | null;
+  product_limit: number | null;
+  service_limit: number | null;
   ai_credits: number;
 }
 
@@ -66,8 +67,8 @@ export default function Settings() {
       const plan = { ...prev.plans[planId] };
       if (key === 'name') {
         plan.name = value;
-      } else if (key === 'item_limit') {
-        plan.item_limit = value === '' ? null : parseInt(value, 10);
+      } else if (key === 'product_limit' || key === 'service_limit') {
+        plan[key] = value === '' ? null : parseInt(value, 10);
       } else {
         (plan as unknown as Record<string, number>)[key] = parseInt(value, 10) || 0;
       }
@@ -86,7 +87,8 @@ export default function Settings() {
               <th className="px-4 py-3 font-medium">Plan</th>
               <th className="px-4 py-3 font-medium">Display name</th>
               <th className="px-4 py-3 font-medium">Price (USD/mo)</th>
-              <th className="px-4 py-3 font-medium">Item limit</th>
+              <th className="px-4 py-3 font-medium">Product limit</th>
+              <th className="px-4 py-3 font-medium">Service limit</th>
               <th className="px-4 py-3 font-medium">AI photo credits / mo</th>
             </tr>
           </thead>
@@ -117,8 +119,17 @@ export default function Settings() {
                     <input
                       type="number"
                       placeholder="Unlimited"
-                      value={plan.item_limit ?? ''}
-                      onChange={(e) => updatePlan(planId, 'item_limit', e.target.value)}
+                      value={plan.product_limit ?? ''}
+                      onChange={(e) => updatePlan(planId, 'product_limit', e.target.value)}
+                      className="w-28 rounded-lg border border-slate-300 px-2 py-1"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      placeholder="Unlimited"
+                      value={plan.service_limit ?? ''}
+                      onChange={(e) => updatePlan(planId, 'service_limit', e.target.value)}
                       className="w-28 rounded-lg border border-slate-300 px-2 py-1"
                     />
                   </td>

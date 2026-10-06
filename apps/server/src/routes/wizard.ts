@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { generateUniqueSlug } from '../lib/slugify';
+import { checkItemLimit } from '../services/settings';
 import { sendTenantWelcome, sendSiteLive, sendAdminNewSignup } from '../services/email';
 
 const app = new Hono();
@@ -81,6 +82,21 @@ app.post('/complete', async (c) => {
   if (!tenant) return c.json({ error: 'No wizard progress found' }, 404);
 
   const data = (tenant.wizard_data || {}) as Record<string, any>;
+
+  const planId = (data.plan || tenant.plan) as string;
+  const productCount = Array.isArray(data.products) ? data.products.length : 0;
+  const serviceCount = Array.isArray(data.services) ? data.services.length : 0;
+  const [productCheck, serviceCheck] = await Promise.all([
+    checkItemLimit({ id: tenant.id, plan: planId }, 'product', productCount),
+    checkItemLimit({ id: tenant.id, plan: planId }, 'service', serviceCount),
+  ]);
+  if (!productCheck.ok || !serviceCheck.ok) {
+    const parts = [
+      !productCheck.ok && `${productCheck.limit} products`,
+      !serviceCheck.ok && `${serviceCheck.limit} services`,
+    ].filter(Boolean).join(' and ');
+    return c.json({ error: `Your plan allows up to ${parts}. Remove some or choose a higher plan to launch.` }, 402);
+  }
 
   const updated = await db`
     UPDATE tenants
