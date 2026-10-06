@@ -46,7 +46,20 @@ app.get('/:slug/page-sections/:page', async (c) => {
     WHERE tenant_id = ${tenants[0].id} AND page = ${page}
     LIMIT 1
   `;
-  return c.json({ sections: rows[0]?.sections ?? [] });
+
+  const sections = rows[0]?.sections ?? [];
+  await Promise.all(
+    sections.map(async (section: any) => {
+      if (section.type !== 'gallery' || !Array.isArray(section.images)) return;
+      await Promise.all(
+        section.images.map(async (img: any) => {
+          if (img.key) img.url = await getSignedFileUrl(img.key);
+        })
+      );
+    })
+  );
+
+  return c.json({ sections });
 });
 
 // GET /api/public/:slug/products
