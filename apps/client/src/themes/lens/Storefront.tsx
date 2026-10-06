@@ -117,16 +117,16 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       )}
 
       {/* ── Hero ────────────────────────────────────────────────────── */}
-      <section className="relative h-screen min-h-[600px] flex items-end pb-16 overflow-hidden bg-[#0d0d0d]">
+      <section className="relative min-h-[600px] overflow-hidden bg-[#0d0d0d]">
         <img
           src={heroImage}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover object-top"
+          className="w-full h-auto block"
         />
         {/* dual gradient: bottom-up fade + subtle top-down */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/20 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0d0d0d]/30 to-transparent" />
-        <div className="relative z-10 px-8 max-w-5xl">
+        <div className="absolute bottom-0 left-0 right-0 pb-16 px-8 max-w-5xl z-10">
           <p className="text-xs uppercase tracking-[0.3em] text-[var(--brand-color,#c8b8a2)] mb-4">
             {theme.city || 'Photography'}
           </p>
