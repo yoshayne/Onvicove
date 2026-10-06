@@ -134,10 +134,17 @@ export default function Storefront({ theme, products, services, staff, galleries
               {displayServices.map((service, i) => (
                 <div key={service.id} style={{ display: 'grid', gridTemplateColumns: '60px 1fr auto', gap: 24, alignItems: 'center', padding: '32px 0', borderTop: '1px solid #d0cdc8' }}>
                   <span style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, color: '#1a1a1a', opacity: 0.2, fontWeight: 400 }}>{String(i + 1).padStart(2, '0')}</span>
-                  <div>
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                    {service.imageUrls?.[0] && (
+                      <div style={{ width: 72, height: 72, overflow: 'hidden', flexShrink: 0 }}>
+                        <img src={service.imageUrls[0]} alt={service.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      </div>
+                    )}
+                    <div>
                     <h3 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 20, fontWeight: 400, marginBottom: 6 }}>{service.name}</h3>
                     {service.description && <p style={{ fontSize: 13, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.6 }}>{service.description}</p>}
                     <p style={{ fontSize: 12, color: '#1a1a1a', opacity: 0.4, marginTop: 8 }}>{service.durationMinutes} min · {formatPrice(service.priceCents, theme.currency)}</p>
+                    </div>
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
                     style={{ padding: '10px 24px', fontSize: 12, letterSpacing: '0.1em', background: '#1a1a1a', color: '#f8f6f1', border: 'none', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4, whiteSpace: 'nowrap' }}>

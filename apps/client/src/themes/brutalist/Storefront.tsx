@@ -161,7 +161,12 @@ export default function Storefront({ theme, products, services, staff, galleries
             <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em', marginBottom: 32 }}>SERVICES</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
               {displayServices.map((service) => (
-                <div key={service.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'center', padding: '24px 0', borderTop: '2px solid #000' }}>
+                <div key={service.id} style={{ display: 'grid', gridTemplateColumns: service.imageUrls?.[0] ? 'auto 1fr auto' : '1fr auto', gap: 24, alignItems: 'center', padding: '24px 0', borderTop: '2px solid #000' }}>
+                  {service.imageUrls?.[0] && (
+                    <div style={{ width: 80, height: 80, overflow: 'hidden', flexShrink: 0 }}>
+                      <img src={service.imageUrls[0]} alt={service.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    </div>
+                  )}
                   <div>
                     <h3 style={{ fontWeight: 900, fontSize: 18, letterSpacing: '-0.01em', marginBottom: 4 }}>{service.name}</h3>
                     {service.description && <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#000', opacity: 0.5 }}>{service.description}</p>}

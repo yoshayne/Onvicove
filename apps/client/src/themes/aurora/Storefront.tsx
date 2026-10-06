@@ -158,7 +158,13 @@ export default function Storefront({ theme, products, services, staff, galleries
             <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Healing Sessions</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
               {displayServices.map((service) => (
-                <div key={service.id} style={{ ...glass, borderRadius: 20, padding: 28 }}>
+                <div key={service.id} style={{ ...glass, borderRadius: 20, overflow: 'hidden' }}>
+                  {service.imageUrls?.[0] && (
+                    <div style={{ aspectRatio: '4/3', overflow: 'hidden' }}>
+                      <img src={service.imageUrls[0]} alt={service.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    </div>
+                  )}
+                  <div style={{ padding: 28 }}>
                   <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{service.name}</h3>
                   {service.description && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 20, lineHeight: 1.6 }}>{service.description}</p>}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -169,6 +175,7 @@ export default function Storefront({ theme, products, services, staff, galleries
                     style={{ width: '100%', padding: '12px', borderRadius: 12, fontSize: 13, fontWeight: 600, background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(96,165,250,0.2))', border: '1px solid rgba(167,139,250,0.3)', color: 'var(--brand-color, #a78bfa)', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4 }}>
                     {theme.paymentsEnabled ? 'Book Session' : 'Coming Soon'}
                   </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -459,6 +459,12 @@ export default function Storefront({ theme, products, services, staff, galleries
                     }}>
                       {String(i + 1).padStart(2, '0')}
                     </span>
+                    {/* Image */}
+                    {service.imageUrls?.[0] && (
+                      <div style={{ width: 80, height: 80, overflow: 'hidden', borderRadius: 8, flexShrink: 0 }}>
+                        <img src={service.imageUrls[0]} alt={service.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      </div>
+                    )}
                     {/* Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 8 }}>

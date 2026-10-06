@@ -171,7 +171,13 @@ export default function Storefront({ theme, products, services, staff, galleries
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
               {displayServices.map((service) => (
-                <div key={service.id} className="neon-border" style={{ borderRadius: 8, padding: 24 }}>
+                <div key={service.id} className="neon-border" style={{ borderRadius: 8, overflow: 'hidden' }}>
+                  {service.imageUrls?.[0] && (
+                    <div style={{ aspectRatio: '4/3', overflow: 'hidden' }}>
+                      <img src={service.imageUrls[0]} alt={service.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    </div>
+                  )}
+                  <div style={{ padding: 24 }}>
                   <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>{service.name}</h3>
                   {service.description && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 16, lineHeight: 1.6 }}>{service.description}</p>}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -182,6 +188,7 @@ export default function Storefront({ theme, products, services, staff, galleries
                     className="neon-btn" style={{ width: '100%', padding: '12px', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', color: '#000', border: 'none', borderRadius: 4, cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4 }}>
                     {theme.paymentsEnabled ? 'JOIN NOW' : 'COMING SOON'}
                   </button>
+                  </div>
                 </div>
               ))}
             </div>

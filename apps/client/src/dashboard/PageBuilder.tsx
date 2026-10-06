@@ -191,7 +191,7 @@ function SectionRow({
       draggable
       onDragStart={onDragStart}
       onDragOver={onDragOver}
-      onDrop={onDrop}
+      onDrop={(e) => { e.preventDefault(); onDrop(); }}
       onDragEnd={onDragEnd}
       className={`rounded-xl border bg-white transition-all duration-150 ${
         isDragOver ? 'border-violet-400 shadow-md shadow-violet-100' : 'border-slate-200'
