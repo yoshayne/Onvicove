@@ -79,7 +79,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
             </h1>
             <p className="text-[#3d2314]/70 text-lg md:text-xl">{tagline}</p>
           </div>
-          <div className="h-64 md:h-[70vh] rounded-2xl overflow-hidden">
+          <div className="aspect-[4/5] md:aspect-auto md:h-[70vh] rounded-2xl overflow-hidden">
             <img src={heroImage} alt="" className="w-full h-full object-cover" />
           </div>
         </div>

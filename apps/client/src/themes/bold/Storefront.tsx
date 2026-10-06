@@ -146,7 +146,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       <section className="relative h-screen min-h-[600px] flex flex-col items-center justify-center text-center overflow-hidden">
         {/* Background */}
         {heroImage ? (
-          <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
         ) : (
           <div
             className="absolute inset-0"
