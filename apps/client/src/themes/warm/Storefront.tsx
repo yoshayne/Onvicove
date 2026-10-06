@@ -14,8 +14,10 @@ import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
+import Gallery from '../shared/Gallery';
+import type { GallerySectionData } from '../shared/Gallery';
 
-export default function Storefront({ theme, products, services, staff }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -264,6 +266,10 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         status={customOrderStatus}
         onSubmit={submitCustomOrder}
       />
+      {/* ── Galleries ── */}
+      {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
+        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
+      ))}
     </div>
   );
 }

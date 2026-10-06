@@ -11,6 +11,8 @@ import ProductQuickView from '../shared/ProductQuickView';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
+import Gallery from '../shared/Gallery';
+import type { GallerySectionData } from '../shared/Gallery';
 
 // Heading font "Merriweather" requires loading Google Fonts in index.html.
 // Body font "Georgia" is a system font (font-serif fallback is fine).
@@ -20,6 +22,7 @@ export default function Storefront({
   products,
   services,
   staff,
+  galleries = [],
 }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -304,6 +307,10 @@ export default function Storefront({
         status={customOrderStatus}
         onSubmit={submitCustomOrder}
       />
+      {/* ── Galleries ── */}
+      {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
+        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
+      ))}
     </div>
   );
 }
