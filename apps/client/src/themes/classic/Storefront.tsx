@@ -106,7 +106,7 @@ export default function Storefront({
       )}
 
       {/* Products */}
-      {showProducts && displayProducts.length > 0 && (
+      {showProducts && sec('featured-products') && displayProducts.length > 0 && (
         <section id="products" className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Our Collection
@@ -150,7 +150,7 @@ export default function Storefront({
       )}
 
       {/* Services */}
-      {showServices && displayServices.length > 0 && (
+      {showServices && sec('services') && displayServices.length > 0 && (
         <section id="services" className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Our Services
@@ -195,7 +195,7 @@ export default function Storefront({
             ))}
           </div>
 
-          {displayStaff.length > 0 && (
+          {sec('staff') && displayStaff.length > 0 && (
             <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">
               {displayStaff.map((member) => (
                 <div key={member.id} className="flex items-center gap-4 border border-gray-200 p-4">
@@ -257,6 +257,7 @@ export default function Storefront({
         onClose={closeQuickView}
         onAddToCart={(product, variant) => { addToCart(product, variant); closeQuickView(); }}
         currency={theme.currency}
+          slug={theme.slug}
         paymentsEnabled={theme.paymentsEnabled}
       />
 
@@ -282,6 +283,7 @@ export default function Storefront({
         amountCents={orderAmountCents}
         stripeAccountId={theme.stripeAccountId}
         currency={theme.currency}
+          slug={theme.slug}
         onSubmit={submitOrder}
         onPaymentSuccess={confirmOrderPayment}
         onPaymentCancel={cancelOrderPayment}
@@ -306,6 +308,7 @@ export default function Storefront({
         amountCents={bookingAmountCents}
         stripeAccountId={theme.stripeAccountId}
         currency={theme.currency}
+          slug={theme.slug}
         onClose={closeBooking}
         onDismiss={dismissBookingStatus}
         onPaymentSuccess={confirmBookingPayment}

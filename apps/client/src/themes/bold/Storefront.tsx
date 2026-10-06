@@ -221,7 +221,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── Products ── */}
-      {showProducts && (
+      {showProducts && sec('featured-products') && (
         <section id="products" className="scroll-mt-20 py-24 bg-[#0a0a0a]">
           <div className="max-w-7xl mx-auto px-6">
             {/* Section header */}
@@ -293,7 +293,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── Services ── */}
-      {showServices && (
+      {showServices && sec('services') && (
         <section id="services" className="scroll-mt-20 py-24 bg-[#0f0f0f]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-end justify-between mb-14">
@@ -480,6 +480,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         onClose={closeQuickView}
         onAddToCart={(product, variant) => { addToCart(product, variant); closeQuickView(); }}
         currency={theme.currency}
+          slug={theme.slug}
         paymentsEnabled={theme.paymentsEnabled}
       />
 
@@ -505,6 +506,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         amountCents={orderAmountCents}
         stripeAccountId={theme.stripeAccountId}
         currency={theme.currency}
+          slug={theme.slug}
         onSubmit={submitOrder}
         onPaymentSuccess={confirmOrderPayment}
         onPaymentCancel={cancelOrderPayment}
@@ -529,6 +531,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         amountCents={bookingAmountCents}
         stripeAccountId={theme.stripeAccountId}
         currency={theme.currency}
+          slug={theme.slug}
         onClose={closeBooking}
         onDismiss={dismissBookingStatus}
         onPaymentSuccess={confirmBookingPayment}

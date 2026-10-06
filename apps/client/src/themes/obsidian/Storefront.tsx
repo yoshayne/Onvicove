@@ -310,7 +310,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         )}
 
         {/* ── PRODUCTS ── */}
-        {showProducts && (
+        {showProducts && sec('featured-products') && (
           <section id="products" style={{ padding: isMobile ? '64px 20px' : '96px 56px', background: G.bg }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 48 }}>
@@ -424,7 +424,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         )}
 
         {/* ── SERVICES ── */}
-        {showServices && (
+        {showServices && sec('services') && (
           <section id="services" style={{ background: G.surface, padding: isMobile ? '64px 20px' : '96px 56px', position: 'relative', overflow: 'hidden' }}>
             {/* Gold glow */}
             <div style={{ position: 'absolute', top: -80, right: -80, width: 360, height: 360, borderRadius: '50%', background: `radial-gradient(circle, ${G.goldGlow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
@@ -501,7 +501,7 @@ export default function Storefront({ theme, products, services, staff, galleries
               </div>
 
               {/* Staff */}
-              {staff.length > 0 && (
+              {sec('staff') && staff.length > 0 && (
                 <div style={{ marginTop: 64, display: 'flex', gap: 32, flexWrap: 'wrap' }}>
                   {staff.map((member) => (
                     <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -588,7 +588,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* ── Modals ── */}
       <ProductQuickView product={quickViewProduct} onClose={closeQuickView} onAddToCart={(p, v) => { addToCart(p, v); closeQuickView(); }} currency={theme.currency} paymentsEnabled={theme.paymentsEnabled} />
       {showProducts && <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} onCheckout={openCheckout} />}
-      <CheckoutModal isOpen={checkoutOpen} onClose={closeCheckout} items={cart} status={orderStatus} error={orderError} orderNumber={orderNumber} clientSecret={orderClientSecret} amountCents={orderAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onSubmit={submitOrder} onPaymentSuccess={confirmOrderPayment} onPaymentCancel={cancelOrderPayment} />
+      <CheckoutModal isOpen={checkoutOpen} onClose={closeCheckout} items={cart} status={orderStatus} error={orderError} orderNumber={orderNumber} clientSecret={orderClientSecret} amountCents={orderAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} slug={theme.slug} onSubmit={submitOrder} onPaymentSuccess={confirmOrderPayment} onPaymentCancel={cancelOrderPayment} />
       <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} />
       <BookingStatusOverlay status={bookingStatus} error={bookingError} clientSecret={bookingClientSecret} amountCents={bookingAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onClose={closeBooking} onDismiss={dismissBookingStatus} onPaymentSuccess={confirmBookingPayment} onPaymentCancel={cancelBookingPayment} />
       <CustomOrderModal isOpen={customOrderOpen} onClose={() => setCustomOrderOpen(false)} companyName={theme.companyName} status={customOrderStatus} onSubmit={submitCustomOrder} />

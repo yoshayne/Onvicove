@@ -167,7 +167,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── Products / Work ─────────────────────────────────────────── */}
-      {showProducts && (
+      {showProducts && sec('featured-products') && (
         <section id="work" className="scroll-mt-16 py-20 px-6 max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-10">
             <h2 className="font-['DM_Serif_Display'] text-4xl md:text-5xl">Work</h2>
@@ -212,7 +212,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── Services / Sessions ─────────────────────────────────────── */}
-      {showServices && (
+      {showServices && sec('services') && (
         <section id="sessions" className="scroll-mt-16 py-20 bg-[#111] border-y border-white/5">
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="font-['DM_Serif_Display'] text-4xl md:text-5xl mb-2">Sessions</h2>
@@ -281,7 +281,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             )}
           </div>
 
-          {displayStaff.length > 0 && (
+          {sec('staff') && displayStaff.length > 0 && (
             <div className="flex flex-col gap-8">
               {displayStaff.map((member) => (
                 <div key={member.id} className="flex items-start gap-5">
@@ -362,6 +362,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         onClose={closeQuickView}
         onAddToCart={(product, variant) => { addToCart(product, variant); closeQuickView(); }}
         currency={theme.currency}
+          slug={theme.slug}
         paymentsEnabled={theme.paymentsEnabled}
       />
 
@@ -387,6 +388,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         amountCents={orderAmountCents}
         stripeAccountId={theme.stripeAccountId}
         currency={theme.currency}
+          slug={theme.slug}
         onSubmit={submitOrder}
         onPaymentSuccess={confirmOrderPayment}
         onPaymentCancel={cancelOrderPayment}
@@ -411,6 +413,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         amountCents={bookingAmountCents}
         stripeAccountId={theme.stripeAccountId}
         currency={theme.currency}
+          slug={theme.slug}
         onClose={closeBooking}
         onDismiss={dismissBookingStatus}
         onPaymentSuccess={confirmBookingPayment}
