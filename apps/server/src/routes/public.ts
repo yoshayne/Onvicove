@@ -4,6 +4,7 @@ import { db } from '../db/client';
 import { rateLimitPublic } from '../middleware/ratelimit';
 import { enrichWithUrls, getSignedFileUrl } from '../services/storage';
 import { generateOrderNumber } from '../lib/orderNumber';
+import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
 import { computePlatformFee, createBookingPaymentIntent } from '../services/stripe';
 import {
@@ -32,6 +33,18 @@ app.get('/:slug', async (c) => {
   `;
   if (!rows[0]) return c.json({ error: 'Store not found' }, 404);
   return c.json({ tenant: await enrichWithUrls(rows[0]) });
+});
+
+// GET /api/public/:slug/og-image — stable share-image URL that redirects to a freshly signed hero image
+app.get('/:slug/og-image', async (c) => {
+  const slug = c.req.param('slug');
+  const rows = await db`
+    SELECT hero_image_key FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1
+  `;
+  const key = rows[0]?.hero_image_key as string | undefined;
+  if (!key) return c.json({ error: 'No image' }, 404);
+  c.header('Cache-Control', 'public, max-age=3600');
+  return c.redirect(await getSignedFileUrl(key), 302);
 });
 
 // GET /api/public/:slug/page-sections/:page
@@ -449,6 +462,7 @@ app.post('/:slug/bookings', async (c) => {
           companyName: tenant.company_name as string,
           bookingId: booking.id as string,
           startTime: startFmt,
+          baseUrl: getCustomerBaseUrl(tenant),
         }).catch(() => {})
       : Promise.resolve(),
     // Tenant: notify about new booking

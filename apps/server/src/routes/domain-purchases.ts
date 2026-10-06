@@ -4,6 +4,12 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { stripe } from '../services/stripe';
+import { rateLimit } from '../lib/rateLimit';
+import { getBaseUrl } from '../lib/baseUrl';
+import { isBlockedCustomDomain, isValidDomain, sanitizeDomain } from '../lib/hosts';
+import { domainCache } from '../services/domainCache';
+import { isRailwayConfigured, railwayAddDomain, railwayRemoveDomain } from '../services/railway';
+import { CUSTOM_DOMAIN_PLANS } from './domains';
 import {
   sendAdminDomainPurchaseRequest,
   sendTenantDomainRequestReceived,
@@ -48,25 +54,35 @@ const TLD_PRICES: Record<string, number> = {
 const DEFAULT_PRICE = 3500;
 
 function getTldPrice(domain: string): number {
-  const parts = domain.split('.');
-  const tld = parts.slice(1).join('.').toLowerCase();
-  const sld = parts[parts.length - 1]?.toLowerCase() ?? '';
-  return TLD_PRICES[tld] ?? TLD_PRICES[sld] ?? DEFAULT_PRICE;
+  const parts = domain.toLowerCase().split('.');
+  // Longest matching suffix wins (e.g. "co.uk" before "uk")
+  for (let i = 1; i < parts.length; i++) {
+    const price = TLD_PRICES[parts.slice(i).join('.')];
+    if (price !== undefined) return price;
+  }
+  return DEFAULT_PRICE;
+}
+
+async function isDomainAvailable(domain: string): Promise<boolean | null> {
+  const apiKey = process.env.WHOISXML_API_KEY;
+  if (!apiKey) return null;
+  const url = `https://domain-availability.whoisxmlapi.com/api/v1?apiKey=${apiKey}&domainName=${encodeURIComponent(domain)}&credits=DA`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  const json = await res.json() as { DomainInfo?: { domainAvailability?: string } };
+  return json.DomainInfo?.domainAvailability === 'AVAILABLE';
 }
 
 // GET /api/domain-purchases/check?domain=example.com
 app.get('/check', requireAuth, async (c) => {
-  const domain = (c.req.query('domain') ?? '').trim().toLowerCase();
-  if (!domain || domain.length < 3) return c.json({ error: 'Invalid domain' }, 400);
-
-  const apiKey = process.env.WHOISXML_API_KEY;
-  if (!apiKey) return c.json({ error: 'Availability check not configured' }, 503);
+  const domain = sanitizeDomain(c.req.query('domain') ?? '');
+  if (!domain || !isValidDomain(domain)) return c.json({ error: 'Invalid domain' }, 400);
+  if (!(await rateLimit(`domain-check:${c.get('clerkUserId')}`, 30, 3600))) {
+    return c.json({ error: 'Too many searches. Try again in a bit.' }, 429);
+  }
+  if (!process.env.WHOISXML_API_KEY) return c.json({ error: 'Availability check not configured' }, 503);
 
   try {
-    const url = `https://domain-availability.whoisxmlapi.com/api/v1?apiKey=${apiKey}&domainName=${encodeURIComponent(domain)}&credits=DA`;
-    const res = await fetch(url);
-    const json = await res.json() as { DomainInfo?: { domainAvailability?: string } };
-    const available = json.DomainInfo?.domainAvailability === 'AVAILABLE';
+    const available = await isDomainAvailable(domain);
     const price_cents = available ? getTldPrice(domain) : null;
     return c.json({ domain, available, price_cents });
   } catch {
@@ -78,23 +94,39 @@ app.get('/check', requireAuth, async (c) => {
 const checkoutSchema = z.object({ domain: z.string().min(3).max(253) });
 
 app.post('/checkout', requireAuth, requireTenant, async (c) => {
-  const tenant = c.get('tenant') as { id: string; company_name: string; clerk_user_id: string };
+  const tenant = c.get('tenant') as unknown as { id: string; plan: string };
   const body = await c.req.json().catch(() => ({}));
   const parsed = checkoutSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'Invalid domain' }, 400);
 
-  const domain = parsed.data.domain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  const domain = sanitizeDomain(parsed.data.domain);
+  if (!domain || !isValidDomain(domain) || isBlockedCustomDomain(domain)) {
+    return c.json({ error: 'Invalid domain' }, 400);
+  }
+  if (!CUSTOM_DOMAIN_PLANS.includes(tenant.plan)) {
+    return c.json({ error: 'Custom domains are available on the Business plan. Upgrade to buy a domain.' }, 402);
+  }
 
-  // Block duplicate paid/pending requests
+  // Block duplicate paid/pending requests (any store) and domains already connected elsewhere
   const existing = await db`
     SELECT id FROM domain_purchase_requests
-    WHERE tenant_id = ${tenant.id} AND domain = ${domain} AND status IN ('pending', 'purchased')
+    WHERE domain = ${domain} AND status IN ('pending', 'purchased')
     LIMIT 1
   `;
-  if (existing[0]) return c.json({ error: 'You already have an active request for this domain.' }, 409);
+  if (existing[0]) return c.json({ error: 'This domain already has an active purchase request.' }, 409);
+  const connected = await db`SELECT id FROM tenants WHERE custom_domain = ${domain} AND custom_domain_verified = TRUE LIMIT 1`;
+  if (connected[0]) return c.json({ error: 'This domain is already connected to a store.' }, 409);
+
+  // Availability can change between the search and paying — check again before charging
+  try {
+    const available = await isDomainAvailable(domain);
+    if (available === false) return c.json({ error: 'Sorry, that domain is no longer available.' }, 409);
+  } catch {
+    return c.json({ error: 'Could not confirm availability. Please try again.' }, 502);
+  }
 
   const price_cents = getTldPrice(domain);
-  const clientUrl = process.env.CLIENT_URL ?? 'https://shopsuitedirect.com';
+  const clientUrl = getBaseUrl();
 
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
@@ -188,50 +220,102 @@ app.patch('/admin/:id', requireAuth, async (c) => {
   const parsed = adminUpdateSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'Invalid body' }, 400);
 
+  const pending = await db`SELECT * FROM domain_purchase_requests WHERE id = ${id} AND status = 'pending' LIMIT 1`;
+  const request = pending[0];
+  if (!request) return c.json({ error: 'Request not found or already processed' }, 404);
+
+  const domain = request.domain as string;
+  const tenantRows = await db`SELECT * FROM tenants WHERE id = ${request.tenant_id} LIMIT 1`;
+  const tenant = tenantRows[0];
+
+  if (parsed.data.status === 'purchased') {
+    if (!tenant) return c.json({ error: 'Tenant no longer exists' }, 404);
+
+    const taken = await db`
+      SELECT id FROM tenants WHERE custom_domain = ${domain} AND custom_domain_verified = TRUE AND id != ${tenant.id} LIMIT 1
+    `;
+    if (taken[0]) return c.json({ error: 'That domain is now connected to a different store.' }, 409);
+
+    // Release any previous domain this store had, then connect the purchased one on Railway.
+    if (tenant.custom_domain && tenant.custom_domain !== domain) {
+      domainCache.invalidate(tenant.custom_domain as string);
+      if (tenant.custom_domain_railway_id && isRailwayConfigured()) {
+        await railwayRemoveDomain(tenant.custom_domain_railway_id as string)
+          .catch((err) => console.error('Railway removal of replaced domain failed:', err));
+      }
+    }
+
+    let railwayId = tenant.custom_domain === domain ? (tenant.custom_domain_railway_id as string | null) : null;
+    let cnameTarget: string | null = process.env.RAILWAY_PUBLIC_DOMAIN ?? null;
+    let records: unknown[] = [];
+    if (!railwayId && isRailwayConfigured()) {
+      try {
+        const added = await railwayAddDomain(domain);
+        railwayId = added.id;
+        cnameTarget = added.cnameTarget ?? cnameTarget;
+        records = added.records;
+      } catch (err) {
+        console.error('Railway provisioning for purchased domain failed:', err);
+      }
+    }
+
+    await db`
+      UPDATE tenants
+      SET custom_domain = ${domain},
+          custom_domain_verified = TRUE,
+          custom_domain_status = 'awaiting_dns',
+          custom_domain_verify_token = NULL,
+          custom_domain_railway_id = ${railwayId},
+          custom_domain_cname_target = ${cnameTarget},
+          custom_domain_records = ${records.length ? db.json(records as never) : null},
+          updated_at = NOW()
+      WHERE id = ${tenant.id}
+    `;
+    domainCache.set(domain, tenant.id as string, tenant.slug as string);
+  }
+
+  let refundedAt: Date | null = null;
+  if (parsed.data.status === 'rejected' && request.stripe_payment_intent_id) {
+    try {
+      await stripe.refunds.create({ payment_intent: request.stripe_payment_intent_id as string });
+      refundedAt = new Date();
+    } catch (err) {
+      console.error('Refund for rejected domain request failed:', err);
+      return c.json({ error: 'Could not refund the payment. Refund it in Stripe, then reject again.' }, 502);
+    }
+  }
+
   const rows = await db`
     UPDATE domain_purchase_requests
     SET status = ${parsed.data.status},
         notes = ${parsed.data.notes ?? null},
-        price_cents = ${parsed.data.price_cents ?? null},
+        price_cents = ${parsed.data.price_cents ?? request.price_cents ?? null},
+        refunded_at = ${refundedAt},
+        expires_at = ${parsed.data.status === 'purchased' ? db`NOW() + INTERVAL '1 year'` : null},
         updated_at = NOW()
     WHERE id = ${id}
     RETURNING *
   `;
-  if (!rows[0]) return c.json({ error: 'Not found' }, 404);
-  const req = rows[0];
 
-  if (parsed.data.status === 'purchased') {
-    const tenantRows = await db`SELECT * FROM tenants WHERE id = ${req.tenant_id} LIMIT 1`;
-    const tenant = tenantRows[0];
-    if (tenant) {
-      await db`
-        UPDATE tenants
-        SET custom_domain = ${req.domain},
-            custom_domain_verified = TRUE,
-            custom_domain_cname_target = NULL,
-            updated_at = NOW()
-        WHERE id = ${req.tenant_id}
-      `;
+  if (parsed.data.status === 'purchased' && tenant) {
+    const users = await db`
+      SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${tenant.clerk_user_id} LIMIT 1
+    `;
+    const user = users[0];
+    const ownerEmail = user?.email as string ?? '';
+    const ownerName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || tenant.company_name as string;
 
-      const users = await db`
-        SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${tenant.clerk_user_id} LIMIT 1
-      `;
-      const user = users[0];
-      const ownerEmail = user?.email as string ?? '';
-      const ownerName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || tenant.company_name as string;
-
-      if (ownerEmail) {
-        await sendTenantDomainPurchased({
-          toEmail: ownerEmail,
-          toName: ownerName,
-          domain: req.domain as string,
-          dashboardUrl: `${process.env.CLIENT_URL ?? 'https://shopsuitedirect.com'}/dashboard`,
-        }).catch(console.error);
-      }
+    if (ownerEmail) {
+      await sendTenantDomainPurchased({
+        toEmail: ownerEmail,
+        toName: ownerName,
+        domain,
+        dashboardUrl: `${getBaseUrl()}/dashboard/settings`,
+      }).catch(console.error);
     }
   }
 
-  return c.json({ request: req });
+  return c.json({ request: rows[0] });
 });
 
 export { getTldPrice };

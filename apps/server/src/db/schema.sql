@@ -447,3 +447,27 @@ UPDATE tenants
   WHERE theme_id NOT IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens');
 ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
   CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens'));
+
+-- Custom domain hardening
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_status TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_records JSONB;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_checked_at TIMESTAMPTZ;
+UPDATE tenants SET custom_domain_status = 'provisioning'
+  WHERE custom_domain IS NOT NULL AND custom_domain_verified = TRUE AND custom_domain_status IS NULL;
+
+-- A verified domain can belong to only one store (pending claims may overlap)
+DO $$
+BEGIN
+  CREATE UNIQUE INDEX IF NOT EXISTS tenants_custom_domain_verified_uniq
+    ON tenants (custom_domain) WHERE custom_domain_verified IS TRUE;
+EXCEPTION WHEN unique_violation THEN
+  RAISE NOTICE 'Duplicate verified custom domains exist; unique index not created. Resolve duplicates and re-run.';
+END $$;
+CREATE INDEX IF NOT EXISTS tenants_custom_domain_idx ON tenants (custom_domain);
+
+-- Domain purchases: idempotent webhook, refunds, renewal tracking
+ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT;
+ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ;
+ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+CREATE UNIQUE INDEX IF NOT EXISTS domain_purchase_requests_session_uniq
+  ON domain_purchase_requests (stripe_session_id) WHERE stripe_session_id IS NOT NULL;

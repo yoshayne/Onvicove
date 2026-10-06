@@ -1,5 +1,12 @@
 import { db } from '../db/client';
 
+// Slugs that would collide with app routes, static files or platform subdomains
+export const RESERVED_SLUGS = new Set([
+  'api', 'app', 'admin', 'dashboard', 'sign-in', 'sign-up', 'onboarding', 'claim', 'pay', 'guide', 'store',
+  'assets', 'health', 'www', 'mail', 'smtp', 'ftp', 'staging', 'dev', 'test', 'status', 'cdn', 'static',
+  'robots.txt', 'sitemap.xml', 'favicon.svg', 'checkout',
+]);
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -22,7 +29,7 @@ export async function generateUniqueSlug(baseName: string): Promise<string> {
     const existing = await db`
       SELECT id FROM tenants WHERE slug = ${slug} LIMIT 1
     `;
-    if (existing.length === 0) return slug;
+    if (existing.length === 0 && !RESERVED_SLUGS.has(slug)) return slug;
     slug = `${base}-${counter}`;
     counter++;
   }
@@ -30,7 +37,7 @@ export async function generateUniqueSlug(baseName: string): Promise<string> {
 
 export async function isSlugAvailable(slug: string): Promise<boolean> {
   const clean = slugify(slug);
-  if (!clean) return false;
+  if (!clean || RESERVED_SLUGS.has(clean)) return false;
   const existing = await db`
     SELECT id FROM tenants WHERE slug = ${clean} LIMIT 1
   `;

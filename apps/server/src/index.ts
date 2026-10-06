@@ -2,15 +2,17 @@ import 'dotenv/config';
 import { startStripeNudgeJob } from './jobs/stripeNudge';
 import { startBookingReminderJob } from './jobs/bookingReminder';
 import { startInviteNudgeJob } from './jobs/inviteNudge';
+import { startDomainRecheckJob } from './jobs/domainRecheck';
 import { serve } from '@hono/node-server';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { join } from 'path';
 import { db, redis } from './db/client';
-import { domainCache } from './services/domainCache';
-import { getSignedFileUrl } from './services/storage';
+import { domainCache, type ResolvedStore } from './services/domainCache';
+import { getBaseUrl, getActiveCustomDomain } from './lib/baseUrl';
+import { isPlatformHost, normalizeHost, platformSubdomain, safeOrigin } from './lib/hosts';
 
 // dist/index.js -> apps/server/dist -> repo root is 3 levels up
 const CLIENT_DIST = join(__dirname, '../../../dist/client');
@@ -60,6 +62,7 @@ app.get('/health', async (c) => {
   try {
     await db`SELECT 1`;
     await redis.ping();
+    c.header('x-shopsuite', '1');
     return c.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -106,107 +109,177 @@ app.use('/*', async (c, next) => {
   return next();
 });
 
-// Custom domain middleware — if Host matches a verified tenant domain,
-// inject the tenant slug so the SPA can resolve the storefront.
+const PLATFORM_ONLY_PATHS = /^\/(dashboard|admin|sign-in|sign-up|onboarding|claim|guide)(\/|$)/;
+
+// Host routing. A request on a verified custom domain (or <slug>.shopsuitedirect.com) is tagged
+// with the store's slug; the SPA fallback hands that slug to the client so the store renders at "/".
 // Must come before the static file handler.
 app.use('/*', async (c, next) => {
-  const host = c.req.header('host') ?? '';
-  const ownHosts = [
-    'localhost',
-    '127.0.0.1',
-    process.env.RAILWAY_PUBLIC_DOMAIN ?? '',
-    'shopsuitedirect.com',
-    'www.shopsuitedirect.com',
-  ].filter(Boolean);
+  const url = new URL(c.req.url);
+  const host = normalizeHost(c.req.header('host') ?? '');
 
-  const isOwnHost = ownHosts.some((h) => host === h || host.endsWith(`.${h}`));
-  if (isOwnHost) return next();
+  if (process.env.NODE_ENV === 'production' && c.req.header('x-forwarded-proto') === 'http' && !host.startsWith('localhost')) {
+    return c.redirect(`https://${host}${url.pathname}${url.search}`, 301);
+  }
 
-  // Strip port for local dev
-  const domain = host.replace(/:\d+$/, '');
-  const tenantId = await domainCache.resolve(domain);
-  if (!tenantId) return next();
+  let store: ResolvedStore | null = null;
 
-  // Look up the slug so the SPA knows which store to render at /
-  const rows = await db`SELECT slug FROM tenants WHERE id = ${tenantId} LIMIT 1`;
-  if (!rows[0]) return next();
+  if (isPlatformHost(host)) {
+    const sub = platformSubdomain(host);
+    if (sub) store = await domainCache.resolveSubdomain(sub);
+  } else {
+    store = await domainCache.resolve(host);
+    if (!store && !host.startsWith('www.')) {
+      // Apex pointed at us while the store is connected as www.<domain>
+      const www = await domainCache.resolve(`www.${host}`);
+      if (www) return c.redirect(`https://www.${host}${url.pathname}${url.search}`, 301);
+    }
+  }
 
-  // Rewrite the path to /store/:slug so the React router handles it
-  const slug = rows[0].slug as string;
-  const originalPath = new URL(c.req.url).pathname;
-  const rewritten = originalPath === '/' ? `/store/${slug}` : `/store/${slug}${originalPath}`;
+  if (!store) return next();
 
-  c.req.raw = new Request(
-    new URL(rewritten, c.req.url).toString(),
-    c.req.raw,
-  );
+  // Dashboard, admin and sign-in only work on the main site (auth is tied to that origin).
+  if (PLATFORM_ONLY_PATHS.test(url.pathname)) {
+    return c.redirect(`${getBaseUrl()}${url.pathname}${url.search}`, 302);
+  }
+
+  c.set('storeSlug', store.slug);
   return next();
 });
 
-// Serve React client for all non-API routes
-// The Vite build outputs to dist/client relative to repo root
-app.use('/*', serveStatic({ root: CLIENT_DIST }));
+app.get('/robots.txt', (c) => {
+  const host = normalizeHost(c.req.header('host') ?? '');
+  const origin = safeOrigin(c.req.header('x-forwarded-proto'), c.req.header('host'));
+  const lines = ['User-agent: *'];
+  if (c.get('storeSlug')) {
+    lines.push('Allow: /');
+    if (origin) lines.push(`Sitemap: ${origin}/sitemap.xml`);
+  } else {
+    lines.push('Disallow: /dashboard', 'Disallow: /admin', 'Disallow: /api', 'Disallow: /onboarding', 'Disallow: /claim', 'Disallow: /pay', 'Disallow: /sign-in', 'Disallow: /sign-up', 'Allow: /');
+    if (isPlatformHost(host) && origin) lines.push(`Sitemap: ${origin}/sitemap.xml`);
+  }
+  return c.text(lines.join('\n') + '\n');
+});
+
+app.get('/sitemap.xml', (c) => {
+  const origin = safeOrigin(c.req.header('x-forwarded-proto'), c.req.header('host'));
+  if (!origin) return c.notFound();
+  const slug = c.get('storeSlug');
+  const loc = slug ? `${origin}/` : null;
+  if (!loc) return c.notFound();
+  return c.body(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${loc}</loc></url></urlset>\n`,
+    200,
+    { 'Content-Type': 'application/xml' },
+  );
+});
 
 const NON_STORE_ROUTES = new Set([
   '', 'guide', 'sign-in', 'sign-up', 'onboarding', 'dashboard', 'admin', 'claim', 'pay', 'api', 'assets',
+  'robots.txt', 'sitemap.xml', 'favicon.svg', 'health',
 ]);
 
 function escapeAttr(s: string) {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+interface StoreMetaResult {
+  html?: string;
+  redirectTo?: string;
+}
+
 // Crawlers don't run JS, so storefront share previews (og:image = hero image) must be in the HTML.
-async function injectStorefrontMeta(html: string, path: string, origin: string): Promise<string> {
-  const segments = path.split('/').filter(Boolean);
-  const slug = segments[0] === 'store' ? segments[1] : segments[0];
-  if (!slug || NON_STORE_ROUTES.has(slug)) return html;
+async function buildStoreHtml(
+  html: string,
+  opts: { path: string; search: string; origin: string; hostSlug?: string },
+): Promise<StoreMetaResult> {
+  const segments = opts.path.split('/').filter(Boolean);
+  const pathSlug = segments[0] === 'store' ? segments[1] : segments[0];
+  const slug = opts.hostSlug ?? (pathSlug && !NON_STORE_ROUTES.has(pathSlug) ? pathSlug : undefined);
+  if (!slug) return { html };
 
   const rows = await db`
-    SELECT company_name, tagline, hero_image_key
+    SELECT company_name, tagline, hero_image_key, custom_domain, custom_domain_verified, custom_domain_status
     FROM tenants WHERE slug = ${slug} AND is_active = true LIMIT 1
   `;
-  const t = rows[0] as { company_name: string; tagline: string | null; hero_image_key: string | null } | undefined;
-  if (!t) return html;
+  const t = rows[0] as {
+    company_name: string; tagline: string | null; hero_image_key: string | null;
+    custom_domain: string | null; custom_domain_verified: boolean; custom_domain_status: string | null;
+  } | undefined;
+  if (!t) return { html };
 
-  const image = t.hero_image_key ? await getSignedFileUrl(t.hero_image_key) : '';
+  const activeDomain = getActiveCustomDomain({
+    custom_domain: t.custom_domain, custom_domain_verified: t.custom_domain_verified, custom_domain_status: t.custom_domain_status,
+  });
+
+  // The default URL stays reachable but sends visitors and crawlers to the live custom domain.
+  if (!opts.hostSlug && activeDomain) {
+    const rest = segments.slice(1).join('/');
+    return { redirectTo: `https://${activeDomain}/${rest}${opts.search}` };
+  }
+
   const title = escapeAttr(t.company_name);
   const description = escapeAttr(t.tagline || `Shop ${t.company_name}`);
-  const url = escapeAttr(`${origin}${path}`);
+  const pageUrl = escapeAttr(`${opts.origin}${opts.path}`);
+  const image = t.hero_image_key ? escapeAttr(`${opts.origin}/api/public/${slug}/og-image`) : '';
   const tags = [
     `<title>${title}</title>`,
+    `<link rel="canonical" href="${pageUrl}" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="${title}" />`,
     `<meta property="og:title" content="${title}" />`,
     `<meta property="og:description" content="${description}" />`,
-    `<meta property="og:url" content="${url}" />`,
-    image && `<meta property="og:image" content="${escapeAttr(image)}" />`,
+    `<meta property="og:url" content="${pageUrl}" />`,
+    image && `<meta property="og:image" content="${image}" />`,
     `<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}" />`,
     `<meta name="twitter:title" content="${title}" />`,
     `<meta name="twitter:description" content="${description}" />`,
-    image && `<meta name="twitter:image" content="${escapeAttr(image)}" />`,
+    image && `<meta name="twitter:image" content="${image}" />`,
+    opts.hostSlug && `<script>window.__STORE_SLUG__=${JSON.stringify(opts.hostSlug)};</script>`,
   ].filter(Boolean).join('\n    ');
 
-  return html
-    .replace(/<title>[\s\S]*?<\/title>\s*/, '')
-    .replace(/<meta (?:property="og:|name="twitter:)[^>]*>\s*/g, '')
-    .replace('</head>', `    ${tags}\n  </head>`);
+  // Function replacers: tenant text may contain "$&" / "$'" which String.replace would expand.
+  return {
+    html: html
+      .replace(/<title>[\s\S]*?<\/title>\s*/, () => '')
+      .replace(/<meta (?:property="og:|name="twitter:)[^>]*>\s*/g, () => '')
+      .replace('</head>', () => `    ${tags}\n  </head>`),
+  };
 }
 
-// SPA fallback — serve index.html for all unmatched routes
-app.get('/*', async (c) => {
+// Serves index.html with per-store meta/slug injected.
+const serveSpa = async (c: Context) => {
   const html = await import('fs').then(fs =>
     fs.promises.readFile(join(CLIENT_DIST, 'index.html'), 'utf-8')
   );
   try {
     const reqUrl = new URL(c.req.url);
-    const proto = c.req.header('x-forwarded-proto') || reqUrl.protocol.replace(':', '');
-    const host = c.req.header('host') || reqUrl.host;
-    return c.html(await injectStorefrontMeta(html, reqUrl.pathname, `${proto}://${host}`));
+    const fallbackOrigin = new URL(getBaseUrl()).origin;
+    const origin = safeOrigin(c.req.header('x-forwarded-proto'), c.req.header('host')) ?? fallbackOrigin;
+    const result = await buildStoreHtml(html, {
+      path: reqUrl.pathname,
+      search: reqUrl.search,
+      origin,
+      hostSlug: c.get('storeSlug'),
+    });
+    if (result.redirectTo) return c.redirect(result.redirectTo, 301);
+    return c.html(result.html ?? html);
   } catch (err) {
     console.error('Storefront meta injection failed:', err);
     return c.html(html);
   }
-});
+};
+
+// "/" must go through serveSpa too — the static handler would otherwise answer it with the raw index.html.
+app.get('/', serveSpa);
+app.get('/index.html', serveSpa);
+
+// Serve React client for all non-API routes
+// The Vite build outputs to dist/client relative to repo root
+app.use('/*', serveStatic({ root: CLIENT_DIST }));
+
+// SPA fallback — serve index.html for all unmatched routes
+app.get('/*', serveSpa);
 
 const port = parseInt(process.env.PORT || '3000');
 
@@ -222,3 +295,4 @@ serve({ fetch: app.fetch, port });
 startStripeNudgeJob();
 startBookingReminderJob();
 startInviteNudgeJob();
+startDomainRecheckJob();

@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
+import { getBaseUrl, getCustomerBaseUrl, getStoreUrl } from '../lib/baseUrl';
 import { stripe, computePlatformFee, createBookingPaymentIntent, getOrCreateStripeCustomer } from '../services/stripe';
 import {
   sendStripeConnected, sendAdminStripeConnected,
@@ -369,8 +370,11 @@ app.post('/webhook', async (c) => {
       const rows = await db`SELECT customer_email, customer_name, total_cents FROM orders WHERE id = ${reference_id} LIMIT 1`;
       const order = rows[0];
       if (order) {
-        const retryUrl = `${process.env.CLIENT_URL || 'https://shopsuitedirect.com'}/checkout`;
-        const tenantRows = await db`SELECT company_name FROM tenants WHERE id = ${pi.metadata.tenant_id} LIMIT 1`;
+        const tenantRows = await db`
+          SELECT company_name, slug, custom_domain, custom_domain_verified, custom_domain_status
+          FROM tenants WHERE id = ${pi.metadata.tenant_id} LIMIT 1
+        `;
+        const retryUrl = tenantRows[0] ? getStoreUrl(tenantRows[0]) : getBaseUrl();
         sendPaymentFailed({
           toEmail: order.customer_email as string,
           toName: order.customer_name as string,
@@ -387,8 +391,11 @@ app.post('/webhook', async (c) => {
       `;
       const booking = rows[0];
       if (booking) {
-        const baseUrl2 = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
-        const tenantRows = await db`SELECT company_name FROM tenants WHERE id = ${pi.metadata.tenant_id} LIMIT 1`;
+        const tenantRows = await db`
+          SELECT company_name, slug, custom_domain, custom_domain_verified, custom_domain_status
+          FROM tenants WHERE id = ${pi.metadata.tenant_id} LIMIT 1
+        `;
+        const baseUrl2 = tenantRows[0] ? getCustomerBaseUrl(tenantRows[0]) : getBaseUrl();
         sendPaymentFailed({
           toEmail: booking.customer_email as string,
           toName: booking.customer_name as string,
@@ -465,26 +472,23 @@ app.post('/webhook', async (c) => {
     const session = event.data.object as {
       id: string;
       amount_total: number | null;
+      payment_intent: string | null;
       metadata: Record<string, string>;
     };
     if (session.metadata?.type === 'domain_purchase') {
       const { tenant_id, domain } = session.metadata;
       const tld = domain.split('.').slice(1).join('.');
 
-      const existing = await db`
-        SELECT id FROM domain_purchase_requests
-        WHERE tenant_id = ${tenant_id} AND domain = ${domain} AND status IN ('pending','purchased')
-        LIMIT 1
+      // Stripe retries webhooks; the unique session id makes this insert idempotent.
+      const rows = await db`
+        INSERT INTO domain_purchase_requests (tenant_id, domain, tld, status, price_cents, stripe_session_id, stripe_payment_intent_id)
+        VALUES (${tenant_id}, ${domain}, ${tld}, 'pending', ${session.amount_total ?? null}, ${session.id}, ${session.payment_intent ?? null})
+        ON CONFLICT (stripe_session_id) WHERE stripe_session_id IS NOT NULL DO NOTHING
+        RETURNING *
       `;
+      const request = rows[0];
 
-      if (!existing[0]) {
-        const rows = await db`
-          INSERT INTO domain_purchase_requests (tenant_id, domain, tld, status, price_cents, stripe_session_id)
-          VALUES (${tenant_id}, ${domain}, ${tld}, 'pending', ${session.amount_total ?? null}, ${session.id})
-          RETURNING *
-        `;
-        const request = rows[0];
-
+      if (request) {
         const tenantRows = await db`
           SELECT t.company_name, t.clerk_user_id FROM tenants t WHERE t.id = ${tenant_id} LIMIT 1
         `;
@@ -496,7 +500,7 @@ app.post('/webhook', async (c) => {
           const user = users[0];
           const ownerEmail = user?.email as string ?? '';
           const ownerName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || tenant.company_name as string;
-          const adminUrl = `${process.env.CLIENT_URL ?? 'https://shopsuitedirect.com'}/admin/domain-requests`;
+          const adminUrl = `${getBaseUrl()}/admin/domain-requests`;
 
           await Promise.allSettled([
             sendAdminDomainPurchaseRequest({

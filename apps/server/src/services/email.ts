@@ -393,10 +393,11 @@ interface PaymentLinkEmailData {
   companyName: string;
   bookingId: string;
   tenantId?: string;
+  baseUrl?: string;
 }
 
 export async function sendPaymentLinkEmail(data: PaymentLinkEmailData): Promise<void> {
-  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  const baseUrl = data.baseUrl ?? (process.env.CLIENT_URL || 'https://shopsuitedirect.com').replace(/\/+$/, '');
   const payUrl = `${baseUrl}/pay/booking/${data.bookingId}`;
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],
@@ -658,8 +659,9 @@ export async function sendBookingAwaitingPayment(data: {
   companyName: string;
   bookingId: string;
   startTime: string;
+  baseUrl?: string;
 }): Promise<void> {
-  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  const baseUrl = data.baseUrl ?? (process.env.CLIENT_URL || 'https://shopsuitedirect.com').replace(/\/+$/, '');
   const payUrl = `${baseUrl}/pay/booking/${data.bookingId}`;
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],

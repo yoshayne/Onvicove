@@ -4,9 +4,10 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { enrichWithUrls } from '../services/storage';
-import { generateUniqueSlug, isSlugAvailable } from '../lib/slugify';
+import { generateUniqueSlug, isSlugAvailable, RESERVED_SLUGS } from '../lib/slugify';
 import { sendTenantWelcome, sendAdminNewSignup } from '../services/email';
 import { getBaseUrl } from '../lib/baseUrl';
+import { domainCache } from '../services/domainCache';
 
 const app = new Hono();
 
@@ -25,7 +26,6 @@ const updateTenantSchema = z.object({
   booking_mode: z.enum(['instant', 'manual']).optional(),
   show_live_calendar: z.boolean().optional(),
   currency: z.string().optional(),
-  custom_domain: z.string().nullable().optional(),
   slug: z.string().min(1).max(60).regex(/^[a-z0-9-]+$/).optional(),
   font_pair_id: z.string().optional(),
 });
@@ -126,7 +126,7 @@ app.patch('/me', requireAuth, requireTenant, async (c) => {
   // If slug is being changed, verify it's still available (race-condition guard)
   if (updates.slug) {
     const conflict = await db`SELECT id FROM tenants WHERE slug = ${updates.slug} AND id != ${tenant.id} LIMIT 1`;
-    if (conflict[0]) {
+    if (conflict[0] || RESERVED_SLUGS.has(updates.slug)) {
       return c.json({ error: 'That URL is already taken. Please choose another name.' }, 409);
     }
   }
@@ -137,6 +137,13 @@ app.patch('/me', requireAuth, requireTenant, async (c) => {
     WHERE id = ${tenant.id}
     RETURNING *
   `;
+
+  if (updates.slug) {
+    const before = tenant as unknown as { slug?: string; custom_domain?: string | null };
+    domainCache.invalidateSlug(before.slug);
+    domainCache.invalidateSlug(updates.slug);
+    domainCache.invalidate(before.custom_domain);
+  }
 
   return c.json({ tenant: await enrichWithUrls(result[0]) });
 });

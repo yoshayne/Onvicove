@@ -84,8 +84,10 @@ function mapStaff(s: Staff): StaffData {
   };
 }
 
-export default function StorefrontRouter() {
-  const { slug } = useParams<{ slug: string }>();
+// `hostSlug` is set when the store is served from its own domain (the slug isn't in the URL).
+export default function StorefrontRouter({ slug: hostSlug }: { slug?: string }) {
+  const params = useParams<{ slug: string }>();
+  const slug = hostSlug ?? params.slug;
 
   const tenantQuery = useQuery({
     queryKey: ['public-tenant', slug],

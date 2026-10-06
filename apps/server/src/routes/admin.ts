@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { getBaseUrl } from '../lib/baseUrl';
+import { domainCache } from '../services/domainCache';
+import { isRailwayConfigured, railwayRemoveDomain } from '../services/railway';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireAdmin } from '../middleware/admin';
@@ -139,6 +141,12 @@ app.patch('/tenants/:id', async (c) => {
 
   await logAdminAction(c, 'update_tenant', 'tenant', id, updates);
 
+  // Suspending/reactivating or renaming changes whether/where the custom domain resolves
+  domainCache.invalidate(before.custom_domain as string | null);
+  domainCache.invalidate(rows[0].custom_domain as string | null);
+  domainCache.invalidateSlug(before.slug as string);
+  domainCache.invalidateSlug(rows[0].slug as string);
+
   const baseUrl = getBaseUrl();
   const ownerEmail = before.email as string | null;
   if (ownerEmail) {
@@ -187,6 +195,12 @@ app.delete('/tenants/:id', async (c) => {
   await db`DELETE FROM customers WHERE tenant_id = ${id}`;
   await db`DELETE FROM page_sections WHERE tenant_id = ${id}`;
   await db`DELETE FROM discount_codes WHERE tenant_id = ${id}`;
+  const doomed = await db`SELECT slug, custom_domain, custom_domain_railway_id FROM tenants WHERE id = ${id} LIMIT 1`;
+  domainCache.invalidate(doomed[0]?.custom_domain as string | null);
+  domainCache.invalidateSlug(doomed[0]?.slug as string | null);
+  if (doomed[0]?.custom_domain_railway_id && isRailwayConfigured()) {
+    await railwayRemoveDomain(doomed[0].custom_domain_railway_id as string).catch((err) => console.error('Railway domain cleanup failed:', err));
+  }
   await db`DELETE FROM tenants WHERE id = ${id}`;
   await logAdminAction(c, 'delete_tenant', 'tenant', id, { company_name: rows[0].company_name });
 

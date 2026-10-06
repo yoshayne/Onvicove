@@ -102,7 +102,29 @@ function PageFallback() {
   );
 }
 
+// Set by the server when the request came in on a store's own domain (or <slug>.shopsuitedirect.com).
+const hostStoreSlug = (window as unknown as { __STORE_SLUG__?: string }).__STORE_SLUG__;
+
+function StoreHostApp({ slug }: { slug: string }) {
+  return (
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <HashScroller />
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              <Route path="/pay/booking/:id" element={<PayBalance />} />
+              <Route path="*" element={<StorefrontRouter slug={slug} />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </AppErrorBoundary>
+  );
+}
+
 export default function App() {
+  if (hostStoreSlug) return <StoreHostApp slug={hostStoreSlug} />;
   return (
     <AppErrorBoundary>
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>

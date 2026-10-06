@@ -4,6 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { createBookingPaymentIntent } from '../services/stripe';
+import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { sendPaymentLinkEmail, sendBookingCancelled, sendTenantBookingCancelled, sendBookingConfirmation, sendTenantNewBooking } from '../services/email';
 import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
 
@@ -397,6 +398,7 @@ app.post('/:id/send-payment-link', async (c) => {
     amountCents: remainingCents,
     companyName: tenant.company_name,
     bookingId: id,
+    baseUrl: getCustomerBaseUrl(tenant),
   });
 
   return c.json({ sent: true });

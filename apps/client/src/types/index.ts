@@ -40,6 +40,8 @@ export interface Tenant {
   custom_domain_verified: boolean;
   custom_domain_verify_token: string | null;
   custom_domain_cname_target: string | null;
+  custom_domain_status?: 'awaiting_txt' | 'awaiting_dns' | 'provisioning' | 'active' | null;
+  custom_domain_records?: { type: string; host: string; value: string }[] | null;
   font_pair_id: FontPairId | null;
   wizard_completed: boolean;
   wizard_step: number;

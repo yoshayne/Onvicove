@@ -348,7 +348,7 @@ export default function CreateTenant() {
             />
           </Field>
 
-          <Field label="URL slug *" hint="shopsuitedirect.com/store/[slug]">
+          <Field label="URL slug *" hint="shopsuitedirect.com/[slug]">
             <input
               type="text" value={form.slug} placeholder="acme-photography"
               onChange={(e) => { setSlugEdited(true); set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')); }}
