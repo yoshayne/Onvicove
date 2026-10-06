@@ -121,7 +121,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
         <img
           src={heroImage}
           alt=""
-          className="absolute inset-0 w-full h-full object-contain object-center"
+          className="absolute inset-0 w-full h-full object-cover object-top"
         />
         {/* dual gradient: bottom-up fade + subtle top-down */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/20 to-transparent" />
