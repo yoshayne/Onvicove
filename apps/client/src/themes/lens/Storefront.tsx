@@ -10,7 +10,6 @@ import BookingModal from './BookingModal';
 import CheckoutModal from '../shared/CheckoutModal';
 import BookingStatusOverlay from '../shared/BookingStatusOverlay';
 import ProductQuickView from '../shared/ProductQuickView';
-import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
@@ -21,8 +20,8 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
+  const [enquiry, setEnquiry] = useState({ name: '', email: '', message: '' });
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
   const commerce = useStorefrontCommerce(theme.slug);
   const {
@@ -314,14 +313,12 @@ export default function Storefront({ theme, products, services, staff, galleries
       {sec('contact') && (
       <footer id="contact" className="scroll-mt-16 bg-[#080808] border-t border-white/5 py-20 px-6" style={ord('contact')}>
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-12 mb-16">
+          <div className="grid md:grid-cols-2 gap-16 mb-16">
             <div>
               <p className="font-['DM_Serif_Display'] text-2xl mb-2">{theme.companyName}</p>
               {theme.city && <p className="text-white/40 text-sm">{theme.city}</p>}
-            </div>
 
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-4">Stay in touch</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mt-12 mb-4">Stay in touch</p>
               <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} className="flex gap-2">
                 <input
                   type="email"
@@ -341,14 +338,50 @@ export default function Storefront({ theme, products, services, staff, galleries
             </div>
 
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-4">Enquiries</p>
-              <button
-                type="button"
-                onClick={() => setCustomOrderOpen(true)}
-                className="text-sm text-white/60 hover:text-[var(--brand-color,#c8b8a2)] transition-colors underline underline-offset-4"
-              >
-                Send a project brief →
-              </button>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--brand-color,#c8b8a2)] mb-3">Enquiries</p>
+              <h3 className="font-['DM_Serif_Display'] text-3xl mb-6">Tell me about your project</h3>
+              {customOrderStatus === 'success' ? (
+                <div className="border border-white/10 p-8">
+                  <p className="font-['DM_Serif_Display'] text-2xl mb-2">Thank you.</p>
+                  <p className="text-sm text-white/50">Your message has been sent. I'll be in touch soon.</p>
+                </div>
+              ) : (
+                <form
+                  onSubmit={(e) => { e.preventDefault(); submitCustomOrder(enquiry.name, enquiry.email, enquiry.message); }}
+                  className="flex flex-col gap-3"
+                >
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <input
+                      type="text" required placeholder="Name" aria-label="Name"
+                      value={enquiry.name}
+                      onChange={(e) => setEnquiry({ ...enquiry, name: e.target.value })}
+                      className="bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-[var(--brand-color,#c8b8a2)] transition-colors"
+                    />
+                    <input
+                      type="email" required placeholder="Email" aria-label="Email"
+                      value={enquiry.email}
+                      onChange={(e) => setEnquiry({ ...enquiry, email: e.target.value })}
+                      className="bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-[var(--brand-color,#c8b8a2)] transition-colors"
+                    />
+                  </div>
+                  <textarea
+                    required rows={5} placeholder="What are you looking for? Dates, location, style…" aria-label="Message"
+                    value={enquiry.message}
+                    onChange={(e) => setEnquiry({ ...enquiry, message: e.target.value })}
+                    className="bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-[var(--brand-color,#c8b8a2)] transition-colors resize-none"
+                  />
+                  {customOrderStatus === 'error' && (
+                    <p className="text-sm text-red-400">Something went wrong. Please try again.</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={customOrderStatus === 'loading'}
+                    className="self-start bg-[var(--brand-color,#c8b8a2)] text-[#0d0d0d] text-xs uppercase tracking-[0.2em] px-6 py-3 font-medium hover:bg-white transition-colors disabled:opacity-40"
+                  >
+                    {customOrderStatus === 'loading' ? 'Sending…' : 'Send Enquiry'}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
 
@@ -427,13 +460,6 @@ export default function Storefront({ theme, products, services, staff, galleries
         onPaymentCancel={cancelBookingPayment}
       />
 
-      <CustomOrderModal
-        isOpen={customOrderOpen}
-        onClose={() => setCustomOrderOpen(false)}
-        companyName={theme.companyName}
-        status={customOrderStatus}
-        onSubmit={submitCustomOrder}
-      />
       {/* ── Testimonials ── */}
       {sec('testimonials') && (
         <div style={ord('testimonials')}><TestimonialsBlock testimonials={theme.testimonials} /></div>
