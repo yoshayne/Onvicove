@@ -35,8 +35,8 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
 
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && displayProducts.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && displayServices.length > 0;
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
 
   return (
     <div className="min-h-screen bg-[#fdf8f3] text-[#3d2314] font-['Inter']">
