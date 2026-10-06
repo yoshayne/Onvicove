@@ -13,6 +13,8 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
+import TestimonialsBlock from '../shared/TestimonialsBlock';
+import FaqBlock from '../shared/FaqBlock';
 
 // Heading font "Merriweather" requires loading Google Fonts in index.html.
 // Body font "Georgia" is a system font (font-serif fallback is fine).
@@ -216,12 +218,16 @@ export default function Storefront({
       )}
 
       {/* Footer */}
+      {sec('contact') && (
       <footer id="about" className="scroll-mt-20 mt-8 border-t-4 border-[#1a3a5c] bg-[#f5f5f5] py-10">
         <div className="mx-auto max-w-6xl px-6 text-center">
           <div className="font-['Merriweather'] text-lg font-bold text-[#1a3a5c]">
             {theme.companyName}
           </div>
           {theme.city && <p className="mt-2 text-sm text-gray-600">{theme.city}</p>}
+          {theme.aboutText && (
+            <p className="mt-3 text-sm text-gray-600 max-w-xl mx-auto leading-relaxed">{theme.aboutText}</p>
+          )}
           <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} className="mt-6 flex justify-center gap-2">
             <input
               type="email"
@@ -244,6 +250,7 @@ export default function Storefront({
           </p>
         </div>
       </footer>
+      )}
 
       <ProductQuickView
         product={quickViewProduct}
@@ -311,6 +318,16 @@ export default function Storefront({
         status={customOrderStatus}
         onSubmit={submitCustomOrder}
       />
+      {/* ── Testimonials ── */}
+      {sec('testimonials') && (
+        <TestimonialsBlock testimonials={theme.testimonials} />
+      )}
+
+      {/* ── FAQ ── */}
+      {sec('faq') && (
+        <FaqBlock faqs={theme.faqs} />
+      )}
+
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
         <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />

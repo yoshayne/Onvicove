@@ -13,6 +13,8 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
+import TestimonialsBlock from '../shared/TestimonialsBlock';
+import FaqBlock from '../shared/FaqBlock';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
@@ -81,9 +83,12 @@ export default function Storefront({ theme, products, services, staff, galleries
             </div>
           </div>
           <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 'clamp(40px, 5vw, 68px)', fontWeight: 400, lineHeight: 1.1, marginBottom: 20 }}>{tagline}</h1>
-          <p style={{ fontSize: 15, color: '#5c4a32', lineHeight: 1.7, marginBottom: 32, maxWidth: 420 }}>
+          <p style={{ fontSize: 15, color: '#5c4a32', lineHeight: 1.7, marginBottom: theme.aboutText ? 12 : 32, maxWidth: 420 }}>
             Small batch goods for a slower, more intentional life. Made with seasonal botanicals and ancestral techniques.
           </p>
+          {theme.aboutText && (
+            <p style={{ fontSize: 14, color: '#7a6650', lineHeight: 1.7, marginBottom: 32, maxWidth: 420 }}>{theme.aboutText}</p>
+          )}
           <div style={{ display: 'flex', gap: 12 }}>
             {showProducts && (
               <a href="#products" style={{ display: 'inline-block', padding: '12px 28px', fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', background: '#5c4a32', color: '#f5f0e8', textTransform: 'uppercase' }}>
@@ -193,6 +198,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* Footer */}
+      {sec('contact') && (
       <footer id="footer" style={{ background: '#2c1f14', color: '#f5f0e8', padding: '48px 24px', textAlign: 'center' }}>
         <p style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 18, marginBottom: 8 }}>{theme.companyName}</p>
         {theme.city && <p style={{ fontSize: 12, color: 'rgba(245,240,232,0.5)', marginBottom: 16 }}>{theme.city}</p>}
@@ -205,6 +211,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         </form>
         <p style={{ fontSize: 10, color: 'rgba(245,240,232,0.2)', marginTop: 24 }}>&copy; {new Date().getFullYear()} {theme.companyName}</p>
       </footer>
+      )}
 
       <ProductQuickView product={quickViewProduct} onClose={closeQuickView} onAddToCart={(p, v) => { addToCart(p, v); closeQuickView(); }} currency={theme.currency} paymentsEnabled={theme.paymentsEnabled} />
       {showProducts && <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} onCheckout={openCheckout} />}
@@ -212,6 +219,16 @@ export default function Storefront({ theme, products, services, staff, galleries
       <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} />
       <BookingStatusOverlay status={bookingStatus} error={bookingError} clientSecret={bookingClientSecret} amountCents={bookingAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onClose={closeBooking} onDismiss={dismissBookingStatus} onPaymentSuccess={confirmBookingPayment} onPaymentCancel={cancelBookingPayment} />
       <CustomOrderModal isOpen={customOrderOpen} onClose={() => setCustomOrderOpen(false)} companyName={theme.companyName} status={customOrderStatus} onSubmit={submitCustomOrder} />
+      {/* ── Testimonials ── */}
+      {sec('testimonials') && (
+        <TestimonialsBlock testimonials={theme.testimonials} />
+      )}
+
+      {/* ── FAQ ── */}
+      {sec('faq') && (
+        <FaqBlock faqs={theme.faqs} />
+      )}
+
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
         <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />

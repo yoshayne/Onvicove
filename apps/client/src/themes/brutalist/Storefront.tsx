@@ -13,6 +13,8 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
+import TestimonialsBlock from '../shared/TestimonialsBlock';
+import FaqBlock from '../shared/FaqBlock';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
@@ -79,7 +81,8 @@ export default function Storefront({ theme, products, services, staff, galleries
               </span>
             ))}
           </h1>
-          {theme.city && <p style={{ fontFamily: 'monospace', fontSize: 13, color: '#000', opacity: 0.5, marginBottom: 16 }}>{theme.industry} — {theme.city}</p>}
+          {theme.city && <p style={{ fontFamily: 'monospace', fontSize: 13, color: '#000', opacity: 0.5, marginBottom: 8 }}>{theme.industry} — {theme.city}</p>}
+          {theme.aboutText && <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#000', opacity: 0.55, marginBottom: 16, lineHeight: 1.6, maxWidth: 480 }}>{theme.aboutText}</p>}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 32 }}>
             {showProducts && (
               <a href="#products" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 12, fontWeight: 900, letterSpacing: '0.1em', textDecoration: 'none', background: '#000', color: '#fff' }}>
@@ -175,6 +178,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* Footer */}
+      {sec('contact') && (
       <footer id="footer" style={{ background: '#000', color: '#fff', padding: '48px 24px', borderTop: '3px solid var(--brand-color, #0000ff)' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <p style={{ fontWeight: 900, fontSize: 20, letterSpacing: '-0.02em' }}>{theme.companyName.toUpperCase()}</p>
@@ -188,6 +192,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <p style={{ fontFamily: 'monospace', fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 16 }}>&copy; {new Date().getFullYear()}</p>
         </div>
       </footer>
+      )}
 
       <ProductQuickView product={quickViewProduct} onClose={closeQuickView} onAddToCart={(p, v) => { addToCart(p, v); closeQuickView(); }} currency={theme.currency} paymentsEnabled={theme.paymentsEnabled} />
       {showProducts && <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} onCheckout={openCheckout} />}
@@ -195,6 +200,16 @@ export default function Storefront({ theme, products, services, staff, galleries
       <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} />
       <BookingStatusOverlay status={bookingStatus} error={bookingError} clientSecret={bookingClientSecret} amountCents={bookingAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onClose={closeBooking} onDismiss={dismissBookingStatus} onPaymentSuccess={confirmBookingPayment} onPaymentCancel={cancelBookingPayment} />
       <CustomOrderModal isOpen={customOrderOpen} onClose={() => setCustomOrderOpen(false)} companyName={theme.companyName} status={customOrderStatus} onSubmit={submitCustomOrder} />
+      {/* ── Testimonials ── */}
+      {sec('testimonials') && (
+        <TestimonialsBlock testimonials={theme.testimonials} />
+      )}
+
+      {/* ── FAQ ── */}
+      {sec('faq') && (
+        <FaqBlock faqs={theme.faqs} />
+      )}
+
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
         <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />

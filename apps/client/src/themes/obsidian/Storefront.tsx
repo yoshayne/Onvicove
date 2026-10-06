@@ -13,6 +13,8 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
+import TestimonialsBlock from '../shared/TestimonialsBlock';
+import FaqBlock from '../shared/FaqBlock';
 
 const G = {
   bg: '#0a0a0f',
@@ -218,9 +220,12 @@ export default function Storefront({ theme, products, services, staff, galleries
             }}>
               {tagline}
             </h1>
-            <p style={{ fontSize: 14, color: G.textMuted, lineHeight: 1.75, marginBottom: 40, maxWidth: 380 }}>
+            <p style={{ fontSize: 14, color: G.textMuted, lineHeight: 1.75, marginBottom: theme.aboutText ? 16 : 40, maxWidth: 380 }}>
               {theme.city ? `Based in ${theme.city}. ` : ''}Exceptional quality for those who know the difference.
             </p>
+            {theme.aboutText && (
+              <p style={{ fontSize: 14, color: G.textMuted, lineHeight: 1.75, marginBottom: 40, maxWidth: 380 }}>{theme.aboutText}</p>
+            )}
 
             {/* CTAs */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
@@ -559,6 +564,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         </section>
 
         {/* ── FOOTER ── */}
+        {sec('contact') && (
         <footer id="footer" style={{ background: G.surface, borderTop: `1px solid ${G.glassBorder}`, padding: isMobile ? '40px 20px 32px' : '52px 56px 36px' }}>
           <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: 24 }}>
             <div>
@@ -575,6 +581,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             &copy; {new Date().getFullYear()} {theme.companyName}. All rights reserved.
           </p>
         </footer>
+        )}
 
       </main>
 
@@ -585,6 +592,16 @@ export default function Storefront({ theme, products, services, staff, galleries
       <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} />
       <BookingStatusOverlay status={bookingStatus} error={bookingError} clientSecret={bookingClientSecret} amountCents={bookingAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onClose={closeBooking} onDismiss={dismissBookingStatus} onPaymentSuccess={confirmBookingPayment} onPaymentCancel={cancelBookingPayment} />
       <CustomOrderModal isOpen={customOrderOpen} onClose={() => setCustomOrderOpen(false)} companyName={theme.companyName} status={customOrderStatus} onSubmit={submitCustomOrder} />
+      {/* ── Testimonials ── */}
+      {sec('testimonials') && (
+        <TestimonialsBlock testimonials={theme.testimonials} />
+      )}
+
+      {/* ── FAQ ── */}
+      {sec('faq') && (
+        <FaqBlock faqs={theme.faqs} />
+      )}
+
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
         <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />

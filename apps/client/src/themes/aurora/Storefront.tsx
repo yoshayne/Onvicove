@@ -13,6 +13,8 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
+import TestimonialsBlock from '../shared/TestimonialsBlock';
+import FaqBlock from '../shared/FaqBlock';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
@@ -84,7 +86,10 @@ export default function Storefront({ theme, products, services, staff, galleries
           <div>
             <p style={{ fontSize: 12, letterSpacing: '0.2em', color: 'var(--brand-color, #a78bfa)', marginBottom: 16, textTransform: 'uppercase', opacity: 0.8 }}>Holistic Wellness</p>
             <h1 style={{ fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 700, lineHeight: 1.1, marginBottom: 20, letterSpacing: '-0.02em' }}>{tagline}</h1>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', marginBottom: 32, lineHeight: 1.7, maxWidth: 480 }}>Holistic treatments and products to help you glow from within.</p>
+            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', marginBottom: theme.aboutText ? 12 : 32, lineHeight: 1.7, maxWidth: 480 }}>Holistic treatments and products to help you glow from within.</p>
+            {theme.aboutText && (
+              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 32, lineHeight: 1.7, maxWidth: 480 }}>{theme.aboutText}</p>
+            )}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               {showServices && <a href="#services" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(167,139,250,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(167,139,250,0.4)', color: 'var(--brand-color, #a78bfa)', borderRadius: 50, textDecoration: 'none' }}>Book a Session</a>}
               {showProducts && <a href="#products" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 50, textDecoration: 'none' }}>Shop Products</a>}
@@ -200,6 +205,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       </div>
 
       {/* Footer */}
+      {sec('contact') && (
       <footer id="footer" style={{ padding: '48px 24px', textAlign: 'center', borderTop: '1px solid rgba(167,139,250,0.1)' }}>
         <p style={{ fontSize: 18, fontWeight: 700, background: 'linear-gradient(90deg, #a78bfa, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 8 }}>{theme.companyName}</p>
         {theme.city && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{theme.city}</p>}
@@ -221,6 +227,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         </form>
         <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 24 }}>&copy; {new Date().getFullYear()} {theme.companyName}</p>
       </footer>
+      )}
 
       <ProductQuickView product={quickViewProduct} onClose={closeQuickView} onAddToCart={(p, v) => { addToCart(p, v); closeQuickView(); }} currency={theme.currency} paymentsEnabled={theme.paymentsEnabled} />
       {showProducts && <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} onCheckout={openCheckout} />}
@@ -234,6 +241,16 @@ export default function Storefront({ theme, products, services, staff, galleries
         status={customOrderStatus}
         onSubmit={submitCustomOrder}
       />
+      {/* ── Testimonials ── */}
+      {sec('testimonials') && (
+        <TestimonialsBlock testimonials={theme.testimonials} />
+      )}
+
+      {/* ── FAQ ── */}
+      {sec('faq') && (
+        <FaqBlock faqs={theme.faqs} />
+      )}
+
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
         <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />

@@ -13,6 +13,8 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
+import TestimonialsBlock from '../shared/TestimonialsBlock';
+import FaqBlock from '../shared/FaqBlock';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
@@ -69,9 +71,12 @@ export default function Storefront({ theme, products, services, staff, galleries
             01 / {String(displayProducts.length + displayServices.length).padStart(2, '0')}
           </p>
           <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 'clamp(40px, 5vw, 72px)', fontWeight: 400, lineHeight: 1.05, marginBottom: 24 }}>{tagline}</h1>
-          <p style={{ fontSize: 14, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.7, maxWidth: 400, marginBottom: 32 }}>
+          <p style={{ fontSize: 14, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.7, maxWidth: 400, marginBottom: theme.aboutText ? 12 : 32 }}>
             Editorial-style photography for those who appreciate the art of timeless imagery.
           </p>
+          {theme.aboutText && (
+            <p style={{ fontSize: 14, color: '#1a1a1a', opacity: 0.5, lineHeight: 1.7, maxWidth: 400, marginBottom: 32 }}>{theme.aboutText}</p>
+          )}
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             {showProducts && <a href="#products" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', color: '#1a1a1a', borderBottom: '1px solid #1a1a1a', paddingBottom: 4 }}>View Portfolio →</a>}
             {showServices && <a href="#services" style={{ display: 'inline-block', padding: '10px 24px', fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', background: '#1a1a1a', color: '#f8f6f1' }}>Book a Shoot</a>}
@@ -158,6 +163,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* Footer */}
+      {sec('contact') && (
       <footer id="footer" style={{ borderTop: '1px solid #d0cdc8', padding: '40px 24px', background: '#f8f6f1' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 16 }}>{theme.companyName}</p>
@@ -181,6 +187,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <p style={{ fontSize: 11, color: '#1a1a1a', opacity: 0.3, letterSpacing: '0.1em', marginTop: 16 }}>&copy; {new Date().getFullYear()}</p>
         </div>
       </footer>
+      )}
 
       <ProductQuickView product={quickViewProduct} onClose={closeQuickView} onAddToCart={(p, v) => { addToCart(p, v); closeQuickView(); }} currency={theme.currency} paymentsEnabled={theme.paymentsEnabled} />
       {showProducts && <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} onCheckout={openCheckout} />}
@@ -194,6 +201,16 @@ export default function Storefront({ theme, products, services, staff, galleries
         status={customOrderStatus}
         onSubmit={submitCustomOrder}
       />
+      {/* ── Testimonials ── */}
+      {sec('testimonials') && (
+        <TestimonialsBlock testimonials={theme.testimonials} />
+      )}
+
+      {/* ── FAQ ── */}
+      {sec('faq') && (
+        <FaqBlock faqs={theme.faqs} />
+      )}
+
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
         <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />

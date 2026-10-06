@@ -13,6 +13,8 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
+import TestimonialsBlock from '../shared/TestimonialsBlock';
+import FaqBlock from '../shared/FaqBlock';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const {
@@ -176,9 +178,12 @@ export default function Storefront({ theme, products, services, staff, galleries
             {theme.companyName}
           </h1>
 
-          <p className="text-white/60 text-sm md:text-base uppercase tracking-[0.35em] mb-10">
+          <p className="text-white/60 text-sm md:text-base uppercase tracking-[0.35em] mb-4">
             {tagline}
           </p>
+          {theme.aboutText && (
+            <p className="text-white/50 text-sm max-w-xl mx-auto mb-10 leading-relaxed">{theme.aboutText}</p>
+          )}
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
             {showProducts && (
@@ -392,6 +397,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── Footer ── */}
+      {sec('contact') && (
       <footer id="footer" className="scroll-mt-20 bg-[#050505] border-t border-white/10">
         {/* Top accent bar */}
         <div className="h-1 bg-[var(--brand-color,#e8ff00)]" />
@@ -454,6 +460,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           </div>
         </div>
       </footer>
+      )}
 
       {/* Floating back-to-top */}
       {showBackToTop && (
@@ -534,6 +541,16 @@ export default function Storefront({ theme, products, services, staff, galleries
         status={customOrderStatus}
         onSubmit={submitCustomOrder}
       />
+      {/* ── Testimonials ── */}
+      {sec('testimonials') && (
+        <TestimonialsBlock testimonials={theme.testimonials} />
+      )}
+
+      {/* ── FAQ ── */}
+      {sec('faq') && (
+        <FaqBlock faqs={theme.faqs} />
+      )}
+
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
         <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />

@@ -13,6 +13,8 @@ import ProductQuickView from '../shared/ProductQuickView';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
+import TestimonialsBlock from '../shared/TestimonialsBlock';
+import FaqBlock from '../shared/FaqBlock';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 
@@ -274,6 +276,9 @@ export default function Storefront({ theme, products, services, staff, galleries
             <p className="text-white/60 text-base leading-relaxed max-w-md">
               {tagline}
             </p>
+            {theme.aboutText && (
+              <p className="text-white/50 text-sm leading-relaxed max-w-md mt-4">{theme.aboutText}</p>
+            )}
           </div>
 
           {displayStaff.length > 0 && (
@@ -300,6 +305,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── Contact / Footer ────────────────────────────────────────── */}
+      {sec('contact') && (
       <footer id="contact" className="scroll-mt-16 bg-[#080808] border-t border-white/5 py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-3 gap-12 mb-16">
@@ -348,6 +354,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           </div>
         </div>
       </footer>
+      )}
 
       {/* ── Modals & overlays ───────────────────────────────────────── */}
       <ProductQuickView
@@ -417,6 +424,16 @@ export default function Storefront({ theme, products, services, staff, galleries
         status={customOrderStatus}
         onSubmit={submitCustomOrder}
       />
+      {/* ── Testimonials ── */}
+      {sec('testimonials') && (
+        <TestimonialsBlock testimonials={theme.testimonials} />
+      )}
+
+      {/* ── FAQ ── */}
+      {sec('faq') && (
+        <FaqBlock faqs={theme.faqs} />
+      )}
+
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
         <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />

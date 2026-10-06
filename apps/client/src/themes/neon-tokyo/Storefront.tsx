@@ -13,6 +13,8 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
+import TestimonialsBlock from '../shared/TestimonialsBlock';
+import FaqBlock from '../shared/FaqBlock';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
@@ -85,7 +87,10 @@ export default function Storefront({ theme, products, services, staff, galleries
             <h1 className="neon-pink" style={{ fontSize: 'clamp(48px, 7vw, 80px)', fontWeight: 900, lineHeight: 0.95, letterSpacing: '-0.03em', marginBottom: 16 }}>
               {tagline}
             </h1>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 32, lineHeight: 1.7 }}>次世代のギア。ストリートのために。</p>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: theme.aboutText ? 8 : 32, lineHeight: 1.7 }}>次世代のギア。ストリートのために。</p>
+            {theme.aboutText && (
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 32, lineHeight: 1.7 }}>{theme.aboutText}</p>
+            )}
             <div style={{ display: 'flex', gap: 12 }}>
               {showProducts && (
                 <a href="#products" className="neon-btn" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', color: '#000', textDecoration: 'none', borderRadius: 4 }}>
@@ -202,6 +207,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       </div>
 
       {/* Footer */}
+      {sec('contact') && (
       <footer id="footer" style={{ padding: '40px 24px', textAlign: 'center', borderTop: '1px solid rgba(255,45,155,0.2)' }}>
         <p style={{ fontWeight: 800, fontSize: 16, letterSpacing: '0.15em', background: 'linear-gradient(90deg, #ff2d9b, #00ffff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 8 }}>{theme.companyName.toUpperCase()}</p>
         {theme.city && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{theme.city}</p>}
@@ -213,6 +219,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         </form>
         <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 20 }}>&copy; {new Date().getFullYear()}</p>
       </footer>
+      )}
 
       <ProductQuickView product={quickViewProduct} onClose={closeQuickView} onAddToCart={(p, v) => { addToCart(p, v); closeQuickView(); }} currency={theme.currency} paymentsEnabled={theme.paymentsEnabled} />
       {showProducts && <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} onCheckout={openCheckout} />}
@@ -220,6 +227,16 @@ export default function Storefront({ theme, products, services, staff, galleries
       <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} />
       <BookingStatusOverlay status={bookingStatus} error={bookingError} clientSecret={bookingClientSecret} amountCents={bookingAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onClose={closeBooking} onDismiss={dismissBookingStatus} onPaymentSuccess={confirmBookingPayment} onPaymentCancel={cancelBookingPayment} />
       <CustomOrderModal isOpen={customOrderOpen} onClose={() => setCustomOrderOpen(false)} companyName={theme.companyName} status={customOrderStatus} onSubmit={submitCustomOrder} />
+      {/* ── Testimonials ── */}
+      {sec('testimonials') && (
+        <TestimonialsBlock testimonials={theme.testimonials} />
+      )}
+
+      {/* ── FAQ ── */}
+      {sec('faq') && (
+        <FaqBlock faqs={theme.faqs} />
+      )}
+
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
         <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
