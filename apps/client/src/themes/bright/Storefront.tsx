@@ -16,7 +16,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
 
-export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -38,6 +38,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   return (
     <div className="min-h-screen bg-white text-[#111111] font-['Poppins']">
@@ -74,6 +75,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       </nav>
 
       {/* Hero */}
+      {sec('hero') && (
       <section className="relative min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-gradient-to-br from-[#f0f0ff] to-[#ffe0f0] py-24">
         <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full bg-[var(--brand-color,#ff3cac)]/10" />
         <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-[#f0f0ff]/60 translate-x-1/3 translate-y-1/3" />
@@ -84,6 +86,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <p className="text-[#111111]/70 text-lg md:text-xl font-medium">{tagline}</p>
         </div>
       </section>
+      )}
 
       {/* Products */}
       {showProducts && (

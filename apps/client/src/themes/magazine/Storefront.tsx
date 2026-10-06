@@ -14,7 +14,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
 
-export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -37,6 +37,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8f6f1', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
@@ -61,6 +62,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       </nav>
 
       {/* Hero — asymmetric editorial layout */}
+      {sec('hero') && (
       <section style={{ maxWidth: 1280, margin: '0 auto', padding: '60px 24px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '70vh', alignItems: 'center' }}>
         <div>
           <p style={{ fontSize: 11, letterSpacing: '0.3em', color: '#1a1a1a', opacity: 0.4, marginBottom: 24, textTransform: 'uppercase' }}>
@@ -83,6 +85,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <img src={heroImage} alt="" style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
         </div>
       </section>
+      )}
 
       {/* Products — editorial masonry grid */}
       {showProducts && (

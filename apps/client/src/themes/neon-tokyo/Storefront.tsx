@@ -14,7 +14,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
 
-export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -37,6 +37,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   return (
     <div style={{ minHeight: '100vh', background: '#050510', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
@@ -74,6 +75,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       </nav>
 
       {/* Hero */}
+      {sec('hero') && (
       <section style={{ position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
         <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.25, mixBlendMode: 'screen' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(5,5,16,0.95) 50%, rgba(5,5,16,0.4) 100%)' }} />
@@ -113,6 +115,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           </div>
         </div>
       </section>
+      )}
 
       {/* Products */}
       {showProducts && (

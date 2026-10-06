@@ -14,7 +14,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
 
-export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -37,6 +37,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   const categories = ['Candles', 'Soaps', 'Home Goods', 'Gift Sets'];
 
@@ -70,6 +71,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       </nav>
 
       {/* Hero — split layout */}
+      {sec('hero') && (
       <section style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', minHeight: '65vh' }}>
         <div>
           {/* Stamp badge */}
@@ -102,6 +104,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <img src={heroImage} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: 8, display: 'block' }} />
         </div>
       </section>
+      )}
 
       {/* Category navigation */}
       {showProducts && (

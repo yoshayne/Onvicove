@@ -23,6 +23,7 @@ export default function Storefront({
   services,
   staff,
   galleries = [],
+  visibleSections,
 }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -45,6 +46,7 @@ export default function Storefront({
   const displayStaff = staff.length > 0 ? staff : defaults.staff;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   return (
     <div className="min-h-screen bg-white font-serif text-[#1a3a5c]">
@@ -80,6 +82,7 @@ export default function Storefront({
       </header>
 
       {/* Hero */}
+      {sec('hero') && (
       <section
         className="relative flex min-h-[480px] items-center justify-center bg-[#1a3a5c] bg-cover bg-center text-center"
         style={{ backgroundImage: `linear-gradient(rgba(26,58,92,0.75), rgba(26,58,92,0.75)), url(${heroImage})` }}
@@ -98,6 +101,7 @@ export default function Storefront({
               <button type="button" onClick={() => setCustomOrderOpen(true)} className="inline-block border-b border-current pb-1 text-sm hover:opacity-60 transition-opacity">Custom Order</button>
         </div>
       </section>
+      )}
 
       {/* Products */}
       {showProducts && displayProducts.length > 0 && (

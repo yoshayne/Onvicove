@@ -14,7 +14,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
 
-export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -37,6 +37,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', color: '#000', fontFamily: 'Arial, sans-serif' }}>
@@ -68,6 +69,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       </nav>
 
       {/* Hero */}
+      {sec('hero') && (
       <section style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '60vh', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontWeight: 900, fontSize: 'clamp(48px, 7vw, 96px)', lineHeight: 0.92, letterSpacing: '-0.03em', marginBottom: 20 }}>
@@ -101,6 +103,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           </div>
         </div>
       </section>
+      )}
 
       {/* Marquee ticker */}
       <div style={{ background: '#000', color: '#fff', padding: '12px 0', overflow: 'hidden' }}>

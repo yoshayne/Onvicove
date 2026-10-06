@@ -14,7 +14,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
 
-export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
     quickViewProduct, openQuickView, closeQuickView,
@@ -40,6 +40,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   // Load Anton font
   useEffect(() => {
@@ -145,6 +146,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── Hero ── */}
+      {sec('hero') && (
       <section className="relative h-screen min-h-[600px] flex flex-col items-center justify-center text-center overflow-hidden">
         {/* Background */}
         {heroImage ? (
@@ -211,6 +213,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <div className="w-px h-10 bg-gradient-to-b from-white/40 to-transparent" />
         </div>
       </section>
+      )}
 
       {/* ── Products ── */}
       {showProducts && (
@@ -349,7 +352,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── Team ── */}
-      {staff.length > 0 && (
+      {sec('staff') && staff.length > 0 && (
         <>
           <div className="h-px bg-gradient-to-r from-transparent via-[var(--brand-color,#e8ff00)] to-transparent" />
           <section id="team" className="scroll-mt-20 py-24 bg-[#0a0a0a]">

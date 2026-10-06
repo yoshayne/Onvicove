@@ -16,7 +16,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
 
-export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -38,6 +38,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   return (
     <div className="min-h-screen bg-white text-[#111111] font-['Inter']">
@@ -71,6 +72,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       </nav>
 
       {/* Hero */}
+      {sec('hero') && (
       <section className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
         <div>
           <h1 className="text-4xl md:text-6xl font-light leading-tight mb-6">{theme.companyName}</h1>
@@ -80,6 +82,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <img src={heroImage} alt="" className="w-full h-full object-cover" />
         </div>
       </section>
+      )}
 
       {/* Products */}
       {showProducts && (

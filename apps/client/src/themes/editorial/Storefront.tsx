@@ -17,7 +17,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
 
-export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -40,6 +40,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   return (
     <div className="min-h-screen bg-white text-[#111111] font-['Inter']">
@@ -74,6 +75,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       </nav>
 
       {/* Hero */}
+      {sec('hero') && (
       <section className="relative h-[80vh] min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-[#1a1a1a]">
         <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-[#1a1a1a]/10" />
@@ -84,6 +86,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <p className="text-white/80 text-lg md:text-xl tracking-wide">{tagline}</p>
         </div>
       </section>
+      )}
 
       {/* Products */}
       {showProducts && (

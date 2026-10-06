@@ -16,7 +16,7 @@ import type { GallerySectionData } from '../shared/Gallery';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 
-export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -43,6 +43,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book'  || theme.mode === 'both') && services.length > 0;
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   const navLinks = [
     showProducts && { href: '#work', label: 'Work' },
@@ -119,6 +120,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── Hero ────────────────────────────────────────────────────── */}
+      {sec('hero') && (
       <section className="relative min-h-[600px] overflow-hidden bg-[#0d0d0d] pt-16">
         <img
           src={heroImage}
@@ -160,6 +162,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <span className="text-[9px] uppercase tracking-[0.3em] rotate-90 origin-center translate-y-3">Scroll</span>
         </div>
       </section>
+      )}
 
       {/* ── Products / Work ─────────────────────────────────────────── */}
       {showProducts && (
@@ -257,6 +260,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── About / Team ────────────────────────────────────────────── */}
+      {sec('about') && (
       <section id="about" className="scroll-mt-16 py-24 px-6 max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           <div>
@@ -293,6 +297,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           )}
         </div>
       </section>
+      )}
 
       {/* ── Contact / Footer ────────────────────────────────────────── */}
       <footer id="contact" className="scroll-mt-16 bg-[#080808] border-t border-white/5 py-20 px-6">

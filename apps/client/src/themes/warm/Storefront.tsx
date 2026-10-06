@@ -17,7 +17,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import type { GallerySectionData } from '../shared/Gallery';
 
-export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -39,6 +39,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   return (
     <div className="min-h-screen bg-[#fdf8f3] text-[#3d2314] font-['Inter']">
@@ -73,6 +74,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       </nav>
 
       {/* Hero - split layout */}
+      {sec('hero') && (
       <section className="bg-[#f5e8d8]">
         <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 items-center min-h-[70vh]">
           <div className="py-16 md:py-0 md:pr-12">
@@ -86,6 +88,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           </div>
         </div>
       </section>
+      )}
 
       {/* Products */}
       {showProducts && (

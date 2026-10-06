@@ -32,7 +32,7 @@ const G = {
 const serif = 'Playfair Display, Georgia, serif';
 const SIDEBAR_W = 72;
 
-export default function Storefront({ theme, products, services, staff, galleries = [] }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
@@ -67,6 +67,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const brand = theme.brandColor || G.gold;
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
 
   const featuredProduct = displayProducts.find(p => p.isFeatured) ?? displayProducts[0];
   const restProducts = displayProducts.filter(p => p.id !== featuredProduct?.id);
@@ -195,6 +196,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       <main style={{ flex: 1, marginLeft: isMobile ? 0 : SIDEBAR_W, paddingTop: isMobile ? 56 : 0, minWidth: 0 }}>
 
         {/* ── HERO: Split screen ── */}
+        {sec('hero') && (
         <section style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
           {/* Left: text panel */}
           <div style={{
@@ -300,6 +302,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             </div>
           )}
         </section>
+        )}
 
         {/* ── PRODUCTS ── */}
         {showProducts && (
