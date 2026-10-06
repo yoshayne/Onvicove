@@ -9,6 +9,7 @@ const app = new Hono();
 // GET /api/invite/:token — validate token and return tenant name (no auth required)
 app.get('/:token', async (c) => {
   const token = c.req.param('token');
+  console.log('[invite] GET /:token — token:', token?.slice(0, 8), '…');
 
   const rows = await db`
     SELECT ti.id, ti.invite_email, ti.expires_at, ti.claimed_at,
@@ -20,11 +21,19 @@ app.get('/:token', async (c) => {
   `;
 
   const invite = rows[0];
-  if (!invite) return c.json({ error: 'Invite not found or already used' }, 404);
-  if (invite.claimed_at) return c.json({ error: 'This invite has already been claimed' }, 409);
+  if (!invite) {
+    console.log('[invite] GET /:token — not found');
+    return c.json({ error: 'Invite not found or already used' }, 404);
+  }
+  if (invite.claimed_at) {
+    console.log('[invite] GET /:token — already claimed at', invite.claimed_at);
+    return c.json({ error: 'This invite has already been claimed' }, 409);
+  }
   if (new Date(invite.expires_at as string) < new Date()) {
+    console.log('[invite] GET /:token — expired at', invite.expires_at);
     return c.json({ error: 'This invite link has expired. Ask your site builder to resend.' }, 410);
   }
+  console.log('[invite] GET /:token — valid, tenant:', invite.company_name);
 
   return c.json({
     invite_email: invite.invite_email,
@@ -45,6 +54,7 @@ app.post('/claim', requireAuth, async (c) => {
 
   const { token } = parsed.data;
   const clerkUserId = c.get('clerkUserId') as string;
+  console.log('[invite] POST /claim — clerkUserId:', clerkUserId, '| token:', token?.slice(0, 8), '…');
 
   const rows = await db`
     SELECT ti.id, ti.invite_email, ti.expires_at, ti.claimed_at,
@@ -56,9 +66,16 @@ app.post('/claim', requireAuth, async (c) => {
   `;
 
   const invite = rows[0];
-  if (!invite) return c.json({ error: 'Invite not found' }, 404);
-  if (invite.claimed_at) return c.json({ error: 'This invite has already been claimed' }, 409);
+  if (!invite) {
+    console.log('[invite] POST /claim — invite not found for token');
+    return c.json({ error: 'Invite not found' }, 404);
+  }
+  if (invite.claimed_at) {
+    console.log('[invite] POST /claim — already claimed');
+    return c.json({ error: 'This invite has already been claimed' }, 409);
+  }
   if (new Date(invite.expires_at as string) < new Date()) {
+    console.log('[invite] POST /claim — expired');
     return c.json({ error: 'This invite link has expired' }, 410);
   }
 
@@ -67,8 +84,10 @@ app.post('/claim', requireAuth, async (c) => {
     SELECT id FROM tenants WHERE clerk_user_id = ${clerkUserId} AND id != ${invite.tenant_id} LIMIT 1
   `;
   if (existing[0]) {
+    console.log('[invite] POST /claim — user already owns a different tenant:', existing[0].id);
     return c.json({ error: 'Your account is already linked to a different site' }, 409);
   }
+  console.log('[invite] POST /claim — proceeding to bind clerkUserId to tenant:', invite.tenant_id);
 
   // Claim: bind the Clerk user to the tenant, mark invite used
   await db`

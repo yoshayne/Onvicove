@@ -28,26 +28,45 @@ export default function ClaimPage() {
   // Stash token in sessionStorage so the onboarding wizard can intercept
   useEffect(() => {
     if (!token) return;
+    console.log('[ClaimPage] token from URL:', token);
     try { sessionStorage.setItem('pending_claim_token', token); } catch { /* ignore */ }
+    console.log('[ClaimPage] fetching invite info…');
     apiGet<InviteInfo>(`/invite/${token}`)
-      .then(setInvite)
-      .catch((err) => setInviteError(err instanceof Error ? err.message : 'Invalid invite link'));
+      .then((info) => {
+        console.log('[ClaimPage] invite loaded:', info);
+        setInvite(info);
+      })
+      .catch((err) => {
+        console.error('[ClaimPage] invite fetch error:', err);
+        setInviteError(err instanceof Error ? err.message : 'Invalid invite link');
+      });
   }, [token]);
+
+  // Log auth state changes for debugging
+  useEffect(() => {
+    console.log('[ClaimPage] auth state — isLoaded:', isLoaded, '| isSignedIn:', isSignedIn);
+  }, [isLoaded, isSignedIn]);
 
   // Auto-claim only after the user explicitly confirms they want to use this account
   useEffect(() => {
+    console.log('[ClaimPage] claim effect — isLoaded:', isLoaded, '| isSignedIn:', isSignedIn,
+      '| hasInvite:', !!invite, '| confirmed:', confirmed, '| claimed:', claimed);
     if (!isLoaded || !isSignedIn || !invite || !token || claimed || !confirmed) return;
 
     async function claim() {
       setClaiming(true);
       setClaimError('');
+      console.log('[ClaimPage] posting claim for token:', token);
       try {
         const clerkToken = await getToken();
+        console.log('[ClaimPage] got clerk token, calling /api/invite/claim…');
         await apiPost('/invite/claim', { token }, () => Promise.resolve(clerkToken));
+        console.log('[ClaimPage] claim succeeded');
         try { sessionStorage.removeItem('pending_claim_token'); } catch { /* ignore */ }
         setClaimed(true);
         setTimeout(() => navigate('/dashboard'), 1500);
       } catch (err) {
+        console.error('[ClaimPage] claim failed:', err);
         setClaimError(err instanceof Error ? err.message : 'Could not claim site');
         setClaiming(false);
         setConfirmed(false);
