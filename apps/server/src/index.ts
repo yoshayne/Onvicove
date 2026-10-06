@@ -10,6 +10,7 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { join } from 'path';
 import { db, redis } from './db/client';
 import { domainCache } from './services/domainCache';
+import { getSignedFileUrl } from './services/storage';
 
 // dist/index.js -> apps/server/dist -> repo root is 3 levels up
 const CLIENT_DIST = join(__dirname, '../../../dist/client');
@@ -146,11 +147,65 @@ app.use('/*', async (c, next) => {
 // The Vite build outputs to dist/client relative to repo root
 app.use('/*', serveStatic({ root: CLIENT_DIST }));
 
+const NON_STORE_ROUTES = new Set([
+  '', 'guide', 'sign-in', 'sign-up', 'onboarding', 'dashboard', 'admin', 'claim', 'pay', 'api', 'assets',
+]);
+
+function escapeAttr(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Crawlers don't run JS, so storefront share previews (og:image = hero image) must be in the HTML.
+async function injectStorefrontMeta(html: string, path: string, origin: string): Promise<string> {
+  const segments = path.split('/').filter(Boolean);
+  const slug = segments[0] === 'store' ? segments[1] : segments[0];
+  if (!slug || NON_STORE_ROUTES.has(slug)) return html;
+
+  const rows = await db`
+    SELECT company_name, tagline, hero_image_key
+    FROM tenants WHERE slug = ${slug} AND is_active = true LIMIT 1
+  `;
+  const t = rows[0] as { company_name: string; tagline: string | null; hero_image_key: string | null } | undefined;
+  if (!t) return html;
+
+  const image = t.hero_image_key ? await getSignedFileUrl(t.hero_image_key) : '';
+  const title = escapeAttr(t.company_name);
+  const description = escapeAttr(t.tagline || `Shop ${t.company_name}`);
+  const url = escapeAttr(`${origin}${path}`);
+  const tags = [
+    `<title>${title}</title>`,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:site_name" content="${title}" />`,
+    `<meta property="og:title" content="${title}" />`,
+    `<meta property="og:description" content="${description}" />`,
+    `<meta property="og:url" content="${url}" />`,
+    image && `<meta property="og:image" content="${escapeAttr(image)}" />`,
+    `<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}" />`,
+    `<meta name="twitter:title" content="${title}" />`,
+    `<meta name="twitter:description" content="${description}" />`,
+    image && `<meta name="twitter:image" content="${escapeAttr(image)}" />`,
+  ].filter(Boolean).join('\n    ');
+
+  return html
+    .replace(/<title>[\s\S]*?<\/title>\s*/, '')
+    .replace(/<meta (?:property="og:|name="twitter:)[^>]*>\s*/g, '')
+    .replace('</head>', `    ${tags}\n  </head>`);
+}
+
 // SPA fallback — serve index.html for all unmatched routes
 app.get('/*', async (c) => {
-  return c.html(await import('fs').then(fs =>
+  const html = await import('fs').then(fs =>
     fs.promises.readFile(join(CLIENT_DIST, 'index.html'), 'utf-8')
-  ));
+  );
+  try {
+    const reqUrl = new URL(c.req.url);
+    const proto = c.req.header('x-forwarded-proto') || reqUrl.protocol.replace(':', '');
+    const host = c.req.header('host') || reqUrl.host;
+    return c.html(await injectStorefrontMeta(html, reqUrl.pathname, `${proto}://${host}`));
+  } catch (err) {
+    console.error('Storefront meta injection failed:', err);
+    return c.html(html);
+  }
 });
 
 const port = parseInt(process.env.PORT || '3000');
