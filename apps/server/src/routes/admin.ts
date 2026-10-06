@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { getBaseUrl } from '../lib/baseUrl';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireAdmin } from '../middleware/admin';
@@ -138,7 +139,7 @@ app.patch('/tenants/:id', async (c) => {
 
   await logAdminAction(c, 'update_tenant', 'tenant', id, updates);
 
-  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  const baseUrl = getBaseUrl();
   const ownerEmail = before.email as string | null;
   if (ownerEmail) {
     const toName = `${before.first_name ?? ''} ${before.last_name ?? ''}`.trim() || ownerEmail;
@@ -561,7 +562,7 @@ app.post('/tenants/:id/invite', async (c) => {
     VALUES (${id}, ${invite_email}, ${token}, ${expiresAt})
   `;
 
-  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  const baseUrl = getBaseUrl();
   const claimUrl = `${baseUrl}/claim/${token}`;
   const adminEmailAddr = (c as unknown as { get: (k: string) => unknown }).get('adminEmail') as string;
 

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { sendTenantWelcome, sendAdminInviteClaimed } from '../services/email';
+import { getBaseUrl } from '../lib/baseUrl';
 
 const app = new Hono();
 
@@ -109,7 +110,7 @@ app.post('/claim', requireAuth, async (c) => {
   ]);
   const tenant = tenantRows[0];
   const user = userRows[0];
-  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  const baseUrl = getBaseUrl();
 
   if (tenant && user?.email) {
     const toName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || (user.email as string);

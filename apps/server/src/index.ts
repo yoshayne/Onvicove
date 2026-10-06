@@ -92,6 +92,19 @@ app.route('/api/domain-purchases', domainPurchaseRoutes);
 app.route('/api/invite', inviteRoutes);
 app.route('/api/page-sections', pageSectionRoutes);
 
+// Normalize double-slash paths (e.g. //claim/TOKEN → /claim/TOKEN)
+// Happens when CLIENT_URL has a trailing slash and gets concatenated with /path
+app.use('/*', async (c, next) => {
+  const path = new URL(c.req.url).pathname;
+  if (path.startsWith('//')) {
+    const fixed = path.replace(/^\/+/, '/');
+    const newUrl = new URL(c.req.url);
+    newUrl.pathname = fixed;
+    return c.redirect(newUrl.toString(), 301);
+  }
+  return next();
+});
+
 // Custom domain middleware — if Host matches a verified tenant domain,
 // inject the tenant slug so the SPA can resolve the storefront.
 // Must come before the static file handler.

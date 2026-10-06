@@ -6,6 +6,7 @@ import { requireTenant } from '../middleware/tenant';
 import { enrichWithUrls } from '../services/storage';
 import { generateUniqueSlug, isSlugAvailable } from '../lib/slugify';
 import { sendTenantWelcome, sendAdminNewSignup } from '../services/email';
+import { getBaseUrl } from '../lib/baseUrl';
 
 const app = new Hono();
 
@@ -83,7 +84,7 @@ app.post('/create-or-get', requireAuth, async (c) => {
   const userRows = await db`SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
   const user = userRows[0];
   if (user?.email) {
-    const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+    const baseUrl = getBaseUrl();
     const toName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || (user.email as string);
     sendTenantWelcome({
       toEmail: user.email as string,
