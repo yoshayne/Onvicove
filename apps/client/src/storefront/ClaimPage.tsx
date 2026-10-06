@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth, useUser, useClerk } from '@clerk/clerk-react';
 import { apiGet, apiPost } from '../lib/api';
 import Spinner from '../components/shared/Spinner';
 
@@ -14,6 +14,8 @@ interface InviteInfo {
 export default function ClaimPage() {
   const { token } = useParams<{ token: string }>();
   const { isSignedIn, getToken, isLoaded } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
   const navigate = useNavigate();
 
   const [invite, setInvite] = useState<InviteInfo | null>(null);
@@ -21,8 +23,9 @@ export default function ClaimPage() {
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState('');
   const [claimed, setClaimed] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
-  // Validate the token on load and stash it so the onboarding wizard can detect a pending claim
+  // Stash token in sessionStorage so the onboarding wizard can intercept
   useEffect(() => {
     if (!token) return;
     try { sessionStorage.setItem('pending_claim_token', token); } catch { /* ignore */ }
@@ -31,9 +34,9 @@ export default function ClaimPage() {
       .catch((err) => setInviteError(err instanceof Error ? err.message : 'Invalid invite link'));
   }, [token]);
 
-  // Once signed in and invite is valid, auto-claim
+  // Auto-claim only after the user explicitly confirms they want to use this account
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !invite || !token || claimed) return;
+    if (!isLoaded || !isSignedIn || !invite || !token || claimed || !confirmed) return;
 
     async function claim() {
       setClaiming(true);
@@ -47,13 +50,23 @@ export default function ClaimPage() {
       } catch (err) {
         setClaimError(err instanceof Error ? err.message : 'Could not claim site');
         setClaiming(false);
+        setConfirmed(false);
       }
     }
 
     claim();
-  }, [isLoaded, isSignedIn, invite, token, claimed, getToken, navigate]);
+  }, [isLoaded, isSignedIn, invite, token, claimed, confirmed, getToken, navigate]);
 
-  // Invalid or expired token
+  // ── Loading states ─────────────────────────────────────────────────────────
+
+  if (!invite && !inviteError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
   if (inviteError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
@@ -67,16 +80,6 @@ export default function ClaimPage() {
     );
   }
 
-  // Loading invite info
-  if (!invite) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  // Claimed successfully
   if (claimed) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
@@ -84,14 +87,13 @@ export default function ClaimPage() {
           <div className="text-4xl mb-4">🎉</div>
           <h1 className="text-xl font-bold text-slate-900 mb-2">You're in!</h1>
           <p className="text-slate-500 text-sm">
-            <strong>{invite.company_name}</strong> is now yours. Taking you to your dashboard…
+            <strong>{invite!.company_name}</strong> is now yours. Taking you to your dashboard…
           </p>
         </div>
       </div>
     );
   }
 
-  // Claiming in progress
   if (claiming) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
@@ -103,73 +105,86 @@ export default function ClaimPage() {
     );
   }
 
-  // Not signed in yet — send to sign-in (which handles sign-up too) with return URL
-  if (!isSignedIn) {
+  // ── Not signed in ──────────────────────────────────────────────────────────
+
+  if (!isLoaded || !isSignedIn) {
     const returnTo = `/claim/${token}`;
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-        <div className="max-w-md w-full flex flex-col gap-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-slate-900 mb-4">
-              <span className="text-2xl">🏪</span>
-            </div>
-            <h1 className="text-xl font-bold text-slate-900">
-              Your <span className="text-slate-600">{invite.company_name}</span> site is ready
-            </h1>
-            <p className="mt-3 text-slate-500 text-sm leading-relaxed">
-              We've already built your store — you just need to log in to access it.
-              No setup required.
-            </p>
-            {invite.invite_email && (
-              <p className="mt-3 text-xs text-slate-400">
-                This invite was sent to <strong>{invite.invite_email}</strong>.
-              </p>
-            )}
-
-            <Link
-              to="/sign-in"
-              state={{ from: returnTo, isInviteClaim: true }}
-              className="mt-6 block w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white text-center hover:bg-slate-700 transition"
-            >
-              Log in to access my site →
-            </Link>
-            <p className="mt-3 text-xs text-slate-400">
-              New to Shop Suite Direct? You can create an account on the next screen.
-            </p>
+        <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm text-center">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-slate-900 mb-4">
+            <span className="text-2xl">🏪</span>
           </div>
-
-          {claimError && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700 text-center">
-              {claimError}
-            </div>
+          <h1 className="text-xl font-bold text-slate-900">
+            Your <span className="text-slate-600">{invite!.company_name}</span> site is ready
+          </h1>
+          <p className="mt-3 text-slate-500 text-sm leading-relaxed">
+            Your store has already been built — log in to take ownership. No setup required.
+          </p>
+          {invite!.invite_email && (
+            <p className="mt-3 text-xs text-slate-400">
+              This invite was sent to <strong>{invite!.invite_email}</strong>.
+            </p>
           )}
+          <Link
+            to="/sign-in"
+            state={{ from: returnTo, isInviteClaim: true }}
+            className="mt-6 block w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white text-center hover:bg-slate-700 transition"
+          >
+            Log in to access my site →
+          </Link>
+          <p className="mt-3 text-xs text-slate-400">
+            New to Shop Suite Direct? You can create an account on the next screen.
+          </p>
         </div>
       </div>
     );
   }
 
-  // Signed in — claim is in progress or failed
+  // ── Already signed in — show confirmation so wrong accounts can't silently claim ──
+
+  const signedInEmail = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress;
+  const isCorrectEmail = invite!.invite_email && signedInEmail?.toLowerCase() === invite!.invite_email.toLowerCase();
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-      <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        {claimError ? (
-          <>
-            <div className="text-4xl mb-4">⚠️</div>
-            <h1 className="text-xl font-bold text-slate-900 mb-2">Couldn't claim site</h1>
-            <p className="text-slate-500 text-sm">{claimError}</p>
-            <button
-              onClick={() => { setClaimError(''); setClaiming(false); }}
-              className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-            >
-              Try again
-            </button>
-          </>
-        ) : (
-          <>
-            <Spinner size="lg" />
-            <p className="mt-4 text-slate-500 text-sm">Setting up your site…</p>
-          </>
-        )}
+      <div className="max-w-md w-full flex flex-col gap-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm text-center">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-slate-900 mb-4">
+            <span className="text-2xl">🏪</span>
+          </div>
+          <h1 className="text-xl font-bold text-slate-900">
+            Claim <span className="text-slate-600">{invite!.company_name}</span>
+          </h1>
+
+          <div className="mt-4 rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-600">
+            Signed in as <strong>{signedInEmail ?? 'your account'}</strong>
+          </div>
+
+          {!isCorrectEmail && invite!.invite_email && (
+            <p className="mt-3 text-xs text-amber-600 font-medium">
+              This invite was sent to <strong>{invite!.invite_email}</strong>. Make sure you're using the right account.
+            </p>
+          )}
+
+          {claimError && (
+            <p className="mt-3 text-sm text-red-600">{claimError}</p>
+          )}
+
+          <button
+            onClick={() => setConfirmed(true)}
+            className="mt-5 block w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white text-center hover:bg-slate-700 transition"
+          >
+            Yes, claim this site for my account →
+          </button>
+
+          <button
+            onClick={() => signOut(() => {})}
+            className="mt-2 block w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 text-center hover:bg-slate-50 transition"
+          >
+            Sign out and use a different account
+          </button>
+        </div>
       </div>
     </div>
   );
