@@ -17,6 +17,7 @@ export interface Tenant {
   hero_image_key: string | null;
   hero_image_url?: string;
   favicon_key: string | null;
+  favicon_url?: string;
   mode: TenantMode;
   theme_id: ThemeId;
   brand_color: string | null;
