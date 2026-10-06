@@ -258,7 +258,6 @@ export default function Storefront({
         onClose={closeQuickView}
         onAddToCart={(product, variant) => { addToCart(product, variant); closeQuickView(); }}
         currency={theme.currency}
-          slug={theme.slug}
         paymentsEnabled={theme.paymentsEnabled}
       />
 
@@ -312,7 +311,6 @@ export default function Storefront({
         amountCents={bookingAmountCents}
         stripeAccountId={theme.stripeAccountId}
         currency={theme.currency}
-          slug={theme.slug}
         onClose={closeBooking}
         onDismiss={dismissBookingStatus}
         onPaymentSuccess={confirmBookingPayment}
