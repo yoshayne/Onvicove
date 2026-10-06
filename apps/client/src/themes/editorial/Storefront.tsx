@@ -15,6 +15,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
+import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -44,9 +45,10 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const ord = makeSectionOrder(visibleSections);
 
   return (
-    <div className="min-h-screen bg-white text-[#111111] font-['Inter']">
+    <div className="flex flex-col min-h-screen bg-white text-[#111111] font-['Inter']">
       {/* Nav */}
       <nav className="sticky top-0 z-40 bg-[#1a1a1a] text-white">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -79,7 +81,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero */}
       {sec('hero') && (
-      <section className="relative h-[80vh] min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-[#1a1a1a]">
+      <section className="relative h-[80vh] min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-[#1a1a1a]" style={ord('hero')}>
         <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-[#1a1a1a]/10" />
         <div className="relative z-10 px-6 max-w-3xl">
@@ -96,7 +98,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Products */}
       {showProducts && sec('featured-products') && (
-        <section id="products" className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
+        <section id="products" className="scroll-mt-20 max-w-7xl mx-auto w-full px-6 py-20" style={ord('featured-products')}>
           <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Shop the Collection</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {displayProducts.map((product) => (
@@ -125,7 +127,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Services */}
       {showServices && sec('services') && (
-        <section id="services" className="scroll-mt-20 bg-[#f5f5f5] py-20">
+        <section id="services" className="scroll-mt-20 bg-[#f5f5f5] py-20" style={ord('services')}>
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Reservations</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -155,31 +157,34 @@ export default function Storefront({ theme, products, services, staff, galleries
                 </div>
               ))}
             </div>
-
-            {sec('staff') && staff.length > 0 && (
-              <div className="mt-16 flex flex-wrap justify-center gap-12">
-                {staff.map((member) => (
-                  <div key={member.id} className="text-center max-w-xs">
-                    {member.avatarUrl && (
-                      <img
-                        src={member.avatarUrl}
-                        alt={member.name}
-                        className="w-24 h-24 rounded-full object-cover mx-auto mb-4"
-                      />
-                    )}
-                    <h4 className="font-['Playfair_Display'] text-lg">{member.name}</h4>
-                    {member.bio && <p className="text-sm text-[#111111]/60 mt-2">{member.bio}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </section>
       )}
 
+      {/* ── Staff ── */}
+      {sec('staff') && staff.length > 0 && (
+      <section className="max-w-7xl mx-auto w-full px-6 py-20" style={ord('staff')}>
+        <div className="flex flex-wrap justify-center gap-12">
+          {staff.map((member) => (
+            <div key={member.id} className="text-center max-w-xs">
+              {member.avatarUrl && (
+                <img
+                  src={member.avatarUrl}
+                  alt={member.name}
+                  className="w-24 h-24 rounded-full object-cover mx-auto mb-4"
+                />
+              )}
+              <h4 className="font-['Playfair_Display'] text-lg">{member.name}</h4>
+              {member.bio && <p className="text-sm text-[#111111]/60 mt-2">{member.bio}</p>}
+            </div>
+          ))}
+        </div>
+      </section>
+      )}
+
       {/* Footer */}
       {sec('contact') && (
-      <footer id="footer" className="scroll-mt-20 bg-[#1a1a1a] text-white py-12">
+      <footer id="footer" className="scroll-mt-20 bg-[#1a1a1a] text-white py-12" style={ord('contact')}>
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="font-['Playfair_Display'] text-2xl uppercase tracking-wide mb-2">{theme.companyName}</p>
           {theme.city && <p className="text-white/60 text-sm">{theme.city}</p>}
@@ -280,17 +285,17 @@ export default function Storefront({ theme, products, services, staff, galleries
       />
       {/* ── Testimonials ── */}
       {sec('testimonials') && (
-        <TestimonialsBlock testimonials={theme.testimonials} />
+        <div style={ord('testimonials')}><TestimonialsBlock testimonials={theme.testimonials} /></div>
       )}
 
       {/* ── FAQ ── */}
       {sec('faq') && (
-        <FaqBlock faqs={theme.faqs} />
+        <div style={ord('faq')}><FaqBlock faqs={theme.faqs} /></div>
       )}
 
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
-        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
+        <div key={g.id} style={ord(g.id)}><Gallery layout={g.layout} images={g.images} title={g.title} /></div>
       ))}
     </div>
   );

@@ -12,6 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
+import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -41,11 +42,12 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const ord = makeSectionOrder(visibleSections);
 
   const glass = { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0d0d1a', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#0d0d1a', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
       <style>{`
         @keyframes aurora-shift {
           0% { background-position: 0% 50%; }
@@ -81,7 +83,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero */}
       {sec('hero') && (
-      <section className="aurora-bg" style={{ position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+      <section className="aurora-bg" style={{ position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'center', overflow: 'hidden', ...ord('hero') }}>
         <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.15, mixBlendMode: 'screen' }} />
         <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '80px 24px', display: 'grid', gridTemplateColumns: showServices ? '1fr 1fr' : '1fr', gap: 48, alignItems: 'center' }}>
           <div>
@@ -124,7 +126,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Products */}
       {showProducts && sec('featured-products') && (
-        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 24px' }}>
+        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', width: '100%', padding: '80px 24px', ...ord('featured-products') }}>
           <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Ritual Essentials</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
             {displayProducts.map((product) => (
@@ -153,7 +155,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Services full list */}
       {showServices && sec('services') && (
-        <section id="services" style={{ padding: '80px 24px', background: 'rgba(255,255,255,0.02)' }}>
+        <section id="services" style={{ padding: '80px 24px', background: 'rgba(255,255,255,0.02)', ...ord('services') }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Healing Sessions</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
@@ -179,23 +181,27 @@ export default function Storefront({ theme, products, services, staff, galleries
                 </div>
               ))}
             </div>
-            {sec('staff') && staff.length > 0 && (
-              <div style={{ marginTop: 64, display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap' }}>
-                {staff.map((member) => (
-                  <div key={member.id} style={{ textAlign: 'center' }}>
-                    {member.avatarUrl && <img src={member.avatarUrl} alt={member.name} style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', margin: '0 auto 16px', border: '2px solid rgba(167,139,250,0.4)' }} />}
-                    <p style={{ fontSize: 15, fontWeight: 600 }}>{member.name}</p>
-                    {member.bio && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{member.bio}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </section>
       )}
 
+      {/* ── Staff ── */}
+      {sec('staff') && staff.length > 0 && (
+      <section style={{ maxWidth: 1280, margin: '0 auto', width: '100%', padding: '80px 24px', ...ord('staff') }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap' }}>
+          {staff.map((member) => (
+            <div key={member.id} style={{ textAlign: 'center' }}>
+              {member.avatarUrl && <img src={member.avatarUrl} alt={member.name} style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', margin: '0 auto 16px', border: '2px solid rgba(167,139,250,0.4)' }} />}
+              <p style={{ fontSize: 15, fontWeight: 600 }}>{member.name}</p>
+              {member.bio && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{member.bio}</p>}
+            </div>
+          ))}
+        </div>
+      </section>
+      )}
+
       {/* Badges */}
-      <div style={{ padding: '40px 24px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ padding: '40px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', ...ord('services') }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap' }}>
           {[{ icon: Leaf, text: 'Natural Ingredients', sub: 'Clean & conscious' },
             { icon: Heart, text: 'Holistic Approach', sub: 'Mind, body, soul' },
@@ -214,7 +220,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Footer */}
       {sec('contact') && (
-      <footer id="footer" style={{ padding: '48px 24px', textAlign: 'center', borderTop: '1px solid rgba(167,139,250,0.1)' }}>
+      <footer id="footer" style={{ padding: '48px 24px', textAlign: 'center', borderTop: '1px solid rgba(167,139,250,0.1)', ...ord('contact') }}>
         <p style={{ fontSize: 18, fontWeight: 700, background: 'linear-gradient(90deg, #a78bfa, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 8 }}>{theme.companyName}</p>
         {theme.city && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{theme.city}</p>}
         <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} className="mt-6 flex justify-center gap-2">
@@ -251,17 +257,17 @@ export default function Storefront({ theme, products, services, staff, galleries
       />
       {/* ── Testimonials ── */}
       {sec('testimonials') && (
-        <TestimonialsBlock testimonials={theme.testimonials} />
+        <div style={ord('testimonials')}><TestimonialsBlock testimonials={theme.testimonials} /></div>
       )}
 
       {/* ── FAQ ── */}
       {sec('faq') && (
-        <FaqBlock faqs={theme.faqs} />
+        <div style={ord('faq')}><FaqBlock faqs={theme.faqs} /></div>
       )}
 
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
-        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
+        <div key={g.id} style={ord(g.id)}><Gallery layout={g.layout} images={g.images} title={g.title} /></div>
       ))}
     </div>
   );

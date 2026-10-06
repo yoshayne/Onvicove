@@ -12,6 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
+import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -41,9 +42,10 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const ord = makeSectionOrder(visibleSections);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050510', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#050510', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
       <style>{`
         .neon-pink { color: #ff2d9b; text-shadow: 0 0 10px #ff2d9b, 0 0 30px #ff2d9b; }
         .neon-cyan { color: #00ffff; text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff; }
@@ -79,7 +81,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero */}
       {sec('hero') && (
-      <section style={{ position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+      <section style={{ position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'center', overflow: 'hidden', ...ord('hero') }}>
         <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.25, mixBlendMode: 'screen' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(5,5,16,0.95) 50%, rgba(5,5,16,0.4) 100%)' }} />
         <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '80px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
@@ -125,7 +127,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Products */}
       {showProducts && sec('featured-products') && (
-        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
+        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', width: '100%', ...ord('featured-products') }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
             <h2 style={{ fontWeight: 800, fontSize: 24, letterSpacing: '-0.01em' }}>
               <span className="neon-pink">NEW</span> DROPS
@@ -164,7 +166,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Services */}
       {showServices && sec('services') && (
-        <section id="services" style={{ padding: '64px 24px', background: 'rgba(255,45,155,0.03)', borderTop: '1px solid rgba(255,45,155,0.15)' }}>
+        <section id="services" style={{ padding: '64px 24px', background: 'rgba(255,45,155,0.03)', borderTop: '1px solid rgba(255,45,155,0.15)', ...ord('services') }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <h2 style={{ fontWeight: 800, fontSize: 24, letterSpacing: '-0.01em', marginBottom: 32 }}>
               <span className="neon-cyan">EXCLUSIVE</span> ACCESS
@@ -197,7 +199,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* Badges */}
-      <div style={{ padding: '32px 24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ padding: '32px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', ...ord('services') }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap' }}>
           {[{ icon: Truck, text: 'Free Shipping', sub: 'Orders ¥10,000+' },
             { icon: Zap, text: 'Fast Delivery', sub: 'Tokyo same-day' },
@@ -216,7 +218,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Footer */}
       {sec('contact') && (
-      <footer id="footer" style={{ padding: '40px 24px', textAlign: 'center', borderTop: '1px solid rgba(255,45,155,0.2)' }}>
+      <footer id="footer" style={{ padding: '40px 24px', textAlign: 'center', borderTop: '1px solid rgba(255,45,155,0.2)', ...ord('contact') }}>
         <p style={{ fontWeight: 800, fontSize: 16, letterSpacing: '0.15em', background: 'linear-gradient(90deg, #ff2d9b, #00ffff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 8 }}>{theme.companyName.toUpperCase()}</p>
         {theme.city && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{theme.city}</p>}
         <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} className="mt-6 flex justify-center gap-2">
@@ -237,17 +239,17 @@ export default function Storefront({ theme, products, services, staff, galleries
       <CustomOrderModal isOpen={customOrderOpen} onClose={() => setCustomOrderOpen(false)} companyName={theme.companyName} status={customOrderStatus} onSubmit={submitCustomOrder} />
       {/* ── Testimonials ── */}
       {sec('testimonials') && (
-        <TestimonialsBlock testimonials={theme.testimonials} />
+        <div style={ord('testimonials')}><TestimonialsBlock testimonials={theme.testimonials} /></div>
       )}
 
       {/* ── FAQ ── */}
       {sec('faq') && (
-        <FaqBlock faqs={theme.faqs} />
+        <div style={ord('faq')}><FaqBlock faqs={theme.faqs} /></div>
       )}
 
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
-        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
+        <div key={g.id} style={ord(g.id)}><Gallery layout={g.layout} images={g.images} title={g.title} /></div>
       ))}
     </div>
   );

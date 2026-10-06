@@ -14,6 +14,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
+import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -42,9 +43,10 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const ord = makeSectionOrder(visibleSections);
 
   return (
-    <div className="min-h-screen bg-white text-[#111111] font-['Inter']">
+    <div className="flex flex-col min-h-screen bg-white text-[#111111] font-['Inter']">
       {/* Nav */}
       <nav className="sticky top-0 z-40 bg-white border-b border-[#111111]/10">
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
@@ -76,7 +78,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero */}
       {sec('hero') && (
-      <section className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+      <section className="max-w-7xl mx-auto w-full px-6 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center" style={ord('hero')}>
         <div>
           <h1 className="text-4xl md:text-6xl font-light leading-tight mb-6">{theme.companyName}</h1>
           <p className="text-[#111111]/60 text-lg font-light">{tagline}</p>
@@ -92,7 +94,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Products */}
       {showProducts && sec('featured-products') && (
-        <section id="products" className="scroll-mt-20 max-w-7xl mx-auto px-6 py-20">
+        <section id="products" className="scroll-mt-20 max-w-7xl mx-auto w-full px-6 py-20" style={ord('featured-products')}>
           <h2 className="text-2xl md:text-3xl font-bold mb-12">Shop</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
             {displayProducts.map((product) => (
@@ -121,7 +123,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Services */}
       {showServices && sec('services') && (
-        <section id="services" className="scroll-mt-20 bg-[#f8f8f8] py-20">
+        <section id="services" className="scroll-mt-20 bg-[#f8f8f8] py-20" style={ord('services')}>
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="text-2xl md:text-3xl font-bold mb-12">Book a Service</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -151,31 +153,34 @@ export default function Storefront({ theme, products, services, staff, galleries
                 </div>
               ))}
             </div>
-
-            {sec('staff') && staff.length > 0 && (
-              <div className="mt-16 flex flex-wrap justify-center gap-12">
-                {staff.map((member) => (
-                  <div key={member.id} className="text-center max-w-xs">
-                    {member.avatarUrl && (
-                      <img
-                        src={member.avatarUrl}
-                        alt={member.name}
-                        className="w-24 h-24 rounded-full object-cover mx-auto mb-4"
-                      />
-                    )}
-                    <h4 className="text-lg font-medium">{member.name}</h4>
-                    {member.bio && <p className="text-sm text-[#111111]/60 font-light mt-2">{member.bio}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </section>
       )}
 
+      {/* ── Staff ── */}
+      {sec('staff') && staff.length > 0 && (
+      <section className="max-w-7xl mx-auto w-full px-6 py-20" style={ord('staff')}>
+        <div className="flex flex-wrap justify-center gap-12">
+          {staff.map((member) => (
+            <div key={member.id} className="text-center max-w-xs">
+              {member.avatarUrl && (
+                <img
+                  src={member.avatarUrl}
+                  alt={member.name}
+                  className="w-24 h-24 rounded-full object-cover mx-auto mb-4"
+                />
+              )}
+              <h4 className="text-lg font-medium">{member.name}</h4>
+              {member.bio && <p className="text-sm text-[#111111]/60 font-light mt-2">{member.bio}</p>}
+            </div>
+          ))}
+        </div>
+      </section>
+      )}
+
       {/* Footer */}
       {sec('contact') && (
-      <footer id="footer" className="scroll-mt-20 bg-white border-t border-[#111111]/10 py-12">
+      <footer id="footer" className="scroll-mt-20 bg-white border-t border-[#111111]/10 py-12" style={ord('contact')}>
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="text-lg font-bold uppercase tracking-tight mb-2">{theme.companyName}</p>
           {theme.city && <p className="text-[#111111]/60 text-sm font-light">{theme.city}</p>}
@@ -275,17 +280,17 @@ export default function Storefront({ theme, products, services, staff, galleries
       />
       {/* ── Testimonials ── */}
       {sec('testimonials') && (
-        <TestimonialsBlock testimonials={theme.testimonials} />
+        <div style={ord('testimonials')}><TestimonialsBlock testimonials={theme.testimonials} /></div>
       )}
 
       {/* ── FAQ ── */}
       {sec('faq') && (
-        <FaqBlock faqs={theme.faqs} />
+        <div style={ord('faq')}><FaqBlock faqs={theme.faqs} /></div>
       )}
 
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
-        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
+        <div key={g.id} style={ord(g.id)}><Gallery layout={g.layout} images={g.images} title={g.title} /></div>
       ))}
     </div>
   );

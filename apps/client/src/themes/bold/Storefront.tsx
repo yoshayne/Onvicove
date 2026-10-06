@@ -12,6 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
+import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -44,6 +45,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const ord = makeSectionOrder(visibleSections);
 
   // Load Anton font
   useEffect(() => {
@@ -64,7 +66,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white scroll-smooth" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="min-h-screen flex flex-col bg-[#0a0a0a] text-white scroll-smooth" style={{ fontFamily: 'Inter, sans-serif' }}>
       <style>{`
         .bold-heading { font-family: 'Anton', sans-serif; }
         .product-card:hover .product-overlay { opacity: 1; }
@@ -150,7 +152,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* ── Hero ── */}
       {sec('hero') && (
-      <section className="relative h-screen min-h-[600px] flex flex-col items-center justify-center text-center overflow-hidden">
+      <section className="relative h-screen min-h-[600px] flex flex-col items-center justify-center text-center overflow-hidden" style={ord('hero')}>
         {/* Background */}
         {heroImage ? (
           <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
@@ -223,7 +225,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* ── Products ── */}
       {showProducts && sec('featured-products') && (
-        <section id="products" className="scroll-mt-20 py-24 bg-[#0a0a0a]">
+        <section id="products" className="scroll-mt-20 py-24 bg-[#0a0a0a]" style={ord('featured-products')}>
           <div className="max-w-7xl mx-auto px-6">
             {/* Section header */}
             <div className="flex items-end justify-between mb-14">
@@ -290,12 +292,12 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Accent divider */}
       {showProducts && showServices && (
-        <div className="h-px bg-gradient-to-r from-transparent via-[var(--brand-color,#e8ff00)] to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[var(--brand-color,#e8ff00)] to-transparent" style={ord('featured-products')} />
       )}
 
       {/* ── Services ── */}
       {showServices && sec('services') && (
-        <section id="services" className="scroll-mt-20 py-24 bg-[#0f0f0f]">
+        <section id="services" className="scroll-mt-20 py-24 bg-[#0f0f0f]" style={ord('services')}>
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-end justify-between mb-14">
               <div>
@@ -360,8 +362,8 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* ── Team ── */}
       {sec('staff') && staff.length > 0 && (
         <>
-          <div className="h-px bg-gradient-to-r from-transparent via-[var(--brand-color,#e8ff00)] to-transparent" />
-          <section id="team" className="scroll-mt-20 py-24 bg-[#0a0a0a]">
+          <div className="h-px bg-gradient-to-r from-transparent via-[var(--brand-color,#e8ff00)] to-transparent" style={ord('staff')} />
+          <section id="team" className="scroll-mt-20 py-24 bg-[#0a0a0a]" style={ord('staff')}>
             <div className="max-w-7xl mx-auto px-6">
               <div className="mb-14 text-center">
                 <p className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.4em] mb-2">— The Crew</p>
@@ -399,7 +401,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* ── Footer ── */}
       {sec('contact') && (
-      <footer id="footer" className="scroll-mt-20 bg-[#050505] border-t border-white/10">
+      <footer id="footer" className="scroll-mt-20 bg-[#050505] border-t border-white/10" style={ord('contact')}>
         {/* Top accent bar */}
         <div className="h-1 bg-[var(--brand-color,#e8ff00)]" />
 
@@ -548,17 +550,17 @@ export default function Storefront({ theme, products, services, staff, galleries
       />
       {/* ── Testimonials ── */}
       {sec('testimonials') && (
-        <TestimonialsBlock testimonials={theme.testimonials} />
+        <div style={ord('testimonials')}><TestimonialsBlock testimonials={theme.testimonials} /></div>
       )}
 
       {/* ── FAQ ── */}
       {sec('faq') && (
-        <FaqBlock faqs={theme.faqs} />
+        <div style={ord('faq')}><FaqBlock faqs={theme.faqs} /></div>
       )}
 
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
-        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
+        <div key={g.id} style={ord(g.id)}><Gallery layout={g.layout} images={g.images} title={g.title} /></div>
       ))}
     </div>
   );

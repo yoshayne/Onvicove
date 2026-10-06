@@ -12,6 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
+import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -41,9 +42,10 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const ord = makeSectionOrder(visibleSections);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fff', color: '#000', fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#fff', color: '#000', fontFamily: 'Arial, sans-serif' }}>
       <style>{`
         @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         .marquee-inner { display: flex; animation: marquee 20s linear infinite; white-space: nowrap; }
@@ -73,7 +75,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero */}
       {sec('hero') && (
-      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '60vh', alignItems: 'center' }}>
+      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '60vh', alignItems: 'center', width: '100%', ...ord('hero') }}>
         <div>
           <h1 style={{ fontWeight: 900, fontSize: 'clamp(48px, 7vw, 96px)', lineHeight: 0.92, letterSpacing: '-0.03em', marginBottom: 20 }}>
             {tagline.split('.').map((part, i) => (
@@ -110,7 +112,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* Marquee ticker */}
-      <div style={{ background: '#000', color: '#fff', padding: '12px 0', overflow: 'hidden' }}>
+      <div style={{ background: '#000', color: '#fff', padding: '12px 0', overflow: 'hidden', ...ord('hero') }}>
         <div className="marquee-inner">
           {[1, 2].map((rep) => (
             <span key={rep} style={{ fontWeight: 900, fontSize: 13, letterSpacing: '0.2em', marginRight: 0 }}>
@@ -126,7 +128,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Products */}
       {showProducts && sec('featured-products') && (
-        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
+        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', width: '100%', ...ord('featured-products') }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '3px solid #000', paddingBottom: 16, marginBottom: 32 }}>
             <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em' }}>THE DROP</h2>
             <span style={{ fontFamily: 'monospace', fontSize: 11 }}>({displayProducts.length} ITEMS)</span>
@@ -156,7 +158,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Services */}
       {showServices && sec('services') && (
-        <section id="services" style={{ background: '#f0f0f0', padding: '64px 24px', borderTop: '3px solid #000' }}>
+        <section id="services" style={{ background: '#f0f0f0', padding: '64px 24px', borderTop: '3px solid #000', ...ord('services') }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em', marginBottom: 32 }}>SERVICES</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -185,7 +187,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Footer */}
       {sec('contact') && (
-      <footer id="footer" style={{ background: '#000', color: '#fff', padding: '48px 24px', borderTop: '3px solid var(--brand-color, #0000ff)' }}>
+      <footer id="footer" style={{ background: '#000', color: '#fff', padding: '48px 24px', borderTop: '3px solid var(--brand-color, #0000ff)', ...ord('contact') }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <p style={{ fontWeight: 900, fontSize: 20, letterSpacing: '-0.02em' }}>{theme.companyName.toUpperCase()}</p>
           {theme.city && <p style={{ fontFamily: 'monospace', fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{theme.city}</p>}
@@ -208,17 +210,17 @@ export default function Storefront({ theme, products, services, staff, galleries
       <CustomOrderModal isOpen={customOrderOpen} onClose={() => setCustomOrderOpen(false)} companyName={theme.companyName} status={customOrderStatus} onSubmit={submitCustomOrder} />
       {/* ── Testimonials ── */}
       {sec('testimonials') && (
-        <TestimonialsBlock testimonials={theme.testimonials} />
+        <div style={ord('testimonials')}><TestimonialsBlock testimonials={theme.testimonials} /></div>
       )}
 
       {/* ── FAQ ── */}
       {sec('faq') && (
-        <FaqBlock faqs={theme.faqs} />
+        <div style={ord('faq')}><FaqBlock faqs={theme.faqs} /></div>
       )}
 
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
-        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
+        <div key={g.id} style={ord(g.id)}><Gallery layout={g.layout} images={g.images} title={g.title} /></div>
       ))}
     </div>
   );

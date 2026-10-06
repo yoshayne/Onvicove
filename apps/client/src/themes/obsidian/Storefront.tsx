@@ -12,6 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
+import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -71,6 +72,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const brand = theme.brandColor || G.gold;
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const ord = makeSectionOrder(visibleSections);
 
   const featuredProduct = displayProducts.find(p => p.isFeatured) ?? displayProducts[0];
   const restProducts = displayProducts.filter(p => p.id !== featuredProduct?.id);
@@ -196,11 +198,11 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── MAIN CONTENT (offset by sidebar) ── */}
-      <main style={{ flex: 1, marginLeft: isMobile ? 0 : SIDEBAR_W, paddingTop: isMobile ? 56 : 0, minWidth: 0 }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft: isMobile ? 0 : SIDEBAR_W, paddingTop: isMobile ? 56 : 0, minWidth: 0 }}>
 
         {/* ── HERO: Split screen ── */}
         {sec('hero') && (
-        <section style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+        <section style={{ display: 'flex', minHeight: '100vh', position: 'relative', ...ord('hero') }}>
           {/* Left: text panel */}
           <div style={{
             width: isMobile ? '100%' : '45%',
@@ -312,7 +314,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
         {/* ── PRODUCTS ── */}
         {showProducts && sec('featured-products') && (
-          <section id="products" style={{ padding: isMobile ? '64px 20px' : '96px 56px', background: G.bg }}>
+          <section id="products" style={{ padding: isMobile ? '64px 20px' : '96px 56px', background: G.bg, ...ord('featured-products') }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 48 }}>
               <div>
@@ -426,7 +428,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
         {/* ── SERVICES ── */}
         {showServices && sec('services') && (
-          <section id="services" style={{ background: G.surface, padding: isMobile ? '64px 20px' : '96px 56px', position: 'relative', overflow: 'hidden' }}>
+          <section id="services" style={{ background: G.surface, padding: isMobile ? '64px 20px' : '96px 56px', position: 'relative', overflow: 'hidden', ...ord('services') }}>
             {/* Gold glow */}
             <div style={{ position: 'absolute', top: -80, right: -80, width: 360, height: 360, borderRadius: '50%', background: `radial-gradient(circle, ${G.goldGlow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
@@ -507,32 +509,35 @@ export default function Storefront({ theme, products, services, staff, galleries
                 ))}
               </div>
 
-              {/* Staff */}
-              {sec('staff') && staff.length > 0 && (
-                <div style={{ marginTop: 64, display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-                  {staff.map((member) => (
-                    <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      {member.avatarUrl ? (
-                        <img src={member.avatarUrl} alt={member.name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${G.glassBorder}` }} />
-                      ) : (
-                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: G.card, border: `1px solid ${G.glassBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: G.textMuted }}>
-                          {member.name[0]}
-                        </div>
-                      )}
-                      <div>
-                        <p style={{ fontFamily: serif, fontSize: 15, color: G.text }}>{member.name}</p>
-                        {member.bio && <p style={{ fontSize: 12, color: G.textMuted, marginTop: 3 }}>{member.bio}</p>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </section>
         )}
 
+      {/* ── Staff ── */}
+      {sec('staff') && staff.length > 0 && (
+      <section id="team" style={{ background: G.surface, padding: isMobile ? '64px 20px' : '96px 56px', ...ord('staff') }}>
+        <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+          {staff.map((member) => (
+            <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              {member.avatarUrl ? (
+                <img src={member.avatarUrl} alt={member.name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${G.glassBorder}` }} />
+              ) : (
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: G.card, border: `1px solid ${G.glassBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: G.textMuted }}>
+                  {member.name[0]}
+                </div>
+              )}
+              <div>
+                <p style={{ fontFamily: serif, fontSize: 15, color: G.text }}>{member.name}</p>
+                {member.bio && <p style={{ fontSize: 12, color: G.textMuted, marginTop: 3 }}>{member.bio}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+      )}
+
         {/* ── EMAIL CAPTURE ── */}
-        <section style={{ padding: isMobile ? '64px 20px' : '96px 56px', background: G.bg, position: 'relative', overflow: 'hidden' }}>
+        <section style={{ padding: isMobile ? '64px 20px' : '96px 56px', background: G.bg, position: 'relative', overflow: 'hidden', ...ord('services') }}>
           <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 500, height: 300, borderRadius: '50%', background: `radial-gradient(circle, ${G.goldGlow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
           <div style={{
             position: 'relative', zIndex: 1,
@@ -572,7 +577,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
         {/* ── FOOTER ── */}
         {sec('contact') && (
-        <footer id="footer" style={{ background: G.surface, borderTop: `1px solid ${G.glassBorder}`, padding: isMobile ? '40px 20px 32px' : '52px 56px 36px' }}>
+        <footer id="footer" style={{ background: G.surface, borderTop: `1px solid ${G.glassBorder}`, padding: isMobile ? '40px 20px 32px' : '52px 56px 36px', ...ord('contact') }}>
           <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: 24 }}>
             <div>
               <p style={{ fontFamily: serif, fontSize: 18, letterSpacing: '0.25em', textTransform: 'uppercase', color: brand, marginBottom: 4 }}>{theme.companyName}</p>
@@ -590,6 +595,21 @@ export default function Storefront({ theme, products, services, staff, galleries
         </footer>
         )}
 
+
+      {/* ── Testimonials ── */}
+      {sec('testimonials') && (
+        <div style={ord('testimonials')}><TestimonialsBlock testimonials={theme.testimonials} /></div>
+      )}
+
+      {/* ── FAQ ── */}
+      {sec('faq') && (
+        <div style={ord('faq')}><FaqBlock faqs={theme.faqs} /></div>
+      )}
+
+      {/* ── Galleries ── */}
+      {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
+        <div key={g.id} style={ord(g.id)}><Gallery layout={g.layout} images={g.images} title={g.title} /></div>
+      ))}
       </main>
 
       {/* ── Modals ── */}
@@ -599,20 +619,6 @@ export default function Storefront({ theme, products, services, staff, galleries
       <BookingModal isOpen={bookingOpen} onClose={closeBooking} service={bookingService} selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={selectBookingDate} onSelectSlot={selectBookingSlot} onConfirm={confirmBooking} staff={staff} selectedStaffId={selectedStaffId} onSelectStaff={setSelectedStaffId} />
       <BookingStatusOverlay status={bookingStatus} error={bookingError} clientSecret={bookingClientSecret} amountCents={bookingAmountCents} stripeAccountId={theme.stripeAccountId} currency={theme.currency} onClose={closeBooking} onDismiss={dismissBookingStatus} onPaymentSuccess={confirmBookingPayment} onPaymentCancel={cancelBookingPayment} />
       <CustomOrderModal isOpen={customOrderOpen} onClose={() => setCustomOrderOpen(false)} companyName={theme.companyName} status={customOrderStatus} onSubmit={submitCustomOrder} />
-      {/* ── Testimonials ── */}
-      {sec('testimonials') && (
-        <TestimonialsBlock testimonials={theme.testimonials} />
-      )}
-
-      {/* ── FAQ ── */}
-      {sec('faq') && (
-        <FaqBlock faqs={theme.faqs} />
-      )}
-
-      {/* ── Galleries ── */}
-      {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
-        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
-      ))}
     </div>
   );
 }

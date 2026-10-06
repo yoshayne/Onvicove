@@ -12,6 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
+import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -50,9 +51,10 @@ export default function Storefront({
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const ord = makeSectionOrder(visibleSections);
 
   return (
-    <div className="min-h-screen bg-white font-serif text-[#1a3a5c]">
+    <div className="flex flex-col min-h-screen bg-white font-serif text-[#1a3a5c]">
       {/* Nav */}
       <header className="sticky top-0 z-40 border-b-4 border-[#1a3a5c] bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -88,7 +90,7 @@ export default function Storefront({
       {sec('hero') && (
       <section
         className="relative flex min-h-[480px] items-center justify-center bg-[#1a3a5c] bg-cover bg-center text-center"
-        style={{ backgroundImage: `linear-gradient(rgba(26,58,92,0.75), rgba(26,58,92,0.75)), url(${heroImage})` }}
+        style={{ backgroundImage: `linear-gradient(rgba(26,58,92,0.75), rgba(26,58,92,0.75)), url(${heroImage})`, ...ord('hero') }}
       >
         <div className="px-6 py-24">
           <h1 className="font-['Merriweather'] text-4xl font-bold text-white sm:text-5xl md:text-6xl">
@@ -108,7 +110,7 @@ export default function Storefront({
 
       {/* Products */}
       {showProducts && sec('featured-products') && displayProducts.length > 0 && (
-        <section id="products" className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
+        <section id="products" className="scroll-mt-20 mx-auto w-full max-w-6xl px-6 py-16" style={ord('featured-products')}>
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Our Collection
           </h2>
@@ -152,7 +154,7 @@ export default function Storefront({
 
       {/* Services */}
       {showServices && sec('services') && displayServices.length > 0 && (
-        <section id="services" className="scroll-mt-20 mx-auto max-w-6xl px-6 py-16">
+        <section id="services" className="scroll-mt-20 mx-auto w-full max-w-6xl px-6 py-16" style={ord('services')}>
           <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Our Services
           </h2>
@@ -195,32 +197,35 @@ export default function Storefront({
               </div>
             ))}
           </div>
-
-          {sec('staff') && displayStaff.length > 0 && (
-            <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">
-              {displayStaff.map((member) => (
-                <div key={member.id} className="flex items-center gap-4 border border-gray-200 p-4">
-                  {member.avatarUrl && (
-                    <img
-                      src={member.avatarUrl}
-                      alt={member.name}
-                      className="h-16 w-16 rounded-full object-cover"
-                    />
-                  )}
-                  <div>
-                    <div className="font-['Merriweather'] font-bold text-[#1a3a5c]">{member.name}</div>
-                    {member.bio && <div className="text-sm text-gray-600">{member.bio}</div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </section>
+      )}
+
+      {/* ── Staff ── */}
+      {sec('staff') && displayStaff.length > 0 && (
+      <section className="mx-auto w-full max-w-6xl px-6 py-16" style={ord('staff')}>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {displayStaff.map((member) => (
+            <div key={member.id} className="flex items-center gap-4 border border-gray-200 p-4">
+              {member.avatarUrl && (
+                <img
+                  src={member.avatarUrl}
+                  alt={member.name}
+                  className="h-16 w-16 rounded-full object-cover"
+                />
+              )}
+              <div>
+                <div className="font-['Merriweather'] font-bold text-[#1a3a5c]">{member.name}</div>
+                {member.bio && <div className="text-sm text-gray-600">{member.bio}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
       )}
 
       {/* Footer */}
       {sec('contact') && (
-      <footer id="about" className="scroll-mt-20 mt-8 border-t-4 border-[#1a3a5c] bg-[#f5f5f5] py-10">
+      <footer id="about" className="scroll-mt-20 mt-8 border-t-4 border-[#1a3a5c] bg-[#f5f5f5] py-10" style={ord('contact')}>
         <div className="mx-auto max-w-6xl px-6 text-center">
           <div className="font-['Merriweather'] text-lg font-bold text-[#1a3a5c]">
             {theme.companyName}
@@ -325,17 +330,17 @@ export default function Storefront({
       />
       {/* ── Testimonials ── */}
       {sec('testimonials') && (
-        <TestimonialsBlock testimonials={theme.testimonials} />
+        <div style={ord('testimonials')}><TestimonialsBlock testimonials={theme.testimonials} /></div>
       )}
 
       {/* ── FAQ ── */}
       {sec('faq') && (
-        <FaqBlock faqs={theme.faqs} />
+        <div style={ord('faq')}><FaqBlock faqs={theme.faqs} /></div>
       )}
 
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
-        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
+        <div key={g.id} style={ord(g.id)}><Gallery layout={g.layout} images={g.images} title={g.title} /></div>
       ))}
     </div>
   );

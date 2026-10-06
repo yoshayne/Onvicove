@@ -12,6 +12,7 @@ import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
+import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -41,11 +42,12 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const ord = makeSectionOrder(visibleSections);
 
   const categories = ['Candles', 'Soaps', 'Home Goods', 'Gift Sets'];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f0e8', color: '#2c1f14', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f5f0e8', color: '#2c1f14', fontFamily: 'Inter, sans-serif' }}>
       {/* Nav */}
       <nav style={{ background: '#f5f0e8', borderBottom: '1px solid #c4b49a', padding: '0 24px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
@@ -75,7 +77,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero — split layout */}
       {sec('hero') && (
-      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', minHeight: '65vh' }}>
+      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', minHeight: '65vh', width: '100%', ...ord('hero') }}>
         <div>
           {/* Stamp badge */}
           <div style={{ position: 'relative', display: 'inline-block', marginBottom: 24 }}>
@@ -114,7 +116,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Category navigation */}
       {showProducts && (
-        <div style={{ background: '#ece5d8', borderTop: '1px solid #c4b49a', borderBottom: '1px solid #c4b49a', padding: '16px 24px' }}>
+        <div style={{ background: '#ece5d8', borderTop: '1px solid #c4b49a', borderBottom: '1px solid #c4b49a', padding: '16px 24px', ...ord('hero') }}>
           <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', gap: 48, justifyContent: 'center', fontSize: 12, letterSpacing: '0.15em', color: '#5c4a32', textTransform: 'uppercase' }}>
             {categories.map((cat) => (
               <a key={cat} href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -127,7 +129,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Products */}
       {showProducts && sec('featured-products') && (
-        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
+        <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', width: '100%', ...ord('featured-products') }}>
           <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400, marginBottom: 40, textAlign: 'center' }}>From the Workshop</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 24 }}>
             {displayProducts.map((product) => (
@@ -156,7 +158,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Services / Workshops */}
       {showServices && sec('services') && (
-        <section id="services" style={{ background: '#ece5d8', padding: '64px 24px', borderTop: '1px solid #c4b49a' }}>
+        <section id="services" style={{ background: '#ece5d8', padding: '64px 24px', borderTop: '1px solid #c4b49a', ...ord('services') }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
               <p style={{ fontSize: 11, letterSpacing: '0.2em', color: '#7a6650', marginBottom: 12, textTransform: 'uppercase' }}>Learn & Create</p>
@@ -183,24 +185,30 @@ export default function Storefront({ theme, products, services, staff, galleries
                 </div>
               ))}
             </div>
-            {sec('staff') && staff.length > 0 && (
-              <div style={{ marginTop: 64, display: 'flex', justifyContent: 'center', gap: 40, flexWrap: 'wrap' }}>
-                {staff.map((member) => (
-                  <div key={member.id} style={{ textAlign: 'center', maxWidth: 240 }}>
-                    {member.avatarUrl && <img src={member.avatarUrl} alt={member.name} style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', margin: '0 auto 16px', border: '2px solid #c4b49a' }} />}
-                    <p style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 16, marginBottom: 6 }}>{member.name}</p>
-                    {member.bio && <p style={{ fontSize: 12, color: '#7a6650', lineHeight: 1.6 }}>{member.bio}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </section>
       )}
 
+      {/* ── Staff ── */}
+      {sec('staff') && staff.length > 0 && (
+      <section id="team" style={{ background: '#ece5d8', padding: '64px 24px', ...ord('staff') }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 40, flexWrap: 'wrap' }}>
+            {staff.map((member) => (
+              <div key={member.id} style={{ textAlign: 'center', maxWidth: 240 }}>
+                {member.avatarUrl && <img src={member.avatarUrl} alt={member.name} style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', margin: '0 auto 16px', border: '2px solid #c4b49a' }} />}
+                <p style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 16, marginBottom: 6 }}>{member.name}</p>
+                {member.bio && <p style={{ fontSize: 12, color: '#7a6650', lineHeight: 1.6 }}>{member.bio}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      )}
+
       {/* Footer */}
       {sec('contact') && (
-      <footer id="footer" style={{ background: '#2c1f14', color: '#f5f0e8', padding: '48px 24px', textAlign: 'center' }}>
+      <footer id="footer" style={{ background: '#2c1f14', color: '#f5f0e8', padding: '48px 24px', textAlign: 'center', ...ord('contact') }}>
         <p style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 18, marginBottom: 8 }}>{theme.companyName}</p>
         {theme.city && <p style={{ fontSize: 12, color: 'rgba(245,240,232,0.5)', marginBottom: 16 }}>{theme.city}</p>}
         <p style={{ fontSize: 11, letterSpacing: '0.2em', color: 'rgba(245,240,232,0.3)', textTransform: 'uppercase' }}>Small Batch · Handmade · Slow Made</p>
@@ -222,17 +230,17 @@ export default function Storefront({ theme, products, services, staff, galleries
       <CustomOrderModal isOpen={customOrderOpen} onClose={() => setCustomOrderOpen(false)} companyName={theme.companyName} status={customOrderStatus} onSubmit={submitCustomOrder} />
       {/* ── Testimonials ── */}
       {sec('testimonials') && (
-        <TestimonialsBlock testimonials={theme.testimonials} />
+        <div style={ord('testimonials')}><TestimonialsBlock testimonials={theme.testimonials} /></div>
       )}
 
       {/* ── FAQ ── */}
       {sec('faq') && (
-        <FaqBlock faqs={theme.faqs} />
+        <div style={ord('faq')}><FaqBlock faqs={theme.faqs} /></div>
       )}
 
       {/* ── Galleries ── */}
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
-        <Gallery key={g.id} layout={g.layout} images={g.images} title={g.title} />
+        <div key={g.id} style={ord(g.id)}><Gallery layout={g.layout} images={g.images} title={g.title} /></div>
       ))}
     </div>
   );
