@@ -157,6 +157,20 @@ export default function StorefrontRouter() {
       }
     `;
 
+    // Favicon
+    const faviconUrl = tenantQuery.data?.favicon_url;
+    const faviconId = 'storefront-favicon';
+    let favicon = document.getElementById(faviconId) as HTMLLinkElement | null;
+    if (faviconUrl) {
+      if (!favicon) {
+        favicon = document.createElement('link');
+        favicon.id = faviconId;
+        favicon.rel = 'icon';
+        document.head.appendChild(favicon);
+      }
+      favicon.href = faviconUrl;
+    }
+
     return () => {
       style?.remove();
     };
