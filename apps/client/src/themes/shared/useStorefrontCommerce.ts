@@ -111,7 +111,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
     setOrderError(null);
   }
 
-  async function submitOrder(info: { name: string; email: string; phone: string; shippingAddress?: ShippingAddress }) {
+  async function submitOrder(info: { name: string; email: string; phone: string; shippingAddress?: ShippingAddress; discountCode?: string }) {
     if (!slug || cart.length === 0) return;
     setOrderStatus('submitting');
     setOrderError(null);
@@ -126,6 +126,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
           quantity: i.quantity,
         })),
         shipping_address: info.shippingAddress ?? null,
+        discount_code: info.discountCode ?? null,
       });
       setOrderNumber(res.order.order_number);
       const pi = await apiPost<PaymentIntentResponse>('/api/stripe/payment-intent', {
@@ -156,6 +157,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [slotsRefreshing, setSlotsRefreshing] = useState(false);
   const [bookingCityLabel, setBookingCityLabel] = useState<string | null>(null);
@@ -170,6 +172,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
     setBookingOpen(true);
     setSelectedDate(null);
     setSelectedSlot(null);
+    setSelectedStaffId(null);
     setAvailableSlots([]);
     setBookingCityLabel(null);
     setBookingStatus('idle');
@@ -241,6 +244,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
     try {
       const res = await apiPost<BookingResponse>(`/api/public/${slug}/bookings`, {
         service_id: bookingService.id,
+        staff_id: selectedStaffId ?? null,
         customer_name: info.name,
         customer_email: info.email,
         customer_phone: info.phone || null,
@@ -297,6 +301,8 @@ export function useStorefrontCommerce(slug: string | undefined) {
     closeBooking,
     selectedDate,
     selectedSlot,
+    selectedStaffId,
+    setSelectedStaffId,
     availableSlots,
     slotsRefreshing,
     refreshSlots,
