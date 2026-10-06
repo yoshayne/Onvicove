@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import type { ServiceData, AvailableSlot } from '../types';
+import type { ServiceData, StaffData, AvailableSlot } from '../types';
 import { formatPrice } from '../types';
 import Calendar from './Calendar';
 
@@ -14,9 +14,12 @@ interface BookingModalProps {
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
+  staff?: StaffData[];
+  selectedStaffId?: string | null;
+  onSelectStaff?: (staffId: string | null) => void;
 }
 
-export default function BookingModal({ isOpen, onClose, service, selectedDate, selectedSlot, availableSlots, onSelectDate, onSelectSlot, onConfirm }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, service, selectedDate, selectedSlot, availableSlots, onSelectDate, onSelectSlot, onConfirm, staff = [], selectedStaffId, onSelectStaff }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -48,6 +51,25 @@ export default function BookingModal({ isOpen, onClose, service, selectedDate, s
                 <span className="text-[var(--brand-color,#0000ff)]">{formatPrice(service.priceCents)}</span>
               </div>
             </div>
+            {staff.length > 1 && (
+              <div>
+                <p className="font-black text-xs tracking-[0.2em] uppercase mb-1.5">SELECT STAFF (OPTIONAL)</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <button type="button" onClick={() => onSelectStaff?.(null)}
+                    className={`px-3 py-1.5 text-xs font-black uppercase transition-colors ${!selectedStaffId ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}
+                    style={{ border: '2px solid #000' }}>
+                    Any available
+                  </button>
+                  {staff.map(s => (
+                    <button key={s.id} type="button" onClick={() => onSelectStaff?.(s.id)}
+                      className={`px-3 py-1.5 text-xs font-black uppercase transition-colors ${selectedStaffId === s.id ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}
+                      style={{ border: '2px solid #000' }}>
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); if (canConfirm) onConfirm({ name, email, phone }); }}>
               {[{ id: 'bru-bk-name', label: 'NAME', type: 'text', value: name, set: setName, required: true },
                 { id: 'bru-bk-email', label: 'EMAIL', type: 'email', value: email, set: setEmail, required: true },

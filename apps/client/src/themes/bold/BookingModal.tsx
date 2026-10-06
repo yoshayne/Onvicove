@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Clock, DollarSign } from 'lucide-react';
-import type { ServiceData, AvailableSlot } from '../types';
+import type { ServiceData, StaffData, AvailableSlot } from '../types';
 import { formatPrice } from '../types';
 import Calendar from './Calendar';
 
@@ -14,6 +14,9 @@ interface BookingModalProps {
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
+  staff?: StaffData[];
+  selectedStaffId?: string | null;
+  onSelectStaff?: (staffId: string | null) => void;
 }
 
 export default function BookingModal({
@@ -26,6 +29,9 @@ export default function BookingModal({
   onSelectDate,
   onSelectSlot,
   onConfirm,
+  staff = [],
+  selectedStaffId,
+  onSelectStaff,
 }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -100,6 +106,32 @@ export default function BookingModal({
               <p className="text-white/40 text-xs leading-relaxed border-l-2 border-[var(--brand-color,#e8ff00)]/30 pl-3">
                 {service.description}
               </p>
+            )}
+
+            {/* Staff selector */}
+            {staff.length > 1 && (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/30 mb-1.5">Select staff (optional)</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => onSelectStaff?.(null)}
+                    className={`px-3 py-1.5 text-xs border transition-colors ${!selectedStaffId ? 'border-[var(--brand-color,#e8ff00)] text-[var(--brand-color,#e8ff00)]' : 'border-white/20 text-white/40 hover:border-white/40'}`}
+                  >
+                    Any available
+                  </button>
+                  {staff.map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => onSelectStaff?.(s.id)}
+                      className={`px-3 py-1.5 text-xs border transition-colors ${selectedStaffId === s.id ? 'border-[var(--brand-color,#e8ff00)] text-[var(--brand-color,#e8ff00)]' : 'border-white/20 text-white/40 hover:border-white/40'}`}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Form */}

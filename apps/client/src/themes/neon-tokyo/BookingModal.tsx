@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import type { ServiceData, AvailableSlot } from '../types';
+import type { ServiceData, StaffData, AvailableSlot } from '../types';
 import { formatPrice } from '../types';
 import Calendar from './Calendar';
 
@@ -14,9 +14,12 @@ interface BookingModalProps {
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
+  staff?: StaffData[];
+  selectedStaffId?: string | null;
+  onSelectStaff?: (staffId: string | null) => void;
 }
 
-export default function BookingModal({ isOpen, onClose, service, selectedDate, selectedSlot, availableSlots, onSelectDate, onSelectSlot, onConfirm }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, service, selectedDate, selectedSlot, availableSlots, onSelectDate, onSelectSlot, onConfirm, staff = [], selectedStaffId, onSelectStaff }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -49,6 +52,25 @@ export default function BookingModal({ isOpen, onClose, service, selectedDate, s
                 <span className="text-lg font-bold" style={{ color: '#ff2d9b', textShadow: '0 0 8px #ff2d9b' }}>{formatPrice(service.priceCents)}</span>
               </div>
             </div>
+            {staff.length > 1 && (
+              <div>
+                <p className="text-xs text-white/40 uppercase tracking-widest mb-1.5">Select staff (optional)</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <button type="button" onClick={() => onSelectStaff?.(null)}
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-all ${!selectedStaffId ? 'text-[#ff2d9b]' : 'text-white/40 hover:text-white/60'}`}
+                    style={{ border: !selectedStaffId ? '1px solid #ff2d9b' : '1px solid #ff2d9b33' }}>
+                    Any available
+                  </button>
+                  {staff.map(s => (
+                    <button key={s.id} type="button" onClick={() => onSelectStaff?.(s.id)}
+                      className={`px-3 py-1.5 text-xs rounded-lg transition-all ${selectedStaffId === s.id ? 'text-[#ff2d9b]' : 'text-white/40 hover:text-white/60'}`}
+                      style={{ border: selectedStaffId === s.id ? '1px solid #ff2d9b' : '1px solid #ff2d9b33' }}>
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); if (canConfirm) onConfirm({ name, email, phone }); }}>
               {[{ id: 'neo-bk-name', label: 'Your Name', type: 'text', value: name, set: setName, required: true },
                 { id: 'neo-bk-email', label: 'Email', type: 'email', value: email, set: setEmail, required: true },

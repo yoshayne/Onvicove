@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import type { ServiceData, AvailableSlot } from '../types';
+import type { ServiceData, StaffData, AvailableSlot } from '../types';
 import { formatPrice } from '../types';
 import Calendar from './Calendar';
 
@@ -14,6 +14,9 @@ interface BookingModalProps {
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
+  staff?: StaffData[];
+  selectedStaffId?: string | null;
+  onSelectStaff?: (staffId: string | null) => void;
 }
 
 export default function BookingModal({
@@ -26,6 +29,9 @@ export default function BookingModal({
   onSelectDate,
   onSelectSlot,
   onConfirm,
+  staff = [],
+  selectedStaffId,
+  onSelectStaff,
 }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -70,6 +76,31 @@ export default function BookingModal({
                 </span>
               </div>
             </div>
+
+            {staff.length > 1 && (
+              <div className="font-['Inter']">
+                <p className="text-xs text-[#3d2314]/50 mb-1.5">Select staff (optional)</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => onSelectStaff?.(null)}
+                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${!selectedStaffId ? 'border-[var(--brand-color,#8b5e3c)] text-[var(--brand-color,#8b5e3c)]' : 'border-[#3d2314]/15 text-[#3d2314]/50 hover:border-[#3d2314]/30'}`}
+                  >
+                    Any available
+                  </button>
+                  {staff.map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => onSelectStaff?.(s.id)}
+                      className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${selectedStaffId === s.id ? 'border-[var(--brand-color,#8b5e3c)] text-[var(--brand-color,#8b5e3c)]' : 'border-[#3d2314]/15 text-[#3d2314]/50 hover:border-[#3d2314]/30'}`}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <form
               className="flex flex-col gap-4 font-['Inter']"

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import type { ServiceData, AvailableSlot } from '../types';
+import type { ServiceData, StaffData, AvailableSlot } from '../types';
 import { formatPrice } from '../types';
 import Calendar from './Calendar';
 
@@ -14,12 +14,16 @@ interface BookingModalProps {
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
+  staff?: StaffData[];
+  selectedStaffId?: string | null;
+  onSelectStaff?: (staffId: string | null) => void;
 }
 
 export default function BookingModal({
   isOpen, onClose, service,
   selectedDate, selectedSlot, availableSlots,
   onSelectDate, onSelectSlot, onConfirm,
+  staff = [], selectedStaffId, onSelectStaff,
 }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -63,6 +67,24 @@ export default function BookingModal({
                 </span>
               </div>
             </div>
+
+            {staff.length > 1 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-1.5">Select staff (optional)</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <button type="button" onClick={() => onSelectStaff?.(null)}
+                    className={`px-3 py-1.5 text-xs border transition-colors ${!selectedStaffId ? 'border-[var(--brand-color,#c8b8a2)] text-[var(--brand-color,#c8b8a2)]' : 'border-white/15 text-white/40 hover:border-white/30'}`}>
+                    Any available
+                  </button>
+                  {staff.map(s => (
+                    <button key={s.id} type="button" onClick={() => onSelectStaff?.(s.id)}
+                      className={`px-3 py-1.5 text-xs border transition-colors ${selectedStaffId === s.id ? 'border-[var(--brand-color,#c8b8a2)] text-[var(--brand-color,#c8b8a2)]' : 'border-white/15 text-white/40 hover:border-white/30'}`}>
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <form
               className="flex flex-col gap-4"
