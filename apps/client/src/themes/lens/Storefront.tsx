@@ -117,7 +117,7 @@ export default function Storefront({ theme, products, services, staff }: ThemePr
       )}
 
       {/* ── Hero ────────────────────────────────────────────────────── */}
-      <section className="relative min-h-[600px] overflow-hidden bg-[#0d0d0d]">
+      <section className="relative min-h-[600px] overflow-hidden bg-[#0d0d0d] pt-16">
         <img
           src={heroImage}
           alt=""
