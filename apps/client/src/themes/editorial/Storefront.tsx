@@ -81,10 +81,10 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero */}
       {sec('hero') && (
-      <section className="relative h-[80vh] min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-[#1a1a1a]" style={ord('hero')}>
-        <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-[#1a1a1a]/10" />
-        <div className="relative z-10 px-6 max-w-3xl">
+      <section className="relative md:h-[80vh] md:min-h-[480px] flex flex-col md:flex-row md:items-center md:justify-center text-center overflow-hidden bg-[#1a1a1a]" style={ord('hero')}>
+        <img src={heroImage} alt="" className="block w-full h-auto md:absolute md:inset-0 md:h-full md:object-cover opacity-80" />
+        <div className="absolute inset-0 hidden md:block bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-[#1a1a1a]/10" />
+        <div className="relative z-10 px-6 py-10 md:py-0 max-w-3xl mx-auto md:mx-0">
           <h1 className="font-['Playfair_Display'] text-5xl md:text-7xl text-white mb-6 leading-tight">
             {theme.companyName}
           </h1>

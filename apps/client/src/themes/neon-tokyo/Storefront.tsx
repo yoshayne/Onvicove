@@ -81,9 +81,18 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero */}
       {sec('hero') && (
-      <section style={{ position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'center', overflow: 'hidden', ...ord('hero') }}>
-        <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.25, mixBlendMode: 'screen' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(5,5,16,0.95) 50%, rgba(5,5,16,0.4) 100%)' }} />
+      <>
+<style>{`
+        .hero-img-m { display: block; width: 100%; height: auto; }
+        @media (min-width: 768px) {
+          .hero-sec-m { min-height: 85vh !important; }
+          .hero-img-m { position: absolute !important; inset: 0; height: 100% !important; object-fit: cover; opacity: 0.25; mix-blend-mode: screen; }
+        }
+        @media (max-width: 767px) { .hero-ovl-m { display: none; } }
+      `}</style>
+      <section className="hero-sec-m" style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden', ...ord('hero') }}>
+        <img src={heroImage} alt="" className="hero-img-m" />
+        <div className="hero-ovl-m" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(5,5,16,0.95) 50%, rgba(5,5,16,0.4) 100%)' }} />
         <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '80px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
           <div>
             <p style={{ fontSize: 11, letterSpacing: '0.3em', marginBottom: 16, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>NEXT-GEN STREETWEAR</p>
@@ -123,6 +132,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           </div>
         </div>
       </section>
+      </>
       )}
 
       {/* Products */}

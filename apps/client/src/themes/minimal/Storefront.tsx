@@ -86,8 +86,8 @@ export default function Storefront({ theme, products, services, staff, galleries
             <p className="text-[#111111]/50 text-base font-light mt-4 leading-relaxed">{theme.aboutText}</p>
           )}
         </div>
-        <div className="aspect-[4/3] overflow-hidden bg-[#f8f8f8]">
-          <img src={heroImage} alt="" className="w-full h-full object-cover" />
+        <div className="md:aspect-[4/3] overflow-hidden bg-[#f8f8f8]">
+          <img src={heroImage} alt="" className="block w-full h-auto md:h-full md:object-cover" />
         </div>
       </section>
       )}

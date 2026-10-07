@@ -83,8 +83,17 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero */}
       {sec('hero') && (
-      <section className="aurora-bg" style={{ position: 'relative', minHeight: '85vh', display: 'flex', alignItems: 'center', overflow: 'hidden', ...ord('hero') }}>
-        <img src={heroImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.15, mixBlendMode: 'screen' }} />
+      <>
+<style>{`
+        .hero-img-m { display: block; width: 100%; height: auto; }
+        @media (min-width: 768px) {
+          .hero-sec-m { min-height: 85vh !important; }
+          .hero-img-m { position: absolute !important; inset: 0; height: 100% !important; object-fit: cover; opacity: 0.15; mix-blend-mode: screen; }
+        }
+        @media (max-width: 767px) { .hero-ovl-m { display: none; } }
+      `}</style>
+      <section className="aurora-bg hero-sec-m" style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden', ...ord('hero') }}>
+        <img src={heroImage} alt="" className="hero-img-m" />
         <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '80px 24px', display: 'grid', gridTemplateColumns: showServices ? '1fr 1fr' : '1fr', gap: 48, alignItems: 'center' }}>
           <div>
             <p style={{ fontSize: 12, letterSpacing: '0.2em', color: 'var(--brand-color, #a78bfa)', marginBottom: 16, textTransform: 'uppercase', opacity: 0.8 }}>Holistic Wellness</p>
@@ -122,6 +131,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           )}
         </div>
       </section>
+      </>
       )}
 
       {/* Products */}

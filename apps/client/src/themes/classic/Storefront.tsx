@@ -89,10 +89,11 @@ export default function Storefront({
       {/* Hero */}
       {sec('hero') && (
       <section
-        className="relative flex min-h-[480px] items-center justify-center bg-[#1a3a5c] bg-cover bg-center text-center"
-        style={{ backgroundImage: `linear-gradient(rgba(26,58,92,0.75), rgba(26,58,92,0.75)), url(${heroImage})`, ...ord('hero') }}
+        className="relative flex flex-col md:flex-row md:min-h-[480px] items-center justify-center bg-[#1a3a5c] md:[background-image:var(--hero-bg)] bg-cover bg-center text-center"
+        style={{ ['--hero-bg' as string]: `linear-gradient(rgba(26,58,92,0.75), rgba(26,58,92,0.75)), url(${heroImage})`, ...ord('hero') }}
       >
-        <div className="px-6 py-24">
+        <img src={heroImage} alt="" className="block w-full h-auto md:hidden" />
+        <div className="px-6 py-10 md:py-24">
           <h1 className="font-['Merriweather'] text-4xl font-bold text-white sm:text-5xl md:text-6xl">
             {theme.companyName}
           </h1>

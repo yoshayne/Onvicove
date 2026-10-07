@@ -202,14 +202,14 @@ export default function Storefront({ theme, products, services, staff, galleries
 
         {/* ── HERO: Split screen ── */}
         {sec('hero') && (
-        <section style={{ display: 'flex', minHeight: '100vh', position: 'relative', ...ord('hero') }}>
+        <section style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: isMobile ? undefined : '100vh', position: 'relative', ...ord('hero') }}>
           {/* Left: text panel */}
           <div style={{
             width: isMobile ? '100%' : '45%',
             display: 'flex', flexDirection: 'column', justifyContent: 'center',
             padding: isMobile ? '60px 24px 80px' : '80px 56px',
             position: 'relative', zIndex: 2,
-            background: isMobile ? 'linear-gradient(to bottom, rgba(10,10,15,0.95), rgba(10,10,15,0.85))' : G.bg,
+            background: G.bg,
           }}>
             {/* Eyebrow */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
@@ -303,10 +303,10 @@ export default function Storefront({ theme, products, services, staff, galleries
             </div>
           )}
 
-          {/* Mobile: hero image as bg */}
+          {/* Mobile: hero image shown in full above the text panel */}
           {isMobile && (
-            <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-              <img src={heroImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.25 }} />
+            <div style={{ order: -1, width: '100%' }}>
+              <img src={heroImage} alt="" style={{ display: 'block', width: '100%', height: 'auto' }} />
             </div>
           )}
         </section>

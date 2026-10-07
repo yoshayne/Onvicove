@@ -68,7 +68,9 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero — asymmetric editorial layout */}
       {sec('hero') && (
-      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '60px 24px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '70vh', alignItems: 'center', width: '100%', ...ord('hero') }}>
+      <>
+<style>{`@media (max-width: 767px) { .hero-img-m2 { aspect-ratio: auto !important; height: auto !important; } .hero-sec-m2 { min-height: 0 !important; grid-template-columns: 1fr !important; gap: 24px !important; } }`}</style>
+      <section className="hero-sec-m2" style={{ maxWidth: 1280, margin: '0 auto', padding: '60px 24px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '70vh', alignItems: 'center', width: '100%', ...ord('hero') }}>
         <div>
           <p style={{ fontSize: 11, letterSpacing: '0.3em', color: '#1a1a1a', opacity: 0.4, marginBottom: 24, textTransform: 'uppercase' }}>
             01 / {String(displayProducts.length + displayServices.length).padStart(2, '0')}
@@ -90,9 +92,10 @@ export default function Storefront({ theme, products, services, staff, galleries
           <div style={{ position: 'absolute', top: -20, right: -24, fontSize: 11, letterSpacing: '0.2em', color: '#1a1a1a', opacity: 0.3, writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
             PORTRAITS — EDITORIAL — BRAND
           </div>
-          <img src={heroImage} alt="" style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
+          <img src={heroImage} alt="" className="hero-img-m2" style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
         </div>
       </section>
+      </>
       )}
 
       {/* Products — editorial masonry grid */}

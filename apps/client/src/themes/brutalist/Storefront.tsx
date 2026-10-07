@@ -75,7 +75,9 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero */}
       {sec('hero') && (
-      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '60vh', alignItems: 'center', width: '100%', ...ord('hero') }}>
+      <>
+<style>{`@media (max-width: 767px) { .hero-img-m2 { aspect-ratio: auto !important; height: auto !important; } .hero-sec-m2 { min-height: 0 !important; grid-template-columns: 1fr !important; gap: 24px !important; } }`}</style>
+      <section className="hero-sec-m2" style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '60vh', alignItems: 'center', width: '100%', ...ord('hero') }}>
         <div>
           <h1 style={{ fontWeight: 900, fontSize: 'clamp(48px, 7vw, 96px)', lineHeight: 0.92, letterSpacing: '-0.03em', marginBottom: 20 }}>
             {tagline.split('.').map((part, i) => (
@@ -103,12 +105,13 @@ export default function Storefront({ theme, products, services, staff, galleries
           </div>
         </div>
         <div style={{ position: 'relative' }}>
-          <img src={heroImage} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', border: '3px solid #000', display: 'block' }} />
+          <img src={heroImage} alt="" className="hero-img-m2" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', border: '3px solid #000', display: 'block' }} />
           <div style={{ position: 'absolute', bottom: -12, right: -12, background: 'var(--brand-color, #0000ff)', color: '#fff', padding: '8px 16px', fontWeight: 900, fontSize: 12, letterSpacing: '0.15em' }}>
             ★ SELECTED PROJECT
           </div>
         </div>
       </section>
+      </>
       )}
 
       {/* Marquee ticker */}

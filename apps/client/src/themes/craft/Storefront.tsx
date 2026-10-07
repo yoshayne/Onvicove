@@ -77,7 +77,9 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* Hero — split layout */}
       {sec('hero') && (
-      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', minHeight: '65vh', width: '100%', ...ord('hero') }}>
+      <>
+<style>{`@media (max-width: 767px) { .hero-img-m2 { aspect-ratio: auto !important; height: auto !important; } .hero-sec-m2 { min-height: 0 !important; grid-template-columns: 1fr !important; gap: 24px !important; } }`}</style>
+      <section className="hero-sec-m2" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', minHeight: '65vh', width: '100%', ...ord('hero') }}>
         <div>
           {/* Stamp badge */}
           <div style={{ position: 'relative', display: 'inline-block', marginBottom: 24 }}>
@@ -109,9 +111,10 @@ export default function Storefront({ theme, products, services, staff, galleries
           </div>
         </div>
         <div style={{ position: 'relative' }}>
-          <img src={heroImage} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: 8, display: 'block' }} />
+          <img src={heroImage} alt="" className="hero-img-m2" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: 8, display: 'block' }} />
         </div>
       </section>
+      </>
       )}
 
       {/* Category navigation */}
