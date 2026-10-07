@@ -300,8 +300,14 @@ function SectionRow({
   onDragStart, onDragOver, onDrop, onDragEnd,
   onToggle, onExpand,
   uploadingFor, onGalleryChange, onUpload, onRemoveImage, onUpdateCaption, emptyHint,
+  index, nativeDrag, onHandlePointerDown, onHandlePointerMove, onHandlePointerEnd,
 }: {
   section: Section;
+  index: number;
+  nativeDrag: boolean;
+  onHandlePointerDown: (e: React.PointerEvent) => void;
+  onHandlePointerMove: (e: React.PointerEvent) => void;
+  onHandlePointerEnd: (e: React.PointerEvent, commit: boolean) => void;
   emptyHint?: { text: string; onClick: () => void } | null;
   isDragging: boolean;
   isDragOver: boolean;
@@ -323,7 +329,8 @@ function SectionRow({
 
   return (
     <div
-      draggable
+      draggable={nativeDrag}
+      data-section-index={index}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={(e) => { e.preventDefault(); onDrop(); }}
@@ -335,7 +342,17 @@ function SectionRow({
       {/* Row header */}
       <div className="flex items-center gap-2 px-3 py-2.5">
         {/* Drag handle */}
-        <div className="shrink-0 cursor-grab text-slate-300 hover:text-slate-400 active:cursor-grabbing">
+        {/* Touch screens have no HTML5 drag events, so the handle drives reordering with pointer events. */}
+        <div
+          className="shrink-0 cursor-grab touch-none select-none p-1.5 -m-1.5 text-slate-300 hover:text-slate-400 active:cursor-grabbing"
+          style={{ touchAction: 'none' }}
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={(e) => onHandlePointerEnd(e, true)}
+          onPointerCancel={(e) => onHandlePointerEnd(e, false)}
+          role="button"
+          aria-label="Drag to reorder"
+        >
           <GripVertical size={16} />
         </div>
 
@@ -716,24 +733,79 @@ export default function PageBuilder() {
     e.preventDefault();
     setDragOverIndex(index);
   }
-  function handleDrop(index: number) {
-    if (dragIndex === null || dragIndex === index) {
-      setDragIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-    // Compute new order synchronously so we can save it immediately
-    const next = [...sections];
-    const [removed] = next.splice(dragIndex, 1);
-    next.splice(index, 0, removed);
-    setSections(next);
-    setIsDirty(false);
+  function moveSection(from: number, to: number) {
     setDragIndex(null);
     setDragOverIndex(null);
+    if (from === to) return;
+    // Compute new order synchronously so we can save it immediately
+    const next = [...sections];
+    const [removed] = next.splice(from, 1);
+    next.splice(to, 0, removed);
+    setSections(next);
+    setIsDirty(false);
     // Auto-save + refresh preview so the reorder is visible immediately
     saveMutation.mutate(next);
   }
+  function handleDrop(index: number) {
+    if (dragIndex === null) return;
+    moveSection(dragIndex, index);
+  }
   function handleDragEnd() { setDragIndex(null); setDragOverIndex(null); }
+
+  // Touch / pen reordering (mouse keeps native HTML5 drag-and-drop)
+  const tabScrollRef = useRef<HTMLDivElement>(null);
+  const pointerDrag = useRef<{ from: number; over: number; pointerId: number; y: number; timer: number } | null>(null);
+  const nativeDrag = typeof window === 'undefined' || !window.matchMedia('(pointer: coarse)').matches;
+
+  function rowIndexAt(x: number, y: number): number | null {
+    for (const el of document.elementsFromPoint(x, y)) {
+      const idx = (el as HTMLElement).dataset?.sectionIndex;
+      if (idx !== undefined) return Number(idx);
+    }
+    return null;
+  }
+
+  function handlePointerDown(e: React.PointerEvent, index: number) {
+    if (e.pointerType === 'mouse') return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    // Scroll the list while the finger is held near its top or bottom edge
+    const timer = window.setInterval(() => {
+      const d = pointerDrag.current;
+      const box = tabScrollRef.current;
+      if (!d || !box) return;
+      const r = box.getBoundingClientRect();
+      if (d.y < r.top + 56) box.scrollTop -= 14;
+      else if (d.y > r.bottom - 56) box.scrollTop += 14;
+    }, 16);
+    pointerDrag.current = { from: index, over: index, pointerId: e.pointerId, y: e.clientY, timer };
+    setDragIndex(index);
+    setDragOverIndex(index);
+    navigator.vibrate?.(8);
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    const d = pointerDrag.current;
+    if (!d || e.pointerId !== d.pointerId) return;
+    d.y = e.clientY;
+    const idx = rowIndexAt(e.clientX, e.clientY);
+    if (idx !== null && idx !== d.over) {
+      d.over = idx;
+      setDragOverIndex(idx);
+    }
+  }
+
+  function handlePointerEnd(e: React.PointerEvent, commit: boolean) {
+    const d = pointerDrag.current;
+    if (!d || e.pointerId !== d.pointerId) return;
+    pointerDrag.current = null;
+    window.clearInterval(d.timer);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    if (commit) moveSection(d.from, d.over);
+    else { setDragIndex(null); setDragOverIndex(null); }
+  }
+
+  useEffect(() => () => { if (pointerDrag.current) window.clearInterval(pointerDrag.current.timer); }, []);
 
   // Toggle section visibility — auto-save so preview reflects the change immediately
   function toggleSection(id: string) {
@@ -848,14 +920,14 @@ export default function PageBuilder() {
     <div className="flex h-[calc(100vh-64px)] flex-col overflow-hidden">
 
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
-        <div>
-          <h1 className="text-lg font-bold text-slate-900">Page Builder</h1>
-          <p className="text-xs text-slate-400">Design and customize your storefront</p>
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white px-3 py-3 md:px-5">
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-bold text-slate-900">Page Builder</h1>
+          <p className="hidden text-xs text-slate-400 sm:block">Design and customize your storefront</p>
         </div>
 
-        {/* Device toggle */}
-        <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+        {/* Device toggle — only meaningful beside the desktop preview pane */}
+        <div className="hidden items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 md:flex">
           {(['desktop', 'tablet', 'mobile'] as Device[]).map((d) => {
             const icons: Record<Device, LucideIcon> = { desktop: Monitor, tablet: Tablet, mobile: Smartphone };
             const labels: Record<Device, string> = { desktop: 'Desktop', tablet: 'Tablet', mobile: 'Mobile' };
@@ -879,14 +951,15 @@ export default function PageBuilder() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {siteHref && (
             <a
               href={siteHref} target="_blank" rel="noopener noreferrer"
+              aria-label="Open in new tab"
               className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
             >
               <ExternalLink size={13} />
-              Open in new tab
+              <span className="hidden sm:inline">Open in new tab</span>
             </a>
           )}
           <button
@@ -932,7 +1005,7 @@ export default function PageBuilder() {
           </div>
 
           {/* Tab content */}
-          <div className="flex-1 overflow-y-auto">
+          <div ref={tabScrollRef} className="flex-1 overflow-y-auto">
 
             {/* ── Sections tab ── */}
             {tab === 'sections' && (
@@ -951,6 +1024,11 @@ export default function PageBuilder() {
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDrop={() => handleDrop(index)}
                       onDragEnd={handleDragEnd}
+                      index={index}
+                      nativeDrag={nativeDrag}
+                      onHandlePointerDown={(e) => handlePointerDown(e, index)}
+                      onHandlePointerMove={handlePointerMove}
+                      onHandlePointerEnd={handlePointerEnd}
                       onToggle={() => toggleSection(section.id)}
                       onExpand={() => toggleExpand(section.id)}
                       uploadingFor={uploadingFor}
