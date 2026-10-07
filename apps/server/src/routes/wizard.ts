@@ -4,6 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { generateUniqueSlug } from '../lib/slugify';
 import { checkItemLimit } from '../services/settings';
+import { hasAnyWindow } from '../services/businessHours';
 import { sendTenantWelcome, sendSiteLive, sendAdminNewSignup } from '../services/email';
 
 const app = new Hono();
@@ -144,6 +145,12 @@ app.post('/complete', async (c) => {
         )
       `;
     }
+  }
+
+  // Persist the business's weekly booking hours (so a solo business without staff can still take bookings)
+  const wizardHours = data.availability ?? (Array.isArray(data.staff) ? data.staff.find((st: any) => st?.availability)?.availability : undefined);
+  if (hasAnyWindow(wizardHours)) {
+    await db`UPDATE tenants SET business_hours = ${db.json(wizardHours as never)} WHERE id = ${result.id}`;
   }
 
   // Persist staff

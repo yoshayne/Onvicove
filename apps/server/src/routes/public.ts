@@ -5,7 +5,7 @@ import { rateLimitPublic } from '../middleware/ratelimit';
 import { enrichWithUrls, getSignedFileUrl } from '../services/storage';
 import { generateOrderNumber } from '../lib/orderNumber';
 import { getCustomerBaseUrl } from '../lib/baseUrl';
-import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
+import { slotsForService } from '../services/slots';
 import { computePlatformFee, createBookingPaymentIntent } from '../services/stripe';
 import {
   sendCustomOrderNotification, sendCustomOrderConfirmation,
@@ -176,38 +176,14 @@ app.get('/:slug/availability', async (c) => {
   const service = services[0];
   if (!service) return c.json({ error: 'Service not found' }, 404);
 
-  let staffList;
-  if (staffId) {
-    staffList = await db`SELECT * FROM staff WHERE id = ${staffId} AND tenant_id = ${tenant.id} AND is_active = TRUE`;
-  } else {
-    staffList = await db`SELECT * FROM staff WHERE tenant_id = ${tenant.id} AND is_active = TRUE LIMIT 1`;
-  }
-
-  if (staffList.length === 0) {
-    return c.json({ slots: [] });
-  }
-
-  const staff = staffList[0];
-  const { start, end } = getDayUtcRange(date, tenant.timezone as string);
-
-  const existingBookings = await db`
-    SELECT start_time, end_time FROM bookings
-    WHERE staff_id = ${staff.id}
-    AND status NOT IN ('cancelled', 'no_show')
-    AND start_time >= ${start.toISOString()}
-    AND start_time <= ${end.toISOString()}
-  `;
-
-  const slots = computeAvailableSlots({
+  const result = await slotsForService({
+    tenant: tenant as never,
+    service: service as never,
     date,
-    timezone: tenant.timezone as string,
-    availability: staff.availability as any,
-    durationMinutes: service.duration_minutes as number,
-    bufferMinutes: service.buffer_minutes as number,
-    existingBookings: existingBookings.map((b) => ({ start_time: b.start_time, end_time: b.end_time })),
+    staffId,
   });
 
-  return c.json({ slots, staff_id: staff.id });
+  return c.json({ slots: result.slots, staff_id: result.staffId, reason: result.reason });
 });
 
 const orderItemSchema = z.object({
@@ -388,18 +364,31 @@ app.post('/:slug/bookings', async (c) => {
     return c.json({ error: 'start_time must be before end_time' }, 400);
   }
 
-  if (d.staff_id) {
-    const conflicts = await db`
-      SELECT id FROM bookings
-      WHERE staff_id = ${d.staff_id}
-      AND status NOT IN ('cancelled', 'no_show')
-      AND start_time < ${d.end_time}
-      AND end_time > ${d.start_time}
-      LIMIT 1
-    `;
-    if (conflicts[0]) {
-      return c.json({ error: 'This time slot is no longer available' }, 409);
-    }
+  // Check against the same "resource" the availability endpoint offers: the chosen staff member, else the
+  // first active one, else (a business with no staff) the whole business — so nobody can double-book.
+  let conflictStaffId: string | null = d.staff_id ?? null;
+  if (!conflictStaffId) {
+    const first = await db`SELECT id FROM staff WHERE tenant_id = ${tenant.id} AND is_active = TRUE ORDER BY created_at ASC LIMIT 1`;
+    conflictStaffId = (first[0]?.id as string | undefined) ?? null;
+  }
+  const conflicts = conflictStaffId
+    ? await db`
+        SELECT id FROM bookings
+        WHERE tenant_id = ${tenant.id}
+        AND (staff_id = ${conflictStaffId} OR staff_id IS NULL)
+        AND status NOT IN ('cancelled', 'no_show')
+        AND start_time < ${d.end_time}
+        AND end_time > ${d.start_time}
+        LIMIT 1`
+    : await db`
+        SELECT id FROM bookings
+        WHERE tenant_id = ${tenant.id}
+        AND status NOT IN ('cancelled', 'no_show')
+        AND start_time < ${d.end_time}
+        AND end_time > ${d.start_time}
+        LIMIT 1`;
+  if (conflicts[0]) {
+    return c.json({ error: 'This time slot is no longer available' }, 409);
   }
 
   const customers = await db`

@@ -477,3 +477,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS domain_purchase_requests_session_uniq
 UPDATE tenants
 SET page_content = (page_content - 'page_content') || (page_content -> 'page_content')
 WHERE jsonb_typeof(page_content -> 'page_content') = 'object';
+
+-- Business-wide weekly booking hours (used when a business has no staff, or a staff member sets none)
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS business_hours JSONB;

@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
-import type { Tenant, BookingMode, FontPairId } from '../types';
+import type { Tenant, BookingMode, FontPairId, WeeklyAvailability } from '../types';
+import WeeklyHoursEditor from '../components/shared/WeeklyHoursEditor';
+import { describeHours, hasAnyHours, withAllDays, WEEKDAY_9_TO_5 } from '../lib/hours';
 import Spinner from '../components/shared/Spinner';
 import Button from '../components/shared/Button';
 import { Input } from '../components/shared/Input';
@@ -39,6 +41,69 @@ function tenantToForm(tenant: Tenant): SettingsFormState {
     show_live_calendar: tenant.show_live_calendar,
     font_pair_id: (tenant.font_pair_id as FontPairId) ?? 'classic',
   };
+}
+
+// Weekly hours bookings are taken against when there is no staff member, or a staff member sets none.
+function BookingHoursCard({ tenant }: { tenant: Tenant }) {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const [hours, setHours] = useState<WeeklyAvailability | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const { data } = useQuery({
+    queryKey: ['booking-hours', tenant.id, tenant.business_hours ? 'saved' : 'derived'],
+    queryFn: () => api.get<{ availability: Partial<WeeklyAvailability>; source: 'business' | 'text' | 'none' }>('/tenants/me/booking-hours'),
+  });
+
+  useEffect(() => {
+    if (data && !hours) setHours(withAllDays(data.availability));
+  }, [data, hours]);
+
+  const save = useMutation({
+    mutationFn: (next: WeeklyAvailability | null) => api.patch('/tenants/me', { business_hours: next }),
+    onSuccess: () => {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+      queryClient.invalidateQueries({ queryKey: ['tenant', 'me'] });
+      queryClient.invalidateQueries({ queryKey: ['booking-hours'] });
+    },
+  });
+
+  if (!hours) return null;
+  const noHours = !hasAnyHours(hours);
+
+  return (
+    <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6">
+      <div>
+        <h2 className="text-base font-semibold text-slate-900">Booking hours</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          When customers can book. This applies to your whole business — and to any staff member who hasn't set hours of their own.
+        </p>
+      </div>
+
+      {data?.source === 'text' && (
+        <div className="rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-800">
+          We filled these in from the Business hours text on your page ({describeHours(hours) || 'your text'}). Click <strong>Save booking hours</strong> to make them official.
+        </div>
+      )}
+      {noHours && data?.source === 'none' && (
+        <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          No booking hours are set, so customers can't book yet.
+          <button type="button" onClick={() => setHours(withAllDays(WEEKDAY_9_TO_5))} className="ml-2 font-semibold underline">Start with Mon–Fri 9am–5pm</button>
+        </div>
+      )}
+
+      <WeeklyHoursEditor value={hours} onChange={setHours} />
+
+      <div className="flex items-center justify-end gap-3">
+        {saved && <span className="text-sm text-green-600">Saved</span>}
+        <Button type="button" onClick={() => save.mutate(hasAnyHours(hours) ? hours : null)} isLoading={save.isPending}>
+          Save booking hours
+        </Button>
+      </div>
+      {save.isError && <p className="text-xs text-red-600">{(save.error as Error).message}</p>}
+    </div>
+  );
 }
 
 export default function Settings() {
@@ -263,6 +328,8 @@ export default function Settings() {
           </Button>
         </div>
       </form>
+
+      {tenant && (tenant.mode === 'book' || tenant.mode === 'both') && <BookingHoursCard tenant={tenant} />}
 
       {tenant && <CustomDomainPanel tenant={tenant} />}
     </div>

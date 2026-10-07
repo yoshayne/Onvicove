@@ -7,6 +7,7 @@ import ThemeRenderer from '../themes/ThemeRenderer';
 import type { ThemeData, ProductData, ProductVariantData, ServiceData, StaffData } from '../themes/types';
 import type { GallerySectionData } from '../themes/shared/Gallery';
 import { getFontPair } from '../themes/shared/fontPairs';
+import { describeHours } from '../lib/hours';
 
 interface StoredSection { id: string; type: string; enabled: boolean; [key: string]: unknown; }
 
@@ -49,7 +50,7 @@ function mapTenant(tenant: Tenant): ThemeData {
     contactEmail: pc['contact.email'] || undefined,
     contactPhone: pc['contact.phone'] || undefined,
     contactAddress: pc['contact.address'] || undefined,
-    contactHours: pc['contact.hours'] || undefined,
+    contactHours: pc['contact.hours'] || describeHours(tenant.business_hours) || undefined,
     testimonials: pc['testimonials'] ? tryParseJson(pc['testimonials']) : undefined,
     faqs: pc['faqs'] ? tryParseJson(pc['faqs']) : undefined,
     layoutId: pc['layout_id'] || undefined,

@@ -66,6 +66,7 @@ function buildWizardData(state: WizardState) {
       depositCents: s.requiresDeposit ? s.depositCents ?? 0 : null,
       imageKeys: [],
     })),
+    availability: state.availability,
     staff: state.staff.map((st) => ({
       name: st.name,
       email: st.email,
@@ -123,6 +124,7 @@ function applyWizardData(state: WizardState, data: Record<string, unknown>, slug
     }
   }
 
+  if (d.availability && typeof d.availability === 'object') state.setAvailability(d.availability as never);
   if (Array.isArray(d.staff)) {
     for (const st of d.staff) {
       if (st.availability) state.setAvailability(st.availability);

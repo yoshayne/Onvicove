@@ -1,22 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
-import type { Staff, WeeklyAvailability, AvailabilitySlot } from '../types';
+import type { Staff, WeeklyAvailability } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
 import Button from '../components/shared/Button';
 import Modal from '../components/shared/Modal';
 import { Input, Textarea } from '../components/shared/Input';
-
-const DAYS: { key: keyof WeeklyAvailability; label: string }[] = [
-  { key: 'mon', label: 'Mon' },
-  { key: 'tue', label: 'Tue' },
-  { key: 'wed', label: 'Wed' },
-  { key: 'thu', label: 'Thu' },
-  { key: 'fri', label: 'Fri' },
-  { key: 'sat', label: 'Sat' },
-  { key: 'sun', label: 'Sun' },
-];
+import WeeklyHoursEditor from '../components/shared/WeeklyHoursEditor';
 
 const DEFAULT_AVAILABILITY: WeeklyAvailability = {
   mon: [{ start: '09:00', end: '17:00' }],
@@ -123,31 +114,6 @@ export default function StaffPage() {
     } finally {
       setUploading(false);
     }
-  }
-
-  function addSlot(day: keyof WeeklyAvailability) {
-    setForm((f) => ({
-      ...f,
-      availability: {
-        ...f.availability,
-        [day]: [...f.availability[day], { start: '09:00', end: '17:00' }],
-      },
-    }));
-  }
-
-  function updateSlot(day: keyof WeeklyAvailability, index: number, slot: AvailabilitySlot) {
-    setForm((f) => {
-      const slots = [...f.availability[day]];
-      slots[index] = slot;
-      return { ...f, availability: { ...f.availability, [day]: slots } };
-    });
-  }
-
-  function removeSlot(day: keyof WeeklyAvailability, index: number) {
-    setForm((f) => {
-      const slots = f.availability[day].filter((_, i) => i !== index);
-      return { ...f, availability: { ...f.availability, [day]: slots } };
-    });
   }
 
   function handleSubmit(e: FormEvent) {
@@ -285,78 +251,8 @@ export default function StaffPage() {
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700">Weekly availability</label>
-            <p className="text-xs text-slate-500">Toggle days open/closed and set the hours customers can book.</p>
-            <div className="flex flex-col divide-y divide-slate-100 rounded-lg border border-slate-200 overflow-hidden">
-              {DAYS.map(({ key, label }) => {
-                const isOpen = form.availability[key].length > 0;
-                return (
-                  <div key={key} className="flex flex-wrap items-start gap-3 px-3 py-2.5 bg-white">
-                    {/* Day label + open/closed toggle */}
-                    <div className="flex items-center gap-2 w-24 pt-0.5 shrink-0">
-                      <span className="text-sm font-medium text-slate-700 w-8">{label}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isOpen) {
-                            setForm((f) => ({ ...f, availability: { ...f.availability, [key]: [] } }));
-                          } else {
-                            addSlot(key);
-                          }
-                        }}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                          isOpen ? 'bg-blue-500' : 'bg-slate-200'
-                        }`}
-                        aria-label={isOpen ? 'Close this day' : 'Open this day'}
-                      >
-                        <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${isOpen ? 'translate-x-4' : 'translate-x-1'}`} />
-                      </button>
-                      <span className="text-xs text-slate-400">{isOpen ? 'Open' : 'Closed'}</span>
-                    </div>
-
-                    {/* Time slots */}
-                    {isOpen ? (
-                      <div className="flex flex-1 flex-col gap-1.5">
-                        {form.availability[key].map((slot, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <input
-                              type="time"
-                              value={slot.start}
-                              onChange={(e) => updateSlot(key, i, { ...slot, start: e.target.value })}
-                              className="rounded border border-slate-300 px-2 py-1 text-xs"
-                            />
-                            <span className="text-xs text-slate-400">–</span>
-                            <input
-                              type="time"
-                              value={slot.end}
-                              onChange={(e) => updateSlot(key, i, { ...slot, end: e.target.value })}
-                              className="rounded border border-slate-300 px-2 py-1 text-xs"
-                            />
-                            {form.availability[key].length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => removeSlot(key, i)}
-                                className="text-xs text-red-500 hover:underline"
-                              >
-                                ×
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => addSlot(key)}
-                          className="self-start text-xs text-blue-600 hover:underline"
-                        >
-                          + Add break
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="pt-0.5 text-xs text-slate-400 italic">Unavailable — no bookings accepted</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <p className="text-xs text-slate-500">Hours customers can book with this person. Leave every day closed to use your business's booking hours (Settings).</p>
+            <WeeklyHoursEditor value={form.availability} onChange={(availability) => setForm((f) => ({ ...f, availability }))} />
           </div>
 
           <label className="flex items-center gap-2 text-sm text-slate-700">

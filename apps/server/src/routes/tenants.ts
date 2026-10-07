@@ -8,8 +8,23 @@ import { generateUniqueSlug, isSlugAvailable, RESERVED_SLUGS } from '../lib/slug
 import { sendTenantWelcome, sendAdminNewSignup } from '../services/email';
 import { getBaseUrl } from '../lib/baseUrl';
 import { domainCache } from '../services/domainCache';
+import { resolveAvailability } from '../services/businessHours';
 
 const app = new Hono();
+
+const hourWindowSchema = z.object({
+  start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  end: z.string().regex(/^(([01]\d|2[0-3]):[0-5]\d|24:00)$/),
+});
+const weeklyHoursSchema = z.object({
+  mon: z.array(hourWindowSchema).max(6).optional(),
+  tue: z.array(hourWindowSchema).max(6).optional(),
+  wed: z.array(hourWindowSchema).max(6).optional(),
+  thu: z.array(hourWindowSchema).max(6).optional(),
+  fri: z.array(hourWindowSchema).max(6).optional(),
+  sat: z.array(hourWindowSchema).max(6).optional(),
+  sun: z.array(hourWindowSchema).max(6).optional(),
+});
 
 const updateTenantSchema = z.object({
   company_name: z.string().min(1).optional(),
@@ -27,6 +42,7 @@ const updateTenantSchema = z.object({
   show_live_calendar: z.boolean().optional(),
   currency: z.string().optional(),
   slug: z.string().min(1).max(60).regex(/^[a-z0-9-]+$/).optional(),
+  business_hours: weeklyHoursSchema.nullable().optional(),
   font_pair_id: z.string().optional(),
 });
 
@@ -117,10 +133,16 @@ app.patch('/me', requireAuth, requireTenant, async (c) => {
     return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   }
 
-  const updates = parsed.data;
+  const { business_hours: businessHours, ...updates } = parsed.data;
   const keys = Object.keys(updates) as (keyof typeof updates)[];
+
+  // JSONB column needs db.json(), so it's written on its own
+  if (businessHours !== undefined) {
+    await db`UPDATE tenants SET business_hours = ${businessHours === null ? null : db.json(businessHours as never)}, updated_at = NOW() WHERE id = ${tenant.id}`;
+  }
   if (keys.length === 0) {
-    return c.json({ tenant: await enrichWithUrls(tenant) });
+    const fresh = await db`SELECT * FROM tenants WHERE id = ${tenant.id} LIMIT 1`;
+    return c.json({ tenant: await enrichWithUrls(fresh[0] ?? tenant) });
   }
 
   // If slug is being changed, verify it's still available (race-condition guard)
@@ -146,6 +168,14 @@ app.patch('/me', requireAuth, requireTenant, async (c) => {
   }
 
   return c.json({ tenant: await enrichWithUrls(result[0]) });
+});
+
+// GET /api/tenants/me/booking-hours — the weekly hours bookings are currently taken against
+// (business hours if saved, otherwise read from the "Business hours" text) and where they came from.
+app.get('/me/booking-hours', requireAuth, requireTenant, async (c) => {
+  const tenant = c.get('tenant') as { business_hours?: unknown; page_content?: Record<string, unknown> | null };
+  const { availability, source } = resolveAvailability(null, tenant);
+  return c.json({ availability, source });
 });
 
 // PUT /api/tenants/me/page-content — replace entire page_content JSONB map

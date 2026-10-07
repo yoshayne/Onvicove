@@ -16,6 +16,8 @@ import type { Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
 import { GALLERY_LAYOUTS } from '../themes/shared/Gallery';
 import { TagPanel, TagSummary, useImageSelection } from './GalleryTagging';
+import { describeHours } from '../lib/hours';
+import { Link } from 'react-router-dom';
 import type { GalleryLayout, GalleryImageData } from '../themes/shared/Gallery';
 import { getLayoutVariants } from '../themes/shared/layoutVariants';
 import ColorPicker from '../components/shared/ColorPicker';
@@ -779,6 +781,8 @@ export default function PageBuilder() {
     }
   }
 
+  const bookingHoursText = describeHours(tenantQ.data?.tenant?.business_hours);
+
   // ── Derived ────────────────────────────────────────────────────────────────
   const tenant = tenantQ.data?.tenant;
   const siteHref = tenant?.custom_domain_verified && tenant?.custom_domain
@@ -1221,11 +1225,26 @@ export default function PageBuilder() {
                       placeholder="123 Main St, City, State"
                     />
                     <ContentField
-                      label="Business hours"
+                      label="Business hours (shown on your site)"
                       value={contentFields['contact.hours']}
                       onChange={(v) => setContent('contact.hours', v)}
-                      placeholder="Mon–Fri 9am–6pm"
+                      placeholder={bookingHoursText || 'Mon–Fri 9am–6pm'}
                     />
+                    <p className="-mt-2 text-[11px] leading-snug text-slate-400">
+                      This text is only what visitors read — it doesn't control when people can book.{' '}
+                      {bookingHoursText ? (
+                        <>
+                          Your booking hours are <span className="text-slate-500">{bookingHoursText}</span>.{' '}
+                          {contentFields['contact.hours'].trim() !== bookingHoursText && (
+                            <button type="button" onClick={() => setContent('contact.hours', bookingHoursText)} className="font-semibold text-violet-600 hover:underline">
+                              Use my booking hours
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <Link to="/dashboard/settings" className="font-semibold text-violet-600 hover:underline">Set your booking hours</Link>
+                      )}
+                    </p>
                   </div>
                 </div>
 

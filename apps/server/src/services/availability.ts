@@ -1,4 +1,4 @@
-import { addMinutes, format, isBefore, parse, startOfDay } from 'date-fns';
+import { addDays, addMinutes, format, isBefore, parse, startOfDay } from 'date-fns';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 
 export interface AvailabilityWindow {
@@ -60,9 +60,15 @@ export function computeAvailableSlots(params: {
   const slots: TimeSlot[] = [];
 
   for (const window of windows) {
+    if (window.start === window.end) continue;
+    // A window ending at/before its start ("12:00"–"00:00", "24:00") runs to the next day's wall-clock time.
+    const runsPastMidnight = window.end === '24:00' || window.end < window.start;
+    const endDate = runsPastMidnight ? format(addDays(dayDate, 1), 'yyyy-MM-dd') : date;
+    const endTime = window.end === '24:00' ? '00:00' : window.end;
+
     // Build local datetime strings, e.g. "2026-06-14 09:00:00"
     const windowStartLocal = `${date} ${window.start}:00`;
-    const windowEndLocal = `${date} ${window.end}:00`;
+    const windowEndLocal = `${endDate} ${endTime}:00`;
 
     // Convert local (tenant timezone) wall-clock time to a real UTC instant
     let cursor = fromZonedTime(windowStartLocal, timezone);

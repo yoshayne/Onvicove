@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
 import type { Service, Staff, Booking } from '../types';
@@ -60,7 +61,7 @@ export default function NewBookingModal({ isOpen, onClose }: Props) {
     queryFn: () => {
       const params = new URLSearchParams({ service_id: serviceId, date });
       if (staffId) params.set('staff_id', staffId);
-      return api.get<{ slots: TimeSlot[]; staffId: string; timezone: string }>(
+      return api.get<{ slots: TimeSlot[]; staffId: string | null; timezone: string; reason?: 'no_hours' | 'closed' | 'full' | null }>(
         `/bookings/availability?${params.toString()}`
       );
     },
@@ -198,7 +199,19 @@ export default function NewBookingModal({ isOpen, onClose }: Props) {
               </div>
             ) : slots.length === 0 ? (
               <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                No available slots on this date. The business may be closed or fully booked.
+                {slotsData?.reason === 'no_hours' ? (
+                  <>
+                    No booking hours are set yet.{' '}
+                    <Link to="/dashboard/settings" className="font-semibold underline">Set your booking hours</Link>{' '}
+                    (or add hours to a staff member) and times will appear here.
+                  </>
+                ) : slotsData?.reason === 'full' ? (
+                  'Every time on this date is already booked.'
+                ) : slotsData?.reason === 'closed' ? (
+                  'You are closed on this day (or the service is longer than your open hours).'
+                ) : (
+                  'No available slots on this date. The business may be closed or fully booked.'
+                )}
               </p>
             ) : (
               <div className="grid max-h-48 grid-cols-3 gap-1.5 overflow-y-auto rounded-lg border border-slate-200 p-2 sm:grid-cols-4">

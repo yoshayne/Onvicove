@@ -37,6 +37,7 @@ export interface Tenant {
   outlook_cal_enabled?: boolean;
   currency: string;
   custom_domain: string | null;
+  business_hours?: WeeklyAvailability | null;
   custom_domain_verified: boolean;
   custom_domain_verify_token: string | null;
   custom_domain_cname_target: string | null;

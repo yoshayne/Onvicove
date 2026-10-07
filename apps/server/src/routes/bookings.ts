@@ -6,7 +6,7 @@ import { requireTenant } from '../middleware/tenant';
 import { createBookingPaymentIntent } from '../services/stripe';
 import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { sendPaymentLinkEmail, sendBookingCancelled, sendTenantBookingCancelled, sendBookingConfirmation, sendTenantNewBooking } from '../services/email';
-import { computeAvailableSlots, getDayUtcRange } from '../services/availability';
+import { slotsForService } from '../services/slots';
 
 const app = new Hono();
 
@@ -41,42 +41,11 @@ app.get('/availability', async (c) => {
     return c.json({ error: 'service_id and date are required' }, 400);
   }
 
-  const timezone = tenant.timezone || 'America/New_York';
-
   const services = await db`SELECT * FROM services WHERE id = ${serviceId} AND tenant_id = ${tenant.id} LIMIT 1`;
   if (!services[0]) return c.json({ error: 'Service not found' }, 404);
-  const service = services[0];
 
-  let staffList;
-  if (staffId) {
-    staffList = await db`SELECT * FROM staff WHERE id = ${staffId} AND tenant_id = ${tenant.id} AND is_active = TRUE LIMIT 1`;
-  } else {
-    staffList = await db`SELECT * FROM staff WHERE tenant_id = ${tenant.id} AND is_active = TRUE LIMIT 1`;
-  }
-  if (!staffList[0]) return c.json({ slots: [] });
-
-  const staff = staffList[0];
-  const { start, end } = getDayUtcRange(date, timezone);
-
-  const existingBookings = await db`
-    SELECT start_time, end_time FROM bookings
-    WHERE tenant_id = ${tenant.id}
-    AND (staff_id = ${staff.id} OR staff_id IS NULL)
-    AND status NOT IN ('cancelled', 'no_show')
-    AND start_time < ${end.toISOString()}
-    AND end_time > ${start.toISOString()}
-  ` as { start_time: string; end_time: string }[];
-
-  const slots = computeAvailableSlots({
-    date,
-    timezone,
-    availability: staff.availability as Record<string, { start: string; end: string }[]>,
-    durationMinutes: service.duration_minutes as number,
-    bufferMinutes: (service.buffer_minutes as number) ?? 0,
-    existingBookings,
-  });
-
-  return c.json({ slots, staffId: staff.id, timezone });
+  const result = await slotsForService({ tenant: tenant as never, service: services[0] as never, date, staffId });
+  return c.json({ slots: result.slots, staffId: result.staffId, timezone: result.timezone, reason: result.reason });
 });
 
 // GET /api/bookings — filters: status, date_from, date_to
