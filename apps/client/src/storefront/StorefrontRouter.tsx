@@ -9,6 +9,19 @@ import type { GallerySectionData } from '../themes/shared/Gallery';
 import { getFontPair } from '../themes/shared/fontPairs';
 
 interface StoredSection { id: string; type: string; enabled: boolean; [key: string]: unknown; }
+
+// Mirrors the Page Builder's defaults so a store that never saved its layout looks like the
+// builder says it does (staff / testimonials / FAQ off until the tenant turns them on).
+const DEFAULT_SECTIONS: StoredSection[] = [
+  { id: 'hero', type: 'hero', enabled: true },
+  { id: 'featured-products', type: 'featured-products', enabled: true },
+  { id: 'services', type: 'services', enabled: true },
+  { id: 'about', type: 'about', enabled: true },
+  { id: 'staff', type: 'staff', enabled: false },
+  { id: 'testimonials', type: 'testimonials', enabled: false },
+  { id: 'faq', type: 'faq', enabled: false },
+  { id: 'contact', type: 'contact', enabled: true },
+];
 import type { Tenant, Product, Service, Staff } from '../types';
 
 function tryParseJson<T>(s: string): T | undefined {
@@ -178,7 +191,7 @@ export default function StorefrontRouter({ slug: hostSlug }: { slug?: string }) 
     };
   }, [tenantQuery.data, fontPair.googleFontsUrl, fontPair.heading, fontPair.body]);
 
-  if (tenantQuery.isLoading) {
+  if (tenantQuery.isLoading || sectionsQuery.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Spinner size="lg" />
@@ -197,21 +210,16 @@ export default function StorefrontRouter({ slug: hostSlug }: { slug?: string }) 
 
   const tenant = tenantQuery.data;
   const rawSections = sectionsQuery.data ?? [];
-  // If only gallery sections are stored (legacy), merge with standard defaults
+  // Nothing saved yet → builder defaults. Only gallery sections saved (legacy) → defaults with
+  // the galleries slotted in after About.
   const hasThemeSections = rawSections.some((s) => s.type !== 'gallery');
-  const allSections: StoredSection[] = (!hasThemeSections && rawSections.length > 0)
-    ? [
-        { id: 'hero', type: 'hero', enabled: true },
-        { id: 'featured-products', type: 'featured-products', enabled: true },
-        { id: 'services', type: 'services', enabled: true },
-        { id: 'about', type: 'about', enabled: true },
-        ...rawSections,
-        { id: 'staff', type: 'staff', enabled: false },
-        { id: 'testimonials', type: 'testimonials', enabled: false },
-        { id: 'faq', type: 'faq', enabled: false },
-        { id: 'contact', type: 'contact', enabled: true },
-      ]
-    : rawSections;
+  let allSections: StoredSection[] = rawSections;
+  if (rawSections.length === 0) {
+    allSections = DEFAULT_SECTIONS;
+  } else if (!hasThemeSections) {
+    const aboutAt = DEFAULT_SECTIONS.findIndex((d) => d.id === 'about') + 1;
+    allSections = [...DEFAULT_SECTIONS.slice(0, aboutAt), ...rawSections, ...DEFAULT_SECTIONS.slice(aboutAt)];
+  }
   // Use section IDs (not types) so galleries with unique IDs sort correctly.
   // Non-gallery defaults have id === type, so secOrder('hero') etc. still work.
   const enabledSections = allSections.filter((s) => s.enabled);
@@ -227,7 +235,7 @@ export default function StorefrontRouter({ slug: hostSlug }: { slug?: string }) 
         services={(servicesQuery.data ?? []).map(mapService)}
         staff={(staffQuery.data ?? []).map(mapStaff)}
         galleries={galleries}
-        visibleSections={visibleSections.length > 0 ? visibleSections : undefined}
+        visibleSections={visibleSections}
       />
     </div>
   );

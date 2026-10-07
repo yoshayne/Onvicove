@@ -1,3 +1,5 @@
+import { SAMPLE_TESTIMONIALS } from '../themes/shared/TestimonialsBlock';
+import { SAMPLE_FAQS } from '../themes/shared/FaqBlock';
 import { useState, Suspense, lazy, type ComponentType } from 'react';
 import type { ThemeId, ThemeProps, ProductData, ServiceData } from '../themes/types';
 
@@ -609,6 +611,13 @@ function FullPreview({ themeId }: { themeId: ThemeId }) {
             brandColor: MINI_STYLES[themeId].accent,
             industry: mock.industry,
             themeId,
+            aboutText: `${mock.companyName} is a small team that cares about doing great work. This is sample text — you'll write your own story in the Page Builder.`,
+            contactEmail: 'hello@yourbusiness.com',
+            contactPhone: '(555) 123-4567',
+            contactAddress: '123 Main Street\nYour City',
+            contactHours: 'Mon–Fri 9am–6pm',
+            testimonials: SAMPLE_TESTIMONIALS,
+            faqs: SAMPLE_FAQS,
           }}
           products={mock.products}
           services={mock.services}

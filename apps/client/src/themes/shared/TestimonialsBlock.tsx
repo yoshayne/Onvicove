@@ -1,7 +1,8 @@
 import { Star } from 'lucide-react';
 import type { TestimonialItem } from '../types';
 
-const DEFAULT_TESTIMONIALS: TestimonialItem[] = [
+// Sample content for marketing previews only — never shown on a real storefront.
+export const SAMPLE_TESTIMONIALS: TestimonialItem[] = [
   { id: 'default-1', author: 'Sarah M.', role: 'Loyal customer', quote: 'Absolutely love this place — the quality is unmatched and service is always exceptional.', rating: 5 },
   { id: 'default-2', author: 'James T.', role: 'Regular client', quote: 'Been coming here for years. Never disappointed. Highly recommend to anyone looking for the best.', rating: 5 },
   { id: 'default-3', author: 'Priya K.', role: 'New customer', quote: 'Found them online and so glad I did. The whole experience was seamless from booking to finish.', rating: 5 },
@@ -26,7 +27,8 @@ export default function TestimonialsBlock({
   textStyle,
   starColor = '#f59e0b',
 }: Props) {
-  const items = (testimonials && testimonials.length > 0) ? testimonials : DEFAULT_TESTIMONIALS;
+  const items = testimonials ?? [];
+  if (items.length === 0) return null;
 
   return (
     <div className={className}>

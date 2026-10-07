@@ -1,47 +1,42 @@
+import type { CSSProperties } from 'react';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
-import type { ThemeData } from '../types';
 
-interface ContactBlockProps {
-  theme: ThemeData;
-  /** Text color class or CSS color string — default white */
-  textColor?: string;
-  /** Muted/secondary color */
-  mutedColor?: string;
-  /** Whether to use inline styles (for themes that use style props) */
-  useInlineStyles?: boolean;
+interface Props {
+  email?: string;
+  phone?: string;
+  address?: string;
+  hours?: string;
+  heading?: string;
+  className?: string;
+  style?: CSSProperties;
+  headingStyle?: CSSProperties;
 }
 
-export default function ContactBlock({ theme, textColor = 'rgba(255,255,255,0.6)', mutedColor = 'rgba(255,255,255,0.4)', useInlineStyles = false }: ContactBlockProps) {
+// Contact details from the Page Builder's Content tab. Renders nothing if none are filled in.
+export default function ContactBlock({ email, phone, address, hours, heading = 'Get in Touch', className = '', style, headingStyle }: Props) {
   const items = [
-    { icon: Phone, value: theme.contactPhone, label: 'Phone' },
-    { icon: Mail,  value: theme.contactEmail, label: 'Email' },
-    { icon: MapPin, value: theme.contactAddress, label: 'Address' },
-    { icon: Clock, value: theme.contactHours,  label: 'Hours' },
-  ].filter((item) => !!item.value);
+    email && { key: 'email', Icon: Mail, label: 'Email', node: <a href={`mailto:${email}`} className="underline underline-offset-4 hover:opacity-70">{email}</a> },
+    phone && { key: 'phone', Icon: Phone, label: 'Phone', node: <a href={`tel:${phone.replace(/[^+\d]/g, '')}`} className="underline underline-offset-4 hover:opacity-70">{phone}</a> },
+    address && { key: 'address', Icon: MapPin, label: 'Location', node: <span className="whitespace-pre-line">{address}</span> },
+    hours && { key: 'hours', Icon: Clock, label: 'Hours', node: <span className="whitespace-pre-line">{hours}</span> },
+  ].filter(Boolean) as { key: string; Icon: typeof Mail; label: string; node: React.ReactNode }[];
 
   if (items.length === 0) return null;
 
-  if (useInlineStyles) {
-    return (
-      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center' }}>
-        {items.map(({ icon: Icon, value, label }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <Icon size={12} style={{ color: textColor, opacity: 0.7, flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: textColor }}>{value}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div className="mt-4 flex flex-col gap-1.5">
-      {items.map(({ icon: Icon, value, label }) => (
-        <div key={label} className="flex items-center justify-center gap-2">
-          <Icon size={12} className="shrink-0 opacity-60" />
-          <span className="text-xs">{value}</span>
+    <section id="contact-details" className={`scroll-mt-20 px-6 py-16 ${className}`} style={style}>
+      <div className="mx-auto max-w-4xl">
+        <h2 style={headingStyle} className="mb-10 text-center text-3xl font-bold md:text-4xl">{heading}</h2>
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {items.map(({ key, Icon, label, node }) => (
+            <div key={key} className="flex flex-col items-center gap-2 text-center">
+              <Icon size={20} className="opacity-60" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-50">{label}</span>
+              <div className="text-sm leading-relaxed">{node}</div>
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      </div>
+    </section>
   );
 }

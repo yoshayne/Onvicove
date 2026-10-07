@@ -16,6 +16,8 @@ import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
+import AboutBlock from '../shared/AboutBlock';
+import ContactBlock from '../shared/ContactBlock';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
@@ -38,10 +40,10 @@ export default function Storefront({ theme, products, services, staff, galleries
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
-  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const ord = makeSectionOrder(visibleSections);
 
   return (
@@ -55,7 +57,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <div style={{ display: 'flex', alignItems: 'center', gap: 32, fontSize: 12, letterSpacing: '0.1em', color: '#1a1a1a' }}>
             {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>Portfolio</a>}
             {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Services</a>}
-            <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>Contact</a>
+            {sec('contact') && <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>Contact</a>}
             {showProducts && (
               <button type="button" aria-label="Open cart" onClick={() => setCartOpen(true)} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: '#1a1a1a', padding: 0 }}>
                 <ShoppingCart size={18} />
@@ -76,12 +78,9 @@ export default function Storefront({ theme, products, services, staff, galleries
             01 / {String(displayProducts.length + displayServices.length).padStart(2, '0')}
           </p>
           <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 'clamp(40px, 5vw, 72px)', fontWeight: 400, lineHeight: 1.05, marginBottom: 24 }}>{tagline}</h1>
-          <p style={{ fontSize: 14, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.7, maxWidth: 400, marginBottom: theme.aboutText ? 12 : 32 }}>
+          <p style={{ fontSize: 14, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.7, maxWidth: 400, marginBottom: 32 }}>
             Editorial-style photography for those who appreciate the art of timeless imagery.
           </p>
-          {theme.aboutText && (
-            <p style={{ fontSize: 14, color: '#1a1a1a', opacity: 0.5, lineHeight: 1.7, maxWidth: 400, marginBottom: 32 }}>{theme.aboutText}</p>
-          )}
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             {showProducts && <a href="#products" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', color: '#1a1a1a', borderBottom: '1px solid #1a1a1a', paddingBottom: 4 }}>View Portfolio →</a>}
             {showServices && <a href="#services" style={{ display: 'inline-block', padding: '10px 24px', fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', background: '#1a1a1a', color: '#f8f6f1' }}>Book a Shoot</a>}
@@ -98,6 +97,9 @@ export default function Storefront({ theme, products, services, staff, galleries
       </>
       )}
 
+      {sec('about') && (
+        <AboutBlock text={theme.aboutText} style={{ ...ord('about'), background:'#f8f6f1',color:'#1a1a1a' }} headingStyle={{ fontFamily:'Playfair Display, Georgia, serif',fontWeight:400 }} />
+      )}
       {/* Products — editorial masonry grid */}
       {showProducts && sec('featured-products') && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 24px', width: '100%', ...ord('featured-products') }}>
@@ -181,6 +183,9 @@ export default function Storefront({ theme, products, services, staff, galleries
       </section>
       )}
 
+      {sec('contact') && (
+        <ContactBlock email={theme.contactEmail} phone={theme.contactPhone} address={theme.contactAddress} hours={theme.contactHours} style={{ ...ord('contact'), background:'#eeece7',color:'#1a1a1a' }} headingStyle={{ fontFamily:'Playfair Display, Georgia, serif',fontWeight:400 }} />
+      )}
       {/* Footer */}
       {sec('contact') && (
       <footer id="footer" style={{ borderTop: '1px solid #d0cdc8', padding: '40px 24px', background: '#f8f6f1', ...ord('contact') }}>

@@ -299,9 +299,10 @@ function SectionRow({
   section, isDragging, isDragOver, isExpanded,
   onDragStart, onDragOver, onDrop, onDragEnd,
   onToggle, onExpand,
-  uploadingFor, onGalleryChange, onUpload, onRemoveImage, onUpdateCaption,
+  uploadingFor, onGalleryChange, onUpload, onRemoveImage, onUpdateCaption, emptyHint,
 }: {
   section: Section;
+  emptyHint?: { text: string; onClick: () => void } | null;
   isDragging: boolean;
   isDragOver: boolean;
   isExpanded: boolean;
@@ -344,7 +345,19 @@ function SectionRow({
         </div>
 
         {/* Label */}
-        <span className="flex-1 text-sm font-semibold text-slate-800">{meta.label}</span>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="text-sm font-semibold text-slate-800">{meta.label}</span>
+          {emptyHint && (
+            <button
+              type="button"
+              onClick={emptyHint.onClick}
+              className="truncate text-left text-[11px] text-amber-600 underline-offset-2 hover:underline"
+              title="This section is on, but nothing will show until you add content"
+            >
+              On, but empty — {emptyHint.text}
+            </button>
+          )}
+        </div>
 
         {/* Eye toggle */}
         <button
@@ -655,15 +668,16 @@ export default function PageBuilder() {
       const extraContent: Record<string, string> = {
         'hero.image_opacity': String(heroImageOpacity),
       };
-      if (testimonials.length > 0) extraContent['testimonials'] = JSON.stringify(testimonials);
-      if (faqs.length > 0) extraContent['faqs'] = JSON.stringify(faqs);
+      // The server merges keys, so cleared items must be sent as '' to actually clear them.
+      extraContent['testimonials'] = testimonials.length > 0 ? JSON.stringify(testimonials) : '';
+      extraContent['faqs'] = faqs.length > 0 ? JSON.stringify(faqs) : '';
 
       await Promise.all([
         api.patch('/tenants/me', { tagline: tagline || null }),
         api.put('/tenants/me/page-content', {
           page_content: {
             ...Object.fromEntries(
-              Object.entries(pageContentFields).filter(([, v]) => v.trim() !== '')
+              Object.entries(pageContentFields).map(([k, v]) => [k, v.trim()])
             ),
             ...extraContent,
           },
@@ -781,6 +795,29 @@ export default function PageBuilder() {
           : s
       )
     );
+  }
+
+  // Sections that are switched on but would render nothing yet.
+  function emptyHintFor(section: Section): { text: string; onClick: () => void } | null {
+    if (!section.enabled) return null;
+    const goContent = () => setTab('content');
+    switch (section.type) {
+      case 'about':
+        return contentFields['about.text'].trim() ? null : { text: 'add your About text in the Content tab', onClick: goContent };
+      case 'contact': {
+        const has = ['contact.email', 'contact.phone', 'contact.address', 'contact.hours']
+          .some((k) => contentFields[k as keyof typeof contentFields].trim());
+        return has ? null : { text: 'add contact details in the Content tab', onClick: goContent };
+      }
+      case 'testimonials':
+        return testimonials.length > 0 ? null : { text: 'add testimonials in the Content tab', onClick: goContent };
+      case 'faq':
+        return faqs.length > 0 ? null : { text: 'add questions in the Content tab', onClick: goContent };
+      case 'gallery':
+        return (section.images?.length ?? 0) > 0 ? null : { text: 'add photos to this gallery', onClick: () => toggleExpand(section.id) };
+      default:
+        return null;
+    }
   }
 
   // ── Derived ────────────────────────────────────────────────────────────────
@@ -921,6 +958,7 @@ export default function PageBuilder() {
                       onUpload={uploadGalleryImages}
                       onRemoveImage={removeGalleryImage}
                       onUpdateCaption={updateGalleryCaption}
+                      emptyHint={emptyHintFor(section)}
                     />
                   ))}
 

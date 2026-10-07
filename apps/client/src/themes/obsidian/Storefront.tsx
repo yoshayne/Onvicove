@@ -16,6 +16,8 @@ import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
+import AboutBlock from '../shared/AboutBlock';
+import ContactBlock from '../shared/ContactBlock';
 
 const G = {
   bg: '#0a0a0f',
@@ -67,11 +69,11 @@ export default function Storefront({ theme, products, services, staff, galleries
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const brand = theme.brandColor || G.gold;
-  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
   const ord = makeSectionOrder(visibleSections);
 
   const featuredProduct = displayProducts.find(p => p.isFeatured) ?? displayProducts[0];
@@ -223,12 +225,9 @@ export default function Storefront({ theme, products, services, staff, galleries
             }}>
               {tagline}
             </h1>
-            <p style={{ fontSize: 14, color: G.textMuted, lineHeight: 1.75, marginBottom: theme.aboutText ? 16 : 40, maxWidth: 380 }}>
+            <p style={{ fontSize: 14, color: G.textMuted, lineHeight: 1.75, marginBottom: 40, maxWidth: 380 }}>
               {theme.city ? `Based in ${theme.city}. ` : ''}Exceptional quality for those who know the difference.
             </p>
-            {theme.aboutText && (
-              <p style={{ fontSize: 14, color: G.textMuted, lineHeight: 1.75, marginBottom: 40, maxWidth: 380 }}>{theme.aboutText}</p>
-            )}
 
             {/* CTAs */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
@@ -312,6 +311,9 @@ export default function Storefront({ theme, products, services, staff, galleries
         </section>
         )}
 
+        {sec('about') && (
+          <AboutBlock text={theme.aboutText} style={{ ...ord('about'), background:G.surface,color:G.text }} headingStyle={{ fontFamily:serif,fontWeight:400 }} />
+        )}
         {/* ── PRODUCTS ── */}
         {showProducts && sec('featured-products') && (
           <section id="products" style={{ padding: isMobile ? '64px 20px' : '96px 56px', background: G.bg, ...ord('featured-products') }}>
@@ -537,7 +539,8 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
         {/* ── EMAIL CAPTURE ── */}
-        <section style={{ padding: isMobile ? '64px 20px' : '96px 56px', background: G.bg, position: 'relative', overflow: 'hidden', ...ord('services') }}>
+        {sec('contact') && (
+        <section style={{ padding: isMobile ? '64px 20px' : '96px 56px', background: G.bg, position: 'relative', overflow: 'hidden', ...ord('contact') }}>
           <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 500, height: 300, borderRadius: '50%', background: `radial-gradient(circle, ${G.goldGlow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
           <div style={{
             position: 'relative', zIndex: 1,
@@ -574,7 +577,11 @@ export default function Storefront({ theme, products, services, staff, galleries
             </form>
           </div>
         </section>
+        )}
 
+        {sec('contact') && (
+          <ContactBlock email={theme.contactEmail} phone={theme.contactPhone} address={theme.contactAddress} hours={theme.contactHours} style={{ ...ord('contact'), background:G.bg,borderTop:`1px solid ${G.glassBorder}`,color:G.text }} headingStyle={{ fontFamily:serif,fontWeight:400 }} />
+        )}
         {/* ── FOOTER ── */}
         {sec('contact') && (
         <footer id="footer" style={{ background: G.surface, borderTop: `1px solid ${G.glassBorder}`, padding: isMobile ? '40px 20px 32px' : '52px 56px 36px', ...ord('contact') }}>

@@ -15,6 +15,7 @@ import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
+import ContactBlock from '../shared/ContactBlock';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 
@@ -42,18 +43,18 @@ export default function Storefront({ theme, products, services, staff, galleries
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline   = theme.tagline || defaults.tagline;
 
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
-  const showServices = (theme.mode === 'book'  || theme.mode === 'both') && services.length > 0;
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
+  const showServices = (theme.mode === 'book'  || theme.mode === 'both') && services.length > 0 && sec('services');
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
-  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
   const ord = makeSectionOrder(visibleSections);
 
   const navLinks = [
     showProducts && { href: '#work', label: 'Work' },
     showServices && { href: '#sessions', label: 'Sessions' },
-    { href: '#about', label: 'About' },
-    { href: '#contact', label: 'Contact' },
+    sec('about') && { href: '#about', label: 'About' },
+    sec('contact') && { href: '#contact', label: 'Contact' },
   ].filter(Boolean) as { href: string; label: string }[];
 
   return (
@@ -307,6 +308,10 @@ export default function Storefront({ theme, products, services, staff, galleries
               ))}
             </div>
       </section>
+      )}
+
+      {sec('contact') && (
+        <ContactBlock email={theme.contactEmail} phone={theme.contactPhone} address={theme.contactAddress} hours={theme.contactHours} style={{ ...ord('contact'), background: '#0d0d0d', color: '#f0ede8' }} headingStyle={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }} />
       )}
 
       {/* ── Contact / Footer ────────────────────────────────────────── */}

@@ -471,3 +471,9 @@ ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS refunded_at TIMEST
 ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS domain_purchase_requests_session_uniq
   ON domain_purchase_requests (stripe_session_id) WHERE stripe_session_id IS NOT NULL;
+
+-- Repair page_content saved one level too deep ({"page_content": {...}}) by an earlier
+-- client/server mismatch; promote the nested keys so the storefront can read them.
+UPDATE tenants
+SET page_content = (page_content - 'page_content') || (page_content -> 'page_content')
+WHERE jsonb_typeof(page_content -> 'page_content') = 'object';

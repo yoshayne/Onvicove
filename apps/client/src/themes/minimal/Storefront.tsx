@@ -18,6 +18,8 @@ import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
+import AboutBlock from '../shared/AboutBlock';
+import ContactBlock from '../shared/ContactBlock';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
@@ -40,9 +42,9 @@ export default function Storefront({ theme, products, services, staff, galleries
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
 
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const ord = makeSectionOrder(visibleSections);
 
   return (
@@ -55,7 +57,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             <div className="hidden md:flex items-center gap-8 text-xs uppercase tracking-[0.2em] font-medium text-[#111111]/60">
               {showProducts && <a href="#products" className="hover:text-[#111111] transition-colors">Shop</a>}
               {showServices && <a href="#services" className="hover:text-[#111111] transition-colors">Book</a>}
-              <a href="#footer" className="hover:text-[#111111] transition-colors">Contact</a>
+              {sec('contact') && <a href="#footer" className="hover:text-[#111111] transition-colors">Contact</a>}
             </div>
             {showProducts && (
               <button
@@ -82,9 +84,6 @@ export default function Storefront({ theme, products, services, staff, galleries
         <div>
           <h1 className="text-4xl md:text-6xl font-light leading-tight mb-6">{theme.companyName}</h1>
           <p className="text-[#111111]/60 text-lg font-light">{tagline}</p>
-          {theme.aboutText && (
-            <p className="text-[#111111]/50 text-base font-light mt-4 leading-relaxed">{theme.aboutText}</p>
-          )}
         </div>
         <div className="md:aspect-[4/3] overflow-hidden bg-[#f8f8f8]">
           <img src={heroImage} alt="" className="block w-full h-auto md:h-full md:object-cover" />
@@ -92,6 +91,9 @@ export default function Storefront({ theme, products, services, staff, galleries
       </section>
       )}
 
+      {sec('about') && (
+        <AboutBlock text={theme.aboutText} style={{ ...ord('about'), background:'#f8f8f8',color:'#111111' }} headingStyle={{ fontWeight:300 }} />
+      )}
       {/* Products */}
       {showProducts && sec('featured-products') && (
         <section id="products" className="scroll-mt-20 max-w-7xl mx-auto w-full px-6 py-20" style={ord('featured-products')}>
@@ -178,6 +180,9 @@ export default function Storefront({ theme, products, services, staff, galleries
       </section>
       )}
 
+      {sec('contact') && (
+        <ContactBlock email={theme.contactEmail} phone={theme.contactPhone} address={theme.contactAddress} hours={theme.contactHours} style={{ ...ord('contact'), background:'#f8f8f8',color:'#111111' }} headingStyle={{ fontWeight:300 }} />
+      )}
       {/* Footer */}
       {sec('contact') && (
       <footer id="footer" className="scroll-mt-20 bg-white border-t border-[#111111]/10 py-12" style={ord('contact')}>

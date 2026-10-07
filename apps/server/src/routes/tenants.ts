@@ -156,10 +156,14 @@ app.put('/me/page-content', requireAuth, requireTenant, async (c) => {
     return c.json({ error: 'Body must be a flat key/value object' }, 400);
   }
 
+  // The Page Builder sends { page_content: {...} }; older callers send the flat map directly.
+  const wrapped = (body as Record<string, unknown>).page_content;
+  const content = wrapped && typeof wrapped === 'object' && !Array.isArray(wrapped) ? wrapped : body;
+
   // Merge into existing page_content rather than replace
   const rows = await db`
     UPDATE tenants
-    SET page_content = COALESCE(page_content, '{}'::jsonb) || ${db.json(body as never)},
+    SET page_content = COALESCE(page_content, '{}'::jsonb) || ${db.json(content as never)},
         updated_at = NOW()
     WHERE id = ${tenant.id}
     RETURNING page_content

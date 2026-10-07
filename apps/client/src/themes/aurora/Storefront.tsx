@@ -16,6 +16,8 @@ import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
+import AboutBlock from '../shared/AboutBlock';
+import ContactBlock from '../shared/ContactBlock';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
@@ -38,10 +40,10 @@ export default function Storefront({ theme, products, services, staff, galleries
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
-  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const ord = makeSectionOrder(visibleSections);
 
   const glass = { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' };
@@ -70,7 +72,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <div style={{ display: 'flex', alignItems: 'center', gap: 32, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
             {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>Shop</a>}
             {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>Sessions</a>}
-            <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>Contact</a>
+            {sec('contact') && <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>Contact</a>}
             {showProducts && (
               <button type="button" aria-label="Open cart" onClick={() => setCartOpen(true)} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', padding: 0 }}>
                 <ShoppingCart size={20} />
@@ -98,10 +100,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <div>
             <p style={{ fontSize: 12, letterSpacing: '0.2em', color: 'var(--brand-color, #a78bfa)', marginBottom: 16, textTransform: 'uppercase', opacity: 0.8 }}>Holistic Wellness</p>
             <h1 style={{ fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 700, lineHeight: 1.1, marginBottom: 20, letterSpacing: '-0.02em' }}>{tagline}</h1>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', marginBottom: theme.aboutText ? 12 : 32, lineHeight: 1.7, maxWidth: 480 }}>Holistic treatments and products to help you glow from within.</p>
-            {theme.aboutText && (
-              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 32, lineHeight: 1.7, maxWidth: 480 }}>{theme.aboutText}</p>
-            )}
+            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', marginBottom: 32, lineHeight: 1.7, maxWidth: 480 }}>Holistic treatments and products to help you glow from within.</p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               {showServices && <a href="#services" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(167,139,250,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(167,139,250,0.4)', color: 'var(--brand-color, #a78bfa)', borderRadius: 50, textDecoration: 'none' }}>Book a Session</a>}
               {showProducts && <a href="#products" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 50, textDecoration: 'none' }}>Shop Products</a>}
@@ -134,6 +133,9 @@ export default function Storefront({ theme, products, services, staff, galleries
       </>
       )}
 
+      {sec('about') && (
+        <AboutBlock text={theme.aboutText} style={{ ...ord('about'), background:'rgba(255,255,255,0.02)',color:'#fff' }} headingStyle={{ fontWeight:700 }} />
+      )}
       {/* Products */}
       {showProducts && sec('featured-products') && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', width: '100%', padding: '80px 24px', ...ord('featured-products') }}>
@@ -211,6 +213,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* Badges */}
+      {sec('services') && (
       <div style={{ padding: '40px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', ...ord('services') }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap' }}>
           {[{ icon: Leaf, text: 'Natural Ingredients', sub: 'Clean & conscious' },
@@ -227,7 +230,11 @@ export default function Storefront({ theme, products, services, staff, galleries
           ))}
         </div>
       </div>
+      )}
 
+      {sec('contact') && (
+        <ContactBlock email={theme.contactEmail} phone={theme.contactPhone} address={theme.contactAddress} hours={theme.contactHours} style={{ ...ord('contact'), background:'rgba(255,255,255,0.02)',borderTop:'1px solid rgba(255,255,255,0.06)',color:'#fff' }} headingStyle={{ fontWeight:700 }} />
+      )}
       {/* Footer */}
       {sec('contact') && (
       <footer id="footer" style={{ padding: '48px 24px', textAlign: 'center', borderTop: '1px solid rgba(167,139,250,0.1)', ...ord('contact') }}>

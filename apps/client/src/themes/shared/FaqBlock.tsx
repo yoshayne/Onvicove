@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { FaqItem } from '../types';
 
-const DEFAULT_FAQS: FaqItem[] = [
+// Sample content for marketing previews only — never shown on a real storefront.
+export const SAMPLE_FAQS: FaqItem[] = [
   { id: 'default-1', question: 'How do I place an order?', answer: 'Browse our products or services, add items to your cart, and check out securely online. You\'ll receive a confirmation email right away.' },
   { id: 'default-2', question: 'What is your return policy?', answer: 'We offer a hassle-free return policy within 30 days of purchase. Items must be in original condition. Contact us to get started.' },
   { id: 'default-3', question: 'How can I get in touch?', answer: 'You can reach us via the contact form on this page, by email, or by phone. We typically respond within one business day.' },
@@ -28,7 +29,8 @@ export default function FaqBlock({
   answerStyle,
 }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
-  const items = (faqs && faqs.length > 0) ? faqs : DEFAULT_FAQS;
+  const items = faqs ?? [];
+  if (items.length === 0) return null;
 
   return (
     <div className={className}>

@@ -16,6 +16,9 @@ import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
+import AboutBlock from '../shared/AboutBlock';
+import ContactBlock from '../shared/ContactBlock';
+import StaffBlock from '../shared/StaffBlock';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
@@ -38,10 +41,10 @@ export default function Storefront({ theme, products, services, staff, galleries
   const displayServices = services.length > 0 ? services : defaults.services;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
-  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const ord = makeSectionOrder(visibleSections);
 
   return (
@@ -68,7 +71,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>ショップ</a>}
             {showProducts && <a href="#products" style={{ textDecoration: 'none', color: 'inherit' }}>コレクション</a>}
             {showServices && <a href="#services" style={{ textDecoration: 'none', color: 'inherit' }}>ブログ</a>}
-            <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>コンタクト</a>
+            {sec('contact') && <a href="#footer" style={{ textDecoration: 'none', color: 'inherit' }}>コンタクト</a>}
             {showProducts && (
               <button type="button" aria-label="Open cart" onClick={() => setCartOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'rgba(255,45,155,0.1)', border: '1px solid rgba(255,45,155,0.4)', borderRadius: 4, cursor: 'pointer', color: '#ff2d9b', fontSize: 11, fontWeight: 600 }}>
                 <ShoppingCart size={14} />
@@ -99,10 +102,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             <h1 className="neon-pink" style={{ fontSize: 'clamp(48px, 7vw, 80px)', fontWeight: 900, lineHeight: 0.95, letterSpacing: '-0.03em', marginBottom: 16 }}>
               {tagline}
             </h1>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: theme.aboutText ? 8 : 32, lineHeight: 1.7 }}>次世代のギア。ストリートのために。</p>
-            {theme.aboutText && (
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 32, lineHeight: 1.7 }}>{theme.aboutText}</p>
-            )}
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 32, lineHeight: 1.7 }}>次世代のギア。ストリートのために。</p>
             <div style={{ display: 'flex', gap: 12 }}>
               {showProducts && (
                 <a href="#products" className="neon-btn" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', color: '#000', textDecoration: 'none', borderRadius: 4 }}>
@@ -135,6 +135,9 @@ export default function Storefront({ theme, products, services, staff, galleries
       </>
       )}
 
+      {sec('about') && (
+        <AboutBlock text={theme.aboutText} style={{ ...ord('about'), background:'rgba(255,45,155,0.03)',borderTop:'1px solid rgba(255,45,155,0.15)',color:'#fff' }} headingStyle={{ color:'#00ffff',textShadow:'0 0 12px rgba(0,255,255,0.5)' }} />
+      )}
       {/* Products */}
       {showProducts && sec('featured-products') && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', width: '100%', ...ord('featured-products') }}>
@@ -209,6 +212,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* Badges */}
+      {sec('services') && (
       <div style={{ padding: '32px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', ...ord('services') }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap' }}>
           {[{ icon: Truck, text: 'Free Shipping', sub: 'Orders ¥10,000+' },
@@ -225,7 +229,14 @@ export default function Storefront({ theme, products, services, staff, galleries
           ))}
         </div>
       </div>
+      )}
 
+      {sec('contact') && (
+        <ContactBlock email={theme.contactEmail} phone={theme.contactPhone} address={theme.contactAddress} hours={theme.contactHours} style={{ ...ord('contact'), background:'#050510',borderTop:'1px solid rgba(0,255,255,0.15)',color:'#fff' }} headingStyle={{ color:'#ff2d9b',textShadow:'0 0 12px rgba(255,45,155,0.5)' }} />
+      )}
+      {sec('staff') && (
+        <StaffBlock staff={staff} style={{ ...ord('staff'), background:'rgba(255,45,155,0.03)',borderTop:'1px solid rgba(255,45,155,0.15)',color:'#fff' }} headingStyle={{ color:'#00ffff',textShadow:'0 0 12px rgba(0,255,255,0.5)' }} />
+      )}
       {/* Footer */}
       {sec('contact') && (
       <footer id="footer" style={{ padding: '40px 24px', textAlign: 'center', borderTop: '1px solid rgba(255,45,155,0.2)', ...ord('contact') }}>

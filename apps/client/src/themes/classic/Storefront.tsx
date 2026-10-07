@@ -16,6 +16,8 @@ import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
+import AboutBlock from '../shared/AboutBlock';
+import ContactBlock from '../shared/ContactBlock';
 
 // Heading font "Merriweather" requires loading Google Fonts in index.html.
 // Body font "Georgia" is a system font (font-serif fallback is fine).
@@ -42,15 +44,15 @@ export default function Storefront({
     bookingClientSecret, bookingAmountCents,
     selectedStaffId, setSelectedStaffId,
   } = useStorefrontCommerce(theme.slug);
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both');
-  const showServices = (theme.mode === 'book' || theme.mode === 'both');
+  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && sec('featured-products');
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && sec('services');
 
   const displayProducts = products.length > 0 ? products : defaults.products;
   const displayServices = services.length > 0 ? services : defaults.services;
   const displayStaff = staff.length > 0 ? staff : defaults.staff;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
-  const sec = (id: string) => !visibleSections || visibleSections.includes(id);
   const ord = makeSectionOrder(visibleSections);
 
   return (
@@ -65,7 +67,7 @@ export default function Storefront({
             <nav className="hidden gap-8 font-['Merriweather'] text-sm font-bold uppercase tracking-wide text-[#1a3a5c] md:flex">
               {showProducts && <a href="#products" className="hover:text-[var(--brand-color,#c8a850)]">Shop</a>}
               {showServices && <a href="#services" className="hover:text-[var(--brand-color,#c8a850)]">Services</a>}
-              <a href="#about" className="hover:text-[var(--brand-color,#c8a850)]">About</a>
+              {sec('about') && <a href="#about" className="hover:text-[var(--brand-color,#c8a850)]">About</a>}
             </nav>
             {showProducts && (
               <button
@@ -109,6 +111,9 @@ export default function Storefront({
       </section>
       )}
 
+      {sec('about') && (
+        <AboutBlock text={theme.aboutText} style={{ ...ord('about'), background:'#fff',color:'#1a3a5c' }} headingStyle={{ fontFamily:'Merriweather, serif' }} />
+      )}
       {/* Products */}
       {showProducts && sec('featured-products') && displayProducts.length > 0 && (
         <section id="products" className="scroll-mt-20 mx-auto w-full max-w-6xl px-6 py-16" style={ord('featured-products')}>
@@ -224,17 +229,17 @@ export default function Storefront({
       </section>
       )}
 
+      {sec('contact') && (
+        <ContactBlock email={theme.contactEmail} phone={theme.contactPhone} address={theme.contactAddress} hours={theme.contactHours} style={{ ...ord('contact'), background:'#fff',color:'#1a3a5c' }} headingStyle={{ fontFamily:'Merriweather, serif' }} />
+      )}
       {/* Footer */}
       {sec('contact') && (
-      <footer id="about" className="scroll-mt-20 mt-8 border-t-4 border-[#1a3a5c] bg-[#f5f5f5] py-10" style={ord('contact')}>
+      <footer id="footer" className="scroll-mt-20 mt-8 border-t-4 border-[#1a3a5c] bg-[#f5f5f5] py-10" style={ord('contact')}>
         <div className="mx-auto max-w-6xl px-6 text-center">
           <div className="font-['Merriweather'] text-lg font-bold text-[#1a3a5c]">
             {theme.companyName}
           </div>
           {theme.city && <p className="mt-2 text-sm text-gray-600">{theme.city}</p>}
-          {theme.aboutText && (
-            <p className="mt-3 text-sm text-gray-600 max-w-xl mx-auto leading-relaxed">{theme.aboutText}</p>
-          )}
           <form onSubmit={(e) => { e.preventDefault(); subscribe(emailInput); }} className="mt-6 flex justify-center gap-2">
             <input
               type="email"

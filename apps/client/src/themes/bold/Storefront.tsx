@@ -16,6 +16,8 @@ import { makeSectionOrder } from '../shared/sectionOrder';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
+import AboutBlock from '../shared/AboutBlock';
+import ContactBlock from '../shared/ContactBlock';
 
 export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
   const {
@@ -41,10 +43,10 @@ export default function Storefront({ theme, products, services, staff, galleries
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
 
-  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0;
-  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0;
-  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
+  const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
+  const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const ord = makeSectionOrder(visibleSections);
 
   // Load Anton font
@@ -100,10 +102,10 @@ export default function Storefront({ theme, products, services, staff, galleries
               {showServices && (
                 <a href="#services" className="hover:text-[var(--brand-color,#e8ff00)] transition-colors">Book</a>
               )}
-              {staff.length > 0 && (
+              {sec('staff') && staff.length > 0 && (
                 <a href="#team" className="hover:text-[var(--brand-color,#e8ff00)] transition-colors">Team</a>
               )}
-              <a href="#footer" className="hover:text-[var(--brand-color,#e8ff00)] transition-colors">Contact</a>
+              {sec('contact') && <a href="#footer" className="hover:text-[var(--brand-color,#e8ff00)] transition-colors">Contact</a>}
             </div>
 
             {showProducts && (
@@ -141,10 +143,10 @@ export default function Storefront({ theme, products, services, staff, galleries
             {showServices && (
               <a href="#services" onClick={() => setMobileMenuOpen(false)} className="bold-heading text-5xl uppercase text-white/80 hover:text-[var(--brand-color,#e8ff00)] transition-colors">Book</a>
             )}
-            {staff.length > 0 && (
+            {sec('staff') && staff.length > 0 && (
               <a href="#team" onClick={() => setMobileMenuOpen(false)} className="bold-heading text-5xl uppercase text-white/80 hover:text-[var(--brand-color,#e8ff00)] transition-colors">Team</a>
             )}
-            <a href="#footer" onClick={() => setMobileMenuOpen(false)} className="bold-heading text-5xl uppercase text-white/80 hover:text-[var(--brand-color,#e8ff00)] transition-colors">Contact</a>
+            {sec('contact') && <a href="#footer" onClick={() => setMobileMenuOpen(false)} className="bold-heading text-5xl uppercase text-white/80 hover:text-[var(--brand-color,#e8ff00)] transition-colors">Contact</a>}
           </nav>
           <div className="mt-auto text-xs text-white/30 uppercase tracking-widest">&copy; {new Date().getFullYear()} {theme.companyName}</div>
         </div>
@@ -184,9 +186,6 @@ export default function Storefront({ theme, products, services, staff, galleries
           <p className="text-white/60 text-sm md:text-base uppercase tracking-[0.35em] mb-4">
             {tagline}
           </p>
-          {theme.aboutText && (
-            <p className="text-white/50 text-sm max-w-xl mx-auto mb-10 leading-relaxed">{theme.aboutText}</p>
-          )}
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
             {showProducts && (
@@ -223,6 +222,9 @@ export default function Storefront({ theme, products, services, staff, galleries
       </section>
       )}
 
+      {sec('about') && (
+        <AboutBlock text={theme.aboutText} style={{ ...ord('about'), background:'#0f0f0f',color:'#fff' }} headingStyle={{ fontFamily:"'Anton', sans-serif",fontWeight:400,textTransform:'uppercase',letterSpacing:'0.05em' }} />
+      )}
       {/* ── Products ── */}
       {showProducts && sec('featured-products') && (
         <section id="products" className="scroll-mt-20 py-24 bg-[#0a0a0a]" style={ord('featured-products')}>
@@ -399,6 +401,9 @@ export default function Storefront({ theme, products, services, staff, galleries
         </>
       )}
 
+      {sec('contact') && (
+        <ContactBlock email={theme.contactEmail} phone={theme.contactPhone} address={theme.contactAddress} hours={theme.contactHours} style={{ ...ord('contact'), background:'#0f0f0f',color:'#fff' }} headingStyle={{ fontFamily:"'Anton', sans-serif",fontWeight:400,textTransform:'uppercase',letterSpacing:'0.05em' }} />
+      )}
       {/* ── Footer ── */}
       {sec('contact') && (
       <footer id="footer" className="scroll-mt-20 bg-[#050505] border-t border-white/10" style={ord('contact')}>
@@ -422,7 +427,7 @@ export default function Storefront({ theme, products, services, staff, galleries
               <div className="flex flex-col gap-3">
                 {showProducts && <a href="#products" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Shop</a>}
                 {showServices && <a href="#services" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Book a Session</a>}
-                {staff.length > 0 && <a href="#team" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Team</a>}
+                {sec('staff') && staff.length > 0 && <a href="#team" className="text-sm text-white/60 hover:text-[var(--brand-color,#e8ff00)] transition-colors uppercase tracking-wide">Team</a>}
               </div>
             </div>
 
