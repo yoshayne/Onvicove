@@ -14,7 +14,7 @@ interface FaqItem { id: string; question: string; answer: string; }
 import { useApi } from '../lib/api';
 import type { Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
-import { GALLERY_LAYOUTS } from '../themes/shared/Gallery';
+import { GALLERY_LAYOUTS, collectTags } from '../themes/shared/Gallery';
 import type { GalleryLayout, GalleryImageData } from '../themes/shared/Gallery';
 import { getLayoutVariants } from '../themes/shared/layoutVariants';
 import ColorPicker from '../components/shared/ColorPicker';
@@ -103,6 +103,13 @@ const DEVICE_WIDTHS: Record<Device, string> = {
 
 // ── Gallery inline editor ─────────────────────────────────────────────────────
 
+const MAX_TAG_LENGTH = 30;
+const MAX_TAGS_PER_IMAGE = 10;
+
+function cleanTag(raw: string): string {
+  return raw.replace(/\s+/g, ' ').trim().slice(0, MAX_TAG_LENGTH);
+}
+
 function GalleryEditor({
   section, onChange, uploadingFor, onUpload, onRemoveImage, onUpdateCaption,
 }: {
@@ -113,6 +120,53 @@ function GalleryEditor({
   onRemoveImage: (id: string, index: number) => void;
   onUpdateCaption: (id: string, index: number, caption: string) => void;
 }) {
+  const images = section.images ?? [];
+  const [selected, setSelected] = useState<number[]>([]);
+  const [multi, setMulti] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+
+  const allTags = collectTags(images);
+  const sel = selected.filter((i) => i < images.length);
+  const selImages = sel.map((i) => images[i]);
+  // Tags present on any selected photo; removing one removes it from all of them.
+  const selTags = collectTags(selImages);
+
+  function toggle(i: number, additive: boolean) {
+    setSelected((prev) => {
+      if (additive || multi) return prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i];
+      return prev.length === 1 && prev[0] === i ? [] : [i];
+    });
+  }
+
+  function patchSelected(fn: (tags: string[]) => string[]) {
+    onChange({
+      images: images.map((img, i) => (sel.includes(i) ? { ...img, tags: fn(img.tags ?? []) } : img)),
+    });
+  }
+
+  function addTags(raw: string) {
+    const incoming = raw.split(',').map(cleanTag).filter(Boolean);
+    if (incoming.length === 0 || sel.length === 0) return;
+    patchSelected((tags) => {
+      const next = [...tags];
+      for (const t of incoming) {
+        if (next.length >= MAX_TAGS_PER_IMAGE) break;
+        if (!next.some((x) => x.toLowerCase() === t.toLowerCase())) {
+          // Reuse existing casing so "weddings" and "Weddings" don't split the filter
+          next.push(allTags.find((x) => x.toLowerCase() === t.toLowerCase()) ?? t);
+        }
+      }
+      return next;
+    });
+    setTagInput('');
+  }
+
+  function removeTag(tag: string) {
+    patchSelected((tags) => tags.filter((t) => t.toLowerCase() !== tag.toLowerCase()));
+  }
+
+  const first = sel.length === 1 ? images[sel[0]] : null;
+
   return (
     <div className="flex flex-col gap-3 border-t border-slate-100 px-3 pb-3 pt-3">
       <select
@@ -125,26 +179,49 @@ function GalleryEditor({
         ))}
       </select>
 
+      {images.length > 1 && (
+        <div className="flex items-center justify-between text-[11px] text-slate-500">
+          <span>
+            {allTags.length > 0
+              ? `Visitors can filter by ${allTags.length} tag${allTags.length === 1 ? '' : 's'}`
+              : 'Select photos to tag them — visitors get a filter bar'}
+          </span>
+          <button
+            type="button"
+            onClick={() => { setMulti((m) => !m); if (multi) setSelected((p) => p.slice(0, 1)); }}
+            className={`rounded-md px-2 py-0.5 font-medium transition-colors ${multi ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:text-violet-600'}`}
+          >
+            {multi ? 'Done selecting' : 'Select multiple'}
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-4 gap-1.5">
-        {(section.images ?? []).map((img, i) => (
-          <div key={i} className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200">
-            <img src={img.url} alt={img.caption ?? ''} className="h-full w-full object-cover" />
-            <button
-              type="button"
-              onClick={() => onRemoveImage(section.id, i)}
-              className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+        {images.map((img, i) => {
+          const isSel = sel.includes(i);
+          return (
+            <div
+              key={i}
+              onClick={(e) => toggle(i, e.shiftKey || e.metaKey || e.ctrlKey)}
+              className={`group relative aspect-square cursor-pointer overflow-hidden rounded-lg border-2 ${isSel ? 'border-violet-500' : 'border-slate-200'}`}
             >
-              <Trash2 size={9} />
-            </button>
-            <input
-              type="text"
-              value={img.caption ?? ''}
-              onChange={(e) => onUpdateCaption(section.id, i, e.target.value)}
-              placeholder="Caption"
-              className="absolute inset-x-0 bottom-0 bg-black/50 px-1 py-0.5 text-[9px] text-white placeholder:text-white/50 focus:outline-none"
-            />
-          </div>
-        ))}
+              <img src={img.url} alt={img.caption ?? ''} className="h-full w-full object-cover" />
+              {(img.tags?.length ?? 0) > 0 && (
+                <span className="absolute left-0.5 top-0.5 rounded-full bg-violet-600 px-1 text-[8px] font-bold leading-4 text-white">
+                  {img.tags!.length}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setSelected([]); onRemoveImage(section.id, i); }}
+                className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                aria-label="Remove photo"
+              >
+                <Trash2 size={9} />
+              </button>
+            </div>
+          );
+        })}
         <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:border-violet-400 hover:text-violet-500">
           {uploadingFor === section.id ? <Spinner size="sm" /> : <Upload size={14} />}
           <span className="text-[9px] font-medium">Add photos</span>
@@ -155,6 +232,63 @@ function GalleryEditor({
           />
         </label>
       </div>
+
+      {sel.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-lg border border-violet-200 bg-violet-50/50 p-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-violet-800">
+              {sel.length === 1 ? 'Selected photo' : `${sel.length} photos selected`}
+            </span>
+            <button type="button" onClick={() => setSelected([])} className="text-[11px] text-slate-500 hover:text-slate-700">
+              Clear
+            </button>
+          </div>
+
+          {first && (
+            <input
+              type="text"
+              value={first.caption ?? ''}
+              onChange={(e) => onUpdateCaption(section.id, sel[0], e.target.value)}
+              placeholder="Caption (optional)"
+              className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+            />
+          )}
+
+          <div className="flex flex-wrap gap-1.5">
+            {selTags.map((t) => (
+              <span key={t} className="inline-flex items-center gap-1 rounded-full bg-violet-600 px-2 py-0.5 text-[11px] font-medium text-white">
+                {t}
+                <button type="button" onClick={() => removeTag(t)} aria-label={`Remove tag ${t}`} className="text-white/70 hover:text-white">
+                  ×
+                </button>
+              </span>
+            ))}
+            {selTags.length === 0 && <span className="text-[11px] text-slate-400">No tags yet</span>}
+          </div>
+
+          <input
+            type="text"
+            list={`tags-${section.id}`}
+            value={tagInput}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v.includes(',')) addTags(v); else setTagInput(v);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); addTags(tagInput); }
+              if (e.key === 'Backspace' && !tagInput && selTags.length) removeTag(selTags[selTags.length - 1]);
+            }}
+            onBlur={() => addTags(tagInput)}
+            placeholder={sel.length > 1 ? `Add a tag to all ${sel.length} (e.g. Weddings)` : 'Add a tag — e.g. Portraits, Weddings'}
+            maxLength={MAX_TAG_LENGTH}
+            className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+          />
+          <datalist id={`tags-${section.id}`}>
+            {allTags.filter((t) => !selTags.includes(t)).map((t) => <option key={t} value={t} />)}
+          </datalist>
+          <p className="text-[10px] text-slate-400">Press Enter to add. Shift/Ctrl-click photos to select several at once.</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -59,6 +59,26 @@ app.put('/:page', async (c) => {
     return c.json({ error: 'Invalid sections', details: parsed.error.flatten() }, 400);
   }
 
+  // Gallery image tags: trim, cap lengths/counts, drop case-insensitive duplicates
+  for (const section of parsed.data.sections as any[]) {
+    if (section.type !== 'gallery' || !Array.isArray(section.images)) continue;
+    for (const img of section.images) {
+      if (!Array.isArray(img.tags)) { delete img.tags; continue; }
+      const seen = new Set<string>();
+      img.tags = img.tags
+        .filter((t: unknown): t is string => typeof t === 'string')
+        .map((t: string) => t.replace(/\s+/g, ' ').trim().slice(0, 30))
+        .filter((t: string) => {
+          const key = t.toLowerCase();
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .slice(0, 10);
+      if (img.tags.length === 0) delete img.tags;
+    }
+  }
+
   const rows = await db`
     INSERT INTO page_sections (tenant_id, page, sections)
     VALUES (${tenant.id}, ${page}, ${db.json(parsed.data.sections as never)})

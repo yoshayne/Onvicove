@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 
 export type GalleryLayout =
@@ -15,6 +15,7 @@ export interface GalleryImageData {
   url: string;
   key?: string; // storage key — used to refresh signed URLs server-side
   caption?: string;
+  tags?: string[]; // category tags — drive the visitor-facing filter bar
 }
 
 export interface GallerySectionData {
@@ -58,9 +59,58 @@ if (typeof document !== 'undefined' && !document.getElementById(KF_ID)) {
   document.head.appendChild(s);
 }
 
+// ── Tag filtering ─────────────────────────────────────────────────────────────
+
+export function collectTags(images: GalleryImageData[]): string[] {
+  const seen = new Map<string, string>();
+  for (const img of images) {
+    for (const tag of img.tags ?? []) {
+      const key = tag.trim().toLowerCase();
+      if (key && !seen.has(key)) seen.set(key, tag.trim());
+    }
+  }
+  return [...seen.values()];
+}
+
+function hasTag(img: GalleryImageData, tag: string): boolean {
+  const key = tag.toLowerCase();
+  return (img.tags ?? []).some((t) => t.trim().toLowerCase() === key);
+}
+
+// Monochrome (currentColor) so it reads on any theme's background.
+function FilterBar({ tags, active, onChange }: { tags: string[]; active: string | null; onChange: (tag: string | null) => void }) {
+  const pill = (label: string, isActive: boolean, onClick: () => void) => (
+    <button
+      key={label}
+      type="button"
+      onClick={onClick}
+      aria-pressed={isActive}
+      className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium uppercase tracking-[0.12em] transition-all duration-200"
+      style={{
+        border: `1px solid ${isActive ? 'currentColor' : 'color-mix(in srgb, currentColor 25%, transparent)'}`,
+        background: isActive ? 'color-mix(in srgb, currentColor 12%, transparent)' : 'transparent',
+        opacity: isActive ? 1 : 0.6,
+      }}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div
+      role="group"
+      aria-label="Filter photos"
+      className="mx-auto mb-8 flex max-w-5xl gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:justify-center sm:overflow-visible"
+      style={{ scrollbarWidth: 'none' }}
+    >
+      {pill('All', active === null, () => onChange(null))}
+      {tags.map((t) => pill(t, active?.toLowerCase() === t.toLowerCase(), () => onChange(active?.toLowerCase() === t.toLowerCase() ? null : t)))}
+    </div>
+  );
+}
+
 // ── Hook: staggered IntersectionObserver reveal ───────────────────────────────
 
-function useReveal(count: number, baseDelay = 60) {
+function useReveal(count: number, baseDelay = 60, resetKey = '') {
   const refs = useRef<(HTMLElement | null)[]>([]);
   useEffect(() => {
     const els = refs.current.filter(Boolean) as HTMLElement[];
@@ -82,7 +132,7 @@ function useReveal(count: number, baseDelay = 60) {
       io.observe(el);
     });
     return () => io.disconnect();
-  }, [count, baseDelay]);
+  }, [count, baseDelay, resetKey]);
 
   return (i: number) => (el: HTMLElement | null) => {
     refs.current[i] = el;
@@ -442,19 +492,33 @@ function Polaroid({ images, onOpen }: { images: GalleryImageData[]; onOpen: (i: 
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export default function Gallery({ layout, images, title }: { layout: GalleryLayout; images: GalleryImageData[]; title?: string }) {
+export default function Gallery({ layout, images: allImages, title }: { layout: GalleryLayout; images: GalleryImageData[]; title?: string }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const setRef = useReveal(images.length);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
 
-  if (images.length === 0) return null;
+  const tags = useMemo(() => collectTags(allImages), [allImages]);
+  const filterable = tags.length > 0 && allImages.length > 1 && layout !== 'before-after';
+  const active = filterable && activeTag && tags.some((t) => t.toLowerCase() === activeTag.toLowerCase()) ? activeTag : null;
+  const images = active ? allImages.filter((img) => hasTag(img, active)) : allImages;
+  // Changing the filter remounts the layout so reveal/slide state starts fresh for the new set.
+  const resetKey = active ? `tag:${active.toLowerCase()}` : 'all';
 
-  const heading = title && (
-    <h2 className="mb-8 text-center text-2xl font-semibold text-slate-900 sm:text-3xl">{title}</h2>
+  const setRef = useReveal(images.length, 60, resetKey);
+
+  useEffect(() => { setLightboxIndex(null); }, [resetKey]);
+
+  if (allImages.length === 0) return null;
+
+  const heading = (
+    <>
+      {title && <h2 className="mb-8 text-center text-2xl font-semibold text-inherit sm:text-3xl">{title}</h2>}
+      {filterable && <FilterBar tags={tags} active={active} onChange={setActiveTag} />}
+    </>
   );
 
   // ── Slideshow ──────────────────────────────────────────────────────────────
   if (layout === 'slideshow') {
-    return <section className="px-4 py-16">{heading}<Slideshow images={images} /></section>;
+    return <section className="px-4 py-16">{heading}<Slideshow key={resetKey} images={images} /></section>;
   }
 
   // ── Before / After ─────────────────────────────────────────────────────────
@@ -467,7 +531,7 @@ export default function Gallery({ layout, images, title }: { layout: GalleryLayo
     return (
       <section className="py-16 px-4">
         {heading}
-        <Carousel images={images} onOpen={setLightboxIndex} />
+        <Carousel key={resetKey} images={images} onOpen={setLightboxIndex} />
         {lightboxIndex !== null && (
           <Lightbox images={images} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onNav={setLightboxIndex} />
         )}
@@ -480,7 +544,7 @@ export default function Gallery({ layout, images, title }: { layout: GalleryLayo
     return (
       <section className="px-4 py-16">
         {heading}
-        <Polaroid images={images} onOpen={setLightboxIndex} />
+        <Polaroid key={resetKey} images={images} onOpen={setLightboxIndex} />
         {lightboxIndex !== null && (
           <Lightbox images={images} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onNav={setLightboxIndex} />
         )}
@@ -496,7 +560,7 @@ export default function Gallery({ layout, images, title }: { layout: GalleryLayo
         <div className="columns-2 gap-3 sm:columns-3 [&>*]:mb-3">
           {images.map((img, i) => (
             <button
-              key={i} type="button"
+              key={`${resetKey}-${i}`} type="button"
               ref={setRef(i) as React.Ref<HTMLButtonElement>}
               onClick={() => setLightboxIndex(i)}
               className="block w-full overflow-hidden rounded-lg break-inside-avoid transition-transform duration-300 hover:scale-[1.02]"
@@ -522,7 +586,7 @@ export default function Gallery({ layout, images, title }: { layout: GalleryLayo
             const big = i % 5 === 0;
             return (
               <button
-                key={i} type="button"
+                key={`${resetKey}-${i}`} type="button"
                 ref={setRef(i) as React.Ref<HTMLButtonElement>}
                 onClick={() => setLightboxIndex(i)}
                 className={`overflow-hidden rounded-lg transition-transform duration-500 hover:scale-[1.02] ${big ? 'col-span-4 row-span-2' : 'col-span-2'}`}
@@ -547,7 +611,7 @@ export default function Gallery({ layout, images, title }: { layout: GalleryLayo
         <div className="mx-auto grid max-w-3xl grid-cols-4 gap-2 sm:grid-cols-5">
           {images.map((img, i) => (
             <button
-              key={i} type="button"
+              key={`${resetKey}-${i}`} type="button"
               ref={setRef(i) as React.Ref<HTMLButtonElement>}
               onClick={() => setLightboxIndex(i)}
               className="group relative aspect-square overflow-hidden rounded-md"
@@ -573,7 +637,7 @@ export default function Gallery({ layout, images, title }: { layout: GalleryLayo
       <div className="mx-auto grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         {images.map((img, i) => (
           <button
-            key={i} type="button"
+            key={`${resetKey}-${i}`} type="button"
             ref={setRef(i) as React.Ref<HTMLButtonElement>}
             onClick={() => setLightboxIndex(i)}
             className="overflow-hidden rounded-lg"
