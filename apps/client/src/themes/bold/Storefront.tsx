@@ -152,10 +152,10 @@ export default function Storefront({ theme, products, services, staff, galleries
 
       {/* ── Hero ── */}
       {sec('hero') && (
-      <section className="relative h-screen min-h-[600px] flex flex-col items-center justify-center text-center overflow-hidden" style={ord('hero')}>
+      <section className={`relative md:h-screen md:min-h-[600px] flex flex-col md:items-center md:justify-center text-center overflow-hidden ${heroImage ? '' : 'min-h-[600px] items-center justify-center'}`} style={ord('hero')}>
         {/* Background */}
         {heroImage ? (
-          <img src={heroImage} alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
+          <img src={heroImage} alt="" className="block w-full h-auto md:absolute md:inset-0 md:h-full md:object-cover md:object-top" />
         ) : (
           <div
             className="absolute inset-0"
@@ -166,10 +166,10 @@ export default function Storefront({ theme, products, services, staff, galleries
           />
         )}
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0a0a0a]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0a0a0a] hidden md:block" />
 
         {/* Content */}
-        <div className="relative z-10 px-6 max-w-5xl w-full">
+        <div className="relative z-10 px-6 py-10 md:py-0 max-w-5xl w-full mx-auto">
           <div className="inline-flex items-center gap-2 border border-[var(--brand-color,#e8ff00)]/60 px-4 py-1.5 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-color,#e8ff00)] animate-pulse" />
             <span className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.35em]">
@@ -216,7 +216,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         </div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30">
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 hidden md:flex flex-col items-center gap-2 text-white/30">
           <span className="text-[9px] uppercase tracking-[0.4em]">Scroll</span>
           <div className="w-px h-10 bg-gradient-to-b from-white/40 to-transparent" />
         </div>
