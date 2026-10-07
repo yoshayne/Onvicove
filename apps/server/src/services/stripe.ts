@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
-import { getPlatformSettings } from './settings';
+import { db } from '../db/client';
+import { feeForPlan, getPlatformSettings } from './settings';
 
 let _stripe: Stripe | undefined;
 
@@ -21,9 +22,14 @@ export const stripe: Stripe = new Proxy({} as Stripe, {
   },
 });
 
-export async function computePlatformFee(totalCents: number): Promise<number> {
-  const settings = await getPlatformSettings();
-  return Math.round(totalCents * settings.platform_fee_percent) + settings.platform_fee_fixed_cents;
+/** Platform fee on a payment, based on the paying store's current plan (e.g. Business pays less). */
+export async function computePlatformFee(totalCents: number, tenantId: string): Promise<number> {
+  const [settings, rows] = await Promise.all([
+    getPlatformSettings(),
+    db`SELECT plan FROM tenants WHERE id = ${tenantId} LIMIT 1`,
+  ]);
+  const { percent, fixedCents } = feeForPlan(settings, (rows[0]?.plan as string) ?? 'starter');
+  return Math.round(totalCents * percent) + fixedCents;
 }
 
 interface CreateBookingIntentArgs {
@@ -39,7 +45,7 @@ interface CreateBookingIntentArgs {
 }
 
 export async function createBookingPaymentIntent(args: CreateBookingIntentArgs) {
-  const platformFee = await computePlatformFee(args.amountCents);
+  const platformFee = await computePlatformFee(args.amountCents, args.tenantId);
 
   const params: Stripe.PaymentIntentCreateParams = {
     amount: args.amountCents,

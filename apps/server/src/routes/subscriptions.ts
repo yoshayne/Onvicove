@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { stripe } from '../services/stripe';
 import { getBaseUrl } from '../lib/baseUrl';
+import { feeForPlan, getPlatformSettings } from '../services/settings';
 import {
   applySubscription, ENDED_STATUSES, ENTITLED_STATUSES, priceIdFor, type StripeSubscriptionLike,
 } from '../services/subscriptions';
@@ -35,6 +36,18 @@ async function getOrCreateStripeCustomer(tenant: SubTenant): Promise<string> {
   await db`UPDATE tenants SET stripe_customer_id = ${customer.id}, updated_at = NOW() WHERE id = ${tenant.id}`;
   return customer.id;
 }
+
+// GET /api/subscriptions/plans — what each plan costs and the platform fee a store on it pays
+app.get('/plans', async (c) => {
+  const settings = await getPlatformSettings();
+  const plans = Object.fromEntries(
+    (['starter', 'pro', 'business'] as const).map((id) => {
+      const fee = feeForPlan(settings, id);
+      return [id, { name: settings.plans[id].name, price_cents: settings.plans[id].price_cents, fee_percent: fee.percent, fee_fixed_cents: fee.fixedCents }];
+    }),
+  );
+  return c.json({ plans });
+});
 
 // GET /api/subscriptions/status
 app.get('/status', async (c) => {

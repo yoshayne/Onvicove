@@ -7,7 +7,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireAdmin } from '../middleware/admin';
 import { stripe } from '../services/stripe';
-import { getPlatformSettings, savePlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../services/settings';
+import { getPlatformSettings, savePlatformSettings, DEFAULT_PLATFORM_SETTINGS, type PlatformSettings } from '../services/settings';
 import {
   sendPlanUpgraded, sendPlanDowngraded, sendAccountSuspended, sendAccountReactivated,
   sendOrderRefunded, sendBookingRefunded, sendAdminRefund,
@@ -376,6 +376,8 @@ const planConfigSchema = z.object({
   product_limit: z.number().int().min(0).nullable(),
   service_limit: z.number().int().min(0).nullable(),
   ai_credits: z.number().int().min(0),
+  platform_fee_percent: z.number().min(0).max(1).nullable().optional(),
+  platform_fee_fixed_cents: z.number().int().min(0).nullable().optional(),
 });
 
 const platformSettingsSchema = z.object({
@@ -402,10 +404,22 @@ app.put('/settings', async (c) => {
     return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   }
 
-  await savePlatformSettings(parsed.data);
-  await logAdminAction(c, 'update_settings', 'platform_settings', null, parsed.data as Record<string, unknown>);
+  // A client that doesn't send the per-plan fee fields (undefined) keeps the current ones; explicit null = "use the platform default"
+  const current = await getPlatformSettings();
+  const keep = <T,>(sent: T | null | undefined, now: T | null): T | null => (sent === undefined ? now : sent);
+  const plans = Object.fromEntries(
+    (['starter', 'pro', 'business'] as const).map((id) => [id, {
+      ...parsed.data.plans[id],
+      platform_fee_percent: keep(parsed.data.plans[id].platform_fee_percent, current.plans[id].platform_fee_percent),
+      platform_fee_fixed_cents: keep(parsed.data.plans[id].platform_fee_fixed_cents, current.plans[id].platform_fee_fixed_cents),
+    }]),
+  ) as PlatformSettings['plans'];
+  const next: PlatformSettings = { ...parsed.data, plans };
 
-  return c.json({ settings: parsed.data });
+  await savePlatformSettings(next);
+  await logAdminAction(c, 'update_settings', 'platform_settings', null, next as unknown as Record<string, unknown>);
+
+  return c.json({ settings: next });
 });
 
 // GET /api/admin/coupons

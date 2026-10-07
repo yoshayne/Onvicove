@@ -1,6 +1,6 @@
 # Tiered platform fees (to revisit)
 
-Status: not built. Decision pending.
+Status: BUILT for Business (3.9% + $0.30). Starter and Pro stay at the platform default (4.9% + $0.30). Per-plan fees are editable in Admin > Settings, so Pro can be lowered later (e.g. 4.5%) without code changes.
 
 ## Current state
 - One global platform fee for every plan: 4.9% + $0.30 per payment (orders, bookings, booking balances).
@@ -31,3 +31,9 @@ Reasoning:
 ## Open questions
 - Final percentages (4.9 / 4.5 / 3.9 vs 4.9 / 4.4 / 3.9)?
 - What is production's admin Settings value today?
+
+## How it works now
+- Each plan has optional `platform_fee_percent` / `platform_fee_fixed_cents` in the platform settings. Blank (null) = use the platform default fee.
+- `computePlatformFee(amount, tenantId)` (services/stripe.ts) looks up the paying store's CURRENT plan at payment time, so upgrades and downgrades apply to the next payment only.
+- Business default is 3.9% (code default in services/settings.ts); stored settings from before this feature pick it up automatically.
+- Billing page shows the real fee per plan and the tenant's own fee (GET /api/subscriptions/plans).

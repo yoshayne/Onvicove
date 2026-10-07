@@ -38,7 +38,7 @@ const PLANS = [
     name: 'Business',
     price: '$79/mo',
     priceCents: 7900,
-    features: ['Everything in Pro', 'Multiple staff & locations', 'Advanced analytics', 'Custom domain', 'Lower transaction fees'],
+    features: ['Everything in Pro', 'Multiple staff & locations', 'Advanced analytics', 'Custom domain'],
   },
 ];
 
@@ -74,6 +74,15 @@ export default function Billing() {
     queryKey: ['subscription-status'],
     queryFn: () => api.get<{ subscription: SubStatus }>('/subscriptions/status'),
   });
+
+  const { data: plansData } = useQuery({
+    queryKey: ['subscription-plans'],
+    queryFn: () => api.get<{ plans: Record<PlanId, { fee_percent: number; fee_fixed_cents: number }> }>('/subscriptions/plans'),
+  });
+  const feeLabel = (id: PlanId) => {
+    const f = plansData?.plans[id];
+    return f ? `${+(f.fee_percent * 100).toFixed(2)}% + ${f.fee_fixed_cents}¢ per sale` : null;
+  };
 
   const sub = data?.subscription;
   const currentPlan = sub?.plan ?? 'starter';
@@ -201,6 +210,9 @@ export default function Billing() {
           <div>
             <p className="text-sm text-slate-500">Current plan</p>
             <p className="text-2xl font-bold text-slate-900 capitalize">{currentPlan}</p>
+            {feeLabel(currentPlan) && (
+              <p className="mt-1 text-xs text-slate-500">Your platform fee: {feeLabel(currentPlan)}</p>
+            )}
             {subStatus && subStatus !== 'none' && (
               <p className={`mt-1 text-sm ${subStatus === 'past_due' ? 'text-red-600' : subStatus === 'canceling' ? 'text-amber-600' : 'text-green-600'}`}>
                 {STATUS_LABELS[subStatus] ?? subStatus}
@@ -263,6 +275,12 @@ export default function Billing() {
                 </div>
                 <p className="text-2xl font-bold text-slate-900 mb-4">{plan.price}</p>
                 <ul className="flex flex-col gap-1.5 flex-1 mb-5">
+                  {feeLabel(plan.id) && (
+                    <li className="flex items-start gap-2 text-sm font-medium text-slate-800">
+                      <span className="mt-0.5 text-green-600">✓</span>
+                      Platform fee: {feeLabel(plan.id)}
+                    </li>
+                  )}
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
                       <span className="mt-0.5 text-green-600">✓</span>

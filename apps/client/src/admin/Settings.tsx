@@ -10,6 +10,8 @@ interface PlanConfig {
   product_limit: number | null;
   service_limit: number | null;
   ai_credits: number;
+  platform_fee_percent: number | null;
+  platform_fee_fixed_cents: number | null;
 }
 
 interface PlatformSettings {
@@ -69,6 +71,10 @@ export default function Settings() {
         plan.name = value;
       } else if (key === 'product_limit' || key === 'service_limit') {
         plan[key] = value === '' ? null : parseInt(value, 10);
+      } else if (key === 'platform_fee_percent') {
+        plan.platform_fee_percent = value === '' ? null : (parseFloat(value) || 0) / 100;
+      } else if (key === 'platform_fee_fixed_cents') {
+        plan.platform_fee_fixed_cents = value === '' ? null : Math.round((parseFloat(value) || 0) * 100);
       } else {
         (plan as unknown as Record<string, number>)[key] = parseInt(value, 10) || 0;
       }
@@ -90,6 +96,8 @@ export default function Settings() {
               <th className="px-4 py-3 font-medium">Product limit</th>
               <th className="px-4 py-3 font-medium">Service limit</th>
               <th className="px-4 py-3 font-medium">AI photo credits / mo</th>
+              <th className="px-4 py-3 font-medium">Platform fee %</th>
+              <th className="px-4 py-3 font-medium">Fixed fee (USD)</th>
             </tr>
           </thead>
           <tbody>
@@ -141,12 +149,36 @@ export default function Settings() {
                       className="w-24 rounded-lg border border-slate-300 px-2 py-1"
                     />
                   </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder={`${+(form.platform_fee_percent * 100).toFixed(2)} (default)`}
+                      value={plan.platform_fee_percent === null || plan.platform_fee_percent === undefined ? '' : +(plan.platform_fee_percent * 100).toFixed(2)}
+                      onChange={(e) => updatePlan(planId, 'platform_fee_percent', e.target.value)}
+                      className="w-32 rounded-lg border border-slate-300 px-2 py-1"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder={`${(form.platform_fee_fixed_cents / 100).toFixed(2)} (default)`}
+                      value={plan.platform_fee_fixed_cents === null || plan.platform_fee_fixed_cents === undefined ? '' : (plan.platform_fee_fixed_cents / 100).toFixed(2)}
+                      onChange={(e) => updatePlan(planId, 'platform_fee_fixed_cents', e.target.value)}
+                      className="w-28 rounded-lg border border-slate-300 px-2 py-1"
+                    />
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      <p className="-mt-3 text-xs text-slate-500">
+        Platform fee is taken from every sale a store makes. Leave a plan's fee blank to use the default fee below; stores pay the fee of the plan they're on at the time of the sale.
+      </p>
 
       <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
         <div>
