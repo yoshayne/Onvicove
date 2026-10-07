@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 
 export type GalleryLayout =
@@ -113,7 +113,8 @@ function FilterBar({ tags, active, onChange }: { tags: string[]; active: string 
 function useReveal(count: number, baseDelay = 60, resetKey = '') {
   const refs = useRef<(HTMLElement | null)[]>([]);
   useEffect(() => {
-    const els = refs.current.filter(Boolean) as HTMLElement[];
+    // Items that already played their reveal (e.g. ones that stay when the filter changes) are left alone.
+    const els = (refs.current.filter(Boolean) as HTMLElement[]).filter((el) => !el.dataset.revealed);
     if (els.length === 0) return;
     const io = new IntersectionObserver(
       (entries) => {
@@ -121,7 +122,8 @@ function useReveal(count: number, baseDelay = 60, resetKey = '') {
           if (!entry.isIntersecting) return;
           const el = entry.target as HTMLElement;
           const i = parseInt(el.dataset.revealIdx ?? '0', 10);
-          el.style.animation = `gal-fade-up 0.5s ${i * baseDelay}ms ease both`;
+          el.style.animation = `gal-fade-up 0.5s ${Math.min(i, 10) * baseDelay}ms ease both`;
+          el.dataset.revealed = '1';
           io.unobserve(el);
         });
       },
@@ -492,19 +494,90 @@ function Polaroid({ images, onOpen }: { images: GalleryImageData[]; onOpen: (i: 
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
+const FILTER_OUT_MS = 180;
+const FILTER_MOVE_MS = 380;
+
 export default function Gallery({ layout, images: allImages, title }: { layout: GalleryLayout; images: GalleryImageData[]; title?: string }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  // `activeTag` is the pill the visitor picked (updates instantly); `renderedTag` is what is
+  // actually on screen — it lags behind while the outgoing photos fade away.
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [renderedTag, setRenderedTag] = useState<string | null>(null);
 
   const tags = useMemo(() => collectTags(allImages), [allImages]);
   const filterable = tags.length > 0 && allImages.length > 1 && layout !== 'before-after';
-  const active = filterable && activeTag && tags.some((t) => t.toLowerCase() === activeTag.toLowerCase()) ? activeTag : null;
-  const images = active ? allImages.filter((img) => hasTag(img, active)) : allImages;
-  // Changing the filter remounts the layout so reveal/slide state starts fresh for the new set.
-  const resetKey = active ? `tag:${active.toLowerCase()}` : 'all';
+  const valid = (t: string | null) => (filterable && t && tags.some((x) => x.toLowerCase() === t.toLowerCase()) ? t : null);
+  const pill = valid(activeTag);
+  const shownTag = valid(renderedTag);
+
+  // Indices into allImages, in order — stable identity so photos that stay keep their DOM node.
+  const shownIdx = allImages.map((_, i) => i).filter((i) => !shownTag || hasTag(allImages[i], shownTag));
+  const images = shownIdx.map((i) => allImages[i]);
+  const resetKey = shownTag ? `tag:${shownTag.toLowerCase()}` : 'all';
 
   const setRef = useReveal(images.length, 60, resetKey);
+  const itemEls = useRef(new Map<number, HTMLElement>());
+  const beforeRects = useRef<Map<number, DOMRect> | null>(null);
+  const timer = useRef<number | undefined>(undefined);
 
+  // Ref for a photo tile: registers it for the filter animation and the reveal-on-scroll effect.
+  const itemRef = (pos: number) => {
+    const reveal = setRef(pos);
+    const orig = shownIdx[pos];
+    return (el: HTMLElement | null) => {
+      if (el) itemEls.current.set(orig, el); else itemEls.current.delete(orig);
+      reveal(el);
+    };
+  };
+
+  function selectTag(next: string | null) {
+    setActiveTag(next);
+    window.clearTimeout(timer.current);
+    itemEls.current.forEach((el) => el.getAnimations().filter((a) => a.id === 'gal-filter').forEach((a) => a.cancel()));
+
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const nextValid = valid(next);
+    const leaving = [...itemEls.current.entries()].filter(([i]) => nextValid && !hasTag(allImages[i], nextValid));
+
+    if (reduceMotion || itemEls.current.size === 0) {
+      setRenderedTag(next);
+      return;
+    }
+    // 1) outgoing photos fade and shrink, still occupying their space
+    leaving.forEach(([, el]) => {
+      const a = el.animate(
+        [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(0.92)' }],
+        { duration: FILTER_OUT_MS, easing: 'ease-out', fill: 'forwards' },
+      );
+      a.id = 'gal-filter';
+    });
+    // 2) remember where everything is, swap the set, and let the survivors glide to their new spots
+    timer.current = window.setTimeout(() => {
+      beforeRects.current = new Map([...itemEls.current].map(([i, el]) => [i, el.getBoundingClientRect()]));
+      setRenderedTag(next);
+    }, leaving.length ? FILTER_OUT_MS : 0);
+  }
+
+  useLayoutEffect(() => {
+    const before = beforeRects.current;
+    if (!before) return;
+    beforeRects.current = null;
+    itemEls.current.forEach((el, i) => {
+      const b = before.get(i);
+      if (!b) return; // newcomers use the normal reveal animation
+      const a = el.getBoundingClientRect();
+      const dx = b.left - a.left;
+      const dy = b.top - a.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      const anim = el.animate(
+        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
+        { duration: FILTER_MOVE_MS, easing: 'cubic-bezier(0.22, 0.8, 0.3, 1)' },
+      );
+      anim.id = 'gal-filter';
+    });
+  }, [renderedTag]);
+
+  useEffect(() => () => window.clearTimeout(timer.current), []);
   useEffect(() => { setLightboxIndex(null); }, [resetKey]);
 
   if (allImages.length === 0) return null;
@@ -512,13 +585,13 @@ export default function Gallery({ layout, images: allImages, title }: { layout: 
   const heading = (
     <>
       {title && <h2 className="mb-8 text-center text-2xl font-semibold text-inherit sm:text-3xl">{title}</h2>}
-      {filterable && <FilterBar tags={tags} active={active} onChange={setActiveTag} />}
+      {filterable && <FilterBar tags={tags} active={pill} onChange={selectTag} />}
     </>
   );
 
   // ── Slideshow ──────────────────────────────────────────────────────────────
   if (layout === 'slideshow') {
-    return <section className="px-4 py-16">{heading}<Slideshow key={resetKey} images={images} /></section>;
+    return <section className="px-4 py-16">{heading}<div key={resetKey} style={{ animation: 'gal-fade-up 0.35s ease both' }}><Slideshow images={images} /></div></section>;
   }
 
   // ── Before / After ─────────────────────────────────────────────────────────
@@ -531,7 +604,7 @@ export default function Gallery({ layout, images: allImages, title }: { layout: 
     return (
       <section className="py-16 px-4">
         {heading}
-        <Carousel key={resetKey} images={images} onOpen={setLightboxIndex} />
+        <div key={resetKey} style={{ animation: 'gal-fade-up 0.35s ease both' }}><Carousel images={images} onOpen={setLightboxIndex} /></div>
         {lightboxIndex !== null && (
           <Lightbox images={images} index={lightboxIndex} onClose={() => setLightboxIndex(null)} onNav={setLightboxIndex} />
         )}
@@ -560,8 +633,8 @@ export default function Gallery({ layout, images: allImages, title }: { layout: 
         <div className="columns-2 gap-3 sm:columns-3 [&>*]:mb-3">
           {images.map((img, i) => (
             <button
-              key={`${resetKey}-${i}`} type="button"
-              ref={setRef(i) as React.Ref<HTMLButtonElement>}
+              key={shownIdx[i]} type="button"
+              ref={itemRef(i) as React.Ref<HTMLButtonElement>}
               onClick={() => setLightboxIndex(i)}
               className="block w-full overflow-hidden rounded-lg break-inside-avoid transition-transform duration-300 hover:scale-[1.02]"
             >
@@ -586,8 +659,8 @@ export default function Gallery({ layout, images: allImages, title }: { layout: 
             const big = i % 5 === 0;
             return (
               <button
-                key={`${resetKey}-${i}`} type="button"
-                ref={setRef(i) as React.Ref<HTMLButtonElement>}
+                key={shownIdx[i]} type="button"
+                ref={itemRef(i) as React.Ref<HTMLButtonElement>}
                 onClick={() => setLightboxIndex(i)}
                 className={`overflow-hidden rounded-lg transition-transform duration-500 hover:scale-[1.02] ${big ? 'col-span-4 row-span-2' : 'col-span-2'}`}
               >
@@ -611,8 +684,8 @@ export default function Gallery({ layout, images: allImages, title }: { layout: 
         <div className="mx-auto grid max-w-3xl grid-cols-4 gap-2 sm:grid-cols-5">
           {images.map((img, i) => (
             <button
-              key={`${resetKey}-${i}`} type="button"
-              ref={setRef(i) as React.Ref<HTMLButtonElement>}
+              key={shownIdx[i]} type="button"
+              ref={itemRef(i) as React.Ref<HTMLButtonElement>}
               onClick={() => setLightboxIndex(i)}
               className="group relative aspect-square overflow-hidden rounded-md"
             >
@@ -637,8 +710,8 @@ export default function Gallery({ layout, images: allImages, title }: { layout: 
       <div className="mx-auto grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         {images.map((img, i) => (
           <button
-            key={`${resetKey}-${i}`} type="button"
-            ref={setRef(i) as React.Ref<HTMLButtonElement>}
+            key={shownIdx[i]} type="button"
+            ref={itemRef(i) as React.Ref<HTMLButtonElement>}
             onClick={() => setLightboxIndex(i)}
             className="overflow-hidden rounded-lg"
           >

@@ -5,6 +5,7 @@ import { GALLERY_LAYOUTS } from '../themes/shared/Gallery';
 import type { GalleryLayout, GalleryImageData } from '../themes/shared/Gallery';
 import Spinner from '../components/shared/Spinner';
 import Button from '../components/shared/Button';
+import { TagPanel, TagSummary, useImageSelection } from './GalleryTagging';
 import {
   Plus, Trash2, Upload, GripVertical, Check, ImageIcon, Pencil, X,
 } from 'lucide-react';
@@ -42,7 +43,11 @@ function ImageGrid({
   onRemove,
   onCaptionChange,
   onUpload,
+  selected,
+  onSelect,
 }: {
+  selected: number[];
+  onSelect: (index: number, additive: boolean) => void;
   images: GalleryImageData[];
   uploading: boolean;
   onReorder: (images: GalleryImageData[]) => void;
@@ -103,8 +108,13 @@ function ImageGrid({
             onDragOver={(e) => handleDragOver(e, i)}
             onDrop={() => handleDrop(i)}
             onDragEnd={handleDragEnd}
-            className={`group relative aspect-square overflow-hidden rounded-xl border-2 bg-white transition-all ${
-              dragOver === i ? 'border-violet-400 opacity-50 scale-95' : 'border-transparent'
+            onClick={(e) => {
+              // Caption box and delete button keep their own clicks
+              if ((e.target as HTMLElement).closest('input, button')) return;
+              onSelect(i, e.shiftKey || e.metaKey || e.ctrlKey);
+            }}
+            className={`group relative aspect-square cursor-pointer overflow-hidden rounded-xl border-2 bg-white transition-all ${
+              dragOver === i ? 'border-violet-400 opacity-50 scale-95' : selected.includes(i) ? 'border-violet-500 ring-2 ring-violet-200' : 'border-transparent'
             }`}
           >
             <img src={img.url} alt={img.caption ?? ''} className="h-full w-full object-cover" />
@@ -122,6 +132,18 @@ function ImageGrid({
             >
               <Trash2 size={11} />
             </button>
+
+            {/* Tags */}
+            {(img.tags?.length ?? 0) > 0 && (
+              <div className="pointer-events-none absolute inset-x-1 bottom-8 flex flex-wrap gap-1 overflow-hidden">
+                {img.tags!.slice(0, 2).map((t) => (
+                  <span key={t} className="max-w-full truncate rounded-full bg-violet-600/90 px-1.5 py-0.5 text-[9px] font-medium text-white">{t}</span>
+                ))}
+                {img.tags!.length > 2 && (
+                  <span className="rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">+{img.tags!.length - 2}</span>
+                )}
+              </div>
+            )}
 
             {/* Caption */}
             <input
@@ -209,6 +231,10 @@ export default function GalleryManager() {
 
   const galleries = allSections.filter((s) => s.type === 'gallery') as GallerySection[];
   const active = galleries.find((g) => g.id === activeGalleryId) ?? galleries[0] ?? null;
+
+  const sel = useImageSelection(active?.images?.length ?? 0);
+  const clearSelection = sel.clear;
+  useEffect(() => { clearSelection(); }, [active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Mutations on local state ─────────────────────────────────────────────
 
@@ -467,14 +493,26 @@ export default function GalleryManager() {
             )}
           </div>
 
+          <TagSummary images={active.images ?? []} multi={sel.multi} onToggleMulti={sel.toggleMulti} />
+
           {/* Image grid */}
           <ImageGrid
             images={active.images ?? []}
             uploading={uploading}
-            onReorder={(imgs) => reorderImages(active.id, imgs)}
-            onRemove={(i) => removeImage(active.id, i)}
+            selected={sel.selected}
+            onSelect={sel.toggle}
+            onReorder={(imgs) => { sel.clear(); reorderImages(active.id, imgs); }}
+            onRemove={(i) => { sel.clear(); removeImage(active.id, i); }}
             onCaptionChange={(i, cap) => updateCaption(active.id, i, cap)}
             onUpload={(files) => uploadImages(active.id, files)}
+          />
+
+          <TagPanel
+            images={active.images ?? []}
+            selected={sel.selected}
+            onChange={(imgs) => patchGallery(active.id, { images: imgs })}
+            onClear={sel.clear}
+            listId={`gallery-tab-tags-${active.id}`}
           />
         </div>
       )}
