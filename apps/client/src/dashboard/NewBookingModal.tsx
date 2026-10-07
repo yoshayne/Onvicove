@@ -61,7 +61,7 @@ export default function NewBookingModal({ isOpen, onClose }: Props) {
     queryFn: () => {
       const params = new URLSearchParams({ service_id: serviceId, date });
       if (staffId) params.set('staff_id', staffId);
-      return api.get<{ slots: TimeSlot[]; staffId: string | null; timezone: string; reason?: 'no_hours' | 'closed' | 'full' | null }>(
+      return api.get<{ slots: TimeSlot[]; staffId: string | null; timezone: string; reason?: 'no_hours' | 'closed' | 'full' | 'blocked' | null; blocked_label?: string | null }>(
         `/bookings/availability?${params.toString()}`
       );
     },
@@ -204,6 +204,10 @@ export default function NewBookingModal({ isOpen, onClose }: Props) {
                     No booking hours are set yet.{' '}
                     <Link to="/dashboard/settings" className="font-semibold underline">Set your booking hours</Link>{' '}
                     (or add hours to a staff member) and times will appear here.
+                  </>
+                ) : slotsData?.reason === 'blocked' ? (
+                  <>
+                    This date is blocked off{slotsData.blocked_label ? ` (${slotsData.blocked_label})` : ''}. Remove it from the calendar on the Bookings page to take bookings that day.
                   </>
                 ) : slotsData?.reason === 'full' ? (
                   'Every time on this date is already booked.'

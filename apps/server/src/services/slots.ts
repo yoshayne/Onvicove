@@ -4,7 +4,7 @@ import type { TimeSlot } from './availability';
 import { resolveAvailability } from './businessHours';
 import { addDays, format, parse } from 'date-fns';
 
-export type SlotsReason = 'no_hours' | 'closed' | 'full' | null;
+export type SlotsReason = 'no_hours' | 'closed' | 'full' | 'blocked' | null;
 
 export interface TenantForSlots {
   id: string;
@@ -23,22 +23,35 @@ export async function slotsForService(params: {
   service: { duration_minutes: number; buffer_minutes?: number | null };
   date: string;
   staffId?: string | null;
-}): Promise<{ slots: TimeSlot[]; staffId: string | null; timezone: string; reason: SlotsReason }> {
+}): Promise<{ slots: TimeSlot[]; staffId: string | null; timezone: string; reason: SlotsReason; cityLabel: string | null; blockedLabel: string | null }> {
   const { tenant, service, date, staffId } = params;
   const timezone = tenant.timezone || 'America/New_York';
+
+  // Calendar ranges covering this date: blocked time off wins over a city range
+  const ranges = await db`
+    SELECT kind, city_label FROM city_schedules
+    WHERE tenant_id = ${tenant.id} AND date_from <= ${date}::date AND date_to >= ${date}::date
+    ORDER BY (kind = 'blocked') DESC, date_from
+    LIMIT 1
+  `;
+  const range = ranges[0] as { kind: string; city_label: string | null } | undefined;
+  const cityLabel = range?.kind === 'city' ? range.city_label : null;
+  if (range?.kind === 'blocked') {
+    return { slots: [], staffId: null, timezone, reason: 'blocked', cityLabel: null, blockedLabel: range.city_label };
+  }
 
   let staff: Record<string, unknown> | undefined;
   if (staffId) {
     const rows = await db`SELECT * FROM staff WHERE id = ${staffId} AND tenant_id = ${tenant.id} AND is_active = TRUE LIMIT 1`;
     staff = rows[0];
-    if (!staff) return { slots: [], staffId: null, timezone, reason: null };
+    if (!staff) return { slots: [], staffId: null, timezone, reason: null, cityLabel, blockedLabel: null };
   } else {
     const rows = await db`SELECT * FROM staff WHERE tenant_id = ${tenant.id} AND is_active = TRUE ORDER BY created_at ASC LIMIT 1`;
     staff = rows[0];
   }
 
   const { availability, source } = resolveAvailability(staff?.availability, tenant);
-  if (source === 'none') return { slots: [], staffId: (staff?.id as string) ?? null, timezone, reason: 'no_hours' };
+  if (source === 'none') return { slots: [], staffId: (staff?.id as string) ?? null, timezone, reason: 'no_hours', cityLabel, blockedLabel: null };
 
   // Day plus the early hours of the next day, in case a window runs past midnight
   const { start } = getDayUtcRange(date, timezone);
@@ -74,5 +87,5 @@ export async function slotsForService(params: {
     const open = computeAvailableSlots({ ...args, availability, existingBookings: [] });
     reason = open.length === 0 ? 'closed' : 'full';
   }
-  return { slots, staffId: (staff?.id as string) ?? null, timezone, reason };
+  return { slots, staffId: (staff?.id as string) ?? null, timezone, reason, cityLabel, blockedLabel: null };
 }

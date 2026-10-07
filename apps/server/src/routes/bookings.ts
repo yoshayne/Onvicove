@@ -45,7 +45,7 @@ app.get('/availability', async (c) => {
   if (!services[0]) return c.json({ error: 'Service not found' }, 404);
 
   const result = await slotsForService({ tenant: tenant as never, service: services[0] as never, date, staffId });
-  return c.json({ slots: result.slots, staffId: result.staffId, timezone: result.timezone, reason: result.reason });
+  return c.json({ slots: result.slots, staffId: result.staffId, timezone: result.timezone, reason: result.reason, city_label: result.cityLabel, blocked_label: result.blockedLabel });
 });
 
 // GET /api/bookings — filters: status, date_from, date_to

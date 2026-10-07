@@ -38,6 +38,7 @@ import domainRoutes from './routes/domains';
 import domainPurchaseRoutes from './routes/domain-purchases';
 import inviteRoutes from './routes/invite';
 import pageSectionRoutes from './routes/page-sections';
+import blockedDateRoutes from './routes/blocked-dates';
 
 const app = new Hono();
 
@@ -95,6 +96,7 @@ app.route('/api/domains', domainRoutes);
 app.route('/api/domain-purchases', domainPurchaseRoutes);
 app.route('/api/invite', inviteRoutes);
 app.route('/api/page-sections', pageSectionRoutes);
+app.route('/api/blocked-dates', blockedDateRoutes);
 
 // Normalize double-slash paths (e.g. //claim/TOKEN → /claim/TOKEN)
 // Happens when CLIENT_URL has a trailing slash and gets concatenated with /path

@@ -183,7 +183,7 @@ app.get('/:slug/availability', async (c) => {
     staffId,
   });
 
-  return c.json({ slots: result.slots, staff_id: result.staffId, reason: result.reason });
+  return c.json({ slots: result.slots, staff_id: result.staffId, reason: result.reason, city_label: result.cityLabel });
 });
 
 const orderItemSchema = z.object({
@@ -363,6 +363,16 @@ app.post('/:slug/bookings', async (c) => {
   if (new Date(d.start_time) >= new Date(d.end_time)) {
     return c.json({ error: 'start_time must be before end_time' }, 400);
   }
+
+  // Time off: refuse a booking that starts on a blocked date (tenant-local), whatever the browser sent
+  const blocked = await db`
+    SELECT 1 FROM city_schedules
+    WHERE tenant_id = ${tenant.id} AND kind = 'blocked'
+      AND date_from <= (${d.start_time}::timestamptz AT TIME ZONE ${(tenant.timezone as string) || 'America/New_York'})::date
+      AND date_to   >= (${d.start_time}::timestamptz AT TIME ZONE ${(tenant.timezone as string) || 'America/New_York'})::date
+    LIMIT 1
+  `;
+  if (blocked[0]) return c.json({ error: 'Sorry, that date is not available for bookings.' }, 409);
 
   // Check against the same "resource" the availability endpoint offers: the chosen staff member, else the
   // first active one, else (a business with no staff) the whole business — so nobody can double-book.

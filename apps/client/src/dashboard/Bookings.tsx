@@ -13,12 +13,13 @@ interface CitySchedule {
   id: string;
   date_from: string;
   date_to: string;
-  city_label: string;
+  kind: 'city' | 'blocked';
+  city_label: string | null;
 }
 
 const RANGE_COLORS = [
   'bg-blue-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500',
-  'bg-rose-500', 'bg-cyan-500', 'bg-fuchsia-500', 'bg-orange-500',
+  'bg-teal-500', 'bg-cyan-500', 'bg-fuchsia-500', 'bg-orange-500',
 ];
 
 function CityScheduleCalendar() {
@@ -29,6 +30,8 @@ function CityScheduleCalendar() {
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [rangeStart, setRangeStart] = useState<string | null>(null);
   const [cityInput, setCityInput] = useState('');
+  const [kind, setKind] = useState<'city' | 'blocked'>('city');
+  const [notice, setNotice] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [pendingRange, setPendingRange] = useState<{ from: string; to: string } | null>(null);
 
@@ -42,12 +45,18 @@ function CityScheduleCalendar() {
   const schedules = data?.city_schedules ?? [];
 
   const addMutation = useMutation({
-    mutationFn: (body: { date_from: string; date_to: string; city_label: string }) =>
-      api.post('/blocked-dates', body),
-    onSuccess: () => {
+    mutationFn: (body: { date_from: string; date_to: string; kind: 'city' | 'blocked'; city_label: string }) =>
+      api.post<{ existing_bookings: number }>('/blocked-dates', body),
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['city-schedules'] });
+      setNotice(
+        res.existing_bookings > 0
+          ? `Saved. ${res.existing_bookings} existing booking${res.existing_bookings === 1 ? '' : 's'} fall${res.existing_bookings === 1 ? 's' : ''} in these dates — they weren't cancelled, so review them below.`
+          : null,
+      );
       setPendingRange(null);
       setCityInput('');
+      setKind('city');
       setShowForm(false);
       setRangeStart(null);
     },
@@ -82,8 +91,9 @@ function CityScheduleCalendar() {
   }
 
   function handleSave() {
-    if (!pendingRange || !cityInput.trim()) return;
-    addMutation.mutate({ date_from: pendingRange.from, date_to: pendingRange.to, city_label: cityInput.trim() });
+    if (!pendingRange || (kind === 'city' && !cityInput.trim())) return;
+    setNotice(null);
+    addMutation.mutate({ date_from: pendingRange.from, date_to: pendingRange.to, kind, city_label: cityInput.trim() });
   }
 
   function getScheduleForDay(dateStr: string): { schedule: CitySchedule; colorIdx: number } | null {
@@ -101,7 +111,7 @@ function CityScheduleCalendar() {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">City Schedule</h2>
+        <h2 className="text-lg font-semibold text-slate-900">City schedule &amp; time off</h2>
         <div className="flex items-center gap-2">
           <button onClick={prevMonth} className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100">‹</button>
           <span className="text-sm font-medium text-slate-700 w-36 text-center">{monthLabel}</span>
@@ -128,10 +138,12 @@ function CityScheduleCalendar() {
             <button
               key={dateStr}
               onClick={() => handleDayClick(dateStr)}
-              title={match ? `${match.schedule.city_label} (${match.schedule.date_from} → ${match.schedule.date_to})` : 'Click to start a range'}
+              title={match ? `${match.schedule.kind === 'blocked' ? `Blocked${match.schedule.city_label ? ` — ${match.schedule.city_label}` : ''}` : match.schedule.city_label} (${match.schedule.date_from} → ${match.schedule.date_to})` : 'Click to start a range'}
               className={`rounded py-1.5 text-sm font-medium transition-colors leading-none ${
                 isStart
                   ? 'ring-2 ring-blue-500 bg-blue-100 text-blue-800'
+                  : match?.schedule.kind === 'blocked'
+                  ? 'bg-slate-700 text-white line-through decoration-white/50 hover:opacity-80'
                   : match
                   ? `${RANGE_COLORS[match.colorIdx]} text-white hover:opacity-80`
                   : 'bg-slate-50 text-slate-700 hover:bg-slate-200'
@@ -148,9 +160,27 @@ function CityScheduleCalendar() {
           <p className="text-sm font-medium text-slate-800 mb-2">
             {pendingRange.from} → {pendingRange.to}
           </p>
+          <div className="mb-3 grid grid-cols-2 gap-2" role="radiogroup" aria-label="What are these dates?">
+            {([
+              ['city', "I'll be in a city", 'Customers can still book and see the city'],
+              ['blocked', 'Block off', 'No bookings on these dates (time off)'],
+            ] as const).map(([value, label, hint]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={kind === value}
+                onClick={() => setKind(value)}
+                className={`rounded-lg border px-3 py-2 text-left transition-colors ${kind === value ? 'border-blue-500 bg-white ring-1 ring-blue-500' : 'border-slate-200 bg-white/60 hover:border-slate-300'}`}
+              >
+                <span className="block text-sm font-medium text-slate-800">{label}</span>
+                <span className="block text-[11px] text-slate-500">{hint}</span>
+              </button>
+            ))}
+          </div>
           <input
             type="text"
-            placeholder="City (e.g. Columbia, SC)"
+            placeholder={kind === 'city' ? 'City (e.g. Columbia, SC)' : 'Note (optional, e.g. Vacation)'}
             autoFocus
             className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm mb-2"
             value={cityInput}
@@ -160,13 +190,13 @@ function CityScheduleCalendar() {
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              disabled={!cityInput.trim() || addMutation.isPending}
+              disabled={(kind === 'city' && !cityInput.trim()) || addMutation.isPending}
               className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
             >
               Save
             </button>
             <button
-              onClick={() => { setShowForm(false); setPendingRange(null); setCityInput(''); }}
+              onClick={() => { setShowForm(false); setPendingRange(null); setCityInput(''); setKind('city'); }}
               className="rounded-lg border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
             >
               Cancel
@@ -180,8 +210,15 @@ function CityScheduleCalendar() {
           {schedules.map((s, i) => (
             <div key={s.id} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm bg-slate-50">
               <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${RANGE_COLORS[i % RANGE_COLORS.length]}`} />
-                <span className="font-medium text-slate-800">{s.city_label}</span>
+                <span className={`w-2.5 h-2.5 rounded-full ${s.kind === 'blocked' ? 'bg-slate-700' : RANGE_COLORS[i % RANGE_COLORS.length]}`} />
+                {s.kind === 'blocked' ? (
+                  <span className="font-medium text-slate-800">
+                    <span className="mr-1.5 rounded bg-slate-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">Blocked</span>
+                    {s.city_label ?? 'Time off'}
+                  </span>
+                ) : (
+                  <span className="font-medium text-slate-800">{s.city_label}</span>
+                )}
                 <span className="text-slate-400">{s.date_from} → {s.date_to}</span>
               </div>
               <button
@@ -195,7 +232,10 @@ function CityScheduleCalendar() {
         </div>
       )}
 
-      <p className="mt-3 text-[11px] text-slate-400">Click a start date then an end date to add a city range.</p>
+      {notice && <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{notice}</p>}
+      <p className="mt-3 text-[11px] text-slate-400">
+        Click a start date, then an end date. Choose <strong>I'll be in a city</strong> to show customers where you'll be, or <strong>Block off</strong> to stop bookings on those dates.
+      </p>
     </div>
   );
 }

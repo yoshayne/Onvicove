@@ -480,3 +480,20 @@ WHERE jsonb_typeof(page_content -> 'page_content') = 'object';
 
 -- Business-wide weekly booking hours (used when a business has no staff, or a staff member sets none)
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS business_hours JSONB;
+
+-- Calendar ranges: either "I'm working in <city>" (bookings stay open, customers see the city)
+-- or "blocked" (time off: no bookings can be made on those dates).
+CREATE TABLE IF NOT EXISTS city_schedules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  date_from DATE NOT NULL,
+  date_to DATE NOT NULL,
+  city_label TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CHECK (date_to >= date_from)
+);
+CREATE INDEX IF NOT EXISTS idx_city_schedules_tenant ON city_schedules(tenant_id, date_from, date_to);
+ALTER TABLE city_schedules ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'city';
+ALTER TABLE city_schedules DROP CONSTRAINT IF EXISTS city_schedules_kind_check;
+ALTER TABLE city_schedules ADD CONSTRAINT city_schedules_kind_check CHECK (kind IN ('city', 'blocked'));
+ALTER TABLE city_schedules ALTER COLUMN city_label DROP NOT NULL;
