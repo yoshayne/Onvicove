@@ -120,7 +120,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {displayProducts.slice(0, 2).map((p) => (
+            {(showProducts ? displayProducts.slice(0, 2) : []).map((p) => (
               <div key={p.id} className="product-card" style={{ borderRadius: 8, overflow: 'hidden' }}>
                 <img src={p.imageUrls?.[0] ?? defaults.heroImageUrl} alt={p.name} style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
                 <div style={{ padding: 12 }}>

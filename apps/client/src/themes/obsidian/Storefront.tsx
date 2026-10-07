@@ -82,7 +82,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const navItems = [
     ...(showProducts ? [{ href: '#products', icon: Package, label: 'Shop' }] : []),
     ...(showServices ? [{ href: '#services', icon: Calendar, label: 'Services' }] : []),
-    { href: '#footer', icon: Mail, label: 'Contact' },
+    ...(sec('contact') ? [{ href: '#footer', icon: Mail, label: 'Contact' }] : []),
   ];
 
   return (
@@ -278,7 +278,7 @@ export default function Storefront({ theme, products, services, staff, galleries
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 160, background: `linear-gradient(to top, ${G.bg}, transparent)` }} />
 
               {/* Floating product card on image */}
-              {featuredProduct && (
+              {showProducts && featuredProduct && (
                 <div style={{
                   position: 'absolute', bottom: 40, right: 40,
                   background: 'rgba(10,10,15,0.75)', backdropFilter: 'blur(24px)',
