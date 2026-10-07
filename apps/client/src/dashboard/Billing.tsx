@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
@@ -12,6 +13,7 @@ type PlanId = 'starter' | 'pro' | 'business';
 interface SubStatus {
   plan: PlanId;
   plan_expires_at: string | null;
+  has_billing_account?: boolean;
   stripe_subscription_id: string | null;
   stripe_subscription_status: string | null;
 }
@@ -46,6 +48,8 @@ const STATUS_LABELS: Record<string, string> = {
   past_due: 'Past due — update payment method',
   canceled: 'Canceled',
   incomplete: 'Incomplete — payment required',
+  trialing: 'Trial',
+  unpaid: 'Unpaid — your plan has ended',
   none: '',
 };
 
@@ -62,6 +66,9 @@ export default function Billing() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [priceCents, setPriceCents] = useState(0);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [notice, setNotice] = useState<{ tone: 'ok' | 'warn'; text: string } | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const autoStarted = useRef(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['subscription-status'],
@@ -71,19 +78,45 @@ export default function Billing() {
   const sub = data?.subscription;
   const currentPlan = sub?.plan ?? 'starter';
   const subStatus = sub?.stripe_subscription_status ?? 'none';
-  const hasActiveSub = subStatus === 'active' || subStatus === 'canceling';
+  const hasActiveSub = subStatus === 'active' || subStatus === 'canceling' || subStatus === 'trialing';
+  // Anyone with a Stripe subscription can open the billing portal — including past-due ones who need to fix their card
+  const canManageBilling = !!sub?.has_billing_account && !!sub?.stripe_subscription_id;
+
+  // Ask Stripe for the real state after a payment (the webhook can lag a moment), then refresh the page's data.
+  async function confirmPlan(plan: PlanId) {
+    for (let i = 0; i < 6; i++) {
+      try {
+        const r = await api.post<{ plan: PlanId }>('/subscriptions/sync');
+        if (r.plan === plan) {
+          setNotice({ tone: 'ok', text: `You're now on the ${PLANS.find((p) => p.id === plan)?.name} plan.` });
+          break;
+        }
+      } catch { /* retry */ }
+      if (i === 5) setNotice({ tone: 'warn', text: 'Payment received — your plan will switch over within a minute. Refresh if it doesn\'t.' });
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+    queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
+    queryClient.invalidateQueries({ queryKey: ['tenant', 'me'] });
+  }
 
   const subscribeMutation = useMutation({
     mutationFn: (plan: PlanId) => api.post<{ clientSecret?: string; upgraded?: boolean; status: string }>('/subscriptions/create', { plan }),
     onSuccess: (res, plan) => {
       if (res.upgraded || res.status === 'active') {
-        queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
-        queryClient.invalidateQueries({ queryKey: ['tenant', 'me'] });
         setSelectedPlan(null);
+        void confirmPlan(plan);
       } else if (res.clientSecret) {
         setClientSecret(res.clientSecret);
         setPriceCents(PLANS.find((p) => p.id === plan)?.priceCents ?? 0);
       }
+    },
+  });
+
+  const resumeMutation = useMutation({
+    mutationFn: () => api.post('/subscriptions/resume', {}),
+    onSuccess: () => {
+      setNotice({ tone: 'ok', text: 'Your plan will keep renewing.' });
+      queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
     },
   });
 
@@ -105,11 +138,31 @@ export default function Billing() {
   }
 
   function handlePaymentSuccess() {
+    const plan = selectedPlan;
     setClientSecret(null);
     setSelectedPlan(null);
-    queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
-    queryClient.invalidateQueries({ queryKey: ['tenant', 'me'] });
+    if (plan) void confirmPlan(plan);
   }
+
+  function startPlan(plan: PlanId) {
+    const lower = PLANS.findIndex((p) => p.id === plan) < PLANS.findIndex((p) => p.id === currentPlan);
+    if (lower && !window.confirm(`Switch to ${PLANS.find((p) => p.id === plan)?.name}? You'll move to a lower plan right away, and any unused time is credited to your account.`)) return;
+    setNotice(null);
+    setSelectedPlan(plan);
+    subscribeMutation.mutate(plan);
+  }
+
+  // /dashboard/billing?upgrade=pro (e.g. from a locked theme or the wizard) starts that plan's checkout once
+  const wantedPlan = searchParams.get('upgrade');
+  useEffect(() => {
+    if (autoStarted.current || isLoading || !sub) return;
+    if ((wantedPlan === 'pro' || wantedPlan === 'business') && currentPlan !== wantedPlan && currentPlan === 'starter') {
+      autoStarted.current = true;
+      startPlan(wantedPlan);
+    }
+    if (wantedPlan) setSearchParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, sub, wantedPlan]);
 
   if (isLoading) {
     return (
@@ -123,12 +176,24 @@ export default function Billing() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Billing & Plan</h1>
-        {hasActiveSub && (
+        {canManageBilling && (
           <Button variant="secondary" isLoading={portalLoading} onClick={handleManageBilling}>
             Manage billing
           </Button>
         )}
       </div>
+
+      {notice && (
+        <p className={`rounded-lg border p-3 text-sm ${notice.tone === 'ok' ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+          {notice.text}
+        </p>
+      )}
+
+      {subStatus === 'past_due' && (
+        <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          Your last payment didn't go through. Your plan stays active while we retry, but please update your card under <strong>Manage billing</strong> to avoid losing it.
+        </p>
+      )}
 
       {/* Current plan banner */}
       <div className="rounded-xl border border-slate-200 bg-white p-6">
@@ -157,6 +222,11 @@ export default function Billing() {
             >
               {subStatus === 'canceling' ? 'Cancellation scheduled' : 'Cancel plan'}
             </button>
+          )}
+          {subStatus === 'canceling' && (
+            <Button variant="secondary" isLoading={resumeMutation.isPending} onClick={() => resumeMutation.mutate()}>
+              Keep my plan
+            </Button>
           )}
         </div>
       </div>
@@ -214,12 +284,9 @@ export default function Billing() {
                 ) : isCurrent ? null : (
                   <Button
                     isLoading={isSelecting}
-                    onClick={() => {
-                      setSelectedPlan(plan.id);
-                      subscribeMutation.mutate(plan.id);
-                    }}
+                    onClick={() => startPlan(plan.id)}
                   >
-                    {currentPlan === 'starter' ? 'Upgrade' : 'Switch'} to {plan.name}
+                    {PLANS.findIndex((p) => p.id === plan.id) > PLANS.findIndex((p) => p.id === currentPlan) ? 'Upgrade' : 'Switch'} to {plan.name}
                   </Button>
                 )}
               </div>

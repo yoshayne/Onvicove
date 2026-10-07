@@ -111,7 +111,6 @@ app.post('/complete', async (c) => {
         logo_key = ${data.logoKey ?? tenant.logo_key},
         favicon_key = ${data.faviconKey ?? tenant.favicon_key},
         hero_image_key = ${data.heroImageKey ?? tenant.hero_image_key},
-        plan = ${data.plan || tenant.plan},
         wizard_completed = TRUE,
         updated_at = NOW()
     WHERE id = ${tenant.id}

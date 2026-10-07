@@ -9,6 +9,7 @@ import { sendTenantWelcome, sendAdminNewSignup } from '../services/email';
 import { getBaseUrl } from '../lib/baseUrl';
 import { domainCache } from '../services/domainCache';
 import { resolveAvailability } from '../services/businessHours';
+import { PREMIUM_THEMES } from '../services/subscriptions';
 
 const app = new Hono();
 
@@ -143,6 +144,14 @@ app.patch('/me', requireAuth, requireTenant, async (c) => {
   if (keys.length === 0) {
     const fresh = await db`SELECT * FROM tenants WHERE id = ${tenant.id} LIMIT 1`;
     return c.json({ tenant: await enrichWithUrls(fresh[0] ?? tenant) });
+  }
+
+  // Premium themes are a paid-plan feature (a store already using one may keep it)
+  if (updates.theme_id && PREMIUM_THEMES.has(updates.theme_id)) {
+    const t = tenant as unknown as { plan?: string; theme_id?: string };
+    if (t.plan === 'starter' && t.theme_id !== updates.theme_id) {
+      return c.json({ error: 'This theme is available on the Pro and Business plans. Upgrade to use it.' }, 402);
+    }
   }
 
   // If slug is being changed, verify it's still available (race-condition guard)

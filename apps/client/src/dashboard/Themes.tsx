@@ -183,7 +183,7 @@ function ThemeCard({
 
         {isLocked ? (
           <a
-            href="/dashboard/billing"
+            href="/dashboard/billing?upgrade=pro"
             className="block w-full rounded-lg border border-amber-300 bg-amber-50 py-2 text-center text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors"
           >
             Upgrade to unlock

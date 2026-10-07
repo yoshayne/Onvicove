@@ -147,6 +147,7 @@ export default function Wizard() {
   const [launchedSlug, setLaunchedSlug] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [subClientSecret, setSubClientSecret] = useState<string | null>(null);
+  const [subNotice, setSubNotice] = useState<{ tone: 'ok' | 'warn'; text: string } | null>(null);
   const [subPriceCents, setSubPriceCents] = useState(0);
 
   const StepComponent = STEP_COMPONENTS[currentStep] ?? Step1_BusinessName;
@@ -226,8 +227,12 @@ export default function Wizard() {
             setSubPriceCents(state.plan === 'pro' ? 2900 : 7900);
             setSubClientSecret(sub.clientSecret);
           }
-        } catch {
-          // Subscription can be set up from dashboard/billing — non-blocking
+        } catch (err) {
+          // Non-blocking: the site is live on Starter and the plan can be finished from Billing
+          setSubNotice({
+            tone: 'warn',
+            text: `${err instanceof Error ? err.message : 'We couldn\'t start your upgrade.'} You're on the free Starter plan for now — finish upgrading anytime under Billing.`,
+          });
         }
       }
     } catch (err) {
@@ -267,8 +272,26 @@ export default function Wizard() {
           onBack={prevStep}
           subClientSecret={subClientSecret}
           subPriceCents={subPriceCents}
-          onSubPaymentSuccess={() => setSubClientSecret(null)}
-          onSubPaymentCancel={() => setSubClientSecret(null)}
+          subNotice={subNotice}
+          onSubPaymentSuccess={async () => {
+            setSubClientSecret(null);
+            // Ask Stripe for the real state (the webhook can lag a moment behind the payment)
+            for (let i = 0; i < 6; i++) {
+              try {
+                const r = await api.post<{ plan: string }>('/subscriptions/sync');
+                if (r.plan === state.plan) {
+                  setSubNotice({ tone: 'ok', text: `Your ${state.plan === 'pro' ? 'Pro' : 'Business'} plan is active.` });
+                  return;
+                }
+              } catch { /* retry */ }
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+            }
+            setSubNotice({ tone: 'warn', text: 'Payment received — your plan will switch over within a minute. Check Billing if it doesn\'t.' });
+          }}
+          onSubPaymentCancel={() => {
+            setSubClientSecret(null);
+            setSubNotice({ tone: 'warn', text: 'Payment wasn\'t completed, so you\'re on the free Starter plan. Upgrade anytime under Billing.' });
+          }}
           onGoToSite={(slug) => {
             reset();
             window.open(`https://${slug}.shopsuitedirect.com`, '_blank', 'noopener');
@@ -290,9 +313,10 @@ interface Step10LaunchControlsProps {
   launchedSlug: string | null;
   canLaunch: boolean;
   onBack: () => void;
+  subNotice: { tone: 'ok' | 'warn'; text: string } | null;
   subClientSecret: string | null;
   subPriceCents: number;
-  onSubPaymentSuccess: () => void;
+  onSubPaymentSuccess: () => void | Promise<void>;
   onSubPaymentCancel: () => void;
   onGoToSite: (slug: string) => void;
   onGoToDashboard: () => void;
@@ -307,6 +331,7 @@ function Step10LaunchControls({
   launchedSlug,
   canLaunch,
   onBack,
+  subNotice,
   subClientSecret,
   subPriceCents,
   onSubPaymentSuccess,
@@ -338,6 +363,12 @@ function Step10LaunchControls({
             </button>
           </div>
         </div>
+
+        {subNotice && (
+          <p className={`rounded-lg border p-3 text-sm ${subNotice.tone === 'ok' ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+            {subNotice.text}
+          </p>
+        )}
 
         {subClientSecret && (
           <div className="rounded-lg border border-gray-200 bg-white p-5">
