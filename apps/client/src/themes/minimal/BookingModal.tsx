@@ -20,6 +20,7 @@ interface BookingModalProps {
   staff?: StaffData[];
   selectedStaffId?: string | null;
   onSelectStaff?: (staffId: string | null) => void;
+  isDateClosed?: (d: Date) => boolean;
 }
 
 export default function BookingModal({
@@ -38,6 +39,7 @@ export default function BookingModal({
   staff = [],
   selectedStaffId,
   onSelectStaff,
+  isDateClosed,
 }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -65,6 +67,7 @@ export default function BookingModal({
               availableSlots={availableSlots}
               onSelectDate={onSelectDate}
               onSelectSlot={onSelectSlot}
+              isDateClosed={isDateClosed}
             />
             {selectedDate && onRefreshSlots && (
               <button

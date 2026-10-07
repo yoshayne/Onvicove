@@ -11,15 +11,17 @@ interface BookingModalProps {
   selectedDate: Date | null;
   selectedSlot: string | null;
   availableSlots: AvailableSlot[];
+  cityLabel?: string | null;
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
   staff?: StaffData[];
   selectedStaffId?: string | null;
   onSelectStaff?: (staffId: string | null) => void;
+  isDateClosed?: (d: Date) => boolean;
 }
 
-export default function BookingModal({ isOpen, onClose, service, selectedDate, selectedSlot, availableSlots, onSelectDate, onSelectSlot, onConfirm, staff = [], selectedStaffId, onSelectStaff }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, service, selectedDate, selectedSlot, availableSlots, cityLabel, onSelectDate, onSelectSlot, onConfirm, staff = [], selectedStaffId, onSelectStaff, isDateClosed }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -39,7 +41,7 @@ export default function BookingModal({ isOpen, onClose, service, selectedDate, s
           <button type="button" aria-label="Close" onClick={onClose} className="text-white/30 hover:text-[#ff2d9b]"><X size={22} /></button>
         </div>
         <div className="grid md:grid-cols-2 gap-6 p-6">
-          <div><Calendar selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={onSelectDate} onSelectSlot={onSelectSlot} /></div>
+          <div><Calendar selectedDate={selectedDate} selectedSlot={selectedSlot} availableSlots={availableSlots} onSelectDate={onSelectDate} onSelectSlot={onSelectSlot} isDateClosed={isDateClosed} /></div>
           <div className="flex flex-col gap-4">
             <div className="p-4 rounded-lg" style={{ background: '#050510', border: '1px solid #ff2d9b33' }}>
               {service.description && <p className="text-sm text-white/50 mb-3">{service.description}</p>}
@@ -52,6 +54,13 @@ export default function BookingModal({ isOpen, onClose, service, selectedDate, s
                 <span className="text-lg font-bold" style={{ color: '#ff2d9b', textShadow: '0 0 8px #ff2d9b' }}>{formatPrice(service.priceCents)}</span>
               </div>
             </div>
+            {cityLabel && (
+              <div className="flex items-center gap-2 px-3 py-2 mb-2 rounded-lg border border-[var(--brand-color,#ff2d9b)]/30 bg-white/5 text-white/70 text-sm">
+                <span>📍</span>
+                <span className="font-medium">{cityLabel}</span>
+              </div>
+            )}
+
             {staff.length > 1 && (
               <div>
                 <p className="text-xs text-white/40 uppercase tracking-widest mb-1.5">Select staff (optional)</p>

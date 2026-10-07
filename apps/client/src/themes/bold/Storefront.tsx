@@ -29,7 +29,7 @@ export default function Storefront({ theme, products, services, staff, galleries
     availableSlots, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
     bookingClientSecret, bookingAmountCents,
-    selectedStaffId, setSelectedStaffId,
+    selectedStaffId, setSelectedStaffId, isDateClosed, bookingCityLabel,
   } = useStorefrontCommerce(theme.slug);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -532,6 +532,8 @@ export default function Storefront({ theme, products, services, staff, galleries
         staff={staff}
         selectedStaffId={selectedStaffId}
         onSelectStaff={setSelectedStaffId}
+        isDateClosed={isDateClosed}
+        cityLabel={bookingCityLabel}
       />
 
       <BookingStatusOverlay

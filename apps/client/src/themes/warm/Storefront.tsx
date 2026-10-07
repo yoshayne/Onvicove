@@ -35,7 +35,7 @@ export default function Storefront({ theme, products, services, staff, galleries
     availableSlots, selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
     bookingClientSecret, bookingAmountCents,
-    selectedStaffId, setSelectedStaffId,
+    selectedStaffId, setSelectedStaffId, isDateClosed, bookingCityLabel,
   } = useStorefrontCommerce(theme.slug);
 
   const displayProducts = products.length > 0 ? products : defaults.products;
@@ -270,6 +270,8 @@ export default function Storefront({ theme, products, services, staff, galleries
         staff={staff}
         selectedStaffId={selectedStaffId}
         onSelectStaff={setSelectedStaffId}
+        isDateClosed={isDateClosed}
+        cityLabel={bookingCityLabel}
       />
 
       <BookingStatusOverlay

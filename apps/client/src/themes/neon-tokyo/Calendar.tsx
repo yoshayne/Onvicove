@@ -8,11 +8,12 @@ interface CalendarProps {
   availableSlots: AvailableSlot[];
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
+  isDateClosed?: (d: Date) => boolean;
 }
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-export default function Calendar({ selectedDate, selectedSlot, availableSlots, onSelectDate, onSelectSlot }: CalendarProps) {
+export default function Calendar({ selectedDate, selectedSlot, availableSlots, onSelectDate, onSelectSlot, isDateClosed }: CalendarProps) {
   const today = new Date();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const year = viewDate.getFullYear();
@@ -22,6 +23,7 @@ export default function Calendar({ selectedDate, selectedSlot, availableSlots, o
   const cells: (Date | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+  const hasClosed = isDateClosed ? cells.some((c) => c && isDateClosed(c)) : false;
   const isSameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   const monthLabel = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
@@ -39,16 +41,20 @@ export default function Calendar({ selectedDate, selectedSlot, availableSlots, o
         {cells.map((date, i) => {
           if (!date) return <div key={`empty-${i}`} />;
           const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const closed = !!isDateClosed?.(date);
           const isSelected = selectedDate && isSameDay(date, selectedDate);
           return (
-            <button key={date.toISOString()} type="button" disabled={isPast} onClick={() => onSelectDate(date)}
-              className={`aspect-square rounded-full text-sm flex items-center justify-center transition-all ${isSelected ? 'text-white font-bold' : isPast ? 'text-white/20 cursor-not-allowed' : 'text-white/60 hover:text-[var(--brand-color,#ff2d9b)]'}`}
-              style={isSelected ? { background: '#ff2d9b', boxShadow: '0 0 12px #ff2d9b' } : {}}>
+            <button key={date.toISOString()} type="button" title={closed ? 'Unavailable' : undefined} disabled={isPast || closed} onClick={() => onSelectDate(date)}
+              className={`aspect-square rounded-full text-sm flex items-center justify-center transition-all ${isSelected && !closed ? 'text-white font-bold' : closed ? 'text-white/20 cursor-not-allowed line-through' : isPast ? 'text-white/20 cursor-not-allowed' : 'text-white/60 hover:text-[var(--brand-color,#ff2d9b)]'}`}
+              style={isSelected && !closed ? { background: '#ff2d9b', boxShadow: '0 0 12px #ff2d9b' } : {}}>
               {date.getDate()}
             </button>
           );
         })}
       </div>
+      {hasClosed && (
+        <p className="-mt-6 mb-8 text-[10px] text-white/30">Struck-through dates are unavailable.</p>
+      )}
       <div>
         <h4 className="text-xs text-white/30 mb-3 uppercase tracking-widest">Available Times</h4>
         {availableSlots.length === 0 ? (

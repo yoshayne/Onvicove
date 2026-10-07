@@ -11,19 +11,22 @@ interface BookingModalProps {
   selectedDate: Date | null;
   selectedSlot: string | null;
   availableSlots: AvailableSlot[];
+  cityLabel?: string | null;
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
   onConfirm: (info: { name: string; email: string; phone: string }) => void;
   staff?: StaffData[];
   selectedStaffId?: string | null;
   onSelectStaff?: (staffId: string | null) => void;
+  isDateClosed?: (d: Date) => boolean;
 }
 
 export default function BookingModal({
   isOpen, onClose, service,
-  selectedDate, selectedSlot, availableSlots,
+  selectedDate, selectedSlot, availableSlots, cityLabel,
   onSelectDate, onSelectSlot, onConfirm,
   staff = [], selectedStaffId, onSelectStaff,
+  isDateClosed,
 }: BookingModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -49,6 +52,7 @@ export default function BookingModal({
             availableSlots={availableSlots}
             onSelectDate={onSelectDate}
             onSelectSlot={onSelectSlot}
+            isDateClosed={isDateClosed}
           />
 
           <div className="flex flex-col gap-5">
@@ -67,6 +71,13 @@ export default function BookingModal({
                 </span>
               </div>
             </div>
+
+            {cityLabel && (
+              <div className="flex items-center gap-2 px-3 py-2 mb-2 rounded border border-white/10 bg-white/5 text-white/60 text-xs">
+                <span>📍</span>
+                <span className="font-medium">{cityLabel}</span>
+              </div>
+            )}
 
             {staff.length > 1 && (
               <div>

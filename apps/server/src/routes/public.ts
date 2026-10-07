@@ -155,6 +155,26 @@ app.get('/:slug/services/:id', async (c) => {
   return c.json({ service: await enrichWithUrls(rows[0]) });
 });
 
+// GET /api/public/:slug/closed-dates — blocked (time off) ranges from today on, so booking calendars can grey them out.
+// Notes the owner wrote ("Dentist", "Vacation") are private and never returned.
+app.get('/:slug/closed-dates', async (c) => {
+  const slug = c.req.param('slug');
+  const tenants = await db`SELECT id, timezone FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
+  const tenant = tenants[0];
+  if (!tenant) return c.json({ error: 'Store not found' }, 404);
+
+  const tz = (tenant.timezone as string) || 'America/New_York';
+  const rows = await db`
+    SELECT date_from::text AS date_from, date_to::text AS date_to
+    FROM city_schedules
+    WHERE tenant_id = ${tenant.id} AND kind = 'blocked'
+      AND date_to >= (NOW() AT TIME ZONE ${tz})::date
+    ORDER BY date_from
+  `;
+  c.header('Cache-Control', 'public, max-age=60');
+  return c.json({ closed: rows });
+});
+
 // GET /api/public/:slug/availability?service_id=&date=YYYY-MM-DD&staff_id=
 app.get('/:slug/availability', async (c) => {
   const slug = c.req.param('slug');

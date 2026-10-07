@@ -8,6 +8,7 @@ interface CalendarProps {
   availableSlots: AvailableSlot[];
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
+  isDateClosed?: (d: Date) => boolean;
 }
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -18,6 +19,7 @@ export default function Calendar({
   availableSlots,
   onSelectDate,
   onSelectSlot,
+  isDateClosed,
 }: CalendarProps) {
   const today = new Date();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -30,6 +32,7 @@ export default function Calendar({
   const cells: (Date | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+  const hasClosed = isDateClosed ? cells.some((c) => c && isDateClosed(c)) : false;
 
   const isSameDay = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -68,16 +71,20 @@ export default function Calendar({
         {cells.map((date, i) => {
           if (!date) return <div key={`empty-${i}`} />;
           const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const closed = !!isDateClosed?.(date);
           const isSelected = selectedDate && isSameDay(date, selectedDate);
           return (
             <button
               key={date.toISOString()}
               type="button"
-              disabled={isPast}
+              title={closed ? 'Unavailable' : undefined}
+              disabled={isPast || closed}
               onClick={() => onSelectDate(date)}
               className={`aspect-square text-xs flex items-center justify-center transition-all ${
-                isSelected
+                isSelected && !closed
                   ? 'bg-[var(--brand-color,#c8b8a2)] text-[#0d0d0d] font-semibold'
+                  : closed
+                  ? 'text-white/15 cursor-not-allowed line-through'
                   : isPast
                   ? 'text-white/15 cursor-not-allowed'
                   : 'text-white/60 hover:text-white hover:bg-white/8'
@@ -88,6 +95,9 @@ export default function Calendar({
           );
         })}
       </div>
+      {hasClosed && (
+        <p className="-mt-4 mb-6 text-[10px] text-white/30">Struck-through dates are unavailable.</p>
+      )}
 
       <div>
         <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-3">Times</p>

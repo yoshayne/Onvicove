@@ -8,6 +8,7 @@ interface CalendarProps {
   availableSlots: AvailableSlot[];
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
+  isDateClosed?: (d: Date) => boolean;
 }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -18,6 +19,7 @@ export default function Calendar({
   availableSlots,
   onSelectDate,
   onSelectSlot,
+  isDateClosed,
 }: CalendarProps) {
   const today = new Date();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -30,6 +32,7 @@ export default function Calendar({
   const cells: (Date | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+  const hasClosed = isDateClosed ? cells.some((c) => c && isDateClosed(c)) : false;
 
   const isSameDay = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -71,17 +74,21 @@ export default function Calendar({
           if (!date) return <div key={`empty-${i}`} className="bg-white aspect-square" />;
           const isToday = isSameDay(date, today);
           const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const closed = !!isDateClosed?.(date);
           const isSelected = selectedDate && isSameDay(date, selectedDate);
           return (
             <button
               key={date.toISOString()}
               type="button"
-              disabled={isPast}
+              title={closed ? 'Unavailable' : undefined}
+              disabled={isPast || closed}
               onClick={() => onSelectDate(date)}
               className={`aspect-square text-sm font-serif flex items-center justify-center transition-colors ${
-                isSelected
+                isSelected && !closed
                   ? 'bg-[#1a3a5c] text-white font-bold'
-                  : isPast
+                  : closed
+                    ? 'bg-white text-[#1a3a5c]/30 cursor-not-allowed line-through'
+                    : isPast
                     ? 'bg-white text-[#1a3a5c]/30 cursor-not-allowed'
                     : isToday
                       ? 'bg-white text-[var(--brand-color,#c8a850)] font-bold border-2 border-[var(--brand-color,#c8a850)]'
@@ -93,6 +100,9 @@ export default function Calendar({
           );
         })}
       </div>
+      {hasClosed && (
+        <p className="-mt-6 mb-8 text-[10px] text-[#1a3a5c]/60 font-serif">Struck-through dates are unavailable.</p>
+      )}
 
       <div>
         <h4 className="font-['Merriweather'] text-sm font-bold uppercase tracking-wide text-[#1a3a5c] mb-3 border-b border-[#1a3a5c]/10 pb-2">

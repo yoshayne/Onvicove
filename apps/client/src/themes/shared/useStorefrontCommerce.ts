@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../lib/api';
 import type { AvailableSlot, CartItem, ProductData, ProductVariantData, ServiceData } from '../types';
 
@@ -152,6 +152,21 @@ export function useStorefrontCommerce(slug: string | undefined) {
     setOrderError('Payment was not completed. Your order has been placed but not paid yet.');
   }
 
+  // Dates the business has blocked off (time off) — booking calendars grey these out
+  const [closedRanges, setClosedRanges] = useState<{ date_from: string; date_to: string }[]>([]);
+  useEffect(() => {
+    if (!slug) return;
+    let cancelled = false;
+    apiGet<{ closed: { date_from: string; date_to: string }[] }>(`/api/public/${slug}/closed-dates`)
+      .then((r) => { if (!cancelled) setClosedRanges(r.closed ?? []); })
+      .catch(() => { /* calendars just show every day as open */ });
+    return () => { cancelled = true; };
+  }, [slug]);
+  const isDateClosed = (date: Date) => {
+    const key = toDateParam(date);
+    return closedRanges.some((r) => key >= r.date_from && key <= r.date_to);
+  };
+
   // Booking
   const [bookingService, setBookingService] = useState<ServiceData | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
@@ -295,6 +310,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
     confirmOrderPayment,
     cancelOrderPayment,
 
+    isDateClosed,
     bookingService,
     bookingOpen,
     openBooking,

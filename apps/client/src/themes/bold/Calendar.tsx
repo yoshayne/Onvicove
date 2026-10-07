@@ -8,6 +8,7 @@ interface CalendarProps {
   availableSlots: AvailableSlot[];
   onSelectDate: (d: Date) => void;
   onSelectSlot: (s: string) => void;
+  isDateClosed?: (d: Date) => boolean;
 }
 
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -18,6 +19,7 @@ export default function Calendar({
   availableSlots,
   onSelectDate,
   onSelectSlot,
+  isDateClosed,
 }: CalendarProps) {
   const today = new Date();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -32,6 +34,7 @@ export default function Calendar({
   const cells: (Date | null)[] = [];
   for (let i = 0; i < startWeekday; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+  const hasClosed = isDateClosed ? cells.some((c) => c && isDateClosed(c)) : false;
 
   const isSameDay = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -75,17 +78,21 @@ export default function Calendar({
         {cells.map((d, i) => {
           if (!d) return <div key={`empty-${i}`} />;
           const selected = selectedDate && isSameDay(d, selectedDate);
-          const disabled = isPast(d);
+          const closed = !!isDateClosed?.(d);
+          const disabled = isPast(d) || closed;
           return (
             <button
               key={d.toISOString()}
               type="button"
+              title={closed ? 'Unavailable' : undefined}
               disabled={disabled}
               onClick={() => onSelectDate(d)}
               className={`aspect-square text-sm font-bold uppercase transition ${
-                selected
+                selected && !closed
                   ? 'bg-[var(--brand-color,#e8ff00)] text-[#0a0a0a]'
-                  : disabled
+                  : closed
+                    ? 'cursor-not-allowed text-white/20 line-through'
+                    : disabled
                     ? 'cursor-not-allowed text-white/20'
                     : 'border border-white/20 text-white hover:border-[var(--brand-color,#e8ff00)] hover:text-[var(--brand-color,#e8ff00)]'
               }`}
@@ -95,6 +102,9 @@ export default function Calendar({
           );
         })}
       </div>
+      {hasClosed && (
+        <p className="-mt-4 mb-6 text-[10px] text-white/40">Struck-through dates are unavailable.</p>
+      )}
 
       <div>
         <h4 className="mb-2 text-xs font-black uppercase tracking-widest text-white/70">Available Slots</h4>
