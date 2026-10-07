@@ -1,5 +1,5 @@
 import type { AvailabilitySlot, WeeklyAvailability } from '../../types';
-import { DAY_KEYS, DAY_LABELS, withAllDays } from '../../lib/hours';
+import { ALL_DAY_WINDOW, DAY_KEYS, DAY_LABELS, isAllDay, withAllDays } from '../../lib/hours';
 
 /** Weekly open/closed toggles with one or more time windows per day. */
 export default function WeeklyHoursEditor({
@@ -20,6 +20,7 @@ export default function WeeklyHoursEditor({
       {DAY_KEYS.map((key) => {
         const slots = week[key];
         const isOpen = slots.length > 0;
+        const allDay = isAllDay(slots);
         return (
           <div key={key} className="flex flex-wrap items-start gap-3 px-3 py-2.5 bg-white">
             <div className="flex items-center gap-2 w-28 pt-0.5 shrink-0">
@@ -35,7 +36,21 @@ export default function WeeklyHoursEditor({
               <span className="text-xs text-slate-400">{isOpen ? 'Open' : 'Closed'}</span>
             </div>
 
-            {isOpen ? (
+            {isOpen && (
+              <label className="flex items-center gap-1.5 pt-0.5 text-xs text-slate-600 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={allDay}
+                  onChange={(e) => setDay(key, e.target.checked ? [ALL_DAY_WINDOW] : [{ start: '09:00', end: '17:00' }])}
+                  className="h-3.5 w-3.5 rounded border-slate-300"
+                />
+                All day
+              </label>
+            )}
+
+            {allDay ? (
+              <span className="pt-0.5 text-xs text-slate-500">Open 24 hours (12 AM – 12 AM)</span>
+            ) : isOpen ? (
               <div className="flex flex-1 flex-col gap-1.5">
                 {slots.map((slot, i) => (
                   <div key={i} className="flex items-center gap-2">

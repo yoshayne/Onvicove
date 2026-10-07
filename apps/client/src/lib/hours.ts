@@ -24,6 +24,13 @@ export function hasAnyHours(av: Partial<WeeklyAvailability> | null | undefined):
   return !!av && Object.values(av).some((w) => Array.isArray(w) && w.length > 0);
 }
 
+/** One window covering the whole day: 12 AM to 12 AM (stored as 00:00–24:00 or 00:00–00:00). */
+export function isAllDay(slots: { start: string; end: string }[] | undefined): boolean {
+  return !!slots && slots.length === 1 && slots[0].start === '00:00' && (slots[0].end === '24:00' || slots[0].end === '00:00');
+}
+
+export const ALL_DAY_WINDOW = { start: '00:00', end: '24:00' };
+
 function fmtTime(t: string): string {
   if (t === '24:00') return '12am';
   const [h, m] = t.split(':').map(Number);
@@ -37,12 +44,16 @@ export function describeHours(av: Partial<WeeklyAvailability> | null | undefined
   if (!av) return '';
   const rows: { label: string; hours: string }[] = [];
   let i = 0;
+  const dayWindows = (k: (typeof DAY_KEYS)[number]) => {
+    const w = av[k] ?? [];
+    return isAllDay(w) ? [ALL_DAY_WINDOW] : w; // old 00:00–00:00 and 00:00–24:00 are the same thing
+  };
   while (i < DAY_KEYS.length) {
-    const windows = av[DAY_KEYS[i]] ?? [];
+    const windows = dayWindows(DAY_KEYS[i]);
     if (windows.length === 0) { i++; continue; }
-    const hours = windows.map((w) => `${fmtTime(w.start)}–${fmtTime(w.end)}`).join(' & ');
+    const hours = isAllDay(windows) ? 'all day' : windows.map((w) => `${fmtTime(w.start)}–${fmtTime(w.end)}`).join(' & ');
     let j = i;
-    while (j + 1 < DAY_KEYS.length && JSON.stringify(av[DAY_KEYS[j + 1]] ?? []) === JSON.stringify(windows)) j++;
+    while (j + 1 < DAY_KEYS.length && JSON.stringify(dayWindows(DAY_KEYS[j + 1])) === JSON.stringify(windows)) j++;
     const label = j === i ? DAY_LABELS[DAY_KEYS[i]] : j === i + 1 ? `${DAY_LABELS[DAY_KEYS[i]]}, ${DAY_LABELS[DAY_KEYS[j]]}` : `${DAY_LABELS[DAY_KEYS[i]]}–${DAY_LABELS[DAY_KEYS[j]]}`;
     rows.push({ label, hours });
     i = j + 1;

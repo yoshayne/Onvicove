@@ -74,6 +74,7 @@ const RANGE_SEP = '(?:\\s*(?:-|–|—|to|thru|through)\\s*)';
 const DAY_SPEC =
   `(?:daily|every\\s*day|${DAY_WORD}(?:${RANGE_SEP}${DAY_WORD})?(?:\\s*(?:,|&|and|\\+)\\s*${DAY_WORD}(?:${RANGE_SEP}${DAY_WORD})?)*)`;
 const TIME_WORD = '(?:\\d{1,2}(?::\\d{2})?\\s*(?:[ap]\\.?m\\.?)?|noon|midnight)';
+const ALL_DAY_RE = new RegExp(`(?:(${DAY_SPEC})\\s*[:,]?\\s*(?:open\\s+)?(?:all\\s*day|24\\s*(?:hours?|hrs?|h)\\b)|\\b24\\s*/\\s*7\\b)`, 'gi');
 const HOURS_RE = new RegExp(`(${DAY_SPEC})\\s*[:,]?\\s*(${TIME_WORD})\\s*(?:-|–|—|to|until)\\s*(${TIME_WORD})`, 'gi');
 
 function expandDays(spec: string): (typeof DAY_KEYS)[number][] {
@@ -107,6 +108,13 @@ export function parseHoursText(text: string | null | undefined): WeeklyAvailabil
   if (!text) return null;
   const result: WeeklyAvailability = {};
   let found = false;
+  // "Mon-Sun open 24 hours", "Daily: all day", "24/7"
+  for (const m of text.matchAll(ALL_DAY_RE)) {
+    for (const day of m[1] ? expandDays(m[1]) : [...DAY_KEYS]) {
+      result[day] = [{ start: '00:00', end: '24:00' }];
+      found = true;
+    }
+  }
   for (const m of text.matchAll(HOURS_RE)) {
     const a = parseTimeToken(m[2]);
     const b = parseTimeToken(m[3]);

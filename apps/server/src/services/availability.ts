@@ -60,9 +60,9 @@ export function computeAvailableSlots(params: {
   const slots: TimeSlot[] = [];
 
   for (const window of windows) {
-    if (window.start === window.end) continue;
     // A window ending at/before its start ("12:00"–"00:00", "24:00") runs to the next day's wall-clock time.
-    const runsPastMidnight = window.end === '24:00' || window.end < window.start;
+    // Equal start and end ("12 AM to 12 AM") means the whole day.
+    const runsPastMidnight = window.end === '24:00' || window.end <= window.start;
     const endDate = runsPastMidnight ? format(addDays(dayDate, 1), 'yyyy-MM-dd') : date;
     const endTime = window.end === '24:00' ? '00:00' : window.end;
 
