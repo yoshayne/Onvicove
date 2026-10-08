@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { apiGet, apiPost } from '../lib/api';
 import { formatPrice } from '../themes/types';
 import StripePaymentForm from '../themes/shared/StripePaymentForm';
+import PaymentReturnBanner from '../components/shared/PaymentReturnBanner';
 import Spinner from '../components/shared/Spinner';
 
 interface BalanceInfo {
@@ -50,6 +51,7 @@ export default function PayBalance() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <PaymentReturnBanner />
       <div className="w-full max-w-sm rounded-xl bg-white p-8 shadow-sm text-center">
         {status === 'loading' && (
           <div className="flex justify-center py-8">

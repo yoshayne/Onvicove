@@ -497,3 +497,6 @@ ALTER TABLE city_schedules ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT '
 ALTER TABLE city_schedules DROP CONSTRAINT IF EXISTS city_schedules_kind_check;
 ALTER TABLE city_schedules ADD CONSTRAINT city_schedules_kind_check CHECK (kind IN ('city', 'blocked'));
 ALTER TABLE city_schedules ALTER COLUMN city_label DROP NOT NULL;
+
+-- When we last filled in the connected Stripe account's public business name / statement descriptor
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_profile_synced_at TIMESTAMPTZ;

@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { formatPrice } from '../types';
+import { currentPageUrl } from '../../lib/paymentReturn';
 
 // Prefer the build-time env var; fall back to runtime fetch from /api/public/config
 let resolvedPublishableKey: string | null = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string) || null;
@@ -27,6 +28,8 @@ interface StripePaymentFormProps {
   stripeAccountId?: string;
   amountCents: number;
   currency?: string;
+  /** Where redirect-based methods (Cash App, Klarna, bank…) send the customer afterwards. Defaults to this page. */
+  returnUrl?: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -36,6 +39,7 @@ export default function StripePaymentForm({
   stripeAccountId,
   amountCents,
   currency,
+  returnUrl,
   onSuccess,
   onCancel,
 }: StripePaymentFormProps) {
@@ -65,7 +69,7 @@ export default function StripePaymentForm({
 
   return (
     <Elements stripe={stripePromise} options={{ clientSecret }}>
-      <PaymentInner amountCents={amountCents} currency={currency} onSuccess={onSuccess} onCancel={onCancel} />
+      <PaymentInner amountCents={amountCents} currency={currency} returnUrl={returnUrl} onSuccess={onSuccess} onCancel={onCancel} />
     </Elements>
   );
 }
@@ -73,11 +77,13 @@ export default function StripePaymentForm({
 function PaymentInner({
   amountCents,
   currency,
+  returnUrl,
   onSuccess,
   onCancel,
 }: {
   amountCents: number;
   currency?: string;
+  returnUrl?: string;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
@@ -92,6 +98,8 @@ function PaymentInner({
     setError(null);
     const { error: confirmError } = await stripe.confirmPayment({
       elements,
+      // Required by every redirect-based method; cards finish in place and never use it
+      confirmParams: { return_url: returnUrl ?? currentPageUrl() },
       redirect: 'if_required',
     });
     if (confirmError) {

@@ -224,6 +224,7 @@ export default function Wizard() {
             { plan: state.plan }
           );
           if (sub.clientSecret) {
+            sessionStorage.setItem('pendingPlan', state.plan);
             setSubPriceCents(state.plan === 'pro' ? 2900 : 7900);
             setSubClientSecret(sub.clientSecret);
           }
@@ -379,6 +380,7 @@ function Step10LaunchControls({
             <StripePaymentForm
               clientSecret={subClientSecret}
               amountCents={subPriceCents}
+              returnUrl={`${window.location.origin}/dashboard/billing`}
               onSuccess={onSubPaymentSuccess}
               onCancel={onSubPaymentCancel}
             />

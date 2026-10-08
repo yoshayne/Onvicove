@@ -8,6 +8,7 @@ import type { ThemeData, ProductData, ProductVariantData, ServiceData, StaffData
 import type { GallerySectionData } from '../themes/shared/Gallery';
 import { getFontPair } from '../themes/shared/fontPairs';
 import { describeHours } from '../lib/hours';
+import PaymentReturnBanner from '../components/shared/PaymentReturnBanner';
 
 interface StoredSection { id: string; type: string; enabled: boolean; [key: string]: unknown; }
 
@@ -229,6 +230,7 @@ export default function StorefrontRouter({ slug: hostSlug }: { slug?: string }) 
 
   return (
     <div data-storefront>
+      <PaymentReturnBanner />
       <ThemeRenderer
         themeId={tenant.theme_id}
         theme={mapTenant(tenant)}

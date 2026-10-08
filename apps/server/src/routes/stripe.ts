@@ -4,7 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { getBaseUrl, getCustomerBaseUrl, getStoreUrl } from '../lib/baseUrl';
 import { applySubscription, type StripeSubscriptionLike } from '../services/subscriptions';
-import { stripe, computePlatformFee, createBookingPaymentIntent, getOrCreateStripeCustomer } from '../services/stripe';
+import { stripe, computePlatformFee, createBookingPaymentIntent, createStorePaymentIntent, ensureConnectedProfile, getOrCreateStripeCustomer } from '../services/stripe';
 import {
   sendStripeConnected, sendAdminStripeConnected,
   sendAdminDomainPurchaseRequest, sendTenantDomainRequestReceived,
@@ -33,6 +33,10 @@ app.post('/connect-link', requireAuth, async (c) => {
         type: 'express',
         business_type: 'individual',
         email: undefined,
+        business_profile: {
+          name: tenant.company_name as string,
+          url: `${(process.env.CLIENT_URL || 'https://shopsuitedirect.com').replace(/\/+$/, '')}/${tenant.slug}`,
+        },
       });
       accountId = account.id;
       await db`
@@ -129,14 +133,15 @@ app.post('/payment-intent', async (c) => {
     const totalCents = record.total_cents as number;
     const platformFee = await computePlatformFee(totalCents, record.tenant_id as string);
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    await ensureConnectedProfile(record.tenant_id as string, record.stripe_account_id as string);
+    const paymentIntent = await createStorePaymentIntent({
       amount: totalCents,
       currency: (record.currency as string)?.toLowerCase() || 'usd',
       application_fee_amount: platformFee,
       automatic_payment_methods: { enabled: true },
       transfer_data: { destination: record.stripe_account_id as string },
       metadata: { reference_type, reference_id, tenant_id: record.tenant_id as string },
-    });
+    }, record.stripe_account_id as string);
 
     await db`
       UPDATE orders

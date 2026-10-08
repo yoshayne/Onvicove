@@ -7,6 +7,7 @@ import { useApi } from '../lib/api';
 import Spinner from '../components/shared/Spinner';
 import Button from '../components/shared/Button';
 import StripePaymentForm from '../themes/shared/StripePaymentForm';
+import { clearPaymentReturn, readPaymentReturn } from '../lib/paymentReturn';
 
 type PlanId = 'starter' | 'pro' | 'business';
 
@@ -115,6 +116,8 @@ export default function Billing() {
         setSelectedPlan(null);
         void confirmPlan(plan);
       } else if (res.clientSecret) {
+        // If the customer pays with a redirect method (Cash App, bank…) this page reloads; remember what they bought
+        sessionStorage.setItem('pendingPlan', plan);
         setClientSecret(res.clientSecret);
         setPriceCents(PLANS.find((p) => p.id === plan)?.priceCents ?? 0);
       }
@@ -160,6 +163,21 @@ export default function Billing() {
     setSelectedPlan(plan);
     subscribeMutation.mutate(plan);
   }
+
+  // Back from a redirect payment method: confirm the plan with Stripe, or say it didn't go through
+  const returnHandled = useRef(false);
+  useEffect(() => {
+    if (returnHandled.current) return;
+    const result = readPaymentReturn();
+    if (!result) return;
+    returnHandled.current = true;
+    const plan = sessionStorage.getItem('pendingPlan') as PlanId | null;
+    sessionStorage.removeItem('pendingPlan');
+    clearPaymentReturn();
+    if (result === 'failed') setNotice({ tone: 'warn', text: "Your payment didn't go through, so nothing was charged. You can try upgrading again." });
+    else if (plan) void confirmPlan(plan);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // /dashboard/billing?upgrade=pro (e.g. from a locked theme or the wizard) starts that plan's checkout once
   const wantedPlan = searchParams.get('upgrade');
