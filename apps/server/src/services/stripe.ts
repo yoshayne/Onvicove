@@ -132,8 +132,21 @@ export async function createStorePaymentIntent(params: Stripe.PaymentIntentCreat
       // plain cards so the sale still goes through (card_payments is the one capability every store needs).
       const acct = await stripe.accounts.retrieve(accountId).catch(() => null);
       console.warn(`No automatic payment methods for ${accountId}; retrying card-only. charges_enabled=${acct?.charges_enabled} capabilities=${JSON.stringify(acct?.capabilities)}`);
-      const { automatic_payment_methods: _a, ...cardOnly } = withMeta;
-      return stripe.paymentIntents.create({ ...cardOnly, payment_method_types: ['card'] }, { stripeAccount: accountId });
+      const { automatic_payment_methods: _a, ...explicit } = withMeta;
+      // Offer every method the store's account has actually activated (Cash App / Klarna are USD-only here)
+      const caps = acct?.capabilities ?? {};
+      const usd = String(explicit.currency).toLowerCase() === 'usd';
+      const types: string[] = ['card'];
+      if (caps.link_payments === 'active') types.push('link');
+      if (usd && caps.cashapp_payments === 'active') types.push('cashapp');
+      if (usd && caps.klarna_payments === 'active') types.push('klarna');
+      try {
+        return await stripe.paymentIntents.create({ ...explicit, payment_method_types: types }, { stripeAccount: accountId });
+      } catch (err2) {
+        if (types.length === 1) throw err2;
+        console.warn(`Explicit methods ${types.join(',')} failed for ${accountId}; using card only:`, (err2 as Error).message);
+        return stripe.paymentIntents.create({ ...explicit, payment_method_types: ['card'] }, { stripeAccount: accountId });
+      }
     }
   }
   if (process.env.STRIPE_ON_BEHALF_OF === 'false') return stripe.paymentIntents.create(params);
