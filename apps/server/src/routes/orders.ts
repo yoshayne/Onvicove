@@ -22,17 +22,15 @@ app.get('/', async (c) => {
   const tenant = c.get('tenant') as { id: string };
   const status = c.req.query('status');
 
-  const orders = status
-    ? await db`
-        SELECT * FROM orders
-        WHERE tenant_id = ${tenant.id} AND status = ${status}
-        ORDER BY created_at DESC
-      `
-    : await db`
-        SELECT * FROM orders
-        WHERE tenant_id = ${tenant.id}
-        ORDER BY created_at DESC
-      `;
+  // Line items ride along so the dashboard can rank products without one request per order
+  const orders = await db`
+    SELECT o.*,
+      COALESCE((SELECT json_agg(json_build_object('id', oi.id, 'name', oi.name, 'quantity', oi.quantity, 'price_cents', oi.price_cents, 'total_cents', oi.total_cents))
+                FROM order_items oi WHERE oi.order_id = o.id), '[]'::json) AS items
+    FROM orders o
+    WHERE o.tenant_id = ${tenant.id} ${status ? db`AND o.status = ${status}` : db``}
+    ORDER BY o.created_at DESC
+  `;
 
   return c.json({ orders });
 });

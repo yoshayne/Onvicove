@@ -5,7 +5,7 @@ import { rateLimitPublic } from '../middleware/ratelimit';
 import { enrichWithUrls, getSignedFileUrl } from '../services/storage';
 import { generateOrderNumber } from '../lib/orderNumber';
 import { getCustomerBaseUrl } from '../lib/baseUrl';
-import { slotsForService } from '../services/slots';
+import { slotsForService, holdsTime } from '../services/slots';
 import { CHARGE_MODEL } from '../services/chargeModel';
 import { computePlatformFee, createBookingPaymentIntent, usableStripeIds } from '../services/stripe';
 import {
@@ -319,14 +319,16 @@ app.post('/:slug/orders', async (c) => {
     `;
   }
 
-  await db`
-    UPDATE customers SET order_count = order_count + 1, total_spent_cents = total_spent_cents + ${totalCents}, updated_at = NOW()
-    WHERE id = ${customer.id}
-  `;
+  // Nothing to pay: the order is complete now. Otherwise it stays 'pending' until Stripe confirms the payment
+  // (the webhook marks it paid and sends the confirmation + new-order emails, so abandoned checkouts send none).
+  if (totalCents === 0) {
+    await db`UPDATE orders SET status = 'paid', updated_at = NOW() WHERE id = ${order.id}`;
+    order.status = 'paid';
+  }
 
   // Notify customer and tenant
   const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
-  sendOrderConfirmation({
+  if (totalCents === 0) sendOrderConfirmation({
     toEmail: d.customer_email,
     toName: d.customer_name,
     orderNumber,
@@ -335,7 +337,7 @@ app.post('/:slug/orders', async (c) => {
     tenantId: tenant.id as string,
     orderId: order.id as string,
   }).catch((err) => console.error('Order confirmation email error:', err));
-  if (tenant.clerk_user_id) {
+  if (totalCents === 0 && tenant.clerk_user_id) {
     const ownerRows = await db`SELECT email FROM users WHERE clerk_user_id = ${tenant.clerk_user_id} LIMIT 1`;
     const tenantEmail = ownerRows[0]?.email as string | null;
     if (tenantEmail) {
@@ -397,6 +399,18 @@ app.post('/:slug/bookings', async (c) => {
   `;
   if (blocked[0]) return c.json({ error: 'Sorry, that date is not available for bookings.' }, 409);
 
+  // The same customer retrying the same slot (closed the payment window, hit back...) continues their unpaid attempt
+  const retry = await db`
+    SELECT * FROM bookings
+    WHERE tenant_id = ${tenant.id} AND service_id = ${d.service_id} AND status = 'awaiting_payment'
+      AND lower(customer_email) = lower(${d.customer_email}) AND start_time = ${d.start_time}::timestamptz
+    ORDER BY created_at DESC LIMIT 1
+  `;
+  if (retry[0]) {
+    await db`UPDATE bookings SET created_at = NOW(), updated_at = NOW() WHERE id = ${retry[0].id}`;
+    return c.json({ booking: retry[0] }, 201);
+  }
+
   // Check against the same "resource" the availability endpoint offers: the chosen staff member, else the
   // first active one, else (a business with no staff) the whole business — so nobody can double-book.
   let conflictStaffId: string | null = d.staff_id ?? null;
@@ -409,14 +423,16 @@ app.post('/:slug/bookings', async (c) => {
         SELECT id FROM bookings
         WHERE tenant_id = ${tenant.id}
         AND (staff_id = ${conflictStaffId} OR staff_id IS NULL)
-        AND status NOT IN ('cancelled', 'no_show')
+        AND ${holdsTime()}
+        AND NOT (status = 'awaiting_payment' AND lower(customer_email) = lower(${d.customer_email}))
         AND start_time < ${d.end_time}
         AND end_time > ${d.start_time}
         LIMIT 1`
     : await db`
         SELECT id FROM bookings
         WHERE tenant_id = ${tenant.id}
-        AND status NOT IN ('cancelled', 'no_show')
+        AND ${holdsTime()}
+        AND NOT (status = 'awaiting_payment' AND lower(customer_email) = lower(${d.customer_email}))
         AND start_time < ${d.end_time}
         AND end_time > ${d.start_time}
         LIMIT 1`;
@@ -452,10 +468,6 @@ app.post('/:slug/bookings', async (c) => {
     RETURNING *
   `;
 
-  await db`
-    UPDATE customers SET booking_count = booking_count + 1, updated_at = NOW() WHERE id = ${customer.id}
-  `;
-
   const booking = rows[0];
   const startFmt = new Date(d.start_time).toLocaleString();
   const endFmt = new Date(d.end_time).toLocaleString();
@@ -487,8 +499,9 @@ app.post('/:slug/bookings', async (c) => {
           baseUrl: getCustomerBaseUrl(tenant),
         }).catch(() => {})
       : Promise.resolve(),
-    // Tenant: notify about new booking
+    // Tenant: notify about new booking (unpaid attempts stay quiet: the payment webhook announces them once paid)
     (async () => {
+      if (status === 'awaiting_payment') return;
       const users = await db`SELECT email FROM users WHERE clerk_user_id = ${tenant.clerk_user_id} LIMIT 1`;
       const tenantEmail = users[0]?.email as string | null;
       if (tenantEmail) {

@@ -76,7 +76,7 @@ export default function Orders() {
           <option value="">All statuses</option>
           {ORDER_STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {s === 'pending' ? 'pending (not paid)' : s}
             </option>
           ))}
         </select>
@@ -132,7 +132,7 @@ export default function Orders() {
                       >
                         {ORDER_STATUSES.map((s) => (
                           <option key={s} value={s}>
-                            {s}
+                            {s === 'pending' ? 'pending (not paid)' : s}
                           </option>
                         ))}
                       </select>

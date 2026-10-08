@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { AvailableSlot } from '../types';
+import SlotPicker from '../shared/SlotPicker';
 
 interface CalendarProps {
   selectedDate: Date | null;
@@ -108,29 +109,7 @@ export default function Calendar({
         <h4 className="font-['Merriweather'] text-sm font-bold uppercase tracking-wide text-[#1a3a5c] mb-3 border-b border-[#1a3a5c]/10 pb-2">
           Available Times
         </h4>
-        {availableSlots.length === 0 ? (
-          <p className="text-sm text-[#1a3a5c]/60 font-serif">Select a date to view available times.</p>
-        ) : (
-          <div className="grid grid-cols-3 gap-2">
-            {availableSlots.map((slot) => (
-              <button
-                key={slot.time}
-                type="button"
-                disabled={!slot.available}
-                onClick={() => onSelectSlot(slot.time)}
-                className={`py-2 px-3 text-sm font-serif border transition-colors ${
-                  selectedSlot === slot.time
-                    ? 'bg-[#1a3a5c] border-[#1a3a5c] text-white font-bold'
-                    : slot.available
-                      ? 'border-[#1a3a5c]/30 text-[#1a3a5c] hover:border-[var(--brand-color,#c8a850)] hover:text-[var(--brand-color,#c8a850)]'
-                      : 'border-[#1a3a5c]/10 text-[#1a3a5c]/30 cursor-not-allowed line-through'
-                }`}
-              >
-                {slot.time}
-              </button>
-            ))}
-          </div>
-        )}
+        <SlotPicker slots={availableSlots} selectedSlot={selectedSlot} selectedDate={selectedDate} onSelectSlot={onSelectSlot} tone="light" />
       </div>
     </div>
   );

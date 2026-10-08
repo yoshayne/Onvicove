@@ -24,15 +24,29 @@ app.get('/', async (c) => {
 
   const rows = search
     ? await db`
-        SELECT * FROM customers
-        WHERE tenant_id = ${tenant.id}
-        AND (email ILIKE ${'%' + search + '%'} OR first_name ILIKE ${'%' + search + '%'} OR last_name ILIKE ${'%' + search + '%'})
-        ORDER BY created_at DESC
+        SELECT
+  c.*,
+  -- Real figures from paid orders / live bookings (the stored counters also counted unpaid attempts)
+  COALESCE((SELECT SUM(o.total_cents) FROM orders o WHERE o.customer_id = c.id AND o.status IN ('paid', 'fulfilled')), 0)::int
+    + COALESCE((SELECT SUM(b.deposit_paid_cents) FROM bookings b WHERE b.customer_id = c.id AND b.status NOT IN ('cancelled', 'awaiting_payment')), 0)::int AS total_spent_cents,
+  (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id AND o.status IN ('paid', 'fulfilled'))::int AS order_count,
+  (SELECT COUNT(*) FROM bookings b WHERE b.customer_id = c.id AND b.status IN ('pending', 'confirmed', 'completed'))::int AS booking_count
+        FROM customers c
+        WHERE c.tenant_id = ${tenant.id}
+        AND (c.email ILIKE ${'%' + search + '%'} OR c.first_name ILIKE ${'%' + search + '%'} OR c.last_name ILIKE ${'%' + search + '%'})
+        ORDER BY c.created_at DESC
       `
     : await db`
-        SELECT * FROM customers
-        WHERE tenant_id = ${tenant.id}
-        ORDER BY created_at DESC
+        SELECT
+  c.*,
+  -- Real figures from paid orders / live bookings (the stored counters also counted unpaid attempts)
+  COALESCE((SELECT SUM(o.total_cents) FROM orders o WHERE o.customer_id = c.id AND o.status IN ('paid', 'fulfilled')), 0)::int
+    + COALESCE((SELECT SUM(b.deposit_paid_cents) FROM bookings b WHERE b.customer_id = c.id AND b.status NOT IN ('cancelled', 'awaiting_payment')), 0)::int AS total_spent_cents,
+  (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id AND o.status IN ('paid', 'fulfilled'))::int AS order_count,
+  (SELECT COUNT(*) FROM bookings b WHERE b.customer_id = c.id AND b.status IN ('pending', 'confirmed', 'completed'))::int AS booking_count
+        FROM customers c
+        WHERE c.tenant_id = ${tenant.id}
+        ORDER BY c.created_at DESC
       `;
 
   return c.json({ customers: rows });
@@ -43,7 +57,14 @@ app.get('/:id', async (c) => {
   const tenant = c.get('tenant') as { id: string };
   const id = c.req.param('id');
   const rows = await db`
-    SELECT * FROM customers WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1
+    SELECT
+  c.*,
+  -- Real figures from paid orders / live bookings (the stored counters also counted unpaid attempts)
+  COALESCE((SELECT SUM(o.total_cents) FROM orders o WHERE o.customer_id = c.id AND o.status IN ('paid', 'fulfilled')), 0)::int
+    + COALESCE((SELECT SUM(b.deposit_paid_cents) FROM bookings b WHERE b.customer_id = c.id AND b.status NOT IN ('cancelled', 'awaiting_payment')), 0)::int AS total_spent_cents,
+  (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id AND o.status IN ('paid', 'fulfilled'))::int AS order_count,
+  (SELECT COUNT(*) FROM bookings b WHERE b.customer_id = c.id AND b.status IN ('pending', 'confirmed', 'completed'))::int AS booking_count
+    FROM customers c WHERE c.id = ${id} AND c.tenant_id = ${tenant.id} LIMIT 1
   `;
   if (!rows[0]) return c.json({ error: 'Customer not found' }, 404);
   return c.json({ customer: rows[0] });

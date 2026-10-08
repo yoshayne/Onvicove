@@ -163,7 +163,7 @@ export interface Customer {
   updated_at: string;
 }
 
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+export type BookingStatus = 'pending' | 'awaiting_payment' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
 
 export interface Booking {
   id: string;

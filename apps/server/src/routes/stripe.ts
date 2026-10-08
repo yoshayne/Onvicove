@@ -6,6 +6,7 @@ import { requireAuth } from '../middleware/clerk';
 import { getBaseUrl, getCustomerBaseUrl, getStoreUrl } from '../lib/baseUrl';
 import { applySubscription, type StripeSubscriptionLike } from '../services/subscriptions';
 import { STRIPE_CARD_FEE } from '../services/chargeModel';
+import { holdsTime } from '../services/slots';
 import { stripe, computePlatformFee, createBookingPaymentIntent, createStorePaymentIntent, ensureConnectedProfile, getOrCreateStripeCustomer } from '../services/stripe';
 import {
   sendStripeConnected, sendAdminStripeConnected,
@@ -16,6 +17,39 @@ import {
 } from '../services/email';
 
 const app = new Hono();
+
+/** Tell the customer their booking is confirmed and the owner about the new booking (sent once, when it is paid). */
+async function notifyBookingPaid(booking: Record<string, unknown>, tenantId: string) {
+  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  const svcRow = await db`SELECT name FROM services WHERE id = ${booking.service_id as string} LIMIT 1`;
+  const tenantRows = await db`SELECT t.company_name, u.email AS owner_email FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${tenantId} LIMIT 1`;
+  const t = tenantRows[0];
+  const serviceName = (svcRow[0]?.name as string) ?? 'your appointment';
+  const startFmt = new Date(booking.start_time as string).toLocaleString();
+  const endFmt = new Date(booking.end_time as string).toLocaleString();
+  Promise.all([
+    sendBookingConfirmation({
+      toEmail: booking.customer_email as string,
+      toName: booking.customer_name as string,
+      serviceName,
+      startTime: startFmt,
+      endTime: endFmt,
+      companyName: (t?.company_name as string) ?? '',
+    }).catch(() => {}),
+    t?.owner_email
+      ? sendTenantNewBooking({
+          tenantEmail: t.owner_email as string,
+          companyName: t.company_name as string,
+          serviceName,
+          customerName: booking.customer_name as string,
+          customerEmail: booking.customer_email as string,
+          startTime: startFmt,
+          endTime: endFmt,
+          dashboardUrl: `${baseUrl}/dashboard/bookings`,
+        }).catch(() => {})
+      : Promise.resolve(),
+  ]).catch(() => {});
+}
 
 // POST /api/stripe/connect-link — create/refresh Stripe Connect Express onboarding link
 app.post('/connect-link', requireAuth, async (c) => {
@@ -171,6 +205,18 @@ app.post('/payment-intent', async (c) => {
     return c.json({ error: 'This business has not connected Stripe yet' }, 400);
   }
 
+  // An unpaid attempt only holds its time for a while; if someone else took the slot since, don't take payment for it
+  if (record.status === 'awaiting_payment') {
+    const clash = await db`
+      SELECT 1 FROM bookings
+      WHERE tenant_id = ${record.tenant_id} AND id <> ${reference_id} AND ${holdsTime()}
+        AND (${(record.staff_id as string | null) ?? null}::uuid IS NULL OR staff_id = ${(record.staff_id as string | null) ?? null}::uuid OR staff_id IS NULL)
+        AND start_time < ${record.end_time} AND end_time > ${record.start_time}
+      LIMIT 1
+    `;
+    if (clash[0]) return c.json({ error: 'Sorry, this time slot was taken while the payment was pending. Please pick another time.' }, 409);
+  }
+
   let totalCents = record.amount_cents as number;
   if (record.service_requires_deposit && record.service_deposit_cents) {
     totalCents = record.service_deposit_cents as number;
@@ -321,13 +367,19 @@ app.post('/webhook', async (c) => {
       }
     } else if (reference_type === 'booking_balance') {
       const piAmount = pi.amount;
+      const prior = await db`SELECT status FROM bookings WHERE id = ${reference_id} LIMIT 1`;
+      const wasUnpaid = prior[0]?.status === 'awaiting_payment';
+      // Paying an unpaid attempt (e.g. via the emailed payment link) is what confirms it
       const rows = await db`
         UPDATE bookings
-        SET deposit_paid_cents = COALESCE(deposit_paid_cents, 0) + ${piAmount}, updated_at = NOW()
+        SET deposit_paid_cents = COALESCE(deposit_paid_cents, 0) + ${piAmount},
+            status = CASE WHEN status = 'awaiting_payment' THEN 'confirmed' ELSE status END,
+            updated_at = NOW()
         WHERE id = ${reference_id} RETURNING *
       `;
       const booking = rows[0];
       if (booking) {
+        if (wasUnpaid) await notifyBookingPaid(booking, tenant_id);
         const platformFee = await computePlatformFee(piAmount, booking.tenant_id as string);
         const stripeFee = Math.round(piAmount * STRIPE_CARD_FEE.percent) + STRIPE_CARD_FEE.fixedCents;
         await db`
@@ -362,35 +414,7 @@ app.post('/webhook', async (c) => {
           )
           ON CONFLICT (stripe_transfer_id) WHERE stripe_transfer_id IS NOT NULL DO NOTHING
         `;
-        // Confirm the customer and notify the tenant
-        const svcRow = await db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`;
-        const tenantRows = await db`SELECT t.company_name, u.email AS owner_email FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${tenant_id} LIMIT 1`;
-        const t = tenantRows[0];
-        const serviceName = (svcRow[0]?.name as string) ?? 'your appointment';
-        const startFmt = new Date(booking.start_time as string).toLocaleString();
-        const endFmt = new Date(booking.end_time as string).toLocaleString();
-        Promise.all([
-          sendBookingConfirmation({
-            toEmail: booking.customer_email as string,
-            toName: booking.customer_name as string,
-            serviceName,
-            startTime: startFmt,
-            endTime: endFmt,
-            companyName: (t?.company_name as string) ?? '',
-          }).catch(() => {}),
-          t?.owner_email
-            ? sendTenantNewBooking({
-                tenantEmail: t.owner_email as string,
-                companyName: t.company_name as string,
-                serviceName,
-                customerName: booking.customer_name as string,
-                customerEmail: booking.customer_email as string,
-                startTime: startFmt,
-                endTime: endFmt,
-                dashboardUrl: `${baseUrl}/dashboard/bookings`,
-              }).catch(() => {})
-            : Promise.resolve(),
-        ]).catch(() => {});
+        await notifyBookingPaid(booking, tenant_id);
       }
     }
   }

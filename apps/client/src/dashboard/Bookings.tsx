@@ -240,9 +240,19 @@ function CityScheduleCalendar() {
   );
 }
 
-const BOOKING_STATUSES: BookingStatus[] = ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'];
+const BOOKING_STATUSES: BookingStatus[] = ['awaiting_payment', 'pending', 'confirmed', 'cancelled', 'completed', 'no_show'];
+
+const STATUS_LABELS: Record<BookingStatus, string> = {
+  awaiting_payment: 'Not paid',
+  pending: 'Pending approval',
+  confirmed: 'Confirmed',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  no_show: 'No-show',
+};
 
 const STATUS_TONES: Record<BookingStatus, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
+  awaiting_payment: 'warning',
   pending: 'warning',
   confirmed: 'info',
   completed: 'success',
@@ -279,6 +289,13 @@ export default function Bookings() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bookings'] }),
   });
 
+  const [linkNotice, setLinkNotice] = useState<string | null>(null);
+  const linkMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/bookings/${id}/send-payment-link`, {}),
+    onSuccess: () => setLinkNotice('Payment link emailed to the customer.'),
+    onError: () => setLinkNotice('Could not send the payment link.'),
+  });
+
   const { data: tenantData } = useQuery({
     queryKey: ['tenant', 'me'],
     queryFn: () => api.get<{ tenant: Tenant }>('/tenants/me'),
@@ -306,7 +323,7 @@ export default function Bookings() {
           <option value="">All statuses</option>
           {BOOKING_STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {STATUS_LABELS[s]}
             </option>
           ))}
         </select>
@@ -324,6 +341,13 @@ export default function Bookings() {
         />
       </div>
 
+      {(data?.bookings ?? []).some((b) => b.status === 'awaiting_payment') && !statusFilter && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {(data?.bookings ?? []).filter((b) => b.status === 'awaiting_payment').length} booking attempt(s) haven't been paid. They stay on the list so you can follow up, and release their time slot after 30 minutes.
+        </div>
+      )}
+      {linkNotice && <div className="rounded-lg bg-slate-100 px-4 py-2 text-sm text-slate-700">{linkNotice}</div>}
+
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">
           <Spinner size="lg" />
@@ -340,9 +364,10 @@ export default function Bookings() {
             <thead className="bg-slate-50 text-left text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-medium">Customer</th>
+                <th className="px-4 py-3 font-medium">Service</th>
                 <th className="px-4 py-3 font-medium">Start</th>
-                <th className="px-4 py-3 font-medium">End</th>
-                <th className="px-4 py-3 font-medium">Amount</th>
+                <th className="px-4 py-3 font-medium">Price</th>
+                <th className="px-4 py-3 font-medium">Paid</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
@@ -355,14 +380,20 @@ export default function Bookings() {
                     <div className="text-xs text-slate-400">{b.customer_email}</div>
                   </td>
                   <td className="px-4 py-3 text-slate-700">
-                    {new Date(b.start_time).toLocaleString()}
+                    <div>{b.service_name ?? '-'}</div>
+                    {b.staff_name && <div className="text-xs text-slate-400">{b.staff_name}</div>}
                   </td>
                   <td className="px-4 py-3 text-slate-700">
-                    {new Date(b.end_time).toLocaleString()}
+                    {new Date(b.start_time).toLocaleString()}
+                    <div className="text-xs text-slate-400">until {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
                   </td>
                   <td className="px-4 py-3 text-slate-700">{formatCents(b.amount_cents)}</td>
+                  <td className="px-4 py-3 text-slate-700">{b.status === 'awaiting_payment' ? '-' : formatCents(b.deposit_paid_cents ?? 0)}</td>
                   <td className="px-4 py-3">
-                    <Badge tone={STATUS_TONES[b.status]}>{b.status}</Badge>
+                    <Badge tone={STATUS_TONES[b.status]}>{STATUS_LABELS[b.status]}</Badge>
+                    {b.status === 'awaiting_payment' && (
+                      <div className="mt-1 text-[11px] text-amber-700">Tried {new Date(b.created_at).toLocaleDateString()}, didn't pay</div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
@@ -373,6 +404,16 @@ export default function Bookings() {
                       >
                         Edit
                       </Button>
+                      {b.status === 'awaiting_payment' && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={linkMutation.isPending}
+                          onClick={() => linkMutation.mutate(b.id)}
+                        >
+                          Send payment link
+                        </Button>
+                      )}
                       {b.status !== 'confirmed' && b.status !== 'completed' && (
                         <Button
                           size="sm"

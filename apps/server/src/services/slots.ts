@@ -4,6 +4,14 @@ import type { TimeSlot } from './availability';
 import { resolveAvailability } from './businessHours';
 import { addDays, format, parse } from 'date-fns';
 
+/**
+ * Bookings that currently hold their time. Cancelled / no-show ones don't, and neither does an unpaid attempt
+ * (awaiting_payment) once it is 30 minutes old: abandoned checkouts must not block the calendar forever.
+ */
+export const UNPAID_HOLD_MINUTES = 30;
+export const holdsTime = () =>
+  db`(status NOT IN ('cancelled', 'no_show') AND NOT (status = 'awaiting_payment' AND created_at < NOW() - INTERVAL '30 minutes'))`;
+
 export type SlotsReason = 'no_hours' | 'closed' | 'full' | 'blocked' | null;
 
 export interface TenantForSlots {
@@ -62,12 +70,12 @@ export async function slotsForService(params: {
         SELECT start_time, end_time FROM bookings
         WHERE tenant_id = ${tenant.id}
           AND (staff_id = ${staff.id as string} OR staff_id IS NULL)
-          AND status NOT IN ('cancelled', 'no_show')
+          AND ${holdsTime()}
           AND start_time < ${end.toISOString()} AND end_time > ${start.toISOString()}`
     : await db`
         SELECT start_time, end_time FROM bookings
         WHERE tenant_id = ${tenant.id}
-          AND status NOT IN ('cancelled', 'no_show')
+          AND ${holdsTime()}
           AND start_time < ${end.toISOString()} AND end_time > ${start.toISOString()}`;
 
   const args = {

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
 import type { Order, Booking } from '../types';
 import Spinner from '../components/shared/Spinner';
+import { isPaidOrder, isLiveBooking, isUnpaidBooking, isUnpaidOrder, moneyEvents } from '../lib/metrics';
 
 function formatCents(cents: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
@@ -12,13 +13,12 @@ interface MonthBucket {
   total: number;
 }
 
-function bucketByMonth(orders: Order[]): MonthBucket[] {
+function bucketByMonth(events: { at: Date; cents: number }[]): MonthBucket[] {
   const map = new Map<string, number>();
-  for (const o of orders) {
-    if (o.status !== 'paid' && o.status !== 'fulfilled') continue;
-    const d = new Date(o.created_at);
+  for (const e of events) {
+    const d = e.at;
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    map.set(key, (map.get(key) ?? 0) + o.total_cents);
+    map.set(key, (map.get(key) ?? 0) + e.cents);
   }
   return Array.from(map.entries())
     .sort(([a], [b]) => a.localeCompare(b))
@@ -59,11 +59,14 @@ export default function Analytics() {
   const orders = ordersQuery.data?.orders ?? [];
   const bookings = bookingsQuery.data?.bookings ?? [];
 
-  const revenueByMonth = bucketByMonth(orders);
+  // Revenue = paid orders + money collected on bookings; unpaid orders / booking attempts are listed separately
+  const revenueByMonth = bucketByMonth(moneyEvents(orders, bookings));
+  const unpaidBookings = bookings.filter(isUnpaidBooking).length;
+  const unpaidOrders = orders.filter(isUnpaidOrder).length;
   const maxRevenue = Math.max(1, ...revenueByMonth.map((m) => m.total));
 
   const productCounts = new Map<string, number>();
-  for (const o of orders) {
+  for (const o of orders.filter(isPaidOrder)) {
     for (const item of o.items ?? []) {
       productCounts.set(item.name, (productCounts.get(item.name) ?? 0) + item.quantity);
     }
@@ -73,7 +76,7 @@ export default function Analytics() {
     .slice(0, 5);
 
   const serviceCounts = new Map<string, number>();
-  for (const b of bookings) {
+  for (const b of bookings.filter(isLiveBooking)) {
     const name = b.service_name ?? 'Unknown service';
     serviceCounts.set(name, (serviceCounts.get(name) ?? 0) + 1);
   }
@@ -85,6 +88,12 @@ export default function Analytics() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
+
+      {(unpaidBookings > 0 || unpaidOrders > 0) && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Not counted below: {unpaidBookings} unpaid booking attempt{unpaidBookings === 1 ? '' : 's'} and {unpaidOrders} unfinished checkout{unpaidOrders === 1 ? '' : 's'}.
+        </p>
+      )}
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="mb-4 text-sm font-semibold text-slate-900">Revenue over time</h2>

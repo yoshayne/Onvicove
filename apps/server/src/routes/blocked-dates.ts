@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db/client';
+import { holdsTime } from '../services/slots';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 
@@ -63,7 +64,7 @@ app.post('/', requireAuth, requireTenant, async (c) => {
     const found = await db`
       SELECT COUNT(*)::int AS n FROM bookings
       WHERE tenant_id = ${tenant.id}
-        AND status NOT IN ('cancelled', 'no_show')
+        AND ${holdsTime()}
         AND (start_time AT TIME ZONE ${tz})::date BETWEEN ${date_from}::date AND ${date_to}::date
     `;
     existingBookings = found[0].n as number;

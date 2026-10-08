@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import type { Tenant, Order, Booking, Product, Service } from '../types';
+import { isPaidOrder, isLiveBooking, isUnpaidBooking, isUnpaidOrder, moneyEvents, sumBetween } from '../lib/metrics';
 import Spinner from '../components/shared/Spinner';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -171,24 +172,29 @@ export default function Overview() {
   const yesterday = new Date(todayStart); yesterday.setDate(yesterday.getDate() - 1);
   const DAY = 86_400_000;
 
-  function ordersInRange(from: Date, to: Date) {
-    return orders.filter(o => { const d = new Date(o.created_at); return d >= from && d < to; });
-  }
+  // Only completed payments count as orders / revenue; unfinished checkouts and unpaid booking attempts are
+  // tracked separately so the numbers match what's actually been paid.
+  const paidOrders = orders.filter(isPaidOrder);
+  const liveBookings = bookings.filter(isLiveBooking);
+  const unpaidBookings = bookings.filter(isUnpaidBooking);
+  const unpaidOrders = orders.filter(isUnpaidOrder);
+  const money = moneyEvents(orders, bookings);
 
-  function paidRevenue(os: Order[]) {
-    return os.filter(o => o.status === 'paid' || o.status === 'fulfilled').reduce((s, o) => s + o.total_cents, 0);
+  function ordersInRange(from: Date, to: Date) {
+    return paidOrders.filter(o => { const d = new Date(o.created_at); return d >= from && d < to; });
   }
 
   function bookingsOnDay(from: Date, to: Date) {
-    return bookings.filter(b => { const s = new Date(b.start_time); return s >= from && s < to; });
+    return liveBookings.filter(b => { const s = new Date(b.start_time); return s >= from && s < to; });
   }
 
   // Today / yesterday snapshots
-  const todayOrders = ordersInRange(todayStart, new Date(+todayStart + DAY));
+  const todayEnd = new Date(+todayStart + DAY);
+  const todayOrders = ordersInRange(todayStart, todayEnd);
   const ydayOrders = ordersInRange(yesterday, todayStart);
-  const todayRevCents = paidRevenue(todayOrders);
-  const ydayRevCents = paidRevenue(ydayOrders);
-  const todayBookings = bookingsOnDay(todayStart, new Date(+todayStart + DAY));
+  const todayRevCents = sumBetween(money, todayStart, todayEnd);
+  const ydayRevCents = sumBetween(money, yesterday, todayStart);
+  const todayBookings = bookingsOnDay(todayStart, todayEnd);
   const ydayBookings = bookingsOnDay(yesterday, todayStart);
 
   function trend(today: number, yest: number): number | null {
@@ -197,58 +203,61 @@ export default function Overview() {
   }
 
   // Last-7 sparkline values
-  const revSpark = Array.from({ length: 7 }, (_, i) => {
+  const lastSeven = Array.from({ length: 7 }, (_, i) => {
     const from = new Date(+todayStart - (6 - i) * DAY);
-    const to = new Date(+from + DAY);
-    return paidRevenue(ordersInRange(from, to)) / 100;
+    return { from, to: new Date(+from + DAY) };
   });
-  const orderSpark = Array.from({ length: 7 }, (_, i) => {
-    const from = new Date(+todayStart - (6 - i) * DAY);
-    const to = new Date(+from + DAY);
-    return ordersInRange(from, to).length;
-  });
-  const bookSpark = Array.from({ length: 7 }, (_, i) => {
-    const from = new Date(+todayStart - (6 - i) * DAY);
-    const to = new Date(+from + DAY);
-    return bookingsOnDay(from, to).length;
-  });
+  const revSpark = lastSeven.map(({ from, to }) => sumBetween(money, from, to) / 100);
+  const orderSpark = lastSeven.map(({ from, to }) => ordersInRange(from, to).length);
+  const bookSpark = lastSeven.map(({ from, to }) => bookingsOnDay(from, to).length);
 
   // Revenue chart (last 7 days)
   const chartMax = Math.max(...revSpark, 1);
-  const dayLabels = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(+todayStart - (6 - i) * DAY);
-    return d.toLocaleDateString('en-US', { weekday: 'short' });
-  });
+  const dayLabels = lastSeven.map(({ from }) => from.toLocaleDateString('en-US', { weekday: 'short' }));
 
-  // Total revenue
-  const totalRevCents = paidRevenue(orders);
+  // Total revenue: paid orders + money collected on bookings
+  const totalRevCents = money.reduce((sum, e) => sum + e.cents, 0);
 
-  // Unique customers
-  const uniqueEmails = new Set(orders.map(o => o.customer_email)).size;
+  // Customers who actually paid or hold a real booking, and how that grew over the last 7 days
+  const firstSeen = new Map<string, number>();
+  const noteCustomer = (email: string, at: string) => {
+    const key = email.trim().toLowerCase();
+    const t = new Date(at).getTime();
+    if (!firstSeen.has(key) || t < (firstSeen.get(key) as number)) firstSeen.set(key, t);
+  };
+  paidOrders.forEach(o => noteCustomer(o.customer_email, o.created_at));
+  liveBookings.forEach(b => noteCustomer(b.customer_email, b.created_at));
+  const uniqueEmails = firstSeen.size;
+  const customerSpark = lastSeven.map(({ to }) => Array.from(firstSeen.values()).filter(t => t < +to).length);
 
-  // Activity feed (merge orders + bookings, sort by time)
+  // Activity feed (merge orders + bookings, sort by time) — unpaid ones are labelled as such
   type FeedItem = {
     id: string;
     icon: LucideIcon;
     label: string; sub: string; time: string; iconBg: string;
   };
+  const AMBER = 'bg-amber-100 text-amber-600';
   const feed: FeedItem[] = [
     ...orders.slice(0, 8).map(o => ({
       id: `o${o.id}`, icon: ShoppingBag,
-      label: `New order #${o.order_number} received`,
+      label: isPaidOrder(o) ? `New order #${o.order_number} received`
+        : isUnpaidOrder(o) ? `Checkout not completed #${o.order_number}`
+        : `Order #${o.order_number} ${o.status}`,
       sub: o.customer_name,
-      time: o.created_at, iconBg: 'bg-blue-100 text-blue-600',
+      time: o.created_at, iconBg: isUnpaidOrder(o) ? AMBER : 'bg-blue-100 text-blue-600',
     })),
-    ...bookings.slice(0, 8).map(b => ({
+    ...bookings.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8).map(b => ({
       id: `b${b.id}`, icon: CalendarDays,
-      label: `Booking: ${b.service_name ?? 'Appointment'}`,
+      label: isUnpaidBooking(b) ? `Booking not paid: ${b.service_name ?? 'Appointment'}`
+        : b.status === 'cancelled' ? `Booking cancelled: ${b.service_name ?? 'Appointment'}`
+        : `Booking: ${b.service_name ?? 'Appointment'}`,
       sub: b.customer_name,
-      time: b.created_at, iconBg: 'bg-violet-100 text-violet-600',
+      time: b.created_at, iconBg: isUnpaidBooking(b) ? AMBER : 'bg-violet-100 text-violet-600',
     })),
   ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 9);
 
   // Setup checklist
-  const hasSale = orders.some(o => o.status === 'paid' || o.status === 'fulfilled');
+  const hasSale = totalRevCents > 0;
   const setupItems = [
     { done: true, label: 'Store created' },
     { done: !!tenant?.custom_domain_verified, label: 'Domain connected' },
@@ -321,6 +330,22 @@ export default function Overview() {
         )}
       </div>
 
+      {(unpaidBookings.length > 0 || unpaidOrders.length > 0) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p>
+            <span className="font-semibold">Not paid yet:</span>{' '}
+            {unpaidBookings.length > 0 && `${unpaidBookings.length} booking attempt${unpaidBookings.length === 1 ? '' : 's'}`}
+            {unpaidBookings.length > 0 && unpaidOrders.length > 0 && ' and '}
+            {unpaidOrders.length > 0 && `${unpaidOrders.length} unfinished checkout${unpaidOrders.length === 1 ? '' : 's'}`}
+            . They aren't counted in your revenue or totals.
+          </p>
+          <div className="flex gap-3 text-xs font-semibold">
+            {unpaidBookings.length > 0 && <Link to="/dashboard/bookings" className="text-amber-800 underline">Review bookings</Link>}
+            {unpaidOrders.length > 0 && <Link to="/dashboard/orders" className="text-amber-800 underline">Review orders</Link>}
+          </div>
+        </div>
+      )}
+
       {/* ── Quick Actions ────────────────────────────────────────────────── */}
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Quick Actions</p>
@@ -341,7 +366,7 @@ export default function Overview() {
           <KpiCard label="Revenue Today"    value={fmt(todayRevCents)}         trend={trend(todayRevCents, ydayRevCents)}      sparkValues={revSpark}   color="#7c3aed" />
           <KpiCard label="Bookings Today"   value={String(todayBookings.length)} trend={trend(todayBookings.length, ydayBookings.length)} sparkValues={bookSpark}  color="#10b981" />
           <KpiCard label="Orders Today"     value={String(todayOrders.length)} trend={trend(todayOrders.length, ydayOrders.length)}     sparkValues={orderSpark} color="#3b82f6" />
-          <KpiCard label="Customers"        value={String(uniqueEmails)}        trend={null}                                   sparkValues={[1,1,2,2,3,3,uniqueEmails]} color="#f59e0b" />
+          <KpiCard label="Customers"        value={String(uniqueEmails)}        trend={null}                                   sparkValues={customerSpark} color="#f59e0b" />
           <KpiCard label="Total Revenue"    value={fmt(totalRevCents)}          trend={null}                                   sparkValues={revSpark}   color="#6366f1" />
         </div>
       </div>
@@ -442,27 +467,6 @@ export default function Overview() {
                   </Link>
                 </div>
               )}
-            </div>
-
-            {/* Traffic sources (illustrative) */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Top Traffic Source</p>
-              {[
-                { label: 'Direct', pct: 45, color: 'bg-violet-500' },
-                { label: 'Google', pct: 30, color: 'bg-blue-500' },
-                { label: 'Social', pct: 15, color: 'bg-pink-500' },
-                { label: 'Other', pct: 10, color: 'bg-slate-300' },
-              ].map(s => (
-                <div key={s.label} className="mb-2.5 last:mb-0">
-                  <div className="mb-1 flex justify-between text-xs">
-                    <span className="font-medium text-slate-600">{s.label}</span>
-                    <span className="text-slate-500">{s.pct}%</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                    <div className={`h-full rounded-full ${s.color}`} style={{ width: `${s.pct}%` }} />
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>

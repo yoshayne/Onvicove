@@ -6,7 +6,7 @@ import { requireTenant } from '../middleware/tenant';
 import { createBookingPaymentIntent, usableStripeIds } from '../services/stripe';
 import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { sendPaymentLinkEmail, sendBookingCancelled, sendTenantBookingCancelled, sendBookingConfirmation, sendTenantNewBooking } from '../services/email';
-import { slotsForService } from '../services/slots';
+import { slotsForService, holdsTime } from '../services/slots';
 
 const app = new Hono();
 
@@ -55,17 +55,21 @@ app.get('/', async (c) => {
   const dateFrom = c.req.query('date_from');
   const dateTo = c.req.query('date_to');
 
-  const conditions = [db`tenant_id = ${tenant.id}`, db`status != ${'awaiting_payment'}`];
-  if (status) conditions.push(db`status = ${status}`);
-  if (dateFrom) conditions.push(db`start_time >= ${dateFrom}`);
-  if (dateTo) conditions.push(db`start_time <= ${dateTo}`);
+  // Everything, including unpaid attempts (status 'awaiting_payment'), so the owner can see who tried to book
+  const conditions = [db`b.tenant_id = ${tenant.id}`];
+  if (status) conditions.push(db`b.status = ${status}`);
+  if (dateFrom) conditions.push(db`b.start_time >= ${dateFrom}`);
+  if (dateTo) conditions.push(db`b.start_time <= ${dateTo}`);
 
   const whereClause = conditions.reduce((acc, cond) => db`${acc} AND ${cond}`);
 
   const bookings = await db`
-    SELECT * FROM bookings
+    SELECT b.*, s.name AS service_name, st.name AS staff_name
+    FROM bookings b
+    LEFT JOIN services s ON s.id = b.service_id
+    LEFT JOIN staff st ON st.id = b.staff_id
     WHERE ${whereClause}
-    ORDER BY start_time ASC
+    ORDER BY b.start_time ASC
   `;
 
   return c.json({ bookings });
@@ -106,7 +110,7 @@ app.post('/', async (c) => {
       SELECT id FROM bookings
       WHERE staff_id = ${d.staff_id}
       AND tenant_id = ${tenant.id}
-      AND status NOT IN ('cancelled', 'no_show')
+      AND ${holdsTime()}
       AND start_time < ${d.end_time}
       AND end_time > ${d.start_time}
       LIMIT 1
