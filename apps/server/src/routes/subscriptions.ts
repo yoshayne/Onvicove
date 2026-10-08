@@ -6,6 +6,7 @@ import { requireTenant } from '../middleware/tenant';
 import { stripe } from '../services/stripe';
 import { getBaseUrl } from '../lib/baseUrl';
 import { feeForPlan, getPlatformSettings } from '../services/settings';
+import { CHARGE_MODEL, STRIPE_CARD_FEE } from '../services/chargeModel';
 import {
   applySubscription, ENDED_STATUSES, ENTITLED_STATUSES, priceIdFor, type StripeSubscriptionLike,
 } from '../services/subscriptions';
@@ -46,7 +47,11 @@ app.get('/plans', async (c) => {
       return [id, { name: settings.plans[id].name, price_cents: settings.plans[id].price_cents, fee_percent: fee.percent, fee_fixed_cents: fee.fixedCents }];
     }),
   );
-  return c.json({ plans });
+  return c.json({
+    plans,
+    charge_model: CHARGE_MODEL,
+    stripe_fee: { percent: STRIPE_CARD_FEE.percent, fixed_cents: STRIPE_CARD_FEE.fixedCents },
+  });
 });
 
 // GET /api/subscriptions/status

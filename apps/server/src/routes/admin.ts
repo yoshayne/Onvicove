@@ -6,7 +6,7 @@ import { isRailwayConfigured, railwayRemoveDomain } from '../services/railway';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireAdmin } from '../middleware/admin';
-import { stripe } from '../services/stripe';
+import { stripe, refundStorePayment } from '../services/stripe';
 import { getPlatformSettings, savePlatformSettings, DEFAULT_PLATFORM_SETTINGS, type PlatformSettings } from '../services/settings';
 import {
   sendPlanUpgraded, sendPlanDowngraded, sendAccountSuspended, sendAccountReactivated,
@@ -304,11 +304,8 @@ app.post('/refunds', async (c) => {
 
   let refund;
   try {
-    refund = await stripe.refunds.create({
-      payment_intent: record.stripe_payment_intent_id as string,
-      reverse_transfer: true,
-      refund_application_fee: true,
-    });
+    const owner = await db`SELECT stripe_account_id FROM tenants WHERE id = ${tx.tenant_id} LIMIT 1`;
+    refund = await refundStorePayment(record.stripe_payment_intent_id as string, (owner[0]?.stripe_account_id as string | null) ?? null);
   } catch (err) {
     return c.json({ error: `Stripe refund failed: ${String(err)}` }, 502);
   }

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
-import { createBookingPaymentIntent } from '../services/stripe';
+import { createBookingPaymentIntent, usableStripeIds } from '../services/stripe';
 import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { sendPaymentLinkEmail, sendBookingCancelled, sendTenantBookingCancelled, sendBookingConfirmation, sendTenantNewBooking } from '../services/email';
 import { slotsForService } from '../services/slots';
@@ -256,7 +256,7 @@ app.get('/:id/payment-info', async (c) => {
   const id = c.req.param('id');
 
   const rows = await db`
-    SELECT b.*, c.card_brand, c.card_last4, c.stripe_customer_id, c.stripe_payment_method_id
+    SELECT b.*, c.card_brand, c.card_last4, c.stripe_customer_id, c.stripe_payment_method_id, c.stripe_account_id AS customer_stripe_account_id
     FROM bookings b
     LEFT JOIN customers c ON c.id = b.customer_id
     WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
@@ -270,7 +270,7 @@ app.get('/:id/payment-info', async (c) => {
     remaining_cents: remainingCents,
     amount_cents: booking.amount_cents,
     deposit_paid_cents: booking.deposit_paid_cents ?? 0,
-    has_card: !!booking.stripe_payment_method_id,
+    has_card: !!usableStripeIds({ stripe_customer_id: booking.stripe_customer_id as string | null, stripe_payment_method_id: booking.stripe_payment_method_id as string | null, stripe_account_id: booking.customer_stripe_account_id as string | null }, tenant.stripe_account_id ?? '').paymentMethodId,
     card_brand: booking.card_brand,
     card_last4: booking.card_last4,
     currency: tenant.currency,
@@ -283,7 +283,7 @@ app.post('/:id/balance-intent', async (c) => {
   const id = c.req.param('id');
 
   const rows = await db`
-    SELECT b.*, c.stripe_customer_id
+    SELECT b.*, c.stripe_customer_id, c.stripe_account_id AS customer_stripe_account_id
     FROM bookings b
     LEFT JOIN customers c ON c.id = b.customer_id
     WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
@@ -302,7 +302,7 @@ app.post('/:id/balance-intent', async (c) => {
     tenantId: tenant.id,
     bookingId: id,
     referenceType: 'booking_balance',
-    stripeCustomerId: booking.stripe_customer_id as string | null,
+    stripeCustomerId: usableStripeIds({ stripe_customer_id: booking.stripe_customer_id as string | null, stripe_account_id: booking.customer_stripe_account_id as string | null }, tenant.stripe_account_id).customerId,
   });
 
   return c.json({ client_secret: paymentIntent.client_secret, amount: remainingCents });
@@ -314,7 +314,7 @@ app.post('/:id/charge-saved-card', async (c) => {
   const id = c.req.param('id');
 
   const rows = await db`
-    SELECT b.*, c.stripe_customer_id, c.stripe_payment_method_id
+    SELECT b.*, c.stripe_customer_id, c.stripe_payment_method_id, c.stripe_account_id AS customer_stripe_account_id
     FROM bookings b
     LEFT JOIN customers c ON c.id = b.customer_id
     WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
@@ -322,7 +322,13 @@ app.post('/:id/charge-saved-card', async (c) => {
   const booking = rows[0];
   if (!booking) return c.json({ error: 'Booking not found' }, 404);
   if (!tenant.stripe_account_id) return c.json({ error: 'This business has not connected Stripe yet' }, 400);
-  if (!booking.stripe_customer_id || !booking.stripe_payment_method_id) {
+  // A card saved before the switch to direct charges lives on the platform account and can't be charged for the store
+  const saved = usableStripeIds({
+    stripe_customer_id: booking.stripe_customer_id as string | null,
+    stripe_payment_method_id: booking.stripe_payment_method_id as string | null,
+    stripe_account_id: booking.customer_stripe_account_id as string | null,
+  }, tenant.stripe_account_id);
+  if (!saved.customerId || !saved.paymentMethodId) {
     return c.json({ error: 'No card on file for this customer' }, 400);
   }
 
@@ -336,8 +342,8 @@ app.post('/:id/charge-saved-card', async (c) => {
     tenantId: tenant.id,
     bookingId: id,
     referenceType: 'booking_balance',
-    stripeCustomerId: booking.stripe_customer_id as string,
-    paymentMethodId: booking.stripe_payment_method_id as string,
+    stripeCustomerId: saved.customerId,
+    paymentMethodId: saved.paymentMethodId,
   });
 
   return c.json({ status: paymentIntent.status, amount: remainingCents });

@@ -177,7 +177,7 @@ export default function Settings() {
       </div>
 
       <p className="-mt-3 text-xs text-slate-500">
-        Platform fee is taken from every sale a store makes. Leave a plan's fee blank to use the default fee below; stores pay the fee of the plan they're on at the time of the sale.
+        Platform fee is what YOU keep from each sale, added on top of Stripe's own card fee (2.9% + 30¢), which the store pays directly. Leave a plan's fee blank to use the default fee below; stores pay the fee of the plan they're on at the time of the sale.
       </p>
 
       <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-3">

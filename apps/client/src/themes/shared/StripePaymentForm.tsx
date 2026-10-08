@@ -4,24 +4,25 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { formatPrice } from '../types';
 import { currentPageUrl } from '../../lib/paymentReturn';
 
-// Prefer the build-time env var; fall back to runtime fetch from /api/public/config
+// Prefer the build-time env var for the key; always ask the server which charge model is active
 let resolvedPublishableKey: string | null = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string) || null;
-let keyFetchPromise: Promise<void> | null = null;
+let chargeModel: 'direct' | 'destination' = 'direct';
+let configPromise: Promise<void> | null = null;
 
-function ensureKey(): Promise<void> {
-  if (resolvedPublishableKey) return Promise.resolve();
-  if (keyFetchPromise) return keyFetchPromise;
-  keyFetchPromise = fetch('/api/public/config')
+function ensureConfig(): Promise<void> {
+  if (configPromise) return configPromise;
+  configPromise = fetch('/api/public/config')
     .then((r) => r.json())
-    .then((data: { stripePublishableKey?: string | null }) => {
-      if (data.stripePublishableKey) resolvedPublishableKey = data.stripePublishableKey;
+    .then((data: { stripePublishableKey?: string | null; chargeModel?: 'direct' | 'destination' }) => {
+      if (!resolvedPublishableKey && data.stripePublishableKey) resolvedPublishableKey = data.stripePublishableKey;
+      if (data.chargeModel) chargeModel = data.chargeModel;
     })
     .catch(() => {});
-  return keyFetchPromise;
+  return configPromise;
 }
 
 // Pre-fetch on module load so it's ready by the time the form renders
-ensureKey();
+ensureConfig();
 
 interface StripePaymentFormProps {
   clientSecret: string;
@@ -43,19 +44,20 @@ export default function StripePaymentForm({
   onSuccess,
   onCancel,
 }: StripePaymentFormProps) {
+  const [ready, setReady] = useState(false);
   const [publishableKey, setPublishableKey] = useState<string | null>(resolvedPublishableKey);
 
   useEffect(() => {
-    if (publishableKey) return;
-    ensureKey().then(() => setPublishableKey(resolvedPublishableKey));
-  }, [publishableKey]);
+    ensureConfig().then(() => { setPublishableKey(resolvedPublishableKey); setReady(true); });
+  }, []);
 
+  // With direct charges the payment lives on the store's own Stripe account, so Stripe.js must be loaded for that account
   const stripePromise = useMemo(() => {
-    if (!publishableKey) return null;
-    return loadStripe(publishableKey);
-  }, [publishableKey]);
+    if (!ready || !publishableKey) return null;
+    return loadStripe(publishableKey, stripeAccountId && chargeModel === 'direct' ? { stripeAccount: stripeAccountId } : undefined);
+  }, [ready, publishableKey, stripeAccountId]);
 
-  if (!publishableKey) {
+  if (!ready) {
     return (
       <p className="text-sm text-amber-600">Loading payment form…</p>
     );

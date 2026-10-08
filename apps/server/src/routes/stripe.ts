@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type Stripe from 'stripe';
 import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
@@ -155,7 +156,7 @@ app.post('/payment-intent', async (c) => {
   const rows = await db`
     SELECT r.*, t.stripe_account_id, t.currency,
       s.requires_deposit AS service_requires_deposit, s.deposit_cents AS service_deposit_cents,
-      cu.id AS customer_row_id, cu.email AS customer_row_email, cu.first_name, cu.last_name, cu.stripe_customer_id
+      cu.id AS customer_row_id, cu.email AS customer_row_email, cu.first_name, cu.last_name, cu.stripe_customer_id, cu.stripe_account_id AS customer_stripe_account_id
     FROM bookings r
     JOIN tenants t ON t.id = r.tenant_id
     JOIN services s ON s.id = r.service_id
@@ -180,12 +181,10 @@ app.post('/payment-intent', async (c) => {
       id: record.customer_row_id as string,
       email: record.customer_row_email as string,
       stripe_customer_id: record.stripe_customer_id as string | null,
+      stripe_account_id: record.customer_stripe_account_id as string | null,
       first_name: record.first_name as string | null,
       last_name: record.last_name as string | null,
-    });
-    if (!record.stripe_customer_id) {
-      await db`UPDATE customers SET stripe_customer_id = ${stripeCustomerId}, updated_at = NOW() WHERE id = ${record.customer_row_id}`;
-    }
+    }, record.stripe_account_id as string);
   }
 
   const paymentIntent = await createBookingPaymentIntent({
@@ -210,18 +209,41 @@ app.post('/payment-intent', async (c) => {
 // POST /webhooks/stripe — Stripe webhook handler (raw body, signature verified)
 app.post('/webhook', async (c) => {
   const sig = c.req.header('stripe-signature');
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!sig || !secret) {
+  // Two Stripe endpoints point here, each with its own signing secret: the platform's own events (subscriptions,
+  // domain purchases...) and "events on connected accounts" (stores' customer payments).
+  const secrets = [process.env.STRIPE_WEBHOOK_SECRET, process.env.STRIPE_CONNECT_WEBHOOK_SECRET].filter((x): x is string => !!x);
+  if (!sig || secrets.length === 0) {
     return c.json({ error: 'Missing webhook signature or secret' }, 400);
   }
 
   const rawBody = await c.req.raw.text();
 
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(rawBody, sig, secret);
-  } catch (err) {
-    return c.json({ error: `Webhook signature verification failed: ${String(err)}` }, 400);
+  let event: Stripe.Event | undefined;
+  let lastError = '';
+  for (const secret of secrets) {
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, sig, secret);
+      break;
+    } catch (err) {
+      lastError = String(err);
+    }
+  }
+  if (!event) {
+    return c.json({ error: `Webhook signature verification failed: ${lastError}` }, 400);
+  }
+
+  // Events from a store's own Stripe account: only its customer payments matter here. Anything else (e.g. the
+  // store's own subscriptions) must never touch our tenants, and the payment must really belong to that store.
+  const connectAccount = event.account as string | undefined;
+  if (connectAccount) {
+    if (event.type !== 'payment_intent.succeeded' && event.type !== 'payment_intent.payment_failed') {
+      return c.json({ received: true, ignored: event.type });
+    }
+    const metadata = (event.data.object as { metadata?: Record<string, string> }).metadata ?? {};
+    const owner = metadata.tenant_id
+      ? await db`SELECT 1 FROM tenants WHERE id = ${metadata.tenant_id} AND stripe_account_id = ${connectAccount} LIMIT 1`
+      : [];
+    if (!owner[0]) return c.json({ received: true, ignored: 'unknown account/tenant' });
   }
 
   if (event.type === 'payment_intent.succeeded') {
@@ -236,11 +258,11 @@ app.post('/webhook', async (c) => {
 
     if (pi.customer && pi.payment_method) {
       try {
-        const pm = await stripe.paymentMethods.retrieve(pi.payment_method);
+        const pm = await stripe.paymentMethods.retrieve(pi.payment_method, connectAccount ? { stripeAccount: connectAccount } : undefined);
         await db`
           UPDATE customers
           SET stripe_payment_method_id = ${pi.payment_method}, card_brand = ${pm.card?.brand ?? null}, card_last4 = ${pm.card?.last4 ?? null}, updated_at = NOW()
-          WHERE stripe_customer_id = ${pi.customer}
+          WHERE stripe_customer_id = ${pi.customer} AND stripe_account_id IS NOT DISTINCT FROM ${connectAccount ?? null}
         `;
       } catch {
         // best-effort card-on-file save

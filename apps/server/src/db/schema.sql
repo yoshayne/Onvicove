@@ -500,3 +500,6 @@ ALTER TABLE city_schedules ALTER COLUMN city_label DROP NOT NULL;
 
 -- When we last filled in the connected Stripe account's public business name / statement descriptor
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_profile_synced_at TIMESTAMPTZ;
+
+-- Which Stripe account holds a customer's stripe_customer_id / saved card (NULL = the platform account)
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS stripe_account_id TEXT;

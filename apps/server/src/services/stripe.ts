@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import { db } from '../db/client';
 import { feeForPlan, getPlatformSettings } from './settings';
+import { CHARGE_MODEL } from './chargeModel';
 
 let _stripe: Stripe | undefined;
 
@@ -81,13 +82,21 @@ export async function ensureConnectedProfile(tenantId: string, accountId: string
 }
 
 /**
- * Create a PaymentIntent that pays out to a store's connected account. `on_behalf_of` makes the store the
- * business customers see (name on the payment screen and statement). It's a nice-to-have, never a reason to
- * lose a sale: if Stripe rejects it for any reason (missing capability, account state...) we retry once as a
- * plain platform charge. Only a declined card is passed straight through. Set STRIPE_ON_BEHALF_OF=false to
- * switch the feature off entirely.
+ * Create the PaymentIntent for a store's sale.
+ *
+ * direct (default): the charge is created ON the store's own Stripe account, so the store is the merchant —
+ * customers see its name on the payment screen and statement — and our fee is `application_fee_amount`.
+ * destination (STRIPE_CHARGE_MODEL=destination, rollback): charge on the platform and pay the store out.
  */
 export async function createStorePaymentIntent(params: Stripe.PaymentIntentCreateParams, accountId: string) {
+  if (CHARGE_MODEL === 'direct') {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { transfer_data: _t, on_behalf_of: _o, ...direct } = params;
+    return stripe.paymentIntents.create(
+      { ...direct, metadata: { ...direct.metadata, charge_model: 'direct' } },
+      { stripeAccount: accountId },
+    );
+  }
   if (process.env.STRIPE_ON_BEHALF_OF === 'false') return stripe.paymentIntents.create(params);
   try {
     return await stripe.paymentIntents.create({ ...params, on_behalf_of: accountId });
@@ -97,6 +106,37 @@ export async function createStorePaymentIntent(params: Stripe.PaymentIntentCreat
     console.warn(`PaymentIntent with on_behalf_of failed for ${accountId} (${e.type}: ${e.message}); retrying as a platform charge`);
     return stripe.paymentIntents.create(params);
   }
+}
+
+interface StripeIdsRow {
+  stripe_customer_id?: string | null;
+  stripe_payment_method_id?: string | null;
+  /** Which Stripe account holds the customer / saved card. NULL = the platform (everything saved before direct charges). */
+  stripe_account_id?: string | null;
+}
+
+/** The account a customer record must live on for payments to `accountId`. */
+export function stripeHolderFor(accountId: string): string | null {
+  return CHARGE_MODEL === 'direct' ? accountId : null;
+}
+
+/** Customer / saved-card ids that are valid for payments to `accountId` (ids from another account can't be used). */
+export function usableStripeIds(row: StripeIdsRow, accountId: string) {
+  const same = (row.stripe_account_id ?? null) === stripeHolderFor(accountId);
+  return {
+    customerId: same ? row.stripe_customer_id ?? null : null,
+    paymentMethodId: same ? row.stripe_payment_method_id ?? null : null,
+  };
+}
+
+/** Refund a store's payment, whichever way it was charged (older payments live on the platform, newer ones on the store). */
+export async function refundStorePayment(paymentIntentId: string, accountId: string | null) {
+  const onPlatform = await stripe.paymentIntents.retrieve(paymentIntentId).catch(() => null);
+  if (onPlatform) {
+    return stripe.refunds.create({ payment_intent: paymentIntentId, reverse_transfer: true, refund_application_fee: true });
+  }
+  if (!accountId) throw new Error('No connected Stripe account for this payment');
+  return stripe.refunds.create({ payment_intent: paymentIntentId, refund_application_fee: true }, { stripeAccount: accountId });
 }
 
 export async function createBookingPaymentIntent(args: CreateBookingIntentArgs) {
@@ -133,12 +173,21 @@ export async function createBookingPaymentIntent(args: CreateBookingIntentArgs) 
 }
 
 export async function getOrCreateStripeCustomer(
-  customer: { id: string; email: string; stripe_customer_id: string | null; first_name?: string | null; last_name?: string | null }
+  customer: { id: string; email: string; stripe_customer_id: string | null; stripe_account_id?: string | null; first_name?: string | null; last_name?: string | null },
+  accountId: string,
 ): Promise<string> {
-  if (customer.stripe_customer_id) return customer.stripe_customer_id;
+  const existing = usableStripeIds(customer, accountId).customerId;
+  if (existing) return existing;
 
   const name = [customer.first_name, customer.last_name].filter(Boolean).join(' ') || undefined;
-  const sc = await stripe.customers.create({ email: customer.email, name });
+  const holder = stripeHolderFor(accountId);
+  const sc = await stripe.customers.create({ email: customer.email, name }, holder ? { stripeAccount: holder } : undefined);
+  // The old customer/card (if any) belongs to another account and can't be used here
+  await db`
+    UPDATE customers
+    SET stripe_customer_id = ${sc.id}, stripe_account_id = ${holder}, stripe_payment_method_id = NULL,
+        card_brand = NULL, card_last4 = NULL, updated_at = NOW()
+    WHERE id = ${customer.id}
+  `;
   return sc.id;
 }
-

@@ -78,11 +78,23 @@ export default function Billing() {
 
   const { data: plansData } = useQuery({
     queryKey: ['subscription-plans'],
-    queryFn: () => api.get<{ plans: Record<PlanId, { fee_percent: number; fee_fixed_cents: number }> }>('/subscriptions/plans'),
+    queryFn: () => api.get<{
+      plans: Record<PlanId, { fee_percent: number; fee_fixed_cents: number }>;
+      charge_model?: 'direct' | 'destination';
+      stripe_fee?: { percent: number; fixed_cents: number };
+    }>('/subscriptions/plans'),
   });
+  // Direct charges: the store pays Stripe's card fee itself and our fee is on top of it. (Rollback model: one combined fee.)
   const feeLabel = (id: PlanId) => {
     const f = plansData?.plans[id];
-    return f ? `${+(f.fee_percent * 100).toFixed(2)}% + ${f.fee_fixed_cents}¢ per sale` : null;
+    if (!f) return null;
+    const pct = `${+(f.fee_percent * 100).toFixed(2)}%`;
+    const fixed = f.fee_fixed_cents ? ` + ${f.fee_fixed_cents}¢` : '';
+    if (plansData?.charge_model === 'direct') {
+      const sf = plansData.stripe_fee;
+      return `${pct}${fixed} per sale, plus Stripe's card fee (${sf ? `${+(sf.percent * 100).toFixed(2)}% + ${sf.fixed_cents}¢` : '2.9% + 30¢'})`;
+    }
+    return `${pct}${fixed} per sale`;
   };
 
   const sub = data?.subscription;

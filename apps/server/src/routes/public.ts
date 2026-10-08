@@ -6,7 +6,8 @@ import { enrichWithUrls, getSignedFileUrl } from '../services/storage';
 import { generateOrderNumber } from '../lib/orderNumber';
 import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { slotsForService } from '../services/slots';
-import { computePlatformFee, createBookingPaymentIntent } from '../services/stripe';
+import { CHARGE_MODEL } from '../services/chargeModel';
+import { computePlatformFee, createBookingPaymentIntent, usableStripeIds } from '../services/stripe';
 import {
   sendCustomOrderNotification, sendCustomOrderConfirmation,
   sendSubscriberWelcome, sendTenantNewSubscriber,
@@ -22,6 +23,8 @@ app.use('*', rateLimitPublic);
 app.get('/config', async (c) => {
   return c.json({
     stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? process.env.VITE_STRIPE_PUBLISHABLE_KEY ?? null,
+    // 'direct': store payments live on the store's own Stripe account, so the browser must load Stripe for that account
+    chargeModel: CHARGE_MODEL,
   });
 });
 
@@ -578,7 +581,7 @@ app.post('/bookings/:id/balance-intent', async (c) => {
   const id = c.req.param('id');
   const rows = await db`
     SELECT b.*, t.currency, t.stripe_account_id,
-      cu.stripe_customer_id
+      cu.stripe_customer_id, cu.stripe_account_id AS customer_stripe_account_id
     FROM bookings b
     JOIN tenants t ON t.id = b.tenant_id
     LEFT JOIN customers cu ON cu.id = b.customer_id
@@ -598,7 +601,7 @@ app.post('/bookings/:id/balance-intent', async (c) => {
     tenantId: booking.tenant_id as string,
     bookingId: id,
     referenceType: 'booking_balance',
-    stripeCustomerId: booking.stripe_customer_id as string | null,
+    stripeCustomerId: usableStripeIds({ stripe_customer_id: booking.stripe_customer_id as string | null, stripe_account_id: booking.customer_stripe_account_id as string | null }, booking.stripe_account_id as string).customerId,
   });
 
   return c.json({
