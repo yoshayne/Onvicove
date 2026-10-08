@@ -15,8 +15,8 @@ interface Props {
 
 interface TimeSlot { start: string; end: string }
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+function formatTime(iso: string, timeZone?: string) {
+  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: timeZone || undefined });
 }
 
 function todayLocal() {
@@ -218,30 +218,21 @@ export default function NewBookingModal({ isOpen, onClose }: Props) {
                 )}
               </p>
             ) : (
-              <div className="grid max-h-48 grid-cols-3 gap-1.5 overflow-y-auto rounded-lg border border-slate-200 p-2 sm:grid-cols-4">
-                {slots.map((slot) => {
-                  const isSelected =
-                    selectedSlot?.start === slot.start && selectedSlot?.end === slot.end;
-                  return (
-                    <button
-                      key={slot.start}
-                      type="button"
-                      onClick={() => setSelectedSlot(slot)}
-                      className={`rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors ${
-                        isSelected
-                          ? 'border-blue-500 bg-blue-500 text-white'
-                          : 'border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50'
-                      }`}
-                    >
-                      {formatTime(slot.start)}
-                    </button>
-                  );
-                })}
-              </div>
+              <select
+                value={selectedSlot ? selectedSlot.start : ''}
+                onChange={(e) => setSelectedSlot(slots.find((sl) => sl.start === e.target.value) ?? null)}
+                aria-label="Appointment time"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="" disabled>Choose a time ({slots.length} available)</option>
+                {slots.map((slot) => (
+                  <option key={slot.start} value={slot.start}>{formatTime(slot.start, slotsData?.timezone)}</option>
+                ))}
+              </select>
             )}
             {selectedSlot && selectedService && (
               <p className="text-xs text-slate-500">
-                {formatTime(selectedSlot.start)} – {formatTime(selectedSlot.end)} ·{' '}
+                {formatTime(selectedSlot.start, slotsData?.timezone)} – {formatTime(selectedSlot.end, slotsData?.timezone)} ·{' '}
                 {selectedService.duration_minutes} min
               </p>
             )}

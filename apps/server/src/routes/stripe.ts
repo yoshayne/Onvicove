@@ -329,6 +329,8 @@ app.post('/webhook', async (c) => {
       `;
       const order = rows[0];
       if (order) {
+        // A discount code counts as used once the order is actually paid (not when checkout merely started)
+        if (order.discount_code_id) await db`UPDATE discount_codes SET usage_count = usage_count + 1 WHERE id = ${order.discount_code_id as string}`;
         const platformFee = order.platform_fee_cents as number;
         const stripeFee = Math.round((order.total_cents as number) * STRIPE_CARD_FEE.percent) + STRIPE_CARD_FEE.fixedCents;
         await db`

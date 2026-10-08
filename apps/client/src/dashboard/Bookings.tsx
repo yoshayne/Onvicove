@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
+import { useMoney } from '../lib/useMoney';
 import type { Booking, BookingStatus, Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
@@ -260,12 +261,8 @@ const STATUS_TONES: Record<BookingStatus, 'default' | 'success' | 'warning' | 'd
   no_show: 'default',
 };
 
-function formatCents(cents: number | null) {
-  if (cents == null) return '-';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
-}
-
 export default function Bookings() {
+  const formatCents = useMoney();
   const api = useApi();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('');
@@ -384,8 +381,8 @@ export default function Bookings() {
                     {b.staff_name && <div className="text-xs text-slate-400">{b.staff_name}</div>}
                   </td>
                   <td className="px-4 py-3 text-slate-700">
-                    {new Date(b.start_time).toLocaleString()}
-                    <div className="text-xs text-slate-400">until {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
+                    {new Date(b.start_time).toLocaleString([], { timeZone: tenantData?.tenant.timezone || undefined })}
+                    <div className="text-xs text-slate-400">until {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: tenantData?.tenant.timezone || undefined })}</div>
                   </td>
                   <td className="px-4 py-3 text-slate-700">{formatCents(b.amount_cents)}</td>
                   <td className="px-4 py-3 text-slate-700">{b.status === 'awaiting_payment' ? '-' : formatCents(b.deposit_paid_cents ?? 0)}</td>

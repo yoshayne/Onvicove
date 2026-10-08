@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
+import { useMoney } from '../lib/useMoney';
 import type { Product, ProductType } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
@@ -47,10 +48,6 @@ function hexToClosestName(hex: string): string {
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
-
-function formatCents(cents: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
-}
 
 // ── constants ────────────────────────────────────────────────────────────────
 
@@ -431,6 +428,7 @@ function SectionLabel({ label, tooltip }: { label: string; tooltip: string }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Products() {
+  const formatCents = useMoney();
   const api = useApi();
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);

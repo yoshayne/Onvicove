@@ -58,6 +58,8 @@ app.get('/', async (c) => {
   // Everything, including unpaid attempts (status 'awaiting_payment'), so the owner can see who tried to book
   const conditions = [db`b.tenant_id = ${tenant.id}`];
   if (status) conditions.push(db`b.status = ${status}`);
+  // Unpaid attempts older than 14 days are noise: only shown when filtering for them explicitly
+  else conditions.push(db`NOT (b.status = 'awaiting_payment' AND b.created_at < NOW() - INTERVAL '14 days')`);
   if (dateFrom) conditions.push(db`b.start_time >= ${dateFrom}`);
   if (dateTo) conditions.push(db`b.start_time <= ${dateTo}`);
 
@@ -204,7 +206,9 @@ app.patch('/:id', async (c) => {
   const booking = rows[0];
 
   const statusChanged = updates.status && before[0]?.status !== updates.status;
-  if (statusChanged && (updates.status === 'cancelled' || updates.status === 'confirmed')) {
+  // Cancelling an attempt that was never paid doesn't email anyone (the customer never had a booking)
+  const wasUnpaid = before[0]?.status === 'awaiting_payment';
+  if (statusChanged && (updates.status === 'cancelled' || updates.status === 'confirmed') && !(wasUnpaid && updates.status === 'cancelled')) {
     const [svcRows, tenantUserRows] = await Promise.all([
       db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`,
       db`SELECT u.email FROM users u JOIN tenants t ON t.clerk_user_id = u.clerk_user_id WHERE t.id = ${tenant.id} LIMIT 1`,

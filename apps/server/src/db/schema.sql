@@ -506,3 +506,6 @@ ALTER TABLE customers ADD COLUMN IF NOT EXISTS stripe_account_id TEXT;
 
 -- One ledger row per successful payment (Stripe retries webhooks); refund rows carry their refund id here instead
 CREATE UNIQUE INDEX IF NOT EXISTS idx_platform_transactions_payment_ref ON platform_transactions(stripe_transfer_id) WHERE stripe_transfer_id IS NOT NULL;
+
+-- Which discount code an order used; its usage_count goes up when the order is PAID, not when checkout starts
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_code_id UUID;

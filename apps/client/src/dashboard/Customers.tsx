@@ -1,17 +1,15 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
+import { useMoney } from '../lib/useMoney';
 import type { Customer } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Button from '../components/shared/Button';
 import Modal from '../components/shared/Modal';
 import { Input, Textarea } from '../components/shared/Input';
 
-function formatCents(cents: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
-}
-
 export default function Customers() {
+  const formatCents = useMoney();
   const api = useApi();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');

@@ -1,16 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
+import { useMoney } from '../lib/useMoney';
 import type { DiscountCode, DiscountType } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
 import Button from '../components/shared/Button';
 import Modal from '../components/shared/Modal';
 import { Input } from '../components/shared/Input';
-
-function formatCents(cents: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
-}
 
 interface DiscountFormState {
   code: string;
@@ -33,6 +30,7 @@ const emptyForm: DiscountFormState = {
 };
 
 export default function Discounts() {
+  const formatCents = useMoney();
   const api = useApi();
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);

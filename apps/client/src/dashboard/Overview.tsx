@@ -9,14 +9,11 @@ import {
 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import type { Tenant, Order, Booking, Product, Service } from '../types';
-import { isPaidOrder, isLiveBooking, isUnpaidBooking, isUnpaidOrder, moneyEvents, sumBetween } from '../lib/metrics';
+import { isPaidOrder, isLiveBooking, isUnpaidBooking, isUnpaidOrder, moneyEvents, sumOnDay, dayKey, lastDayKeys, formatMoney } from '../lib/metrics';
 import Spinner from '../components/shared/Spinner';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmt(cents: number, currency = 'USD') {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
-}
 
 function timeAgo(iso: string) {
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -161,6 +158,8 @@ export default function Overview() {
   }
 
   const tenant = tenantQ.data?.tenant;
+  const tz = tenant?.timezone;
+  const fmt = (cents: number) => formatMoney(cents, tenant?.currency);
   const orders = ordersQ.data?.orders ?? [];
   const bookings = bookingsQ.data?.bookings ?? [];
   const products = productsQ.data?.products ?? [];
@@ -168,34 +167,27 @@ export default function Overview() {
 
   // ── Date helpers ──────────────────────────────────────────────────────────
   const now = new Date();
-  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
-  const yesterday = new Date(todayStart); yesterday.setDate(yesterday.getDate() - 1);
-  const DAY = 86_400_000;
 
   // Only completed payments count as orders / revenue; unfinished checkouts and unpaid booking attempts are
-  // tracked separately so the numbers match what's actually been paid.
+  // tracked separately so the numbers match what's actually been paid. Days are the STORE's calendar days.
   const paidOrders = orders.filter(isPaidOrder);
   const liveBookings = bookings.filter(isLiveBooking);
   const unpaidBookings = bookings.filter(isUnpaidBooking);
   const unpaidOrders = orders.filter(isUnpaidOrder);
   const money = moneyEvents(orders, bookings);
 
-  function ordersInRange(from: Date, to: Date) {
-    return paidOrders.filter(o => { const d = new Date(o.created_at); return d >= from && d < to; });
-  }
+  const days = lastDayKeys(7, tz);
+  const todayKey = days[6];
+  const ydayKey = days[5];
+  const ordersOn = (key: string) => paidOrders.filter(o => dayKey(new Date(o.created_at), tz) === key);
+  const bookingsOn = (key: string) => liveBookings.filter(b => dayKey(new Date(b.start_time), tz) === key);
 
-  function bookingsOnDay(from: Date, to: Date) {
-    return liveBookings.filter(b => { const s = new Date(b.start_time); return s >= from && s < to; });
-  }
-
-  // Today / yesterday snapshots
-  const todayEnd = new Date(+todayStart + DAY);
-  const todayOrders = ordersInRange(todayStart, todayEnd);
-  const ydayOrders = ordersInRange(yesterday, todayStart);
-  const todayRevCents = sumBetween(money, todayStart, todayEnd);
-  const ydayRevCents = sumBetween(money, yesterday, todayStart);
-  const todayBookings = bookingsOnDay(todayStart, todayEnd);
-  const ydayBookings = bookingsOnDay(yesterday, todayStart);
+  const todayOrders = ordersOn(todayKey);
+  const ydayOrders = ordersOn(ydayKey);
+  const todayRevCents = sumOnDay(money, todayKey, tz);
+  const ydayRevCents = sumOnDay(money, ydayKey, tz);
+  const todayBookings = bookingsOn(todayKey);
+  const ydayBookings = bookingsOn(ydayKey);
 
   function trend(today: number, yest: number): number | null {
     if (yest === 0) return null;
@@ -203,17 +195,13 @@ export default function Overview() {
   }
 
   // Last-7 sparkline values
-  const lastSeven = Array.from({ length: 7 }, (_, i) => {
-    const from = new Date(+todayStart - (6 - i) * DAY);
-    return { from, to: new Date(+from + DAY) };
-  });
-  const revSpark = lastSeven.map(({ from, to }) => sumBetween(money, from, to) / 100);
-  const orderSpark = lastSeven.map(({ from, to }) => ordersInRange(from, to).length);
-  const bookSpark = lastSeven.map(({ from, to }) => bookingsOnDay(from, to).length);
+  const revSpark = days.map(k => sumOnDay(money, k, tz) / 100);
+  const orderSpark = days.map(k => ordersOn(k).length);
+  const bookSpark = days.map(k => bookingsOn(k).length);
 
   // Revenue chart (last 7 days)
   const chartMax = Math.max(...revSpark, 1);
-  const dayLabels = lastSeven.map(({ from }) => from.toLocaleDateString('en-US', { weekday: 'short' }));
+  const dayLabels = days.map(k => new Date(`${k}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }));
 
   // Total revenue: paid orders + money collected on bookings
   const totalRevCents = money.reduce((sum, e) => sum + e.cents, 0);
@@ -228,7 +216,7 @@ export default function Overview() {
   paidOrders.forEach(o => noteCustomer(o.customer_email, o.created_at));
   liveBookings.forEach(b => noteCustomer(b.customer_email, b.created_at));
   const uniqueEmails = firstSeen.size;
-  const customerSpark = lastSeven.map(({ to }) => Array.from(firstSeen.values()).filter(t => t < +to).length);
+  const customerSpark = days.map(k => Array.from(firstSeen.values()).filter(t => dayKey(new Date(t), tz) <= k).length);
 
   // Activity feed (merge orders + bookings, sort by time) — unpaid ones are labelled as such
   type FeedItem = {
@@ -554,7 +542,7 @@ export default function Overview() {
                       <p className="text-[11px] text-slate-500">{b.customer_name}</p>
                     </div>
                     <span className="shrink-0 text-[11px] font-medium text-slate-500">
-                      {new Date(b.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(b.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: tz || undefined })}
                     </span>
                   </li>
                 ))}

@@ -1,12 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
+import { useMoney } from '../lib/useMoney';
 import type { Order, Booking } from '../types';
 import Spinner from '../components/shared/Spinner';
 import { isPaidOrder, isLiveBooking, isUnpaidBooking, isUnpaidOrder, moneyEvents } from '../lib/metrics';
-
-function formatCents(cents: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
-}
 
 interface MonthBucket {
   label: string;
@@ -31,6 +28,7 @@ function bucketByMonth(events: { at: Date; cents: number }[]): MonthBucket[] {
 }
 
 export default function Analytics() {
+  const formatCents = useMoney();
   const api = useApi();
 
   const ordersQuery = useQuery({

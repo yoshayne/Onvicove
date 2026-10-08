@@ -1,18 +1,16 @@
 import { Fragment, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
+import { useMoney } from '../lib/useMoney';
 import type { Order, OrderItem, OrderStatus, FulfillmentStatus } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
-
-function formatCents(cents: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
-}
 
 const ORDER_STATUSES: OrderStatus[] = ['pending', 'paid', 'fulfilled', 'refunded', 'cancelled'];
 const FULFILLMENT_STATUSES: FulfillmentStatus[] = ['unfulfilled', 'fulfilled', 'partial'];
 
 export default function Orders() {
+  const formatCents = useMoney();
   const api = useApi();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('');

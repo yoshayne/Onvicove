@@ -268,6 +268,7 @@ app.post('/:slug/orders', async (c) => {
   }
 
   let discountCents = 0;
+  let discountCodeId: string | null = null;
   if (d.discount_code) {
     const codes = await db`
       SELECT * FROM discount_codes
@@ -280,7 +281,7 @@ app.post('/:slug/orders', async (c) => {
       discountCents = code.type === 'percentage'
         ? Math.round(subtotal * (code.value as number) / 100)
         : (code.value as number);
-      await db`UPDATE discount_codes SET usage_count = usage_count + 1 WHERE id = ${code.id}`;
+      discountCodeId = code.id as string;
     }
   }
 
@@ -302,11 +303,11 @@ app.post('/:slug/orders', async (c) => {
     INSERT INTO orders (
       tenant_id, customer_id, order_number, customer_name, customer_email, customer_phone,
       subtotal_cents, shipping_cents, discount_cents, total_cents, platform_fee_cents,
-      shipping_address, billing_address, notes
+      shipping_address, billing_address, notes, discount_code_id
     ) VALUES (
       ${tenant.id}, ${customer.id}, ${orderNumber}, ${d.customer_name}, ${d.customer_email}, ${d.customer_phone ?? null},
       ${subtotal}, ${shippingCents}, ${discountCents}, ${totalCents}, ${platformFee},
-      ${d.shipping_address ? db.json(JSON.parse(JSON.stringify(d.shipping_address))) : null}, ${d.billing_address ? db.json(JSON.parse(JSON.stringify(d.billing_address))) : null}, ${d.notes ?? null}
+      ${d.shipping_address ? db.json(JSON.parse(JSON.stringify(d.shipping_address))) : null}, ${d.billing_address ? db.json(JSON.parse(JSON.stringify(d.billing_address))) : null}, ${d.notes ?? null}, ${discountCodeId}
     )
     RETURNING *
   `;
@@ -324,6 +325,7 @@ app.post('/:slug/orders', async (c) => {
   if (totalCents === 0) {
     await db`UPDATE orders SET status = 'paid', updated_at = NOW() WHERE id = ${order.id}`;
     order.status = 'paid';
+    if (discountCodeId) await db`UPDATE discount_codes SET usage_count = usage_count + 1 WHERE id = ${discountCodeId}`;
   }
 
   // Notify customer and tenant
