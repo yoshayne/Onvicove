@@ -37,3 +37,10 @@ Reasoning:
 - `computePlatformFee(amount, tenantId)` (services/stripe.ts) looks up the paying store's CURRENT plan at payment time, so upgrades and downgrades apply to the next payment only.
 - Business default is 3.9% (code default in services/settings.ts); stored settings from before this feature pick it up automatically.
 - Billing page shows the real fee per plan and the tenant's own fee (GET /api/subscriptions/plans).
+
+## Update: direct charges (current model)
+- Payments are now DIRECT charges on the store's own Stripe account (`STRIPE_CHARGE_MODEL=direct`, default), so the store is the merchant of record: its name shows on Cash App / Klarna / card screens and statements, and the store pays Stripe's 2.9% + 30c itself.
+- Our fee is the `application_fee_amount` only: defaults 2% (Starter/Pro) and 1% (Business), editable in Admin > Settings. Old 4.9/4.5/3.9 numbers apply only in rollback mode (`STRIPE_CHARGE_MODEL=destination`); stored fee settings are stamped with the model they were saved under and ignored by the other.
+- Needs a second Stripe webhook ("Listen to events on Connected accounts": `payment_intent.succeeded`, `payment_intent.payment_failed`) -> `STRIPE_CONNECT_WEBHOOK_SECRET`. The platform webhook (`STRIPE_WEBHOOK_SECRET`) stays for subscriptions and domain purchases.
+- Customers / saved cards live on the store's account (`customers.stripe_account_id`); ones saved on the platform are not reused.
+- The ledger (`platform_transactions`) has one row per payment, keyed by the PaymentIntent id in `stripe_transfer_id`, so webhook retries can't double count. `stripe_fee_cents` is still the 2.9% + 30c estimate.

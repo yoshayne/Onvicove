@@ -30,7 +30,8 @@ export async function computePlatformFee(totalCents: number, tenantId: string): 
     db`SELECT plan FROM tenants WHERE id = ${tenantId} LIMIT 1`,
   ]);
   const { percent, fixedCents } = feeForPlan(settings, (rows[0]?.plan as string) ?? 'starter');
-  return Math.round(totalCents * percent) + fixedCents;
+  // Stripe rejects an application fee larger than the payment itself
+  return Math.min(Math.max(0, Math.round(totalCents * percent) + fixedCents), Math.max(0, totalCents));
 }
 
 interface CreateBookingIntentArgs {
@@ -51,12 +52,40 @@ export function toStatementDescriptor(name: string): string | null {
   return /[A-Za-z]/.test(cleaned) && cleaned.length >= 5 ? cleaned : null;
 }
 
+const REQUESTED_CAPABILITIES = ['card_payments', 'transfers', 'cashapp_payments', 'klarna_payments', 'link_payments'] as const;
+const capabilityChecked = new Set<string>();
+
+/**
+ * Direct charges need the store's own account to be able to take payments (card_payments, plus the wallet /
+ * buy-now-pay-later methods we offer). Ask for whatever is missing, one by one so a method that isn't available
+ * in the store's country doesn't block the others. Best effort, once per account per server run.
+ */
+export async function ensureCapabilities(accountId: string, account?: Stripe.Account): Promise<void> {
+  if (capabilityChecked.has(accountId)) return;
+  capabilityChecked.add(accountId);
+  try {
+    const acct = account ?? (await stripe.accounts.retrieve(accountId));
+    for (const cap of REQUESTED_CAPABILITIES) {
+      if (acct.capabilities?.[cap]) continue;
+      try {
+        await stripe.accounts.update(accountId, { capabilities: { [cap]: { requested: true } } });
+      } catch (err) {
+        console.warn(`Could not request ${cap} for ${accountId}:`, err instanceof Error ? err.message : err);
+      }
+    }
+  } catch (err) {
+    capabilityChecked.delete(accountId);
+    console.warn(`Could not check capabilities for ${accountId}:`, err instanceof Error ? err.message : err);
+  }
+}
+
 /**
  * Make the connected account's public details match the store, so customers see "Booghati Visuals"
  * (not the owner's personal name) on payment screens and bank/card statements. Only fills in what's
  * missing, once per store; best effort — a failure never blocks a payment.
  */
 export async function ensureConnectedProfile(tenantId: string, accountId: string): Promise<void> {
+  if (CHARGE_MODEL === 'direct') await ensureCapabilities(accountId);
   try {
     const rows = await db`SELECT company_name, slug, stripe_profile_synced_at FROM tenants WHERE id = ${tenantId} LIMIT 1`;
     const tenant = rows[0];
@@ -92,6 +121,7 @@ export async function createStorePaymentIntent(params: Stripe.PaymentIntentCreat
   if (CHARGE_MODEL === 'direct') {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { transfer_data: _t, on_behalf_of: _o, ...direct } = params;
+    if (!direct.application_fee_amount) delete direct.application_fee_amount;
     return stripe.paymentIntents.create(
       { ...direct, metadata: { ...direct.metadata, charge_model: 'direct' } },
       { stripeAccount: accountId },
@@ -131,7 +161,11 @@ export function usableStripeIds(row: StripeIdsRow, accountId: string) {
 
 /** Refund a store's payment, whichever way it was charged (older payments live on the platform, newer ones on the store). */
 export async function refundStorePayment(paymentIntentId: string, accountId: string | null) {
-  const onPlatform = await stripe.paymentIntents.retrieve(paymentIntentId).catch(() => null);
+  const onPlatform = await stripe.paymentIntents.retrieve(paymentIntentId).catch((err) => {
+    // Only "no such payment on the platform" means it was a direct charge; anything else is a real error
+    if ((err as { code?: string }).code === 'resource_missing') return null;
+    throw err;
+  });
   if (onPlatform) {
     return stripe.refunds.create({ payment_intent: paymentIntentId, reverse_transfer: true, refund_application_fee: true });
   }

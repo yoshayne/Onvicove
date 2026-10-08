@@ -291,6 +291,10 @@ console.log(`
 ╚═══════════════════════════════════╝
 `);
 
+if (!process.env.STRIPE_CONNECT_WEBHOOK_SECRET && (process.env.STRIPE_CHARGE_MODEL ?? 'direct') !== 'destination') {
+  console.warn('STRIPE_CONNECT_WEBHOOK_SECRET is not set: store payments will not be marked paid until you add the "Connected accounts" webhook secret.');
+}
+
 serve({ fetch: app.fetch, port });
 startStripeNudgeJob();
 startBookingReminderJob();

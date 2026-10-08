@@ -128,7 +128,7 @@ const FAQS = [
   },
   {
     q: "What's the difference between Starter, Pro, and Business?",
-    a: 'Starter is free with a 5% platform fee. Pro ($29/mo) removes the fee and unlocks premium themes. Business ($79/mo) adds multi-staff, advanced analytics, and priority support.',
+    a: 'Starter is free with a 2% platform fee on sales. Pro ($29/mo) unlocks unlimited products, custom domains and premium themes. Business ($79/mo) lowers the platform fee to 1% and adds multi-staff, advanced analytics, and priority support. Stripe\'s own card fee (2.9% + 30¢) is paid to Stripe on every sale.',
   },
   {
     q: 'Can I change my theme after launching?',
@@ -341,7 +341,7 @@ export default function Guide() {
                 price: 'Free',
                 priceNote: 'forever',
                 highlight: false,
-                desc: '5% platform fee on sales',
+                desc: '2% platform fee + Stripe fees',
                 perks: ['Free subdomain', 'Up to 5 products & 10 services', 'Basic analytics', 'Stripe payments'],
               },
               {
@@ -350,7 +350,7 @@ export default function Guide() {
                 priceNote: '/mo',
                 highlight: true,
                 badge: 'Most Popular',
-                desc: 'No platform fee',
+                desc: '2% platform fee + Stripe fees',
                 perks: ['Custom domain', 'Unlimited products & services', 'All 12 themes', 'Discount codes', 'AI product photos'],
               },
               {
@@ -358,7 +358,7 @@ export default function Guide() {
                 price: '$79',
                 priceNote: '/mo',
                 highlight: false,
-                desc: 'No platform fee',
+                desc: '1% platform fee + Stripe fees',
                 perks: ['Everything in Pro', 'Multi-staff accounts', 'Advanced analytics', 'Booking deposits', 'Priority support'],
               },
             ].map((plan) => (

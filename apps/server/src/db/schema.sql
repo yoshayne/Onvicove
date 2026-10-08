@@ -503,3 +503,6 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_profile_synced_at TIMESTAMPT
 
 -- Which Stripe account holds a customer's stripe_customer_id / saved card (NULL = the platform account)
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS stripe_account_id TEXT;
+
+-- One ledger row per successful payment (Stripe retries webhooks); refund rows carry their refund id here instead
+CREATE UNIQUE INDEX IF NOT EXISTS idx_platform_transactions_payment_ref ON platform_transactions(stripe_transfer_id) WHERE stripe_transfer_id IS NOT NULL;

@@ -5,6 +5,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { getBaseUrl, getCustomerBaseUrl, getStoreUrl } from '../lib/baseUrl';
 import { applySubscription, type StripeSubscriptionLike } from '../services/subscriptions';
+import { STRIPE_CARD_FEE } from '../services/chargeModel';
 import { stripe, computePlatformFee, createBookingPaymentIntent, createStorePaymentIntent, ensureConnectedProfile, getOrCreateStripeCustomer } from '../services/stripe';
 import {
   sendStripeConnected, sendAdminStripeConnected,
@@ -256,6 +257,10 @@ app.post('/webhook', async (c) => {
     };
     const { reference_type, reference_id, tenant_id } = pi.metadata || {};
 
+    // Stripe retries webhooks (and a payment can be reported twice): a payment already in the ledger is done
+    const already = await db`SELECT 1 FROM platform_transactions WHERE stripe_transfer_id = ${pi.id} LIMIT 1`;
+    if (already[0]) return c.json({ received: true, duplicate: true });
+
     if (pi.customer && pi.payment_method) {
       try {
         const pm = await stripe.paymentMethods.retrieve(pi.payment_method, connectAccount ? { stripeAccount: connectAccount } : undefined);
@@ -279,15 +284,16 @@ app.post('/webhook', async (c) => {
       const order = rows[0];
       if (order) {
         const platformFee = order.platform_fee_cents as number;
-        const stripeFee = Math.round((order.total_cents as number) * 0.029) + 30;
+        const stripeFee = Math.round((order.total_cents as number) * STRIPE_CARD_FEE.percent) + STRIPE_CARD_FEE.fixedCents;
         await db`
           INSERT INTO platform_transactions (
             tenant_id, reference_id, reference_type, gross_amount_cents,
-            platform_fee_cents, stripe_fee_cents, net_to_tenant_cents
+            platform_fee_cents, stripe_fee_cents, net_to_tenant_cents, stripe_transfer_id
           ) VALUES (
             ${tenant_id}, ${reference_id}, 'order', ${order.total_cents},
-            ${platformFee}, ${stripeFee}, ${(order.total_cents as number) - platformFee - stripeFee}
+            ${platformFee}, ${stripeFee}, ${(order.total_cents as number) - platformFee - stripeFee}, ${pi.id}
           )
+          ON CONFLICT (stripe_transfer_id) WHERE stripe_transfer_id IS NOT NULL DO NOTHING
         `;
         // Notify customer and tenant
         const tenantRows = await db`SELECT t.company_name, u.email AS owner_email FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${tenant_id} LIMIT 1`;
@@ -323,15 +329,16 @@ app.post('/webhook', async (c) => {
       const booking = rows[0];
       if (booking) {
         const platformFee = await computePlatformFee(piAmount, booking.tenant_id as string);
-        const stripeFee = Math.round(piAmount * 0.029) + 30;
+        const stripeFee = Math.round(piAmount * STRIPE_CARD_FEE.percent) + STRIPE_CARD_FEE.fixedCents;
         await db`
           INSERT INTO platform_transactions (
             tenant_id, reference_id, reference_type, gross_amount_cents,
-            platform_fee_cents, stripe_fee_cents, net_to_tenant_cents
+            platform_fee_cents, stripe_fee_cents, net_to_tenant_cents, stripe_transfer_id
           ) VALUES (
             ${tenant_id}, ${reference_id}, 'booking', ${piAmount},
-            ${platformFee}, ${stripeFee}, ${piAmount - platformFee - stripeFee}
+            ${platformFee}, ${stripeFee}, ${piAmount - platformFee - stripeFee}, ${pi.id}
           )
+          ON CONFLICT (stripe_transfer_id) WHERE stripe_transfer_id IS NOT NULL DO NOTHING
         `;
       }
     } else if (reference_type === 'booking') {
@@ -344,15 +351,16 @@ app.post('/webhook', async (c) => {
       const booking = rows[0];
       if (booking) {
         const platformFee = booking.platform_fee_cents as number;
-        const stripeFee = Math.round(piAmount * 0.029) + 30;
+        const stripeFee = Math.round(piAmount * STRIPE_CARD_FEE.percent) + STRIPE_CARD_FEE.fixedCents;
         await db`
           INSERT INTO platform_transactions (
             tenant_id, reference_id, reference_type, gross_amount_cents,
-            platform_fee_cents, stripe_fee_cents, net_to_tenant_cents
+            platform_fee_cents, stripe_fee_cents, net_to_tenant_cents, stripe_transfer_id
           ) VALUES (
             ${tenant_id}, ${reference_id}, 'booking', ${piAmount},
-            ${platformFee}, ${stripeFee}, ${piAmount - platformFee - stripeFee}
+            ${platformFee}, ${stripeFee}, ${piAmount - platformFee - stripeFee}, ${pi.id}
           )
+          ON CONFLICT (stripe_transfer_id) WHERE stripe_transfer_id IS NOT NULL DO NOTHING
         `;
         // Confirm the customer and notify the tenant
         const svcRow = await db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`;
