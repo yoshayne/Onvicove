@@ -82,19 +82,20 @@ export async function ensureConnectedProfile(tenantId: string, accountId: string
 
 /**
  * Create a PaymentIntent that pays out to a store's connected account. `on_behalf_of` makes the store the
- * business customers see (name on the payment screen and statement). If Stripe rejects that for an account
- * (e.g. a missing capability) we fall back to charging as the platform rather than failing the payment.
+ * business customers see (name on the payment screen and statement). It's a nice-to-have, never a reason to
+ * lose a sale: if Stripe rejects it for any reason (missing capability, account state...) we retry once as a
+ * plain platform charge. Only a declined card is passed straight through. Set STRIPE_ON_BEHALF_OF=false to
+ * switch the feature off entirely.
  */
 export async function createStorePaymentIntent(params: Stripe.PaymentIntentCreateParams, accountId: string) {
+  if (process.env.STRIPE_ON_BEHALF_OF === 'false') return stripe.paymentIntents.create(params);
   try {
     return await stripe.paymentIntents.create({ ...params, on_behalf_of: accountId });
   } catch (err) {
     const e = err as { type?: string; message?: string };
-    if (e.type === 'StripeInvalidRequestError' && /on_behalf_of|capabilit/i.test(e.message ?? '')) {
-      console.warn(`on_behalf_of rejected for ${accountId}, charging as the platform:`, e.message);
-      return stripe.paymentIntents.create(params);
-    }
-    throw err;
+    if (e.type === 'StripeCardError') throw err;
+    console.warn(`PaymentIntent with on_behalf_of failed for ${accountId} (${e.type}: ${e.message}); retrying as a platform charge`);
+    return stripe.paymentIntents.create(params);
   }
 }
 

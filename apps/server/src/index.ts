@@ -12,6 +12,7 @@ import { join } from 'path';
 import { db, redis } from './db/client';
 import { domainCache, type ResolvedStore } from './services/domainCache';
 import { getBaseUrl, getActiveCustomDomain } from './lib/baseUrl';
+import { handleError } from './lib/errorHandler';
 import { isPlatformHost, normalizeHost, platformSubdomain, safeOrigin } from './lib/hosts';
 
 // dist/index.js -> apps/server/dist -> repo root is 3 levels up
@@ -42,10 +43,7 @@ import blockedDateRoutes from './routes/blocked-dates';
 
 const app = new Hono();
 
-app.onError((err, c) => {
-  console.error('Unhandled error:', err);
-  return c.json({ error: 'Internal server error' }, 500);
-});
+app.onError(handleError);
 
 // Middleware
 app.use('*', logger());
