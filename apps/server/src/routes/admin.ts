@@ -303,9 +303,12 @@ app.post('/refunds', async (c) => {
   }
 
   let refund;
+  let directCharge = false;
   try {
     const owner = await db`SELECT stripe_account_id FROM tenants WHERE id = ${tx.tenant_id} LIMIT 1`;
-    refund = await refundStorePayment(record.stripe_payment_intent_id as string, (owner[0]?.stripe_account_id as string | null) ?? null);
+    const result = await refundStorePayment(record.stripe_payment_intent_id as string, (owner[0]?.stripe_account_id as string | null) ?? null);
+    refund = result.refund;
+    directCharge = result.direct;
   } catch (err) {
     return c.json({ error: `Stripe refund failed: ${String(err)}` }, 502);
   }
@@ -323,10 +326,12 @@ app.post('/refunds', async (c) => {
     ) VALUES (
       ${tx.tenant_id}, ${tx.reference_id}, ${referenceType},
       ${-(tx.gross_amount_cents as number)}, ${-(tx.platform_fee_cents as number)},
-      ${-(tx.stripe_fee_cents as number)}, ${-(tx.net_to_tenant_cents as number)}, ${refund.id}
+      ${directCharge ? 0 : -(tx.stripe_fee_cents as number)},
+      ${directCharge ? -((tx.gross_amount_cents as number) - (tx.platform_fee_cents as number)) : -(tx.net_to_tenant_cents as number)}, ${refund.id}
     )
   `;
 
+  // Direct charge: Stripe keeps its processing fee on a refund, so the store is out that amount (net stays -stripe fee)
   await logAdminAction(c, 'refund', referenceType, tx.reference_id as string, {
     transaction_id,
     refund_id: refund.id,

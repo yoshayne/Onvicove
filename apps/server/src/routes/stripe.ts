@@ -7,6 +7,7 @@ import { getBaseUrl, getCustomerBaseUrl, getStoreUrl } from '../lib/baseUrl';
 import { applySubscription, type StripeSubscriptionLike } from '../services/subscriptions';
 import { STRIPE_CARD_FEE } from '../services/chargeModel';
 import { holdsTime } from '../services/slots';
+import { stripeDetailsSchema, buildPrefill, guessMcc, MCC_OPTIONS, type StripeDetails } from '../services/stripePrefill';
 import { stripe, computePlatformFee, createBookingPaymentIntent, createStorePaymentIntent, ensureConnectedProfile, getOrCreateStripeCustomer } from '../services/stripe';
 import {
   sendStripeConnected, sendAdminStripeConnected,
@@ -51,7 +52,21 @@ async function notifyBookingPaid(booking: Record<string, unknown>, tenantId: str
   ]).catch(() => {});
 }
 
-// POST /api/stripe/connect-link — create/refresh Stripe Connect Express onboarding link
+// GET /api/stripe/business-details — what we'll pre-fill on Stripe (saved earlier, or a guess from the wizard)
+app.get('/business-details', requireAuth, async (c) => {
+  const clerkUserId = c.get('clerkUserId') as string;
+  const rows = await db`SELECT company_name, industry, stripe_details FROM tenants WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
+  const tenant = rows[0];
+  if (!tenant) return c.json({ error: 'No tenant account found' }, 404);
+  const saved = (tenant.stripe_details as Partial<StripeDetails> | null) ?? {};
+  return c.json({
+    details: { business_type: 'individual', ...saved, mcc: saved.mcc ?? guessMcc(tenant.industry as string | null) },
+    mcc_options: MCC_OPTIONS,
+  });
+});
+
+// POST /api/stripe/connect-link — create/refresh Stripe Connect Express onboarding link.
+// Optional body: business details to save and pre-fill on the Stripe account (see services/stripePrefill.ts)
 app.post('/connect-link', requireAuth, async (c) => {
   const clerkUserId = c.get('clerkUserId') as string;
 
@@ -61,24 +76,47 @@ app.post('/connect-link', requireAuth, async (c) => {
   const tenant = rows[0];
   if (!tenant) return c.json({ error: 'No tenant account found' }, 404);
 
+  const body = await c.req.json().catch(() => ({}));
+  const hasDetails = body && typeof body === 'object' && Object.keys(body as object).length > 0;
+  const parsed = stripeDetailsSchema.safeParse(hasDetails ? body : tenant.stripe_details ?? {});
+  if (!parsed.success) return c.json({ error: 'Please check the business details', details: parsed.error.flatten() }, 400);
+  const details = parsed.data;
+  if (hasDetails) await db`UPDATE tenants SET stripe_details = ${db.json(details as never)}, updated_at = NOW() WHERE id = ${tenant.id}`;
+
+  const userRows = await db`SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
+  const prefill = buildPrefill(
+    { company_name: tenant.company_name as string, slug: tenant.slug as string, industry: tenant.industry as string | null },
+    userRows[0] as { email?: string; first_name?: string; last_name?: string } | undefined,
+    details,
+  );
+
   let accountId = tenant.stripe_account_id as string | null;
 
   try {
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: 'express',
-        business_type: 'individual',
-        email: undefined,
-        business_profile: {
-          name: tenant.company_name as string,
-          url: `${(process.env.CLIENT_URL || 'https://shopsuitedirect.com').replace(/\/+$/, '')}/${tenant.slug}`,
-        },
-      });
+        ...(details.address ? { country: details.address.country } : {}),
+        ...prefill,
+      } as Stripe.AccountCreateParams);
       accountId = account.id;
       await db`
         UPDATE tenants SET stripe_account_id = ${accountId}, updated_at = NOW()
         WHERE id = ${tenant.id}
       `;
+    } else if (hasDetails) {
+      // Already created: fill in what we now know. Stripe refuses changes to details it has verified, so best effort.
+      try {
+        await stripe.accounts.update(accountId, prefill);
+      } catch (err) {
+        console.warn(`Could not pre-fill Stripe account ${accountId}:`, err instanceof Error ? err.message : err);
+        try {
+          const { business_type: _bt, individual: _i, company: _c, ...profileOnly } = prefill;
+          await stripe.accounts.update(accountId, profileOnly);
+        } catch {
+          // nothing more we can pre-fill; Stripe will ask for it
+        }
+      }
     }
 
     const rawBase = process.env.CLIENT_URL || 'http://localhost:5173';

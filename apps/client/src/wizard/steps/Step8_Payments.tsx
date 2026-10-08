@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useWizardStore } from '../wizardStore';
 import { useApi } from '../../lib/api';
+import StripeDetailsForm, { type StripeDetails } from '../../components/shared/StripeDetailsForm';
 
 interface ConnectLinkResponse {
   url: string;
@@ -40,11 +41,11 @@ export default function Step8_Payments() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleConnect() {
+  async function handleConnect(details: StripeDetails) {
     setError(null);
     setIsConnecting(true);
     try {
-      const result = await api.post<ConnectLinkResponse>('/stripe/connect-link', {});
+      const result = await api.post<ConnectLinkResponse>('/stripe/connect-link', details);
       window.location.href = result.url;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not start Stripe connection');
@@ -72,18 +73,7 @@ export default function Step8_Payments() {
         </div>
       ) : (
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="mb-4 text-sm text-gray-600">
-            You'll be redirected to Stripe to securely set up your account, then brought back
-            here.
-          </p>
-          <button
-            type="button"
-            onClick={handleConnect}
-            disabled={isConnecting}
-            className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {isConnecting ? 'Redirecting…' : 'Connect with Stripe'}
-          </button>
+          <StripeDetailsForm submitLabel="Continue to Stripe" busy={isConnecting} onSubmit={handleConnect} />
         </div>
       )}
 

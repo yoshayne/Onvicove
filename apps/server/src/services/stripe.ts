@@ -181,7 +181,11 @@ export function usableStripeIds(row: StripeIdsRow, accountId: string) {
   };
 }
 
-/** Refund a store's payment, whichever way it was charged (older payments live on the platform, newer ones on the store). */
+/**
+ * Refund a store's payment, whichever way it was charged (older payments live on the platform, newer ones on the store).
+ * `direct` tells the caller who bore Stripe's processing fee: Stripe never returns it on a refund, so on a direct charge
+ * the store keeps that loss (on an older platform charge it was the platform's).
+ */
 export async function refundStorePayment(paymentIntentId: string, accountId: string | null) {
   const onPlatform = await stripe.paymentIntents.retrieve(paymentIntentId).catch((err) => {
     // Only "no such payment on the platform" means it was a direct charge; anything else is a real error
@@ -189,10 +193,12 @@ export async function refundStorePayment(paymentIntentId: string, accountId: str
     throw err;
   });
   if (onPlatform) {
-    return stripe.refunds.create({ payment_intent: paymentIntentId, reverse_transfer: true, refund_application_fee: true });
+    const refund = await stripe.refunds.create({ payment_intent: paymentIntentId, reverse_transfer: true, refund_application_fee: true });
+    return { refund, direct: false };
   }
   if (!accountId) throw new Error('No connected Stripe account for this payment');
-  return stripe.refunds.create({ payment_intent: paymentIntentId, refund_application_fee: true }, { stripeAccount: accountId });
+  const refund = await stripe.refunds.create({ payment_intent: paymentIntentId, refund_application_fee: true }, { stripeAccount: accountId });
+  return { refund, direct: true };
 }
 
 export async function createBookingPaymentIntent(args: CreateBookingIntentArgs) {

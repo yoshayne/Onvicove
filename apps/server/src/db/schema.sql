@@ -509,3 +509,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_platform_transactions_payment_ref ON platf
 
 -- Which discount code an order used; its usage_count goes up when the order is PAID, not when checkout starts
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_code_id UUID;
+
+-- Business details collected before Stripe onboarding, used to pre-fill the connected account (no SSN / DOB / EIN)
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_details JSONB;

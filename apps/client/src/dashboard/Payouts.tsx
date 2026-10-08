@@ -2,7 +2,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
-import Button from '../components/shared/Button';
+import StripeDetailsForm, { type StripeDetails } from '../components/shared/StripeDetailsForm';
 
 interface AccountStatus {
   connected: boolean;
@@ -18,7 +18,7 @@ export default function Payouts() {
   });
 
   const connectMutation = useMutation({
-    mutationFn: () => api.post<{ url: string }>('/stripe/connect-link'),
+    mutationFn: (details: StripeDetails) => api.post<{ url: string }>('/stripe/connect-link', details),
     onSuccess: (res) => {
       window.location.href = res.url;
     },
@@ -48,9 +48,11 @@ export default function Payouts() {
             </div>
             {!data?.onboarded && (
               <div className="flex flex-col gap-2">
-                <Button isLoading={connectMutation.isPending} onClick={() => connectMutation.mutate()}>
-                  {data?.connected ? 'Continue onboarding' : 'Connect Stripe account'}
-                </Button>
+                <StripeDetailsForm
+                  submitLabel={data?.connected ? 'Continue onboarding' : 'Connect Stripe account'}
+                  busy={connectMutation.isPending}
+                  onSubmit={(d) => connectMutation.mutate(d)}
+                />
                 {connectMutation.isError && (
                   <p className="text-sm text-red-600">{(connectMutation.error as Error)?.message ?? 'Something went wrong. Please try again.'}</p>
                 )}
