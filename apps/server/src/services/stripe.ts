@@ -122,10 +122,19 @@ export async function createStorePaymentIntent(params: Stripe.PaymentIntentCreat
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { transfer_data: _t, on_behalf_of: _o, ...direct } = params;
     if (!direct.application_fee_amount) delete direct.application_fee_amount;
-    return stripe.paymentIntents.create(
-      { ...direct, metadata: { ...direct.metadata, charge_model: 'direct' } },
-      { stripeAccount: accountId },
-    );
+    const withMeta = { ...direct, metadata: { ...direct.metadata, charge_model: 'direct' } };
+    try {
+      return await stripe.paymentIntents.create(withMeta, { stripeAccount: accountId });
+    } catch (err) {
+      const e = err as { message?: string };
+      if (!/payment method types/i.test(e.message ?? '')) throw err;
+      // The store's account has no payment methods switched on for automatic selection. Log why, and fall back to
+      // plain cards so the sale still goes through (card_payments is the one capability every store needs).
+      const acct = await stripe.accounts.retrieve(accountId).catch(() => null);
+      console.warn(`No automatic payment methods for ${accountId}; retrying card-only. charges_enabled=${acct?.charges_enabled} capabilities=${JSON.stringify(acct?.capabilities)}`);
+      const { automatic_payment_methods: _a, ...cardOnly } = withMeta;
+      return stripe.paymentIntents.create({ ...cardOnly, payment_method_types: ['card'] }, { stripeAccount: accountId });
+    }
   }
   if (process.env.STRIPE_ON_BEHALF_OF === 'false') return stripe.paymentIntents.create(params);
   try {
