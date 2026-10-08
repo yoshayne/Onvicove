@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { getBaseUrl } from '../lib/baseUrl';
 import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
@@ -167,7 +168,7 @@ app.post('/complete', async (c) => {
   const user = userRows[0];
   if (user?.email) {
     const toName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || (user.email as string);
-    const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+    const baseUrl = getBaseUrl();
     Promise.all([
       sendTenantWelcome({ toEmail: user.email as string, toName, companyName: result.company_name as string, dashboardUrl: `${baseUrl}/dashboard` }),
       sendSiteLive({ toEmail: user.email as string, toName, companyName: result.company_name as string, storefrontUrl: `${baseUrl}/${result.slug}` }),

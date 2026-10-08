@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { getBaseUrl } from '../lib/baseUrl';
 import { db } from '../db/client';
 import { feeForPlan, getPlatformSettings } from './settings';
 import { CHARGE_MODEL } from './chargeModel';
@@ -97,7 +98,7 @@ export async function ensureConnectedProfile(tenantId: string, accountId: string
       update.business_profile = { ...(update.business_profile ?? {}), name: tenant.company_name as string };
     }
     if (!account.business_profile?.url && tenant.slug) {
-      update.business_profile = { ...(update.business_profile ?? {}), url: `${(process.env.CLIENT_URL || 'https://shopsuitedirect.com').replace(/\/+$/, '')}/${tenant.slug}` };
+      update.business_profile = { ...(update.business_profile ?? {}), url: `${getBaseUrl()}/${tenant.slug}` };
     }
     const descriptor = toStatementDescriptor((tenant.company_name as string) ?? '');
     if (descriptor && !account.settings?.payments?.statement_descriptor) {

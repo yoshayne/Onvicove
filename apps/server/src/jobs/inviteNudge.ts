@@ -1,8 +1,9 @@
 import cron from 'node-cron';
+import { getBaseUrl } from '../lib/baseUrl';
 import { db } from '../db/client';
 import { sendInviteFollowUp, sendAdminInviteExpired } from '../services/email';
 
-const BASE_URL = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+const BASE_URL = getBaseUrl();
 
 async function runInviteNudges() {
   // 3-day follow-up: unclaimed, not expired yet, sent 3+ days ago, no follow-up sent

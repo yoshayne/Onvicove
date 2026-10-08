@@ -1,4 +1,5 @@
 import { db } from '../db/client';
+import { getBaseUrl } from '../lib/baseUrl';
 
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
@@ -397,7 +398,7 @@ interface PaymentLinkEmailData {
 }
 
 export async function sendPaymentLinkEmail(data: PaymentLinkEmailData): Promise<void> {
-  const baseUrl = data.baseUrl ?? (process.env.CLIENT_URL || 'https://shopsuitedirect.com').replace(/\/+$/, '');
+  const baseUrl = data.baseUrl ?? getBaseUrl();
   const payUrl = `${baseUrl}/pay/booking/${data.bookingId}`;
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],
@@ -661,7 +662,7 @@ export async function sendBookingAwaitingPayment(data: {
   startTime: string;
   baseUrl?: string;
 }): Promise<void> {
-  const baseUrl = data.baseUrl ?? (process.env.CLIENT_URL || 'https://shopsuitedirect.com').replace(/\/+$/, '');
+  const baseUrl = data.baseUrl ?? getBaseUrl();
   const payUrl = `${baseUrl}/pay/booking/${data.bookingId}`;
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],

@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { getBaseUrl } from '../lib/baseUrl';
 import { z } from 'zod';
 import { db } from '../db/client';
 import { rateLimitPublic } from '../middleware/ratelimit';
@@ -329,7 +330,7 @@ app.post('/:slug/orders', async (c) => {
   }
 
   // Notify customer and tenant
-  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  const baseUrl = getBaseUrl();
   if (totalCents === 0) sendOrderConfirmation({
     toEmail: d.customer_email,
     toName: d.customer_name,
@@ -473,7 +474,7 @@ app.post('/:slug/bookings', async (c) => {
   const booking = rows[0];
   const startFmt = new Date(d.start_time).toLocaleString();
   const endFmt = new Date(d.end_time).toLocaleString();
-  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  const baseUrl = getBaseUrl();
 
   // Fire-and-forget post-booking emails
   Promise.all([

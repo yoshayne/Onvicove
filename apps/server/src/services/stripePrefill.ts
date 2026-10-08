@@ -1,4 +1,5 @@
 import type Stripe from 'stripe';
+import { getBaseUrl } from '../lib/baseUrl';
 import { z } from 'zod';
 
 /**
@@ -63,7 +64,7 @@ interface UserLike { email?: string | null; first_name?: string | null; last_nam
 
 /** Fields to pre-fill on the connected account. Only what we actually know is included. */
 export function buildPrefill(tenant: TenantLike, user: UserLike | undefined, details: Partial<StripeDetails>): Stripe.AccountUpdateParams {
-  const url = `${(process.env.CLIENT_URL || 'https://shopsuitedirect.com').replace(/\/+$/, '')}/${tenant.slug}`;
+  const url = `${getBaseUrl()}/${tenant.slug}`;
   const mcc = details.mcc ?? guessMcc(tenant.industry);
   const profile: Stripe.AccountUpdateParams.BusinessProfile = { name: tenant.company_name, url };
   if (mcc) profile.mcc = mcc;

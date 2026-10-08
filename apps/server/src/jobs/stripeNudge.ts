@@ -1,8 +1,9 @@
 import cron from 'node-cron';
+import { getBaseUrl } from '../lib/baseUrl';
 import { db } from '../db/client';
 import { sendStripeNudge, sendStripeReminder } from '../services/email';
 
-const DASHBOARD_URL = `${process.env.CLIENT_URL || 'https://shopsuitedirect.com'}/dashboard/payouts`;
+const DASHBOARD_URL = `${getBaseUrl()}/dashboard/payouts`;
 
 async function runStripeNudges() {
   // 24-hour nudge: wizard complete, not onboarded, no nudge sent yet, account older than 24h

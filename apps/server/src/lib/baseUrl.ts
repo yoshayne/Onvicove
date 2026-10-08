@@ -1,6 +1,20 @@
-/** Returns the client base URL with no trailing slash. */
+const PUBLIC_ORIGIN = 'https://shopsuitedirect.com';
+
+/**
+ * The public address of the platform, no trailing slash. Always shopsuitedirect.com in production: a Railway
+ * hostname (*.railway.app) is internal plumbing and must never appear in links, emails, Stripe URLs or metadata,
+ * even if CLIENT_URL is accidentally set to one.
+ */
 export function getBaseUrl(): string {
-  return (process.env.CLIENT_URL || 'https://shopsuitedirect.com').replace(/\/+$/, '');
+  const raw = (process.env.CLIENT_URL || '').trim().replace(/\/+$/, '');
+  if (!raw) return PUBLIC_ORIGIN;
+  try {
+    if (new URL(raw).hostname.endsWith('.railway.app')) return PUBLIC_ORIGIN;
+  } catch {
+    return PUBLIC_ORIGIN;
+  }
+  // The local dev server stays reachable over http; everything else is https
+  return /^http:\/\/(localhost|127\.0\.0\.1)/.test(raw) ? raw : raw.replace(/^http:\/\//, 'https://');
 }
 
 interface DomainTenant {

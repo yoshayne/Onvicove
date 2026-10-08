@@ -70,3 +70,8 @@ export function safeOrigin(proto: string | undefined, host: string | undefined):
   const scheme = proto === 'http' ? 'http' : 'https';
   return `${scheme}://${host.toLowerCase()}`;
 }
+
+/** Railway's own hostnames (e.g. onvicove-production.up.railway.app): never shown to customers. */
+export function isRailwayHost(host: string): boolean {
+  return host.endsWith('.railway.app');
+}

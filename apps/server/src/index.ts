@@ -13,7 +13,7 @@ import { db, redis } from './db/client';
 import { domainCache, type ResolvedStore } from './services/domainCache';
 import { getBaseUrl, getActiveCustomDomain } from './lib/baseUrl';
 import { handleError } from './lib/errorHandler';
-import { isPlatformHost, normalizeHost, platformSubdomain, safeOrigin } from './lib/hosts';
+import { isPlatformHost, normalizeHost, platformSubdomain, safeOrigin, isRailwayHost } from './lib/hosts';
 
 // dist/index.js -> apps/server/dist -> repo root is 3 levels up
 const CLIENT_DIST = join(__dirname, '../../../dist/client');
@@ -43,13 +43,19 @@ import blockedDateRoutes from './routes/blocked-dates';
 
 const app = new Hono();
 
+/** Origin to put in sitemaps / canonical / share-preview URLs: the request's own host, except a Railway host. */
+function publicOrigin(proto: string | undefined, host: string | undefined): string | null {
+  if (host && isRailwayHost(normalizeHost(host))) return new URL(getBaseUrl()).origin;
+  return safeOrigin(proto, host);
+}
+
 app.onError(handleError);
 
 // Middleware
 app.use('*', logger());
 app.use('/api/*', cors({
   origin: [
-    process.env.CLIENT_URL || 'http://localhost:5173',
+    process.env.CLIENT_URL && !process.env.CLIENT_URL.includes('.railway.app') ? process.env.CLIENT_URL : 'http://localhost:5173',
     'https://shopsuitedirect.com',
     'https://www.shopsuitedirect.com',
   ],
@@ -122,6 +128,17 @@ app.use('/*', async (c, next) => {
     return c.redirect(`https://${host}${url.pathname}${url.search}`, 301);
   }
 
+  // The Railway hostname is for the platform's plumbing only. Anyone landing on it as a page gets sent to the public
+  // domain (APIs, webhooks and health checks are left alone).
+  if (
+    process.env.NODE_ENV === 'production' &&
+    isRailwayHost(host) &&
+    (c.req.method === 'GET' || c.req.method === 'HEAD') &&
+    !/^\/(api|health)(\/|$)/.test(url.pathname)
+  ) {
+    return c.redirect(`${getBaseUrl()}${url.pathname}${url.search}`, 301);
+  }
+
   let store: ResolvedStore | null = null;
 
   if (isPlatformHost(host)) {
@@ -149,7 +166,7 @@ app.use('/*', async (c, next) => {
 
 app.get('/robots.txt', (c) => {
   const host = normalizeHost(c.req.header('host') ?? '');
-  const origin = safeOrigin(c.req.header('x-forwarded-proto'), c.req.header('host'));
+  const origin = publicOrigin(c.req.header('x-forwarded-proto'), c.req.header('host'));
   const lines = ['User-agent: *'];
   if (c.get('storeSlug')) {
     lines.push('Allow: /');
@@ -162,7 +179,7 @@ app.get('/robots.txt', (c) => {
 });
 
 app.get('/sitemap.xml', (c) => {
-  const origin = safeOrigin(c.req.header('x-forwarded-proto'), c.req.header('host'));
+  const origin = publicOrigin(c.req.header('x-forwarded-proto'), c.req.header('host'));
   if (!origin) return c.notFound();
   const slug = c.get('storeSlug');
   const loc = slug ? `${origin}/` : null;
@@ -255,7 +272,7 @@ const serveSpa = async (c: Context) => {
   try {
     const reqUrl = new URL(c.req.url);
     const fallbackOrigin = new URL(getBaseUrl()).origin;
-    const origin = safeOrigin(c.req.header('x-forwarded-proto'), c.req.header('host')) ?? fallbackOrigin;
+    const origin = publicOrigin(c.req.header('x-forwarded-proto'), c.req.header('host')) ?? fallbackOrigin;
     const result = await buildStoreHtml(html, {
       path: reqUrl.pathname,
       search: reqUrl.search,

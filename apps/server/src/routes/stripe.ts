@@ -21,7 +21,7 @@ const app = new Hono();
 
 /** Tell the customer their booking is confirmed and the owner about the new booking (sent once, when it is paid). */
 async function notifyBookingPaid(booking: Record<string, unknown>, tenantId: string) {
-  const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+  const baseUrl = getBaseUrl();
   const svcRow = await db`SELECT name FROM services WHERE id = ${booking.service_id as string} LIMIT 1`;
   const tenantRows = await db`SELECT t.company_name, u.email AS owner_email FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${tenantId} LIMIT 1`;
   const t = tenantRows[0];
@@ -119,8 +119,7 @@ app.post('/connect-link', requireAuth, async (c) => {
       }
     }
 
-    const rawBase = process.env.CLIENT_URL || 'http://localhost:5173';
-    const baseUrl = rawBase.replace(/^http:\/\/(?!localhost)/, 'https://');
+    const baseUrl = getBaseUrl();
     const link = await stripe.accountLinks.create({
       account: accountId,
       type: 'account_onboarding',
@@ -162,7 +161,7 @@ app.get('/account-status', requireAuth, async (c) => {
       const user = userRows[0];
       if (user?.email) {
         const toName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || (user.email as string);
-        const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+        const baseUrl = getBaseUrl();
         Promise.all([
           sendStripeConnected({ toEmail: user.email as string, toName, companyName: tenant.company_name as string, dashboardUrl: `${baseUrl}/dashboard` }),
           sendAdminStripeConnected({ companyName: tenant.company_name as string, ownerEmail: user.email as string }),
@@ -358,7 +357,7 @@ app.post('/webhook', async (c) => {
       }
     }
 
-    const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+    const baseUrl = getBaseUrl();
 
     if (reference_type === 'order') {
       const rows = await db`

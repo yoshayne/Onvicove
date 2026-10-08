@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { getBaseUrl } from '../lib/baseUrl';
 import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
@@ -143,7 +144,7 @@ app.post('/', async (c) => {
 
   if (bookingStatus === 'confirmed' && d.customer_email) {
     const fmt = (t: string) => new Date(t).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-    const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+    const baseUrl = getBaseUrl();
     sendBookingConfirmation({
       toEmail: d.customer_email,
       toName: d.customer_name,
@@ -217,7 +218,7 @@ app.patch('/:id', async (c) => {
     const fmt = (t: string) => new Date(t).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
     const startTime = fmt(booking.start_time as string);
     const endTime = fmt(booking.end_time as string);
-    const baseUrl = process.env.CLIENT_URL || 'https://shopsuitedirect.com';
+    const baseUrl = getBaseUrl();
 
     if (updates.status === 'confirmed') {
       sendBookingConfirmation({
