@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db/client';
-import { isAdminUser } from '../middleware/admin';
+import { isAdminUser, getAdminEmail } from '../middleware/admin';
+import { recordAdminAction } from '../services/auditLog';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { stripe } from '../services/stripe';
@@ -211,7 +212,8 @@ const adminUpdateSchema = z.object({
 });
 
 app.patch('/admin/:id', requireAuth, async (c) => {
-  if (!(await isAdmin(c.get('clerkUserId') as string))) return c.json({ error: 'Forbidden' }, 403);
+  const adminEmail = await getAdminEmail(c.get('clerkUserId') as string);
+  if (!adminEmail) return c.json({ error: 'Forbidden' }, 403);
 
   const id = c.req.param('id') ?? '';
   const body = await c.req.json().catch(() => ({}));
@@ -294,6 +296,13 @@ app.patch('/admin/:id', requireAuth, async (c) => {
     WHERE id = ${id}
     RETURNING *
   `;
+
+  await recordAdminAction(adminEmail, parsed.data.status === 'purchased' ? 'domain_purchased' : 'domain_rejected', 'tenant', request.tenant_id as string, {
+    company_name: tenant?.company_name ?? null,
+    domain,
+    notes: parsed.data.notes ?? null,
+    refunded: parsed.data.status === 'rejected' && !!refundedAt,
+  });
 
   if (parsed.data.status === 'purchased' && tenant) {
     const users = await db`

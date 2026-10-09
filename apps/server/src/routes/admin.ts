@@ -8,6 +8,7 @@ import { requireAuth } from '../middleware/clerk';
 import { requireAdmin } from '../middleware/admin';
 import { stripe, refundStorePayment } from '../services/stripe';
 import { refreshStripeStatuses } from '../services/stripeAccounts';
+import { recordAdminAction } from '../services/auditLog';
 import { getPlatformSettings, savePlatformSettings, DEFAULT_PLATFORM_SETTINGS, type PlatformSettings } from '../services/settings';
 import {
   sendPlanUpgraded, sendPlanDowngraded, sendAccountSuspended, sendAccountReactivated,
@@ -22,11 +23,7 @@ const app = new Hono();
 app.use('*', requireAuth, requireAdmin);
 
 async function logAdminAction(c: { get: (k: string) => unknown }, action: string, targetType: string, targetId: string | null, details: Record<string, unknown> = {}) {
-  const adminEmail = c.get('adminEmail') as string;
-  await db`
-    INSERT INTO admin_audit_log (admin_email, action, target_type, target_id, details)
-    VALUES (${adminEmail}, ${action}, ${targetType}, ${targetId}, ${db.json(details as never)})
-  `;
+  await recordAdminAction(c.get('adminEmail') as string, action, targetType, targetId, details);
 }
 
 // GET /api/admin/stats — platform-wide overview
@@ -243,21 +240,47 @@ app.delete('/tenants', async (c) => {
   return c.json({ deleted: tenants.length });
 });
 
-// GET /api/admin/audit-log
+// GET /api/admin/audit-log?action=&admin_email=&target_type=&date_from=&date_to=&page=
 app.get('/audit-log', async (c) => {
-  const targetType = c.req.query('target_type');
+  const q = (k: string) => c.req.query(k) || undefined;
+  const page = Math.max(0, parseInt(c.req.query('page') ?? '0', 10) || 0);
+  const PAGE_SIZE = 50;
+
   const conditions = [db`1=1`];
-  if (targetType) conditions.push(db`target_type = ${targetType}`);
+  if (q('action')) conditions.push(db`l.action = ${q('action')!}`);
+  if (q('admin_email')) conditions.push(db`l.admin_email = ${q('admin_email')!}`);
+  if (q('target_type')) conditions.push(db`l.target_type = ${q('target_type')!}`);
+  if (q('date_from')) conditions.push(db`l.created_at >= ${q('date_from')!}::date`);
+  if (q('date_to')) conditions.push(db`l.created_at < (${q('date_to')!}::date + 1)`);
   const whereClause = conditions.reduce((acc, cond) => db`${acc} AND ${cond}`);
 
+  // target_label: who/what the action was done to, in words (kept from the log itself when the target is gone)
   const logs = await db`
-    SELECT * FROM admin_audit_log
+    SELECT l.*,
+      CASE l.target_type
+        WHEN 'tenant' THEN COALESCE((SELECT t.company_name FROM tenants t WHERE t.id::text = l.target_id), l.details->>'company_name')
+        WHEN 'platform_coupon' THEN COALESCE(l.details->>'code', (SELECT pc.code FROM platform_coupons pc WHERE pc.id::text = l.target_id))
+        WHEN 'order' THEN (SELECT '#' || o.order_number FROM orders o WHERE o.id::text = l.target_id)
+        WHEN 'booking' THEN (SELECT s.name FROM bookings b JOIN services s ON s.id = b.service_id WHERE b.id::text = l.target_id)
+        ELSE NULL
+      END AS target_label
+    FROM admin_audit_log l
     WHERE ${whereClause}
-    ORDER BY created_at DESC
-    LIMIT 200
+    ORDER BY l.created_at DESC
+    LIMIT ${PAGE_SIZE} OFFSET ${page * PAGE_SIZE}
   `;
 
-  return c.json({ logs });
+  const [actions, admins] = await Promise.all([
+    db`SELECT DISTINCT action FROM admin_audit_log ORDER BY action`,
+    db`SELECT DISTINCT admin_email FROM admin_audit_log ORDER BY admin_email`,
+  ]);
+
+  return c.json({
+    logs,
+    page,
+    page_size: PAGE_SIZE,
+    filters: { actions: actions.map((r) => r.action), admins: admins.map((r) => r.admin_email) },
+  });
 });
 
 // GET /api/admin/transactions?tenant_id=&reference_type=&date_from=&date_to=&page=
