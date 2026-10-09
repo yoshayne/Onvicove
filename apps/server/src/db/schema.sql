@@ -512,3 +512,14 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_code_id UUID;
 
 -- Business details collected before Stripe onboarding, used to pre-fill the connected account (no SSN / DOB / EIN)
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_details JSONB;
+
+-- A refund ledger row points at the payment row it refunds (so the admin page can show what is already refunded)
+ALTER TABLE platform_transactions ADD COLUMN IF NOT EXISTS refund_of UUID REFERENCES platform_transactions(id) ON DELETE SET NULL;
+UPDATE platform_transactions r
+SET refund_of = (
+  SELECT p.id FROM platform_transactions p
+  WHERE p.reference_id = r.reference_id AND p.reference_type = r.reference_type
+    AND p.gross_amount_cents = -r.gross_amount_cents AND p.created_at <= r.created_at
+  ORDER BY p.created_at DESC LIMIT 1
+)
+WHERE r.gross_amount_cents < 0 AND r.refund_of IS NULL;

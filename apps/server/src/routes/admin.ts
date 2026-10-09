@@ -52,7 +52,7 @@ app.get('/stats', async (c) => {
       COALESCE(SUM(platform_fee_cents), 0) AS platform_fee_cents,
       COALESCE(SUM(gross_amount_cents), 0) AS gross_amount_cents,
       COALESCE(SUM(net_to_tenant_cents), 0) AS net_to_tenant_cents,
-      COUNT(*) AS transaction_count
+      COUNT(*) FILTER (WHERE gross_amount_cents > 0) AS transaction_count
     FROM platform_transactions
   `;
 
@@ -260,26 +260,56 @@ app.get('/audit-log', async (c) => {
   return c.json({ logs });
 });
 
-// GET /api/admin/transactions?tenant_id=&reference_type=
+// GET /api/admin/transactions?tenant_id=&reference_type=&date_from=&date_to=&page=
+// Every sale / refund in the ledger, newest first, 50 per page, with totals for the whole filter (not just the page).
 app.get('/transactions', async (c) => {
   const tenantId = c.req.query('tenant_id');
   const referenceType = c.req.query('reference_type');
+  const dateFrom = c.req.query('date_from');
+  const dateTo = c.req.query('date_to');
+  const page = Math.max(0, parseInt(c.req.query('page') ?? '0', 10) || 0);
+  const PAGE_SIZE = 50;
 
   const conditions = [db`1=1`];
   if (tenantId) conditions.push(db`pt.tenant_id = ${tenantId}`);
   if (referenceType) conditions.push(db`pt.reference_type = ${referenceType}`);
+  if (dateFrom) conditions.push(db`pt.created_at >= ${dateFrom}::date`);
+  if (dateTo) conditions.push(db`pt.created_at < (${dateTo}::date + 1)`);
   const whereClause = conditions.reduce((acc, cond) => db`${acc} AND ${cond}`);
 
   const transactions = await db`
-    SELECT pt.*, t.company_name, t.slug
+    SELECT pt.*, t.company_name, t.slug, t.currency,
+      CASE pt.reference_type
+        WHEN 'order' THEN (SELECT '#' || o.order_number FROM orders o WHERE o.id = pt.reference_id)
+        WHEN 'booking' THEN (SELECT s.name FROM bookings b JOIN services s ON s.id = b.service_id WHERE b.id = pt.reference_id)
+        ELSE 'AI photo'
+      END AS reference_label,
+      CASE pt.reference_type
+        WHEN 'order' THEN (SELECT o.customer_name FROM orders o WHERE o.id = pt.reference_id)
+        WHEN 'booking' THEN (SELECT b.customer_name FROM bookings b WHERE b.id = pt.reference_id)
+        ELSE NULL
+      END AS customer_name,
+      EXISTS (SELECT 1 FROM platform_transactions r WHERE r.refund_of = pt.id) AS refunded
     FROM platform_transactions pt
     JOIN tenants t ON t.id = pt.tenant_id
     WHERE ${whereClause}
     ORDER BY pt.created_at DESC
-    LIMIT 200
+    LIMIT ${PAGE_SIZE} OFFSET ${page * PAGE_SIZE}
   `;
 
-  return c.json({ transactions });
+  const [summary] = await db`
+    SELECT
+      COUNT(*) FILTER (WHERE pt.gross_amount_cents > 0)::int AS sales_count,
+      COUNT(*) FILTER (WHERE pt.gross_amount_cents < 0)::int AS refund_count,
+      COALESCE(SUM(pt.gross_amount_cents), 0)::bigint AS gross_cents,
+      COALESCE(SUM(pt.platform_fee_cents), 0)::bigint AS platform_fee_cents,
+      COALESCE(SUM(pt.stripe_fee_cents), 0)::bigint AS stripe_fee_cents,
+      COALESCE(SUM(pt.net_to_tenant_cents), 0)::bigint AS net_to_tenant_cents
+    FROM platform_transactions pt
+    WHERE ${whereClause}
+  `;
+
+  return c.json({ transactions, summary, page, page_size: PAGE_SIZE });
 });
 
 const refundSchema = z.object({
@@ -301,6 +331,8 @@ app.post('/refunds', async (c) => {
   if ((tx.gross_amount_cents as number) <= 0) {
     return c.json({ error: 'This transaction has already been refunded' }, 400);
   }
+  const already = await db`SELECT 1 FROM platform_transactions WHERE refund_of = ${transaction_id} LIMIT 1`;
+  if (already[0]) return c.json({ error: 'This transaction has already been refunded' }, 400);
 
   const referenceType = tx.reference_type as string;
   const table = referenceType === 'order' ? 'orders' : 'bookings';
@@ -334,12 +366,12 @@ app.post('/refunds', async (c) => {
   await db`
     INSERT INTO platform_transactions (
       tenant_id, reference_id, reference_type, gross_amount_cents,
-      platform_fee_cents, stripe_fee_cents, net_to_tenant_cents, stripe_transfer_id
+      platform_fee_cents, stripe_fee_cents, net_to_tenant_cents, stripe_transfer_id, refund_of
     ) VALUES (
       ${tx.tenant_id}, ${tx.reference_id}, ${referenceType},
       ${-(tx.gross_amount_cents as number)}, ${-(tx.platform_fee_cents as number)},
       ${directCharge ? 0 : -(tx.stripe_fee_cents as number)},
-      ${directCharge ? -((tx.gross_amount_cents as number) - (tx.platform_fee_cents as number)) : -(tx.net_to_tenant_cents as number)}, ${refund.id}
+      ${directCharge ? -((tx.gross_amount_cents as number) - (tx.platform_fee_cents as number)) : -(tx.net_to_tenant_cents as number)}, ${refund.id}, ${transaction_id}
     )
   `;
 
