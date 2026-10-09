@@ -7,6 +7,7 @@ import { getBaseUrl, getCustomerBaseUrl, getStoreUrl } from '../lib/baseUrl';
 import { applySubscription, type StripeSubscriptionLike } from '../services/subscriptions';
 import { STRIPE_CARD_FEE } from '../services/chargeModel';
 import { holdsTime } from '../services/slots';
+import { recordAccountState } from '../services/stripeAccounts';
 import { stripeDetailsSchema, buildPrefill, guessMcc, MCC_OPTIONS, type StripeDetails } from '../services/stripePrefill';
 import { stripe, computePlatformFee, createBookingPaymentIntent, createStorePaymentIntent, ensureConnectedProfile, getOrCreateStripeCustomer } from '../services/stripe';
 import {
@@ -319,6 +320,12 @@ app.post('/webhook', async (c) => {
   // Events from a store's own Stripe account: only its customer payments matter here. Anything else (e.g. the
   // store's own subscriptions) must never touch our tenants, and the payment must really belong to that store.
   const connectAccount = event.account as string | undefined;
+  // A store's Stripe account changed (verification done, payments paused...): keep our flag in step with Stripe
+  if (connectAccount && event.type === 'account.updated') {
+    await recordAccountState(connectAccount, event.data.object as { charges_enabled?: boolean; details_submitted?: boolean });
+    return c.json({ received: true });
+  }
+
   if (connectAccount) {
     if (event.type !== 'payment_intent.succeeded' && event.type !== 'payment_intent.payment_failed') {
       return c.json({ received: true, ignored: event.type });

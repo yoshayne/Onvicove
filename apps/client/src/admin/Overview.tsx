@@ -12,6 +12,8 @@ interface StatsResponse {
     pro: number;
     business: number;
     stripe_onboarded: number;
+    stripe_needs_info: number;
+    paid_subscriptions: number;
   };
   revenue: {
     platform_fee_cents: number;
@@ -19,6 +21,7 @@ interface StatsResponse {
     net_to_tenant_cents: number;
     transaction_count: number;
   };
+  mrr_cents: number;
   recent_tenants: {
     id: string;
     company_name: string;
@@ -56,15 +59,18 @@ export default function Overview() {
     );
   }
 
-  const { tenants, revenue, recent_tenants } = data;
+  const { tenants, revenue, recent_tenants, mrr_cents } = data;
 
   const cards = [
     { label: 'Total tenants', value: tenants.total },
     { label: 'Active tenants', value: tenants.active },
-    { label: 'Stripe connected', value: tenants.stripe_onboarded },
-    { label: 'Transactions', value: revenue.transaction_count },
-    { label: 'Platform fee revenue', value: formatCents(revenue.platform_fee_cents) },
-    { label: 'Gross processed', value: formatCents(revenue.gross_amount_cents) },
+    { label: 'Paid subscriptions', value: tenants.paid_subscriptions },
+    { label: 'Subscription revenue / month', value: formatCents(mrr_cents) },
+    { label: 'Stripe ready for payments', value: tenants.stripe_onboarded },
+    { label: 'Stripe needs more info', value: tenants.stripe_needs_info },
+    { label: 'Sales transactions', value: revenue.transaction_count },
+    { label: 'Platform fee revenue (sales)', value: formatCents(revenue.platform_fee_cents) },
+    { label: 'Gross sales processed', value: formatCents(revenue.gross_amount_cents) },
   ];
 
   return (

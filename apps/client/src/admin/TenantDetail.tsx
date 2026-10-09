@@ -102,7 +102,7 @@ export default function TenantDetail() {
             <div className="flex items-center gap-2 mt-1">
               <Badge tone={tenant.is_active ? 'success' : 'danger'}>{tenant.is_active ? 'active' : 'inactive'}</Badge>
               <Badge tone={tenant.stripe_onboarded ? 'success' : 'warning'}>
-                {tenant.stripe_onboarded ? 'Stripe connected' : 'Stripe not connected'}
+                {tenant.stripe_onboarded ? 'Stripe ready' : tenant.stripe_account_id ? 'Stripe needs more info' : 'Stripe not connected'}
               </Badge>
               {!(tenant as unknown as { clerk_user_id: string | null }).clerk_user_id && (
                 <Badge tone="warning">unclaimed</Badge>

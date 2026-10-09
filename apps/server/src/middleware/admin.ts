@@ -31,3 +31,21 @@ export async function requireAdmin(c: Context, next: Next) {
     return c.json({ error: 'Forbidden' }, 403);
   }
 }
+
+/**
+ * Same rule as requireAdmin (email on ADMIN_EMAILS), plus ADMIN_CLERK_IDS for anyone listed by Clerk id.
+ * Lets every admin screen agree on who an admin is.
+ */
+export async function isAdminUser(clerkUserId: string): Promise<boolean> {
+  const ids = (process.env.ADMIN_CLERK_IDS ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+  if (ids.includes(clerkUserId)) return true;
+  const allowed = adminEmails();
+  if (allowed.length === 0) return false;
+  try {
+    const user = await clerkClient.users.getUser(clerkUserId);
+    return user.emailAddresses.some((e) => allowed.includes(e.emailAddress.toLowerCase()));
+  } catch (err) {
+    console.error('Admin check failed:', err);
+    return false;
+  }
+}

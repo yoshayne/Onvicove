@@ -7,6 +7,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireAdmin } from '../middleware/admin';
 import { stripe, refundStorePayment } from '../services/stripe';
+import { refreshStripeStatuses } from '../services/stripeAccounts';
 import { getPlatformSettings, savePlatformSettings, DEFAULT_PLATFORM_SETTINGS, type PlatformSettings } from '../services/settings';
 import {
   sendPlanUpgraded, sendPlanDowngraded, sendAccountSuspended, sendAccountReactivated,
@@ -30,6 +31,7 @@ async function logAdminAction(c: { get: (k: string) => unknown }, action: string
 
 // GET /api/admin/stats — platform-wide overview
 app.get('/stats', async (c) => {
+  await refreshStripeStatuses();
   const [tenantCounts] = await db`
     SELECT
       COUNT(*) AS total,
@@ -37,7 +39,11 @@ app.get('/stats', async (c) => {
       COUNT(*) FILTER (WHERE plan = 'starter') AS starter,
       COUNT(*) FILTER (WHERE plan = 'pro') AS pro,
       COUNT(*) FILTER (WHERE plan = 'business') AS business,
-      COUNT(*) FILTER (WHERE stripe_onboarded) AS stripe_onboarded
+      COUNT(*) FILTER (WHERE stripe_onboarded) AS stripe_onboarded,
+      COUNT(*) FILTER (WHERE stripe_account_id IS NOT NULL AND NOT COALESCE(stripe_onboarded, FALSE)) AS stripe_needs_info,
+      COUNT(*) FILTER (WHERE plan IN ('pro','business') AND stripe_subscription_status IN ('active','trialing','past_due')) AS paid_subscriptions,
+      COUNT(*) FILTER (WHERE plan = 'pro' AND stripe_subscription_status IN ('active','trialing','past_due')) AS paid_pro,
+      COUNT(*) FILTER (WHERE plan = 'business' AND stripe_subscription_status IN ('active','trialing','past_due')) AS paid_business
     FROM tenants
   `;
 
@@ -55,11 +61,16 @@ app.get('/stats', async (c) => {
     FROM tenants ORDER BY created_at DESC LIMIT 5
   `;
 
-  return c.json({ tenants: tenantCounts, revenue, recent_tenants: recentTenants });
+  // Subscription income: paying Pro / Business stores x their plan price (this is separate from per-sale fees below)
+  const settings = await getPlatformSettings();
+  const mrrCents = Number(tenantCounts.paid_pro) * settings.plans.pro.price_cents + Number(tenantCounts.paid_business) * settings.plans.business.price_cents;
+
+  return c.json({ tenants: tenantCounts, revenue, recent_tenants: recentTenants, mrr_cents: mrrCents });
 });
 
 // GET /api/admin/tenants?search=&plan=&status=
 app.get('/tenants', async (c) => {
+  await refreshStripeStatuses();
   const search = c.req.query('search');
   const plan = c.req.query('plan');
   const status = c.req.query('status'); // 'active' | 'inactive'
@@ -76,7 +87,7 @@ app.get('/tenants', async (c) => {
 
   const tenants = await db`
     SELECT t.id, t.company_name, t.slug, t.plan, t.plan_expires_at, t.is_active,
-           t.stripe_onboarded, t.industry, t.city, t.created_at,
+           t.stripe_onboarded, (t.stripe_account_id IS NOT NULL) AS stripe_started, t.stripe_subscription_status, t.industry, t.city, t.created_at,
            t.created_by_admin, t.admin_created_by,
            (t.clerk_user_id IS NULL) AS unclaimed,
            (SELECT ti.invite_email FROM tenant_invites ti WHERE ti.tenant_id = t.id AND ti.claimed_at IS NULL AND ti.expires_at > NOW() ORDER BY ti.created_at DESC LIMIT 1) AS pending_invite_email
@@ -92,6 +103,7 @@ app.get('/tenants', async (c) => {
 // GET /api/admin/tenants/:id
 app.get('/tenants/:id', async (c) => {
   const id = c.req.param('id');
+  await refreshStripeStatuses();
   const rows = await db`SELECT * FROM tenants WHERE id = ${id} LIMIT 1`;
   const tenant = rows[0];
   if (!tenant) return c.json({ error: 'Tenant not found' }, 404);

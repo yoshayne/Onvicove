@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db/client';
+import { isAdminUser } from '../middleware/admin';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { stripe } from '../services/stripe';
@@ -186,14 +187,11 @@ app.delete('/:id', requireAuth, requireTenant, async (c) => {
 
 // ── Admin routes ──────────────────────────────────────────────────────────────
 
-function isAdmin(clerkId: string) {
-  const ids = (process.env.ADMIN_CLERK_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-  return ids.includes(clerkId);
-}
+const isAdmin = isAdminUser;
 
 // GET /api/domain-purchases/admin/pending
 app.get('/admin/pending', requireAuth, async (c) => {
-  if (!isAdmin(c.get('clerkUserId') as string)) return c.json({ error: 'Forbidden' }, 403);
+  if (!(await isAdmin(c.get('clerkUserId') as string))) return c.json({ error: 'Forbidden' }, 403);
 
   const rows = await db`
     SELECT dpr.*, t.company_name, t.slug
@@ -213,7 +211,7 @@ const adminUpdateSchema = z.object({
 });
 
 app.patch('/admin/:id', requireAuth, async (c) => {
-  if (!isAdmin(c.get('clerkUserId') as string)) return c.json({ error: 'Forbidden' }, 403);
+  if (!(await isAdmin(c.get('clerkUserId') as string))) return c.json({ error: 'Forbidden' }, 403);
 
   const id = c.req.param('id') ?? '';
   const body = await c.req.json().catch(() => ({}));

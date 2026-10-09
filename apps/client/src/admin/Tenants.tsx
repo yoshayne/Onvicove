@@ -14,6 +14,7 @@ interface AdminTenant {
   plan_expires_at: string | null;
   is_active: boolean;
   stripe_onboarded: boolean;
+  stripe_started?: boolean;
   industry: string | null;
   city: string | null;
   created_at: string;
@@ -136,7 +137,7 @@ export default function Tenants() {
                   </td>
                   <td className="px-4 py-3">
                     <Badge tone={t.stripe_onboarded ? 'success' : 'warning'}>
-                      {t.stripe_onboarded ? 'connected' : 'not connected'}
+                      {t.stripe_onboarded ? 'ready' : t.stripe_started ? 'needs info' : 'not connected'}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
