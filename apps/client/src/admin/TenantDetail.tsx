@@ -63,6 +63,15 @@ export default function TenantDetail() {
     },
   });
 
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const ownerEmailMutation = useMutation({
+    mutationFn: () => api.put(`/admin/tenants/${id}/owner-email`, { email: ownerEmail }),
+    onSuccess: () => {
+      setOwnerEmail('');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'tenants'] });
+    },
+  });
+
   function copyInviteLink() {
     if (inviteResult) {
       navigator.clipboard.writeText(inviteResult.claim_url).then(() => {
@@ -135,7 +144,23 @@ export default function TenantDetail() {
             ) : owner.pending_invite_email ? (
               <span className="text-slate-600">Not claimed yet (invited {owner.pending_invite_email})</span>
             ) : (
-              <span className="text-slate-400">none</span>
+              <span className="text-amber-700">
+                none recorded
+                {(tenant as unknown as { clerk_user_id: string | null }).clerk_user_id && (
+                  <span className="ml-2 inline-flex items-center gap-1 align-middle">
+                    <input
+                      type="email"
+                      value={ownerEmail}
+                      onChange={(e) => setOwnerEmail(e.target.value)}
+                      placeholder="owner's sign-up email"
+                      className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-900"
+                    />
+                    <Button size="sm" variant="secondary" disabled={!ownerEmail.includes('@') || ownerEmailMutation.isPending} onClick={() => ownerEmailMutation.mutate()}>
+                      Save
+                    </Button>
+                  </span>
+                )}
+              </span>
             )}
             {owner.owner_name && <span className="text-slate-500"> · {owner.owner_name}</span>}
           </dd>

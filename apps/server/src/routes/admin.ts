@@ -141,6 +141,28 @@ app.get('/tenants/:id', async (c) => {
   });
 });
 
+// PUT /api/admin/tenants/:id/owner-email — record the sign-up email of a store's owner by hand. Used when the owner's
+// record never reached our database; the email is what re-attaches the store after a Clerk change.
+const ownerEmailSchema = z.object({ email: z.string().trim().toLowerCase().email() });
+
+app.put('/tenants/:id/owner-email', async (c) => {
+  const id = c.req.param('id');
+  const parsed = ownerEmailSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Enter a valid email address' }, 400);
+
+  const rows = await db`SELECT id, company_name, clerk_user_id FROM tenants WHERE id = ${id} LIMIT 1`;
+  const tenant = rows[0];
+  if (!tenant) return c.json({ error: 'Tenant not found' }, 404);
+  if (!tenant.clerk_user_id) return c.json({ error: 'This store has no owner yet. Send an invite instead.' }, 400);
+
+  await db`
+    INSERT INTO users (clerk_user_id, email) VALUES (${tenant.clerk_user_id as string}, ${parsed.data.email})
+    ON CONFLICT (clerk_user_id) DO UPDATE SET email = EXCLUDED.email, updated_at = NOW()
+  `;
+  await logAdminAction(c, 'set_owner_email', 'tenant', id, { company_name: tenant.company_name, email: parsed.data.email });
+  return c.json({ owner_email: parsed.data.email });
+});
+
 const updateTenantSchema = z.object({
   plan: z.enum(['starter', 'pro', 'business']).optional(),
   plan_expires_at: z.string().datetime().nullable().optional(),
