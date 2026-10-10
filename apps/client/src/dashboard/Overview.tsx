@@ -11,6 +11,7 @@ import { useApi } from '../lib/api';
 import type { Tenant, Order, Booking, Product, Service } from '../types';
 import { isPaidOrder, isLiveBooking, isUnpaidBooking, isUnpaidOrder, moneyEvents, sumOnDay, dayKey, lastDayKeys, formatMoney } from '../lib/metrics';
 import Spinner from '../components/shared/Spinner';
+import StripeStatusCard from '../components/stripe/StripeStatusCard';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -317,6 +318,8 @@ export default function Overview() {
           </div>
         )}
       </div>
+
+      <StripeStatusCard />
 
       {(unpaidBookings.length > 0 || unpaidOrders.length > 0) && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

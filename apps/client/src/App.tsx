@@ -57,6 +57,7 @@ import AdminTenants from './admin/Tenants';
 import AdminTenantDetail from './admin/TenantDetail';
 import AdminTransactions from './admin/Transactions';
 import AdminAuditLog from './admin/AuditLog';
+import AdminFunnel from './admin/Funnel';
 import AdminSettings from './admin/Settings';
 import AdminCoupons from './admin/Coupons';
 import AdminDomainRequests from './admin/DomainRequests';
@@ -225,6 +226,7 @@ export default function App() {
                 <Route path="tenants/new" element={<AdminCreateTenant />} />
                 <Route path="tenants/:id" element={<AdminTenantDetail />} />
                 <Route path="transactions" element={<AdminTransactions />} />
+                <Route path="funnel" element={<AdminFunnel />} />
                 <Route path="audit-log" element={<AdminAuditLog />} />
                 <Route path="domain-requests" element={<AdminDomainRequests />} />
                 <Route path="coupons" element={<AdminCoupons />} />

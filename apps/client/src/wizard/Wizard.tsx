@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import WizardLayout from './WizardLayout';
-import { useWizardStore, selectWizardCompleteness, type WizardState } from './wizardStore';
+import { useWizardStore, selectWizardCompleteness, WIZARD_STEPS_VERSION, WIZARD_TOTAL_STEPS, type WizardState } from './wizardStore';
 import { useApi } from '../lib/api';
 
+import StripeStatusCard from '../components/stripe/StripeStatusCard';
 import StripePaymentForm from '../themes/shared/StripePaymentForm';
 import Step1_BusinessName from './steps/Step1_BusinessName';
 import Step2_Mode from './steps/Step2_Mode';
@@ -14,7 +15,6 @@ import Step5_HeroPhoto from './steps/Step5_HeroPhoto';
 import Step6_Products from './steps/Step6_Products';
 import Step6b_Services from './steps/Step6b_Services';
 import Step7_Availability from './steps/Step7_Availability';
-import Step8_Payments from './steps/Step8_Payments';
 import Step9_Plan from './steps/Step9_Plan';
 import Step10_Launch from './steps/Step10_Launch';
 
@@ -27,9 +27,8 @@ const STEP_COMPONENTS: Record<number, React.ComponentType> = {
   6: Step6_Products,
   7: Step6b_Services,
   8: Step7_Availability,
-  9: Step8_Payments,
-  10: Step9_Plan,
-  11: Step10_Launch,
+  9: Step9_Plan,
+  10: Step10_Launch,
 };
 
 export interface WizardCompleteResponse {
@@ -38,6 +37,7 @@ export interface WizardCompleteResponse {
 
 function buildWizardData(state: WizardState) {
   return {
+    stepsVersion: WIZARD_STEPS_VERSION,
     businessName: state.businessName,
     tagline: state.tagline,
     mode: state.mode,
@@ -180,7 +180,11 @@ export default function Wizard() {
         }
         if (progress.wizard_step > 0) {
           applyWizardData(state, progress.wizard_data, progress.slug);
-          useWizardStore.getState().setStep(Math.min(11, Math.max(1, progress.wizard_step)));
+          // Progress saved before payments moved to after launch has one more step past step 9
+          const saved = progress.wizard_data?.stepsVersion === WIZARD_STEPS_VERSION || progress.wizard_step < 10
+            ? progress.wizard_step
+            : progress.wizard_step - 1;
+          useWizardStore.getState().setStep(Math.min(WIZARD_TOTAL_STEPS, Math.max(1, saved)));
         }
       })
       .catch((err) => console.error('wizard/progress failed:', err))
@@ -244,12 +248,12 @@ export default function Wizard() {
   }
 
   function handleNext() {
-    if (currentStep === 11) return;
+    if (currentStep === WIZARD_TOTAL_STEPS) return;
     nextStep();
   }
 
   const completeness = selectWizardCompleteness(state);
-  const isLastStep = currentStep === 11;
+  const isLastStep = currentStep === WIZARD_TOTAL_STEPS;
 
   return (
     <WizardLayout
@@ -364,6 +368,8 @@ function Step10LaunchControls({
             </button>
           </div>
         </div>
+
+        <StripeStatusCard />
 
         {subNotice && (
           <p className={`rounded-lg border p-3 text-sm ${subNotice.tone === 'ok' ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>

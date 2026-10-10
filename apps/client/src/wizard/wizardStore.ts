@@ -177,13 +177,17 @@ const initialState: Omit<
   plan: 'starter',
 };
 
+/** Payments moved out of the wizard (it now comes after launch), so there are 10 steps; saved progress is migrated. */
+export const WIZARD_TOTAL_STEPS = 10;
+export const WIZARD_STEPS_VERSION = 2;
+
 export const useWizardStore = create<WizardState>()(
   persist(
     (set) => ({
       ...initialState,
 
       setStep: (step) => set({ currentStep: step }),
-      nextStep: () => set((s) => ({ currentStep: Math.min(11, s.currentStep + 1) })),
+      nextStep: () => set((s) => ({ currentStep: Math.min(WIZARD_TOTAL_STEPS, s.currentStep + 1) })),
       prevStep: () => set((s) => ({ currentStep: Math.max(1, s.currentStep - 1) })),
 
       setBusinessName: (name) => set({ businessName: name }),
@@ -234,6 +238,15 @@ export const useWizardStore = create<WizardState>()(
     }),
     {
       name: 'shopsuitedirect-wizard',
+      version: WIZARD_STEPS_VERSION,
+      // Version 1 had a Payments step at 9: Plan was 10 and Launch 11. Move people who were past it back one.
+      migrate: (persisted, version) => {
+        const state = persisted as { currentStep?: number };
+        if (version < 2 && typeof state.currentStep === 'number' && state.currentStep >= 10) {
+          state.currentStep -= 1;
+        }
+        return state as never;
+      },
     }
   )
 );

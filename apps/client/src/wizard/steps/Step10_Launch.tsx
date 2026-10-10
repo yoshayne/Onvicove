@@ -34,7 +34,7 @@ export default function Step10_Launch() {
     missing.push({ label: mode === 'book' ? 'Services' : mode === 'store' ? 'Products' : 'Products or services', step: mode === 'book' ? 7 : 6 });
   }
   if (!completeness.availabilityDone) missing.push({ label: 'Availability', step: 8 });
-  if (!completeness.planDone) missing.push({ label: 'Plan', step: 10 });
+  if (!completeness.planDone) missing.push({ label: 'Plan', step: 9 });
 
   return (
     <div className="flex flex-col gap-6">
@@ -54,7 +54,7 @@ export default function Step10_Launch() {
         {mode !== 'store' && <SummaryRow label="Services" value={`${services.length} added`} />}
         <SummaryRow
           label="Payments"
-          value={stripeConnected ? 'Stripe connected' : 'Not connected'}
+          value={stripeConnected ? 'Connected' : 'Next, right after launch (about 5 min)'}
         />
         <SummaryRow label="Plan" value={PLAN_LABELS[plan] ?? plan} />
       </div>

@@ -3,6 +3,7 @@ import { getBaseUrl } from '../lib/baseUrl';
 import { db } from '../db/client';
 import { feeForPlan, getPlatformSettings } from './settings';
 import { CHARGE_MODEL } from './chargeModel';
+import { getSignedFileUrl } from './storage';
 
 let _stripe: Stripe | undefined;
 
@@ -88,7 +89,7 @@ export async function ensureCapabilities(accountId: string, account?: Stripe.Acc
 export async function ensureConnectedProfile(tenantId: string, accountId: string): Promise<void> {
   if (CHARGE_MODEL === 'direct') await ensureCapabilities(accountId);
   try {
-    const rows = await db`SELECT company_name, slug, stripe_profile_synced_at FROM tenants WHERE id = ${tenantId} LIMIT 1`;
+    const rows = await db`SELECT company_name, slug, brand_color, logo_key, tagline, industry, stripe_profile_synced_at FROM tenants WHERE id = ${tenantId} LIMIT 1`;
     const tenant = rows[0];
     if (!tenant || tenant.stripe_profile_synced_at) return;
 
@@ -104,7 +105,28 @@ export async function ensureConnectedProfile(tenantId: string, accountId: string
     if (descriptor && !account.settings?.payments?.statement_descriptor) {
       update.settings = { payments: { statement_descriptor: descriptor } };
     }
+    if (!account.business_profile?.product_description) {
+      const description = (tenant.tagline as string | null)?.trim() || ((tenant.industry as string | null)?.trim() ? `${(tenant.industry as string).trim()} (online store and bookings)` : '');
+      if (description) update.business_profile = { ...(update.business_profile ?? {}), product_description: description };
+    }
+    // Their colour (and logo, below) on Stripe's pages, so it feels like their own business
+    const color = (tenant.brand_color as string | null) ?? '';
+    if (/^#[0-9a-fA-F]{6}$/.test(color) && !account.settings?.branding?.primary_color) {
+      update.settings = { ...(update.settings ?? {}), branding: { primary_color: color } };
+    }
     if (Object.keys(update).length > 0) await stripe.accounts.update(accountId, update);
+    if (tenant.logo_key && !account.settings?.branding?.logo) {
+      try {
+        const res = await fetch(await getSignedFileUrl(tenant.logo_key as string));
+        const data = Buffer.from(await res.arrayBuffer());
+        if (res.ok && data.length > 0 && data.length < 500_000) {
+          const file = await stripe.files.create({ purpose: 'business_logo', file: { data, name: 'logo.png', type: 'application/octet-stream' } });
+          await stripe.accounts.update(accountId, { settings: { branding: { logo: file.id } } });
+        }
+      } catch (err) {
+        console.warn(`Could not set Stripe logo for ${accountId}:`, err instanceof Error ? err.message : err);
+      }
+    }
     await db`UPDATE tenants SET stripe_profile_synced_at = NOW() WHERE id = ${tenantId}`;
   } catch (err) {
     console.warn(`Could not sync Stripe profile for ${accountId}:`, err instanceof Error ? err.message : err);

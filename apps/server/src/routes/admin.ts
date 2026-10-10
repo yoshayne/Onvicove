@@ -29,6 +29,57 @@ async function logAdminAction(c: { get: (k: string) => unknown }, action: string
 // GET /api/admin/whoami — lets the sign-in flow send admins straight to the admin area
 app.get('/whoami', (c) => c.json({ admin: true, email: (c as unknown as { get: (k: string) => unknown }).get('adminEmail') }));
 
+// GET /api/admin/funnel — where new people are in the sign-up journey, and who stopped
+app.get('/funnel', async (c) => {
+  const admins = new Set((process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean));
+
+  const noStoreRows = await db`
+    SELECT u.email, u.first_name, u.last_name, u.created_at
+    FROM users u
+    WHERE NOT EXISTS (SELECT 1 FROM tenants t WHERE t.clerk_user_id = u.clerk_user_id)
+    ORDER BY u.created_at DESC LIMIT 200
+  `;
+  const signedUpNoStore = noStoreRows.filter((r) => !admins.has(String(r.email ?? '').toLowerCase()));
+
+  // wizard_step numbering changed when Stripe moved after launch (stepsVersion 2): older rows had one more step
+  const inWizard = await db`
+    SELECT t.id, t.company_name, t.created_at, t.updated_at, u.email,
+      CASE WHEN t.wizard_data->>'stepsVersion' = '2' OR t.wizard_step < 10 THEN t.wizard_step ELSE t.wizard_step - 1 END AS step
+    FROM tenants t
+    LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id
+    WHERE t.wizard_completed = FALSE AND t.clerk_user_id IS NOT NULL
+    ORDER BY t.updated_at DESC LIMIT 200
+  `;
+
+  const launchedNoPayments = await db`
+    SELECT t.id, t.company_name, t.created_at, t.updated_at, u.email, (t.stripe_account_id IS NOT NULL) AS stripe_started
+    FROM tenants t
+    LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id
+    WHERE t.wizard_completed = TRUE AND t.is_active = TRUE AND COALESCE(t.stripe_onboarded, FALSE) = FALSE
+    ORDER BY t.updated_at DESC LIMIT 200
+  `;
+
+  const [totals] = await db`
+    SELECT
+      COUNT(*) FILTER (WHERE wizard_completed) AS launched,
+      COUNT(*) FILTER (WHERE wizard_completed AND stripe_onboarded) AS payments_ready
+    FROM tenants WHERE clerk_user_id IS NOT NULL
+  `;
+
+  return c.json({
+    counts: {
+      signed_up_no_store: signedUpNoStore.length,
+      in_wizard: inWizard.length,
+      launched: Number(totals.launched),
+      launched_no_payments: launchedNoPayments.length,
+      payments_ready: Number(totals.payments_ready),
+    },
+    signed_up_no_store: signedUpNoStore,
+    in_wizard: inWizard,
+    launched_no_payments: launchedNoPayments,
+  });
+});
+
 // GET /api/admin/stats — platform-wide overview
 app.get('/stats', async (c) => {
   await refreshStripeStatuses();

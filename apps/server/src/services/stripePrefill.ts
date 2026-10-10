@@ -9,6 +9,8 @@ import { z } from 'zod';
  */
 export const stripeDetailsSchema = z.object({
   business_type: z.enum(['individual', 'company']).default('individual'),
+  // How the owner described their business in the setup pop-up (business_type above is what Stripe gets)
+  operating: z.enum(['solo', 'solo_ein', 'company']).optional(),
   phone: z.string().trim().max(30).optional(),
   mcc: z.string().regex(/^\d{4}$/).optional(),
   product_description: z.string().trim().max(300).optional(),
@@ -59,7 +61,7 @@ export function guessMcc(industry: string | null | undefined): string | undefine
   return rules.find(([re]) => re.test(t))?.[1];
 }
 
-interface TenantLike { company_name: string; slug: string; industry?: string | null }
+interface TenantLike { company_name: string; slug: string; industry?: string | null; tagline?: string | null }
 interface UserLike { email?: string | null; first_name?: string | null; last_name?: string | null }
 
 /** Fields to pre-fill on the connected account. Only what we actually know is included. */
@@ -70,7 +72,9 @@ export function buildPrefill(tenant: TenantLike, user: UserLike | undefined, det
   if (mcc) profile.mcc = mcc;
   if (details.phone) profile.support_phone = details.phone;
   if (user?.email) profile.support_email = user.email;
-  if (details.product_description) profile.product_description = details.product_description;
+  // Stripe asks what the business sells: use what they told us (or their tagline / industry from the wizard)
+  const description = details.product_description || tenant.tagline?.trim() || (tenant.industry?.trim() ? `${tenant.industry.trim()} (online store and bookings)` : '');
+  if (description) profile.product_description = description;
 
   const out: Stripe.AccountUpdateParams = { business_profile: profile };
   if (details.business_type) out.business_type = details.business_type;

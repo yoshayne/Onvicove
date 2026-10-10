@@ -199,21 +199,33 @@ export async function sendAccountReactivated(data: {
   });
 }
 
+function missingList(missing?: string[]): string {
+  if (!missing || missing.length === 0) return '';
+  return `<p>Stripe still needs:</p><ul style="line-height:1.9">${missing.map((m) => `<li>${m}</li>`).join('')}</ul>`;
+}
+
 export async function sendStripeNudge(data: {
   toEmail: string;
   toName: string;
   companyName: string;
   connectUrl: string;
+  /** Set when they already started with Stripe: the plain-language items still missing */
+  missing?: string[];
+  started?: boolean;
 }): Promise<void> {
+  const first = data.toName.split(' ')[0];
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],
-    subject: `Connect Stripe to start accepting payments — ${data.companyName}`,
-    htmlContent: wrap('One step left: connect Stripe', `
-      <p>Hi ${data.toName.split(' ')[0]},</p>
-      <p>Your <strong>${data.companyName}</strong> storefront is live, but you haven't connected a Stripe account yet — so you can't receive payments from customers.</p>
-      <p>It only takes a few minutes to set up.</p>
-      ${btn('Connect Stripe now', data.connectUrl)}
-      <p style="font-size:13px;color:#64748b">Stripe is free to connect. Shop Suite Direct takes a small platform fee per transaction — see your dashboard for details.</p>
+    subject: data.started
+      ? `Almost there: finish your payment setup — ${data.companyName}`
+      : `Connect Stripe to start accepting payments — ${data.companyName}`,
+    htmlContent: wrap(data.started ? 'You\'re almost ready to get paid' : 'One step left: set up payments', `
+      <p>Hi ${first},</p>
+      ${data.started
+        ? `<p>You started setting up payments for <strong>${data.companyName}</strong>, but Stripe needs a little more before customers can pay you.</p>${missingList(data.missing)}<p>Stripe saved what you already entered, so it only takes a couple of minutes.</p>`
+        : `<p>Your <strong>${data.companyName}</strong> storefront is live, but payments aren't set up yet, so customers can't pay you.</p><p>It takes about 5 minutes. Have your ID and bank account handy.</p>`}
+      ${btn(data.started ? 'Finish setup' : 'Set up payments', data.connectUrl)}
+      <p style="font-size:13px;color:#64748b">Stripe is free to connect. Shop Suite Direct takes a small platform fee per transaction. See your dashboard for details. Questions? Just reply to this email.</p>
     `),
   });
 }
@@ -223,16 +235,19 @@ export async function sendStripeReminder(data: {
   toName: string;
   companyName: string;
   connectUrl: string;
+  missing?: string[];
+  started?: boolean;
 }): Promise<void> {
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],
     subject: `Reminder: you still can't get paid — ${data.companyName}`,
-    htmlContent: wrap('Still waiting on Stripe', `
+    htmlContent: wrap('Still waiting on payment setup', `
       <p>Hi ${data.toName.split(' ')[0]},</p>
-      <p>It's been a few days and <strong>${data.companyName}</strong> still doesn't have a connected Stripe account.</p>
-      <p>Without it, customers can browse your storefront but can't complete purchases or bookings.</p>
-      ${btn('Connect Stripe', data.connectUrl)}
-      <p style="font-size:13px;color:#64748b">Need help? Reply to this email.</p>
+      ${data.started
+        ? `<p>It's been a few days and <strong>${data.companyName}</strong> still can't take payments because Stripe is missing some details.</p>${missingList(data.missing)}`
+        : `<p>It's been a few days and <strong>${data.companyName}</strong> still doesn't have payments set up.</p><p>Without it, customers can browse your storefront but can't complete purchases or bookings.</p>`}
+      ${btn(data.started ? 'Finish setup' : 'Set up payments', data.connectUrl)}
+      <p style="font-size:13px;color:#64748b">Need help? Reply to this email and we'll walk you through it.</p>
     `),
   });
 }

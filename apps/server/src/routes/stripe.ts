@@ -8,6 +8,7 @@ import { applySubscription, type StripeSubscriptionLike } from '../services/subs
 import { STRIPE_CARD_FEE } from '../services/chargeModel';
 import { holdsTime } from '../services/slots';
 import { recordAccountState } from '../services/stripeAccounts';
+import { summarizeAccount } from '../services/stripeRequirements';
 import { stripeDetailsSchema, buildPrefill, guessMcc, MCC_OPTIONS, type StripeDetails } from '../services/stripePrefill';
 import { stripe, computePlatformFee, createBookingPaymentIntent, createStorePaymentIntent, ensureConnectedProfile, getOrCreateStripeCustomer } from '../services/stripe';
 import {
@@ -86,7 +87,7 @@ app.post('/connect-link', requireAuth, async (c) => {
 
   const userRows = await db`SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
   const prefill = buildPrefill(
-    { company_name: tenant.company_name as string, slug: tenant.slug as string, industry: tenant.industry as string | null },
+    { company_name: tenant.company_name as string, slug: tenant.slug as string, industry: tenant.industry as string | null, tagline: tenant.tagline as string | null },
     userRows[0] as { email?: string; first_name?: string; last_name?: string } | undefined,
     details,
   );
@@ -120,6 +121,8 @@ app.post('/connect-link', requireAuth, async (c) => {
       }
     }
 
+    // Name, website, description, colour and logo go onto the account before they arrive, so Stripe's pages are already theirs
+    await ensureConnectedProfile(tenant.id as string, accountId);
     const baseUrl = getBaseUrl();
     const link = await stripe.accountLinks.create({
       account: accountId,
@@ -171,7 +174,8 @@ app.get('/account-status', requireAuth, async (c) => {
     }
   }
 
-  return c.json({ connected: true, onboarded });
+  // Plain-language list of what Stripe still needs, so the dashboard can say exactly what to fix
+  return c.json({ connected: true, onboarded, ...summarizeAccount(account) });
 });
 
 const paymentIntentSchema = z.object({
