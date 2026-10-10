@@ -523,3 +523,6 @@ SET refund_of = (
   ORDER BY p.created_at DESC LIMIT 1
 )
 WHERE r.gross_amount_cents < 0 AND r.refund_of IS NULL;
+
+-- Set when a store is re-attached to its owner after the Clerk application changed (lets us roll back)
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS previous_clerk_user_id TEXT;

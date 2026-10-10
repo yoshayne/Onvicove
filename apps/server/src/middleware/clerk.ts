@@ -1,5 +1,6 @@
 import { verifyToken } from '@clerk/backend';
 import type { Context, Next } from 'hono';
+import { ensureTenantLinked } from '../services/clerkRelink';
 
 export async function requireAuth(c: Context, next: Next) {
   // Impersonation tokens bypass Clerk auth — requireTenant will validate them
@@ -20,6 +21,8 @@ export async function requireAuth(c: Context, next: Next) {
       secretKey: process.env.CLERK_SECRET_KEY!,
     });
     c.set('clerkUserId', payload.sub);
+    // After a change of Clerk application, find the person's existing store by their verified email
+    await ensureTenantLinked(payload.sub);
     await next();
   } catch (err) {
     console.error('Clerk token verification failed:', err);
