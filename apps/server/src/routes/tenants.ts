@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db/client';
+import { getOrFetchUser } from '../services/users';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { enrichWithUrls } from '../services/storage';
@@ -98,8 +99,7 @@ app.post('/create-or-get', requireAuth, async (c) => {
   const tenant = result[0];
 
   // Send welcome + admin notification for direct self-serve signup
-  const userRows = await db`SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
-  const user = userRows[0];
+  const user = await getOrFetchUser(clerkUserId);
   if (user?.email) {
     const baseUrl = getBaseUrl();
     const toName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || (user.email as string);

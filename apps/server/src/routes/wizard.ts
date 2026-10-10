@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { getBaseUrl } from '../lib/baseUrl';
 import { z } from 'zod';
 import { db } from '../db/client';
+import { getOrFetchUser } from '../services/users';
 import { requireAuth } from '../middleware/clerk';
 import { generateUniqueSlug } from '../lib/slugify';
 import { checkItemLimit } from '../services/settings';
@@ -164,8 +165,7 @@ app.post('/complete', async (c) => {
   }
 
   // Fire welcome emails — best-effort, don't fail the response
-  const userRows = await db`SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
-  const user = userRows[0];
+  const user = await getOrFetchUser(clerkUserId);
   if (user?.email) {
     const toName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || (user.email as string);
     const baseUrl = getBaseUrl();

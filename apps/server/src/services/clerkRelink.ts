@@ -1,6 +1,7 @@
 import { createClerkClient } from '@clerk/backend';
 import { db } from '../db/client';
 import { recordAdminAction } from './auditLog';
+import { registerUser } from './users';
 
 interface NewUser {
   id: string;
@@ -80,6 +81,8 @@ export async function ensureTenantLinked(clerkUserId: string): Promise<void> {
     const emails = u.emailAddresses
       .filter((e) => e.verification?.status === 'verified')
       .map((e) => e.emailAddress.toLowerCase());
+    const primary = u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId) ?? u.emailAddresses[0];
+    await registerUser({ clerk_user_id: clerkUserId, email: primary?.emailAddress ?? null, first_name: u.firstName, last_name: u.lastName, avatar_url: u.imageUrl });
     await relinkTenantByEmail({ id: clerkUserId, emails, first_name: u.firstName, last_name: u.lastName, avatar_url: u.imageUrl });
     // A brand-new person with no store yet is looked at again next time (they may be about to create or claim one)
   } catch (err) {

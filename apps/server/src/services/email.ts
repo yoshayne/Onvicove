@@ -8,8 +8,13 @@ const SENDER = {
   email: process.env.BREVO_SENDER_EMAIL || 'no-reply@shopsuitedirect.com',
 };
 
-function adminEmail(): string | null {
-  return process.env.ADMIN_EMAILS?.split(',')[0]?.trim() || null;
+/** Everyone on ADMIN_EMAILS gets platform notifications (not just the first address). */
+function adminRecipients(): { email: string; name: string }[] {
+  return (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean)
+    .map((email) => ({ email, name: 'Shop Suite Direct Admin' }));
 }
 
 function btn(text: string, url: string) {
@@ -419,10 +424,10 @@ export async function sendAdminNewSignup(data: {
   ownerEmail: string;
   plan: string;
 }): Promise<void> {
-  const email = adminEmail();
-  if (!email) return;
+  const admins = adminRecipients();
+  if (admins.length === 0) return;
   await sendTransacEmail({
-    to: [{ email, name: 'Shop Suite Direct Admin' }],
+    to: admins,
     subject: `New signup: ${data.companyName}`,
     htmlContent: wrap('New tenant signed up', `
       <p><strong>Company:</strong> ${data.companyName}</p>
@@ -432,14 +437,30 @@ export async function sendAdminNewSignup(data: {
   });
 }
 
+/** Someone created an account (before they have set up a store). */
+export async function sendAdminNewUser(data: { email: string; name: string | null }): Promise<void> {
+  const admins = adminRecipients();
+  if (admins.length === 0) return;
+  await sendTransacEmail({
+    to: admins,
+    subject: `New signup: ${data.name || data.email}`,
+    htmlContent: wrap('Someone new signed up', `
+      <p><strong>Name:</strong> ${data.name || '-'}</p>
+      <p><strong>Email:</strong> ${data.email}</p>
+      <p>They haven't set up a store yet. You'll get another email when they do.</p>
+      ${btn('View tenants', `${getBaseUrl()}/admin/tenants`)}
+    `),
+  });
+}
+
 export async function sendAdminStripeConnected(data: {
   companyName: string;
   ownerEmail: string;
 }): Promise<void> {
-  const email = adminEmail();
-  if (!email) return;
+  const admins = adminRecipients();
+  if (admins.length === 0) return;
   await sendTransacEmail({
-    to: [{ email, name: 'Shop Suite Direct Admin' }],
+    to: admins,
     subject: `Stripe connected: ${data.companyName}`,
     htmlContent: wrap('Tenant connected Stripe', `
       <p><strong>Company:</strong> ${data.companyName}</p>
@@ -454,10 +475,10 @@ export async function sendAdminRefund(data: {
   referenceId: string;
   amountCents: number;
 }): Promise<void> {
-  const email = adminEmail();
-  if (!email) return;
+  const admins = adminRecipients();
+  if (admins.length === 0) return;
   await sendTransacEmail({
-    to: [{ email, name: 'Shop Suite Direct Admin' }],
+    to: admins,
     subject: `Refund processed: $${(data.amountCents / 100).toFixed(2)} — ${data.companyName}`,
     htmlContent: wrap('Refund processed', `
       <p><strong>Tenant:</strong> ${data.companyName}</p>
@@ -475,10 +496,10 @@ export async function sendAdminDomainPurchaseRequest(data: {
   requestId: string;
   adminUrl: string;
 }): Promise<void> {
-  const email = adminEmail();
-  if (!email) return;
+  const admins = adminRecipients();
+  if (admins.length === 0) return;
   await sendTransacEmail({
-    to: [{ email, name: 'Shop Suite Direct Admin' }],
+    to: admins,
     subject: `Domain purchase request: ${data.domain} — ${data.companyName}`,
     htmlContent: wrap('New domain purchase request', `
       <p><strong>Domain requested:</strong> ${data.domain}</p>
@@ -744,10 +765,10 @@ export async function sendAdminInviteExpired(data: {
   inviteEmail: string;
   adminUrl: string;
 }): Promise<void> {
-  const email = adminEmail();
-  if (!email) return;
+  const admins = adminRecipients();
+  if (admins.length === 0) return;
   await sendTransacEmail({
-    to: [{ email, name: 'Shop Suite Direct Admin' }],
+    to: admins,
     subject: `Invite expired unclaimed — ${data.companyName}`,
     htmlContent: wrap('An invite expired without being claimed', `
       <p>The invite sent to <strong>${data.inviteEmail}</strong> for <strong>${data.companyName}</strong> has expired and was never claimed.</p>
@@ -762,10 +783,10 @@ export async function sendAdminInviteClaimed(data: {
   claimedByEmail: string;
   dashboardUrl: string;
 }): Promise<void> {
-  const email = adminEmail();
-  if (!email) return;
+  const admins = adminRecipients();
+  if (admins.length === 0) return;
   await sendTransacEmail({
-    to: [{ email, name: 'Shop Suite Direct Admin' }],
+    to: admins,
     subject: `Invite claimed: ${data.companyName}`,
     htmlContent: wrap('A client claimed their site', `
       <p><strong>Company:</strong> ${data.companyName}</p>

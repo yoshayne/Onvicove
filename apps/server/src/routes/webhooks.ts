@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { Webhook } from 'svix';
 import { db } from '../db/client';
+import { registerUser } from '../services/users';
 
 const app = new Hono();
 
@@ -32,16 +33,22 @@ app.post('/clerk', async (c) => {
       (e: any) => e.id === data.primary_email_address_id
     )?.email_address ?? data.email_addresses?.[0]?.email_address ?? null;
 
-    await db`
-      INSERT INTO users (clerk_user_id, email, first_name, last_name, avatar_url)
-      VALUES (${data.id}, ${primaryEmail}, ${data.first_name ?? null}, ${data.last_name ?? null}, ${data.image_url ?? null})
-      ON CONFLICT (clerk_user_id) DO UPDATE SET
-        email = EXCLUDED.email,
-        first_name = EXCLUDED.first_name,
-        last_name = EXCLUDED.last_name,
-        avatar_url = EXCLUDED.avatar_url,
-        updated_at = NOW()
-    `;
+    const profile = {
+      clerk_user_id: data.id as string,
+      email: primaryEmail as string | null,
+      first_name: (data.first_name ?? null) as string | null,
+      last_name: (data.last_name ?? null) as string | null,
+      avatar_url: (data.image_url ?? null) as string | null,
+    };
+    // A brand-new person is recorded (and the admins are told once); a later update just refreshes their details
+    const result = await registerUser(profile);
+    if (result === 'existing') {
+      await db`
+        UPDATE users SET email = ${profile.email}, first_name = ${profile.first_name}, last_name = ${profile.last_name},
+          avatar_url = ${profile.avatar_url}, updated_at = NOW()
+        WHERE clerk_user_id = ${profile.clerk_user_id}
+      `;
+    }
   } else if (type === 'user.deleted') {
     await db`DELETE FROM users WHERE clerk_user_id = ${data.id}`;
   }
