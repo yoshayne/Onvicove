@@ -6,7 +6,9 @@ import { rateLimitPublic } from '../middleware/ratelimit';
 import { enrichWithUrls, getSignedFileUrl } from '../services/storage';
 import { generateOrderNumber } from '../lib/orderNumber';
 import { getCustomerBaseUrl } from '../lib/baseUrl';
-import { slotsForService, holdsTime } from '../services/slots';
+import { addDays, format, parse } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { slotsForService, holdsTime, pickStaffForSlot } from '../services/slots';
 import { CHARGE_MODEL } from '../services/chargeModel';
 import { computePlatformFee, createBookingPaymentIntent, usableStripeIds } from '../services/stripe';
 import {
@@ -140,7 +142,9 @@ app.get('/:slug/staff', async (c) => {
   if (!tenants[0]) return c.json({ error: 'Store not found' }, 404);
 
   const staff = await db`
-    SELECT * FROM staff WHERE tenant_id = ${tenants[0].id} AND is_active = TRUE ORDER BY created_at ASC
+    SELECT s.*,
+      COALESCE((SELECT json_agg(ss.service_id) FROM staff_services ss WHERE ss.staff_id = s.id), '[]'::json) AS service_ids
+    FROM staff s WHERE s.tenant_id = ${tenants[0].id} AND s.is_active = TRUE ORDER BY s.created_at ASC
   `;
   return c.json({ staff: await Promise.all(staff.map(enrichWithUrls)) });
 });
@@ -177,6 +181,34 @@ app.get('/:slug/closed-dates', async (c) => {
   `;
   c.header('Cache-Control', 'public, max-age=60');
   return c.json({ closed: rows });
+});
+
+// GET /api/public/:slug/next-available?service_id=&staff_id= — the first open time in the next three weeks
+app.get('/:slug/next-available', async (c) => {
+  const slug = c.req.param('slug');
+  const serviceId = c.req.query('service_id');
+  const staffId = c.req.query('staff_id');
+  if (!serviceId) return c.json({ error: 'service_id is required' }, 400);
+
+  const tenants = await db`SELECT * FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
+  const tenant = tenants[0];
+  if (!tenant) return c.json({ error: 'Store not found' }, 404);
+  const services = await db`SELECT * FROM services WHERE id = ${serviceId} AND tenant_id = ${tenant.id} LIMIT 1`;
+  const service = services[0];
+  if (!service) return c.json({ error: 'Service not found' }, 404);
+
+  const tz = (tenant.timezone as string) || 'America/New_York';
+  const today = formatInTimeZone(new Date(), tz, 'yyyy-MM-dd');
+  for (let i = 0; i < 21; i++) {
+    const date = format(addDays(parse(today, 'yyyy-MM-dd', new Date()), i), 'yyyy-MM-dd');
+    const r = await slotsForService({ tenant: tenant as never, service: service as never, date, staffId });
+    if (r.reason === 'blocked') continue;
+    if (r.slots.length > 0) {
+      c.header('Cache-Control', 'public, max-age=30');
+      return c.json({ next: { date, start: r.slots[0].start, end: r.slots[0].end }, timezone: tz });
+    }
+  }
+  return c.json({ next: null, timezone: tz });
 });
 
 // GET /api/public/:slug/availability?service_id=&date=YYYY-MM-DD&staff_id=
@@ -414,34 +446,17 @@ app.post('/:slug/bookings', async (c) => {
     return c.json({ booking: retry[0] }, 201);
   }
 
-  // Check against the same "resource" the availability endpoint offers: the chosen staff member, else the
-  // first active one, else (a business with no staff) the whole business — so nobody can double-book.
-  let conflictStaffId: string | null = d.staff_id ?? null;
-  if (!conflictStaffId) {
-    const first = await db`SELECT id FROM staff WHERE tenant_id = ${tenant.id} AND is_active = TRUE ORDER BY created_at ASC LIMIT 1`;
-    conflictStaffId = (first[0]?.id as string | undefined) ?? null;
-  }
-  const conflicts = conflictStaffId
-    ? await db`
-        SELECT id FROM bookings
-        WHERE tenant_id = ${tenant.id}
-        AND (staff_id = ${conflictStaffId} OR staff_id IS NULL)
-        AND ${holdsTime()}
-        AND NOT (status = 'awaiting_payment' AND lower(customer_email) = lower(${d.customer_email}))
-        AND start_time < ${d.end_time}
-        AND end_time > ${d.start_time}
-        LIMIT 1`
-    : await db`
-        SELECT id FROM bookings
-        WHERE tenant_id = ${tenant.id}
-        AND ${holdsTime()}
-        AND NOT (status = 'awaiting_payment' AND lower(customer_email) = lower(${d.customer_email}))
-        AND start_time < ${d.end_time}
-        AND end_time > ${d.start_time}
-        LIMIT 1`;
-  if (conflicts[0]) {
-    return c.json({ error: 'This time slot is no longer available' }, 409);
-  }
+  // The time must really be on offer (inside the chosen person's hours, not in the past, still free). "Any available"
+  // is resolved to a real person now, so two customers can't both get the same barber.
+  const pick = await pickStaffForSlot({
+    tenant: tenant as never,
+    service: service as never,
+    startISO: d.start_time,
+    staffId: d.staff_id ?? null,
+  });
+  if (!pick) return c.json({ error: 'This time slot is no longer available' }, 409);
+  // The length of the appointment is the service's, whatever the browser sent
+  d.end_time = new Date(new Date(d.start_time).getTime() + (service.duration_minutes as number) * 60_000).toISOString();
 
   const customers = await db`
     INSERT INTO customers (tenant_id, email, first_name, last_name, phone)
@@ -464,7 +479,7 @@ app.post('/:slug/bookings', async (c) => {
       tenant_id, service_id, staff_id, customer_id, customer_name, customer_email,
       customer_phone, start_time, end_time, notes, status, amount_cents, platform_fee_cents
     ) VALUES (
-      ${tenant.id}, ${d.service_id}, ${d.staff_id ?? null}, ${customer.id},
+      ${tenant.id}, ${d.service_id}, ${pick.staffId}, ${customer.id},
       ${d.customer_name}, ${d.customer_email}, ${d.customer_phone ?? null},
       ${d.start_time}, ${d.end_time}, ${d.notes ?? null}, ${status}, ${amountCents}, ${platformFee}
     )

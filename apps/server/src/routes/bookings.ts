@@ -45,7 +45,7 @@ app.get('/availability', async (c) => {
   const services = await db`SELECT * FROM services WHERE id = ${serviceId} AND tenant_id = ${tenant.id} LIMIT 1`;
   if (!services[0]) return c.json({ error: 'Service not found' }, 404);
 
-  const result = await slotsForService({ tenant: tenant as never, service: services[0] as never, date, staffId });
+  const result = await slotsForService({ tenant: { ...(tenant as object), booking_notice_minutes: 0 } as never, service: services[0] as never, date, staffId });
   return c.json({ slots: result.slots, staffId: result.staffId, timezone: result.timezone, reason: result.reason, city_label: result.cityLabel, blocked_label: result.blockedLabel });
 });
 

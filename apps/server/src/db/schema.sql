@@ -529,3 +529,9 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS previous_clerk_user_id TEXT;
 
 -- What kind of business the owner picked in the setup wizard (drives suggested theme, starter services, Stripe category)
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS business_type TEXT;
+
+-- Booking workflow: how soon a customer can book, how late they may cancel/reschedule on their own, and the private link they use
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS booking_notice_minutes INTEGER DEFAULT 60;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS cancel_window_hours INTEGER DEFAULT 24;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS manage_token TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_manage_token ON bookings(manage_token) WHERE manage_token IS NOT NULL;
