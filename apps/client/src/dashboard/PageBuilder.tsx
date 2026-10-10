@@ -51,7 +51,7 @@ interface ThemeOption {
   premium?: boolean;
 }
 
-type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft' | 'lens';
+type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft' | 'lens' | 'barber' | 'studio' | 'ink';
 
 const THEMES: ThemeOption[] = [
   { id: 'editorial',   name: 'Editorial',   description: 'Dark luxury, serif headlines',     colors: ['#1a1a1a', '#d4a96a', '#ffffff'] },
@@ -67,6 +67,9 @@ const THEMES: ThemeOption[] = [
   { id: 'neon-tokyo',  name: 'Neon Tokyo',  description: 'Cyberpunk neon energy',            colors: ['#050510', '#ff2d9b', '#0a0a20'], premium: true },
   { id: 'craft',       name: 'Craft',       description: 'Handmade paper textures',          colors: ['#f5f0e8', '#5c4a32', '#ece5d8'], premium: true },
   { id: 'lens',        name: 'Lens',        description: 'Photographers — sessions & prints', colors: ['#0c0c0c', '#c8a96e', '#f0ede8'] },
+  { id: 'barber',      name: 'Barber',      description: 'Barbershops — bookings first',      colors: ['#0c0c0d', '#d4a73a', '#f4f4f5'] },
+  { id: 'studio',      name: 'Studio',      description: 'Hair, nails, lashes, spa',          colors: ['#faf6f2', '#b5838d', '#2c2420'] },
+  { id: 'ink',         name: 'Ink',         description: 'Tattoo & braids — work first',      colors: ['#080808', '#e63946', '#fafafa'] },
 ];
 
 

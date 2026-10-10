@@ -391,9 +391,9 @@ ALTER TABLE domain_purchase_requests ADD COLUMN IF NOT EXISTS stripe_session_id 
 ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
 UPDATE tenants
   SET theme_id = 'editorial'
-  WHERE theme_id NOT IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens');
+  WHERE theme_id NOT IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens','barber','studio','ink');
 ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
-  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens'));
+  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens','barber','studio','ink'));
 
 -- Email list opt-in
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS email_optin BOOLEAN DEFAULT FALSE;
@@ -444,9 +444,9 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS page_content JSONB DEFAULT '{}';
 ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
 UPDATE tenants
   SET theme_id = 'editorial'
-  WHERE theme_id NOT IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens');
+  WHERE theme_id NOT IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens','barber','studio','ink');
 ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
-  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens'));
+  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens','barber','studio','ink'));
 
 -- Custom domain hardening
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_domain_status TEXT;
@@ -535,3 +535,8 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS booking_notice_minutes INTEGER DEFA
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS cancel_window_hours INTEGER DEFAULT 24;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS manage_token TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_manage_token ON bookings(manage_token) WHERE manage_token IS NOT NULL;
+
+-- Booking-first themes for barbers, salons and tattoo artists
+ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
+ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
+  CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens','barber','studio','ink'));

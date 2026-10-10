@@ -16,6 +16,9 @@ const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProp
   'neon-tokyo': () => import('./neon-tokyo/Storefront'),
   craft: () => import('./craft/Storefront'),
   lens: () => import('./lens/Storefront'),
+  barber: () => import('./barber/Storefront'),
+  studio: () => import('./studio/Storefront'),
+  ink: () => import('./ink/Storefront'),
 };
 
 interface ThemeRendererProps extends ThemeProps {

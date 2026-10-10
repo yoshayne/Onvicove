@@ -76,6 +76,18 @@ const MINI_STYLES: Record<ThemeId, {
     bg: '#0d0d0d', nav: '#0d0d0d', hero: '#0d0d0d', accent: '#c8b8a2',
     text: '#f0ede8', subtext: 'rgba(240,237,232,0.5)', headingFont: 'Georgia, serif', bodyFont: 'sans-serif', navText: '#f0ede8',
   },
+  barber: {
+    bg: '#0c0c0d', nav: '#0c0c0d', hero: '#161618', accent: '#d4a73a',
+    text: '#f4f4f5', subtext: 'rgba(244,244,245,0.6)', headingFont: 'Oswald, sans-serif', bodyFont: 'sans-serif', navText: '#f4f4f5',
+  },
+  studio: {
+    bg: '#faf6f2', nav: '#faf6f2', hero: '#f4e4e1', accent: '#b5838d',
+    text: '#2c2420', subtext: 'rgba(44,36,32,0.6)', headingFont: 'Georgia, serif', bodyFont: 'sans-serif', navText: '#2c2420',
+  },
+  ink: {
+    bg: '#080808', nav: '#080808', hero: '#121212', accent: '#e63946',
+    text: '#fafafa', subtext: 'rgba(250,250,250,0.6)', headingFont: 'Bebas Neue, sans-serif', bodyFont: 'sans-serif', navText: '#fafafa',
+  },
 };
 
 // Real seeded images per theme — hero + 3 product thumbnails
@@ -196,6 +208,21 @@ const THEME_IMAGES: Record<ThemeId, { hero: string; products: [string, string, s
       'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=120&q=60',
     ],
     heroLabel: 'The world, unfiltered.', p1: 'Fine Art Print', p2: 'Photo Zine', p3: 'Monograph',
+  },
+  barber: {
+    hero: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231c1c1f%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%232b2211%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E",
+    products: ["data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231c1c1f%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%232b2211%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231c1c1f%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%232b2211%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231c1c1f%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%232b2211%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E"],
+    heroLabel: 'Book your chair.', p1: 'Haircut', p2: 'Beard trim', p3: 'Cut & beard',
+  },
+  studio: {
+    hero: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%23f4e4e1%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23e8d9d0%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E",
+    products: ["data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%23f4e4e1%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23e8d9d0%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%23f4e4e1%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23e8d9d0%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%23f4e4e1%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23e8d9d0%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E"],
+    heroLabel: 'Treat yourself.', p1: 'Manicure', p2: 'Lashes', p3: 'Facial',
+  },
+  ink: {
+    hero: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E",
+    products: ["data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E"],
+    heroLabel: 'Custom work.', p1: 'Consultation', p2: 'Small piece', p3: 'Half-day',
   },
 };
 
@@ -348,6 +375,33 @@ const THEME_MOCK_DATA: Record<ThemeId, { companyName: string; tagline: string; i
       { id: 's2', name: 'Custom Scent Blending', description: 'Create your signature fragrance.', priceCents: 9500, durationMinutes: 90 },
     ],
   },
+  barber: {
+    companyName: 'Fade Factory', tagline: 'Sharp cuts. Clean lines.', industry: 'Barbershop',
+    products: [],
+    services: [
+      { id: 's1', name: 'Haircut', priceCents: 3000, durationMinutes: 30, category: 'Haircuts' },
+      { id: 's2', name: 'Beard trim', priceCents: 1500, durationMinutes: 20, category: 'Beard' },
+      { id: 's3', name: 'Cut & beard', priceCents: 4000, durationMinutes: 45, category: 'Combos' },
+    ],
+  },
+  studio: {
+    companyName: 'Rose Studio', tagline: 'Treat yourself.', industry: 'Beauty studio',
+    products: [],
+    services: [
+      { id: 's1', name: 'Manicure', priceCents: 3000, durationMinutes: 45, category: 'Nails' },
+      { id: 's2', name: 'Classic lashes', priceCents: 12000, durationMinutes: 120, category: 'Lashes' },
+      { id: 's3', name: 'Brow shape', priceCents: 3000, durationMinutes: 30, category: 'Brows' },
+    ],
+  },
+  ink: {
+    companyName: 'Black Lantern Tattoo', tagline: 'Custom work.', industry: 'Tattoo',
+    products: [],
+    services: [
+      { id: 's1', name: 'Consultation', priceCents: 0, durationMinutes: 30, category: 'Sessions' },
+      { id: 's2', name: 'Small piece', priceCents: 10000, durationMinutes: 60, category: 'Sessions' },
+      { id: 's3', name: 'Half-day session', priceCents: 40000, durationMinutes: 240, category: 'Sessions' },
+    ],
+  },
 };
 
 const themeLoaders: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
@@ -364,6 +418,9 @@ const themeLoaders: Record<ThemeId, () => Promise<{ default: ComponentType<Theme
   'neon-tokyo': () => import('../themes/neon-tokyo/Storefront'),
   craft: () => import('../themes/craft/Storefront'),
   lens: () => import('../themes/lens/Storefront'),
+  barber: () => import('../themes/barber/Storefront'),
+  studio: () => import('../themes/studio/Storefront'),
+  ink: () => import('../themes/ink/Storefront'),
 };
 
 function MiniMockup({ id }: { id: ThemeId }) {

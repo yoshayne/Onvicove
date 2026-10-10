@@ -111,6 +111,27 @@ const THEMES: ThemeOption[] = [
     colors: ['#0c0c0c', '#c8a96e', '#f0ede8'],
     hero: 'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?auto=format&fit=crop&w=600&q=70',
   },
+  {
+    id: 'barber',
+    name: 'Barber',
+    description: 'Barbershops: services and booking first',
+    colors: ['#0c0c0d', '#d4a73a', '#f4f4f5'],
+    hero: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231c1c1f%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%232b2211%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E",
+  },
+  {
+    id: 'studio',
+    name: 'Studio',
+    description: 'Hair, nails, lashes and spa',
+    colors: ['#faf6f2', '#b5838d', '#2c2420'],
+    hero: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%23f4e4e1%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23e8d9d0%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E",
+  },
+  {
+    id: 'ink',
+    name: 'Ink',
+    description: 'Tattoo and braids: your work first',
+    colors: ['#080808', '#e63946', '#fafafa'],
+    hero: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E",
+  },
 ];
 
 function ThemeCard({

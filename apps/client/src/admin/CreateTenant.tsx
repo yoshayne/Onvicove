@@ -20,6 +20,9 @@ const THEMES = [
   { id: 'neon-tokyo',label: 'Neon Tokyo',desc: 'Cyberpunk neon — tech, gaming, clubs',            accent: '#FF00FF' },
   { id: 'craft',     label: 'Craft',     desc: 'Handmade warmth — jewelry, ceramics, candles',   accent: '#8B7355' },
   { id: 'lens',      label: 'Lens',      desc: 'Photo-forward — photographers, creatives',        accent: '#2C3E50' },
+  { id: 'barber',    label: 'Barber',    desc: 'Booking-first, dark — barbershops',               accent: '#d4a73a' },
+  { id: 'studio',    label: 'Studio',    desc: 'Booking-first, soft — hair, nails, lashes, spa',  accent: '#b5838d' },
+  { id: 'ink',       label: 'Ink',       desc: 'Work-first, high contrast — tattoo, braids',      accent: '#e63946' },
 ];
 
 const INDUSTRIES = [

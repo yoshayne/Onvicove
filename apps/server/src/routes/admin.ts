@@ -684,7 +684,7 @@ const createTenantSchema = z.object({
   company_name: z.string().min(1).max(200),
   slug: z.string().min(1).max(80).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only'),
   mode: z.enum(['store', 'book', 'both']).default('both'),
-  theme_id: z.enum(['editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens']).default('editorial'),
+  theme_id: z.enum(['editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens','barber','studio','ink']).default('editorial'),
   brand_color: z.string().optional(),
   city: z.string().optional(),
   industry: z.string().optional(),
