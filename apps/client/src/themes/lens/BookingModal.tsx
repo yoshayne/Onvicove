@@ -36,16 +36,19 @@ export default function BookingModal({
   const canConfirm = Boolean(selectedDate && selectedSlot && name && email);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="bg-[#0d0d0d] border border-white/10 text-[#f0ede8] w-full max-w-3xl max-h-[90vh] overflow-y-auto font-['DM_Sans']">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4">
+      <div className="bg-[#0d0d0d] border border-white/10 text-[#f0ede8] w-full max-w-3xl max-h-[94dvh] overflow-y-auto font-['DM_Sans']">
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
-          <h2 className="font-['DM_Serif_Display'] text-2xl">{service.name}</h2>
+          <div>
+            <h2 className="font-['DM_Serif_Display'] text-2xl">{service.name}</h2>
+            <p className="mt-0.5 text-xs text-white/50">{service.durationMinutes} min · {formatPrice(service.priceCents)}</p>
+          </div>
           <button type="button" aria-label="Close" onClick={onClose} className="text-white/40 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 p-6">
+        <div className="grid md:grid-cols-2 gap-4 md:gap-6 p-4 md:p-6">
           <Calendar
             selectedDate={selectedDate}
             selectedSlot={selectedSlot}
@@ -55,8 +58,8 @@ export default function BookingModal({
             isDateClosed={isDateClosed}
           />
 
-          <div className="flex flex-col gap-5">
-            <div className="border border-white/10 p-4 bg-white/3">
+          <div className="flex flex-col gap-4 md:gap-5">
+            <div className="hidden md:block border border-white/10 p-4 bg-white/3">
               {service.description && (
                 <p className="text-sm text-white/60 mb-4 leading-relaxed">{service.description}</p>
               )}
@@ -97,6 +100,9 @@ export default function BookingModal({
               </div>
             )}
 
+            {!selectedSlot && <p className="text-center text-xs text-white/40">Pick a day and a time to continue.</p>}
+
+            {selectedSlot && (
             <form
               className="flex flex-col gap-4"
               onSubmit={(e) => { e.preventDefault(); if (canConfirm) onConfirm({ name, email, phone }); }}
@@ -126,6 +132,7 @@ export default function BookingModal({
                 Book Session
               </button>
             </form>
+            )}
           </div>
         </div>
       </div>
