@@ -18,7 +18,7 @@ export function slugify(text: string): string {
     .substring(0, 50);
 }
 
-export async function generateUniqueSlug(baseName: string): Promise<string> {
+export async function generateUniqueSlug(baseName: string, excludeTenantId?: string): Promise<string> {
   const base = slugify(baseName);
   if (!base) return `store-${Date.now()}`;
 
@@ -27,7 +27,7 @@ export async function generateUniqueSlug(baseName: string): Promise<string> {
 
   while (true) {
     const existing = await db`
-      SELECT id FROM tenants WHERE slug = ${slug} LIMIT 1
+      SELECT id FROM tenants WHERE slug = ${slug} AND id <> ${excludeTenantId ?? '00000000-0000-0000-0000-000000000000'} LIMIT 1
     `;
     if (existing.length === 0 && !RESERVED_SLUGS.has(slug)) return slug;
     slug = `${base}-${counter}`;

@@ -226,11 +226,11 @@ export default function Settings() {
             <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
               <span>URL:</span>
               <span className="font-mono">
+                <span>shopsuitedirect.com/</span>
                 {pendingSlug
                   ? <><span className="line-through text-slate-300">{tenant?.slug}</span>{' → '}<span className={slugAvailable === false ? 'text-red-500' : 'text-slate-700'}>{pendingSlug}</span></>
                   : <span className="text-slate-700">{tenant?.slug}</span>
                 }
-                <span>.shopsuitedirect.com</span>
               </span>
               {slugChecking && <Spinner size="sm" />}
               {pendingSlug && !slugChecking && slugAvailable === true && (

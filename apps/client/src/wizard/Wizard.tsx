@@ -306,7 +306,7 @@ export default function Wizard() {
           }}
           onGoToSite={(slug) => {
             reset();
-            window.open(`https://${slug}.shopsuitedirect.com`, '_blank', 'noopener');
+            window.open(`https://shopsuitedirect.com/${slug}`, '_blank', 'noopener');
           }}
           onGoToDashboard={() => {
             reset();

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { getOrFetchUser } from '../services/users';
 import { requireAuth } from '../middleware/clerk';
-import { generateUniqueSlug } from '../lib/slugify';
+import { slugify, generateUniqueSlug } from '../lib/slugify';
 import { checkItemLimit } from '../services/settings';
 import { hasAnyWindow } from '../services/businessHours';
 import { sendTenantWelcome, sendSiteLive, sendAdminNewSignup } from '../services/email';
@@ -30,6 +30,25 @@ app.get('/progress', async (c) => {
   return c.json(rows[0]);
 });
 
+/**
+ * Until the store is launched its address follows the business name. The draft is created on the first screen,
+ * before any name is typed, so without this every store kept the placeholder address "my-business".
+ */
+async function syncDraftIdentity(tenant: { id: string; slug: string; company_name: string; wizard_completed: boolean }, businessName: unknown) {
+  const name = typeof businessName === 'string' ? businessName.trim() : '';
+  if (!name || tenant.wizard_completed) return tenant.slug;
+  const base = slugify(name);
+  if (!base) return tenant.slug;
+  // Already right (the same name, or the same name with a number added to make it unique)
+  if (tenant.slug === base || new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-\\d+$`).test(tenant.slug)) {
+    if (tenant.company_name !== name) await db`UPDATE tenants SET company_name = ${name} WHERE id = ${tenant.id}`;
+    return tenant.slug;
+  }
+  const slug = await generateUniqueSlug(name, tenant.id);
+  await db`UPDATE tenants SET slug = ${slug}, company_name = ${name}, updated_at = NOW() WHERE id = ${tenant.id}`;
+  return slug;
+}
+
 const saveProgressSchema = z.object({
   wizard_step: z.number().int().min(0).optional(),
   wizard_data: z.record(z.unknown()),
@@ -46,18 +65,19 @@ app.post('/save', async (c) => {
   const { wizard_step, wizard_data } = parsed.data;
 
   const existing = await db`
-    SELECT id FROM tenants WHERE clerk_user_id = ${clerkUserId}
+    SELECT id, slug, company_name, wizard_completed FROM tenants WHERE clerk_user_id = ${clerkUserId}
     ORDER BY wizard_completed DESC, updated_at DESC LIMIT 1
   `;
 
   if (existing[0]) {
+    await syncDraftIdentity(existing[0] as never, wizard_data.businessName);
     const rows = await db`
       UPDATE tenants
       SET wizard_data = wizard_data || ${db.json(JSON.parse(JSON.stringify(wizard_data)))},
           wizard_step = COALESCE(${wizard_step ?? null}, wizard_step),
           updated_at = NOW()
       WHERE id = ${existing[0].id}
-      RETURNING wizard_step, wizard_data, wizard_completed
+      RETURNING wizard_step, wizard_data, wizard_completed, slug
     `;
     return c.json(rows[0]);
   }
@@ -68,7 +88,7 @@ app.post('/save', async (c) => {
   const rows = await db`
     INSERT INTO tenants (clerk_user_id, slug, company_name, wizard_step, wizard_data)
     VALUES (${clerkUserId}, ${slug}, ${companyName}, ${wizard_step ?? 0}, ${db.json(JSON.parse(JSON.stringify(wizard_data)))})
-    RETURNING wizard_step, wizard_data, wizard_completed
+    RETURNING wizard_step, wizard_data, wizard_completed, slug
   `;
   return c.json(rows[0], 201);
 });
@@ -85,6 +105,7 @@ app.post('/complete', async (c) => {
   if (!tenant) return c.json({ error: 'No wizard progress found' }, 404);
 
   const data = (tenant.wizard_data || {}) as Record<string, any>;
+  tenant.slug = await syncDraftIdentity(tenant as never, data.businessName);
 
   const planId = (data.plan || tenant.plan) as string;
   const productCount = Array.isArray(data.products) ? data.products.length : 0;
