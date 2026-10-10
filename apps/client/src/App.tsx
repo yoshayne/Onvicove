@@ -1,7 +1,9 @@
 import { lazy, Suspense, useEffect, Component, type ReactNode, type ErrorInfo } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { useApi } from './lib/api';
+import { useIsAdmin } from './lib/useIsAdmin';
 import Spinner from './components/shared/Spinner';
 import { ImpersonationProvider } from './contexts/ImpersonationContext';
 
@@ -66,6 +68,21 @@ const PayBalance = lazy(() => import('./storefront/PayBalance'));
 const ClaimPage = lazy(() => import('./storefront/ClaimPage'));
 
 const queryClient = new QueryClient();
+
+/** Platform admins without a store of their own never get pushed into store setup: they go to /admin. */
+function OnboardingGate({ children }: { children: ReactNode }) {
+  const api = useApi();
+  const { isAdmin, isLoading: checkingAdmin } = useIsAdmin();
+  const tenantQ = useQuery({
+    queryKey: ['tenant', 'me', 'self'],
+    queryFn: () => api.get<{ tenant: unknown }>('/tenants/me'),
+    retry: false,
+    enabled: isAdmin,
+  });
+  if (checkingAdmin || (isAdmin && tenantQ.isLoading)) return <PageFallback />;
+  if (isAdmin && tenantQ.isError) return <Navigate to="/admin" replace />;
+  return <>{children}</>;
+}
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
 
@@ -145,7 +162,9 @@ export default function App() {
                 element={
                   <>
                     <SignedIn>
-                      <Wizard />
+                      <OnboardingGate>
+                        <Wizard />
+                      </OnboardingGate>
                     </SignedIn>
                     <SignedOut>
                       <RedirectToSignIn />

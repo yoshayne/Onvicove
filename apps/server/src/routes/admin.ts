@@ -26,6 +26,9 @@ async function logAdminAction(c: { get: (k: string) => unknown }, action: string
   await recordAdminAction(c.get('adminEmail') as string, action, targetType, targetId, details);
 }
 
+// GET /api/admin/whoami — lets the sign-in flow send admins straight to the admin area
+app.get('/whoami', (c) => c.json({ admin: true, email: (c as unknown as { get: (k: string) => unknown }).get('adminEmail') }));
+
 // GET /api/admin/stats — platform-wide overview
 app.get('/stats', async (c) => {
   await refreshStripeStatuses();
@@ -74,7 +77,9 @@ app.get('/tenants', async (c) => {
 
   const conditions = [db`1=1`];
   if (search) {
-    conditions.push(db`(company_name ILIKE ${'%' + search + '%'} OR slug ILIKE ${'%' + search + '%'})`);
+    conditions.push(db`(company_name ILIKE ${'%' + search + '%'} OR slug ILIKE ${'%' + search + '%'}
+      OR EXISTS (SELECT 1 FROM users su WHERE su.clerk_user_id = t.clerk_user_id AND su.email ILIKE ${'%' + search + '%'})
+      OR t.page_content->>'contact.email' ILIKE ${'%' + search + '%'})`);
   }
   if (plan) conditions.push(db`plan = ${plan}`);
   if (status === 'active') conditions.push(db`is_active = TRUE`);
@@ -87,6 +92,8 @@ app.get('/tenants', async (c) => {
            t.stripe_onboarded, (t.stripe_account_id IS NOT NULL) AS stripe_started, t.stripe_subscription_status, t.industry, t.city, t.created_at,
            t.created_by_admin, t.admin_created_by,
            (t.clerk_user_id IS NULL) AS unclaimed,
+           (SELECT u.email FROM users u WHERE u.clerk_user_id = t.clerk_user_id LIMIT 1) AS owner_email,
+           NULLIF(TRIM(t.page_content->>'contact.email'), '') AS contact_email,
            (SELECT ti.invite_email FROM tenant_invites ti WHERE ti.tenant_id = t.id AND ti.claimed_at IS NULL AND ti.expires_at > NOW() ORDER BY ti.created_at DESC LIMIT 1) AS pending_invite_email
     FROM tenants t
     WHERE ${whereClause}
@@ -114,7 +121,24 @@ app.get('/tenants/:id', async (c) => {
       (SELECT COUNT(*) FROM customers WHERE tenant_id = ${id}) AS customers
   `;
 
-  return c.json({ tenant, counts });
+  // Who signed up (their login email) and the contact email shown on the store
+  const [owner] = await db`SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${tenant.clerk_user_id as string | null} LIMIT 1`;
+  const [invite] = await db`
+    SELECT invite_email FROM tenant_invites
+    WHERE tenant_id = ${id} AND claimed_at IS NULL AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1
+  `;
+  const contactEmail = ((tenant.page_content as Record<string, unknown> | null)?.['contact.email'] as string | undefined)?.trim() || null;
+
+  return c.json({
+    tenant: {
+      ...tenant,
+      owner_email: (owner?.email as string | undefined) ?? null,
+      owner_name: owner ? `${owner.first_name ?? ''} ${owner.last_name ?? ''}`.trim() || null : null,
+      contact_email: contactEmail,
+      pending_invite_email: (invite?.invite_email as string | undefined) ?? null,
+    },
+    counts,
+  });
 });
 
 const updateTenantSchema = z.object({

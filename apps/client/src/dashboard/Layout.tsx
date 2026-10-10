@@ -11,6 +11,7 @@ import {
 
 interface NavItem { to: string; label: string; icon: LucideIcon; end?: boolean; }
 import { useApi } from '../lib/api';
+import { useIsAdmin } from '../lib/useIsAdmin';
 import { useImpersonation } from '../contexts/ImpersonationContext';
 import ImpersonationBanner from './ImpersonationBanner';
 import type { Tenant } from '../types';
@@ -81,9 +82,14 @@ function LayoutInner() {
     retry: false,
   });
 
+  // No store yet: platform admins go straight to the admin area; everyone else starts setting up a store
+  const noStore = !!error && !impersonation;
+  const { isAdmin, isLoading: checkingAdmin } = useIsAdmin(noStore);
+
   useEffect(() => {
-    if (error && !impersonation) navigate('/onboarding', { replace: true });
-  }, [error, impersonation, navigate]);
+    if (!noStore || checkingAdmin) return;
+    navigate(isAdmin ? '/admin' : '/onboarding', { replace: true });
+  }, [noStore, checkingAdmin, isAdmin, navigate]);
 
   const tenant = data?.tenant;
   const isPublished = !!(tenant?.wizard_completed && tenant?.is_active);

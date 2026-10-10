@@ -21,6 +21,8 @@ interface AdminTenant {
   created_by_admin: boolean;
   unclaimed: boolean;
   pending_invite_email: string | null;
+  owner_email?: string | null;
+  contact_email?: string | null;
 }
 
 export default function Tenants() {
@@ -73,7 +75,7 @@ export default function Tenants() {
       <div className="flex flex-wrap gap-3">
         <input
           type="text"
-          placeholder="Search by name or slug"
+          placeholder="Search by name, slug or email"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -131,6 +133,14 @@ export default function Tenants() {
                       )}
                     </div>
                     <div className="text-xs text-slate-400">/{t.slug}</div>
+                    {(t.owner_email || t.contact_email || t.pending_invite_email) && (
+                      <div className="mt-0.5 text-xs text-slate-500">
+                        {t.owner_email ?? (t.pending_invite_email ? `invited: ${t.pending_invite_email}` : null)}
+                        {t.contact_email && t.contact_email.toLowerCase() !== (t.owner_email ?? '').toLowerCase() && (
+                          <span className="text-slate-400"> · contact: {t.contact_email}</span>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <Badge tone="default">{t.plan}</Badge>

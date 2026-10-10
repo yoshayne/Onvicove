@@ -89,6 +89,7 @@ export default function TenantDetail() {
   }
 
   const { tenant, counts } = data;
+  const owner = tenant as unknown as { owner_email?: string | null; owner_name?: string | null; contact_email?: string | null; pending_invite_email?: string | null };
 
   return (
     <div className="flex flex-col gap-6">
@@ -126,6 +127,27 @@ export default function TenantDetail() {
         <a href={`/${tenant.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:underline">
           /{tenant.slug} &#8599;
         </a>
+        <dl className="mt-3 grid gap-x-8 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
+          <dt className="text-slate-500">Sign-up email</dt>
+          <dd className="text-slate-900">
+            {owner.owner_email ? (
+              <a href={`mailto:${owner.owner_email}`} className="hover:underline">{owner.owner_email}</a>
+            ) : owner.pending_invite_email ? (
+              <span className="text-slate-600">Not claimed yet (invited {owner.pending_invite_email})</span>
+            ) : (
+              <span className="text-slate-400">none</span>
+            )}
+            {owner.owner_name && <span className="text-slate-500"> · {owner.owner_name}</span>}
+          </dd>
+          <dt className="text-slate-500">Contact email</dt>
+          <dd className="text-slate-900">
+            {owner.contact_email ? (
+              <a href={`mailto:${owner.contact_email}`} className="hover:underline">{owner.contact_email}</a>
+            ) : (
+              <span className="text-slate-400">not set on the store</span>
+            )}
+          </dd>
+        </dl>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">

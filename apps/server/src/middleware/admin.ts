@@ -10,6 +10,11 @@ function adminEmails(): string[] {
     .filter(Boolean);
 }
 
+// Remember who passed the admin check for a few minutes: the admin screens fire several requests at once and each
+// one used to ask Clerk again.
+const adminCache = new Map<string, { email: string; expires: number }>();
+const ADMIN_CACHE_MS = 5 * 60 * 1000;
+
 export async function requireAdmin(c: Context, next: Next) {
   const clerkUserId = c.get('clerkUserId') as string;
   const allowed = adminEmails();
@@ -18,13 +23,22 @@ export async function requireAdmin(c: Context, next: Next) {
     return c.json({ error: 'Admin access is not configured' }, 403);
   }
 
+  const cached = adminCache.get(clerkUserId);
+  if (cached && cached.expires > Date.now() && allowed.includes(cached.email)) {
+    c.set('adminEmail', cached.email);
+    await next();
+    return;
+  }
+
   try {
     const user = await clerkClient.users.getUser(clerkUserId);
     const emails = user.emailAddresses.map((e) => e.emailAddress.toLowerCase());
     if (!emails.some((e) => allowed.includes(e))) {
       return c.json({ error: 'Forbidden' }, 403);
     }
-    c.set('adminEmail', emails.find((e) => allowed.includes(e)));
+    const adminEmail = emails.find((e) => allowed.includes(e))!;
+    adminCache.set(clerkUserId, { email: adminEmail, expires: Date.now() + ADMIN_CACHE_MS });
+    c.set('adminEmail', adminEmail);
     await next();
   } catch (err) {
     console.error('Admin check failed:', err);
