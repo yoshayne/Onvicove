@@ -405,7 +405,7 @@ interface ServiceCatalogProps {
   onBook: (s: ServiceData) => void;
 }
 
-export function ServiceCatalog({
+function ServiceCatalogFlat({
   services, layout, currency, paymentsEnabled, accentColor, textColor, surfaceColor,
   slug = '', allowToggle = true, onBook,
 }: ServiceCatalogProps) {
@@ -585,6 +585,43 @@ function ServiceCard({ service, currency, paymentsEnabled, accentColor, textColo
           {paymentsEnabled ? 'Book Now' : 'Coming Soon'}
         </button>
       </div>
+    </div>
+  );
+}
+
+
+/**
+ * The services list, grouped under category headings (Haircuts, Color, Beard...) when the owner has set categories.
+ * Without categories, or in the calendar-first layout, it's the plain list.
+ */
+export function ServiceCatalog(props: ServiceCatalogProps) {
+  const { services, layout, textColor } = props;
+  const named = services.some((sv) => sv.category && sv.category.trim());
+  if (!named || layout === 'calendar-first') return <ServiceCatalogFlat {...props} />;
+
+  const order: string[] = [];
+  const byCat = new Map<string, ServiceData[]>();
+  for (const sv of services) {
+    const key = sv.category?.trim() || '';
+    if (!byCat.has(key)) {
+      byCat.set(key, []);
+      order.push(key);
+    }
+    byCat.get(key)!.push(sv);
+  }
+  // Uncategorized services go last
+  const keys = [...order.filter((k) => k !== ''), ...order.filter((k) => k === '')];
+
+  return (
+    <div className="flex flex-col gap-10">
+      {keys.map((key) => (
+        <section key={key || 'other'}>
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-widest" style={{ color: textColor, opacity: 0.65 }}>
+            {key || 'More services'}
+          </h3>
+          <ServiceCatalogFlat {...props} allowToggle={false} services={byCat.get(key)!} />
+        </section>
+      ))}
     </div>
   );
 }

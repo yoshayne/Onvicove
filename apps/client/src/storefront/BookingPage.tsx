@@ -12,6 +12,7 @@ import type { ThemeData, ServiceData, StaffData } from '../themes/types';
 
 // Minimal inline booking modal import — reuse the minimal theme's
 import BookingModal from '../themes/minimal/BookingModal';
+import { staffForService } from '../themes/shared/bookingFlow';
 
 function mapTenant(tenant: Tenant): ThemeData {
   const pc = tenant.page_content ?? {};
@@ -139,7 +140,7 @@ function BookingPageInner({ theme, services, staff, accent, fontBody, plan }: {
     selectedDate, selectedSlot, availableSlots, bookingCityLabel,
     selectBookingDate, selectBookingSlot, bookingStatus, bookingError,
     confirmBooking, confirmBookingPayment, cancelBookingPayment, dismissBookingStatus,
-    refreshSlots, slotsRefreshing,
+    refreshSlots, slotsRefreshing, selectedStaffId, setSelectedStaffId,
     bookingClientSecret, bookingAmountCents,
   } = useStorefrontCommerce(theme.slug);
 
@@ -214,6 +215,9 @@ function BookingPageInner({ theme, services, staff, accent, fontBody, plan }: {
         onConfirm={confirmBooking}
         onRefreshSlots={refreshSlots}
         slotsRefreshing={slotsRefreshing}
+        staff={staffForService(staff, bookingService)}
+        selectedStaffId={selectedStaffId}
+        onSelectStaff={setSelectedStaffId}
       />
 
       <BookingStatusOverlay

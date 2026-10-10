@@ -280,6 +280,14 @@ interface BookingEmailData {
   companyName: string;
   tenantId?: string;
   bookingId?: string;
+  /** Private link to reschedule or cancel */
+  manageUrl?: string;
+  cancelWindowHours?: number;
+}
+
+function manageBlock(data: BookingEmailData): string {
+  if (!data.manageUrl) return '';
+  return `<p style="font-size:14px;color:#475569">Need to change plans? You can reschedule or cancel${data.cancelWindowHours ? ` up to ${data.cancelWindowHours} hours before your appointment` : ''}.</p>${btn('Reschedule or cancel', data.manageUrl)}`;
 }
 
 interface OrderEmailData {
@@ -302,6 +310,7 @@ export async function sendBookingConfirmation(data: BookingEmailData): Promise<v
       <p><strong>Start:</strong> ${data.startTime}</p>
       <p><strong>End:</strong> ${data.endTime}</p>
       <p>Thank you — we look forward to seeing you!</p>
+      ${manageBlock(data)}
     `),
   }, data.tenantId ? { tenantId: data.tenantId, type: 'booking_confirmation', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
@@ -316,6 +325,7 @@ export async function sendBookingReminder(data: BookingEmailData): Promise<void>
       <p><strong>Start:</strong> ${data.startTime}</p>
       <p><strong>End:</strong> ${data.endTime}</p>
       <p>See you soon!</p>
+      ${manageBlock(data)}
     `),
   }, data.tenantId ? { tenantId: data.tenantId, type: 'booking_reminder', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
@@ -640,6 +650,28 @@ export async function sendTenantNewBooking(data: {
       <p><strong>Start:</strong> ${data.startTime}</p>
       <p><strong>End:</strong> ${data.endTime}</p>
       ${btn('View booking', data.dashboardUrl)}
+    `),
+  });
+}
+
+export async function sendTenantBookingRescheduled(data: {
+  tenantEmail: string;
+  companyName: string;
+  serviceName: string;
+  customerName: string;
+  customerEmail: string;
+  oldStartTime: string;
+  newStartTime: string;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.tenantEmail, name: data.companyName }],
+    subject: `Booking moved — ${data.serviceName}`,
+    htmlContent: wrap('A customer rescheduled', `
+      <p>A customer moved their appointment on <strong>${data.companyName}</strong>.</p>
+      <p><strong>Service:</strong> ${data.serviceName}</p>
+      <p><strong>Customer:</strong> ${data.customerName} (${data.customerEmail})</p>
+      <p><strong>Was:</strong> ${data.oldStartTime}</p>
+      <p><strong>Now:</strong> ${data.newStartTime}</p>
     `),
   });
 }

@@ -9,6 +9,8 @@ import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { addDays, format, parse } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { slotsForService, holdsTime, pickStaffForSlot } from '../services/slots';
+import { newManageToken, manageUrlFor } from '../services/bookingManage';
+import { formatBookingTime } from '../lib/time';
 import { CHARGE_MODEL } from '../services/chargeModel';
 import { computePlatformFee, createBookingPaymentIntent, usableStripeIds } from '../services/stripe';
 import {
@@ -16,6 +18,7 @@ import {
   sendSubscriberWelcome, sendTenantNewSubscriber,
   sendOrderConfirmation, sendTenantNewOrder,
   sendBookingConfirmation, sendBookingAwaitingPayment, sendTenantNewBooking,
+  sendBookingCancelled, sendTenantBookingCancelled, sendTenantBookingRescheduled,
 } from '../services/email';
 
 const app = new Hono();
@@ -232,11 +235,20 @@ app.get('/:slug/availability', async (c) => {
   const service = services[0];
   if (!service) return c.json({ error: 'Service not found' }, 404);
 
+  // A customer moving their own booking: its current time must not count as taken
+  const manageToken = c.req.query('manage_token');
+  let excludeBookingId: string | null = null;
+  if (manageToken) {
+    const own = await db`SELECT id FROM bookings WHERE manage_token = ${manageToken} AND tenant_id = ${tenant.id} LIMIT 1`;
+    excludeBookingId = (own[0]?.id as string | undefined) ?? null;
+  }
+
   const result = await slotsForService({
     tenant: tenant as never,
     service: service as never,
     date,
     staffId,
+    excludeBookingId,
   });
 
   return c.json({ slots: result.slots, staff_id: result.staffId, reason: result.reason, city_label: result.cityLabel });
@@ -477,18 +489,19 @@ app.post('/:slug/bookings', async (c) => {
   const rows = await db`
     INSERT INTO bookings (
       tenant_id, service_id, staff_id, customer_id, customer_name, customer_email,
-      customer_phone, start_time, end_time, notes, status, amount_cents, platform_fee_cents
+      customer_phone, start_time, end_time, notes, status, amount_cents, platform_fee_cents, manage_token
     ) VALUES (
       ${tenant.id}, ${d.service_id}, ${pick.staffId}, ${customer.id},
       ${d.customer_name}, ${d.customer_email}, ${d.customer_phone ?? null},
-      ${d.start_time}, ${d.end_time}, ${d.notes ?? null}, ${status}, ${amountCents}, ${platformFee}
+      ${d.start_time}, ${d.end_time}, ${d.notes ?? null}, ${status}, ${amountCents}, ${platformFee}, ${newManageToken()}
     )
     RETURNING *
   `;
 
   const booking = rows[0];
-  const startFmt = new Date(d.start_time).toLocaleString();
-  const endFmt = new Date(d.end_time).toLocaleString();
+  const startFmt = formatBookingTime(d.start_time, tenant.timezone as string);
+  const endFmt = formatBookingTime(d.end_time, tenant.timezone as string);
+  const manageUrl = await manageUrlFor(tenant, booking.id as string);
   const baseUrl = getBaseUrl();
 
   // Fire-and-forget post-booking emails
@@ -502,6 +515,8 @@ app.post('/:slug/bookings', async (c) => {
           startTime: startFmt,
           endTime: endFmt,
           companyName: tenant.company_name as string,
+          manageUrl,
+          cancelWindowHours: (tenant.cancel_window_hours as number | null) ?? 24,
         }).catch(() => {})
       : Promise.resolve(),
     // Customer: awaiting payment — prompt them to pay
@@ -746,6 +761,159 @@ app.post('/:slug/custom-order', async (c) => {
   }).catch(() => {});
 
   return c.json({ success: true });
+});
+
+// ── Customer self-service: reschedule or cancel from the link in their email ─────────────────────────────
+
+async function manageContext(token: string) {
+  const rows = await db`
+    SELECT b.*, s.name AS service_name, s.duration_minutes, s.buffer_minutes, st.name AS staff_name,
+           t.company_name, t.slug, t.timezone, t.currency, t.cancel_window_hours, t.booking_notice_minutes,
+           t.id AS tenant_row_id, t.clerk_user_id AS tenant_owner
+    FROM bookings b
+    JOIN services s ON s.id = b.service_id
+    JOIN tenants t ON t.id = b.tenant_id
+    LEFT JOIN staff st ON st.id = b.staff_id
+    WHERE b.manage_token = ${token} LIMIT 1
+  `;
+  const b = rows[0];
+  if (!b) return null;
+  const windowHours = (b.cancel_window_hours as number | null) ?? 24;
+  const msUntil = new Date(b.start_time as string).getTime() - Date.now();
+  const live = ['confirmed', 'pending', 'awaiting_payment'].includes(b.status as string);
+  return {
+    b,
+    windowHours,
+    canChange: live && msUntil >= windowHours * 3600_000,
+    changeDeadline: new Date(new Date(b.start_time as string).getTime() - windowHours * 3600_000).toISOString(),
+    live,
+  };
+}
+
+// GET /api/public/bookings/manage/:token
+app.get('/bookings/manage/:token', async (c) => {
+  const ctx = await manageContext(c.req.param('token'));
+  if (!ctx) return c.json({ error: 'This link is not valid' }, 404);
+  const { b } = ctx;
+  return c.json({
+    booking: {
+      id: b.id,
+      status: b.status,
+      service_id: b.service_id,
+      service_name: b.service_name,
+      staff_id: b.staff_id,
+      staff_name: b.staff_name,
+      start_time: b.start_time,
+      end_time: b.end_time,
+      customer_name: b.customer_name,
+      deposit_paid_cents: b.deposit_paid_cents ?? 0,
+      amount_cents: b.amount_cents ?? 0,
+    },
+    business: { name: b.company_name, slug: b.slug, timezone: b.timezone, currency: b.currency },
+    can_change: ctx.canChange,
+    cancel_window_hours: ctx.windowHours,
+    change_deadline: ctx.changeDeadline,
+  });
+});
+
+async function ownerEmail(clerkUserId: unknown): Promise<string | null> {
+  if (!clerkUserId) return null;
+  const rows = await db`SELECT email FROM users WHERE clerk_user_id = ${clerkUserId as string} LIMIT 1`;
+  return (rows[0]?.email as string | undefined) ?? null;
+}
+
+// POST /api/public/bookings/manage/:token/cancel
+app.post('/bookings/manage/:token/cancel', async (c) => {
+  const ctx = await manageContext(c.req.param('token'));
+  if (!ctx) return c.json({ error: 'This link is not valid' }, 404);
+  const { b } = ctx;
+  if (!ctx.live) return c.json({ error: 'This appointment is already cancelled or finished.' }, 409);
+  if (!ctx.canChange) {
+    return c.json({ error: `Appointments can be cancelled up to ${ctx.windowHours} hours before. Please contact ${b.company_name} directly.` }, 403);
+  }
+  await db`UPDATE bookings SET status = 'cancelled', internal_notes = COALESCE(internal_notes || E'\n', '') || 'Cancelled by the customer', updated_at = NOW() WHERE id = ${b.id}`;
+
+  const when = formatBookingTime(b.start_time as string, b.timezone as string);
+  sendBookingCancelled({
+    toEmail: b.customer_email as string,
+    toName: b.customer_name as string,
+    serviceName: b.service_name as string,
+    startTime: when,
+    endTime: formatBookingTime(b.end_time as string, b.timezone as string),
+    companyName: b.company_name as string,
+  }).catch(() => {});
+  const owner = await ownerEmail(b.tenant_owner);
+  if (owner) {
+    sendTenantBookingCancelled({
+      tenantEmail: owner,
+      companyName: b.company_name as string,
+      serviceName: b.service_name as string,
+      customerName: b.customer_name as string,
+      customerEmail: b.customer_email as string,
+      startTime: when,
+    }).catch(() => {});
+  }
+  // Deposits are not refunded automatically: that is the business's call
+  return c.json({ cancelled: true, deposit_paid_cents: b.deposit_paid_cents ?? 0 });
+});
+
+const rescheduleSchema = z.object({ start_time: z.string().datetime() });
+
+// POST /api/public/bookings/manage/:token/reschedule
+app.post('/bookings/manage/:token/reschedule', async (c) => {
+  const ctx = await manageContext(c.req.param('token'));
+  if (!ctx) return c.json({ error: 'This link is not valid' }, 404);
+  const { b } = ctx;
+  const parsed = rescheduleSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Pick a new time' }, 400);
+  if (!ctx.live) return c.json({ error: 'This appointment is already cancelled or finished.' }, 409);
+  if (!ctx.canChange) {
+    return c.json({ error: `Appointments can be changed up to ${ctx.windowHours} hours before. Please contact ${b.company_name} directly.` }, 403);
+  }
+
+  const tenantRows = await db`SELECT * FROM tenants WHERE id = ${b.tenant_id} LIMIT 1`;
+  const pick = await pickStaffForSlot({
+    tenant: tenantRows[0] as never,
+    service: { id: b.service_id as string, duration_minutes: b.duration_minutes as number, buffer_minutes: b.buffer_minutes as number | null },
+    startISO: parsed.data.start_time,
+    staffId: (b.staff_id as string | null) ?? null,
+    excludeBookingId: b.id as string,
+  });
+  if (!pick) return c.json({ error: 'That time is no longer available. Please pick another.' }, 409);
+
+  const newEnd = new Date(new Date(parsed.data.start_time).getTime() + (b.duration_minutes as number) * 60_000).toISOString();
+  await db`
+    UPDATE bookings
+    SET start_time = ${parsed.data.start_time}, end_time = ${newEnd}, staff_id = ${pick.staffId}, reminder_sent = FALSE, updated_at = NOW()
+    WHERE id = ${b.id}
+  `;
+
+  const oldWhen = formatBookingTime(b.start_time as string, b.timezone as string);
+  const newWhen = formatBookingTime(parsed.data.start_time, b.timezone as string);
+  const manageUrl = await manageUrlFor(tenantRows[0], b.id as string);
+  sendBookingConfirmation({
+    toEmail: b.customer_email as string,
+    toName: b.customer_name as string,
+    serviceName: b.service_name as string,
+    startTime: newWhen,
+    endTime: formatBookingTime(newEnd, b.timezone as string),
+    companyName: b.company_name as string,
+    manageUrl,
+    cancelWindowHours: ctx.windowHours,
+  }).catch(() => {});
+  const owner = await ownerEmail(b.tenant_owner);
+  if (owner) {
+    sendTenantBookingRescheduled({
+      tenantEmail: owner,
+      companyName: b.company_name as string,
+      serviceName: b.service_name as string,
+      customerName: b.customer_name as string,
+      customerEmail: b.customer_email as string,
+      oldStartTime: oldWhen,
+      newStartTime: newWhen,
+    }).catch(() => {});
+  }
+  return c.json({ rescheduled: true, start_time: parsed.data.start_time, end_time: newEnd });
 });
 
 export default app;

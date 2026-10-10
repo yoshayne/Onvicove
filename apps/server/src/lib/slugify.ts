@@ -2,7 +2,7 @@ import { db } from '../db/client';
 
 // Slugs that would collide with app routes, static files or platform subdomains
 export const RESERVED_SLUGS = new Set([
-  'api', 'app', 'admin', 'dashboard', 'sign-in', 'sign-up', 'onboarding', 'claim', 'pay', 'guide', 'store',
+  'api', 'app', 'admin', 'dashboard', 'sign-in', 'sign-up', 'onboarding', 'claim', 'pay', 'manage', 'guide', 'store',
   'assets', 'health', 'www', 'mail', 'smtp', 'ftp', 'staging', 'dev', 'test', 'status', 'cdn', 'static',
   'robots.txt', 'sitemap.xml', 'favicon.svg', 'checkout',
 ]);

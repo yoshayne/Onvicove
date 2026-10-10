@@ -1,6 +1,7 @@
 // Lens theme — photo-forward dark storefront for photographers & creatives
 // Fonts: DM Serif Display (headings) + DM Sans (body) — load via index.html
 import { useState } from 'react';
+import { staffForService } from '../shared/bookingFlow';
 import { ShoppingCart, Menu, X as XIcon } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import { formatPrice } from '../types';
@@ -447,7 +448,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
-        staff={displayStaff}
+        staff={staffForService(displayStaff, bookingService)}
         selectedStaffId={selectedStaffId}
         onSelectStaff={setSelectedStaffId}
         isDateClosed={isDateClosed}

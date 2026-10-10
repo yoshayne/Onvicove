@@ -31,6 +31,7 @@ interface StaffFormState {
   is_active: boolean;
   availability: WeeklyAvailability;
   avatar_key: string | null;
+  service_ids: string[];
 }
 
 const emptyForm: StaffFormState = {
@@ -41,6 +42,7 @@ const emptyForm: StaffFormState = {
   is_active: true,
   availability: DEFAULT_AVAILABILITY,
   avatar_key: null,
+  service_ids: [],
 };
 
 export default function StaffPage() {
@@ -50,6 +52,11 @@ export default function StaffPage() {
   const [editing, setEditing] = useState<Staff | null>(null);
   const [form, setForm] = useState<StaffFormState>(emptyForm);
   const [uploading, setUploading] = useState(false);
+
+  const servicesQ = useQuery({
+    queryKey: ['services'],
+    queryFn: () => api.get<{ services: { id: string; name: string; category: string | null }[] }>('/services'),
+  });
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['staff'],
@@ -94,6 +101,7 @@ export default function StaffPage() {
       is_active: staff.is_active,
       availability: { ...EMPTY_DAY, ...staff.availability },
       avatar_key: staff.avatar_key,
+      service_ids: (staff as unknown as { service_ids?: string[] }).service_ids ?? [],
     });
     setModalOpen(true);
   }
@@ -118,7 +126,7 @@ export default function StaffPage() {
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const body: Partial<Staff> = {
+    const body = {
       name: form.name,
       email: form.email || null,
       phone: form.phone || null,
@@ -126,7 +134,8 @@ export default function StaffPage() {
       is_active: form.is_active,
       availability: form.availability,
       avatar_key: form.avatar_key,
-    };
+      service_ids: form.service_ids,
+    } as Partial<Staff>;
     if (editing) {
       updateMutation.mutate({ id: editing.id, body });
     } else {
@@ -248,6 +257,32 @@ export default function StaffPage() {
             />
             {uploading && <Spinner size="sm" />}
           </div>
+
+          {(servicesQ.data?.services ?? []).length > 0 && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">Services this person does</label>
+              <p className="text-xs text-slate-500">
+                Customers who pick this person only see these services. Leave everything unticked if they do every service.
+              </p>
+              <div className="grid gap-1 sm:grid-cols-2">
+                {servicesQ.data!.services.map((sv) => (
+                  <label key={sv.id} className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={form.service_ids.includes(sv.id)}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          service_ids: e.target.checked ? [...f.service_ids, sv.id] : f.service_ids.filter((x) => x !== sv.id),
+                        }))
+                      }
+                    />
+                    {sv.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700">Weekly availability</label>

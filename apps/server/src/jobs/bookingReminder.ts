@@ -1,4 +1,6 @@
 import cron from 'node-cron';
+import { formatBookingTime } from '../lib/time';
+import { manageUrlFor } from '../services/bookingManage';
 import { db } from '../db/client';
 import { sendBookingReminder } from '../services/email';
 
@@ -8,7 +10,7 @@ async function runBookingReminders() {
     SELECT
       b.id, b.start_time, b.end_time, b.tenant_id,
       s.name AS service_name,
-      t.company_name,
+      t.company_name, t.timezone, t.cancel_window_hours,
       c.email AS customer_email, c.name AS customer_name
     FROM bookings b
     JOIN services s ON s.id = b.service_id
@@ -23,8 +25,7 @@ async function runBookingReminders() {
 
   for (const row of upcoming) {
     try {
-      const fmt = (d: Date) =>
-        d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+      const fmt = (d: Date) => formatBookingTime(d, row.timezone as string);
 
       await sendBookingReminder({
         toEmail: row.customer_email as string,
@@ -35,6 +36,8 @@ async function runBookingReminders() {
         companyName: row.company_name as string,
         tenantId: row.tenant_id as string,
         bookingId: row.id as string,
+        manageUrl: await manageUrlFor(row, row.id as string),
+        cancelWindowHours: (row.cancel_window_hours as number | null) ?? 24,
       });
 
       await db`UPDATE bookings SET reminder_sent = TRUE WHERE id = ${row.id}`;

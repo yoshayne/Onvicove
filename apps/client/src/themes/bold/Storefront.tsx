@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { staffForService } from '../shared/bookingFlow';
 import { ShoppingCart, Menu, X, ArrowUp, Clock, ArrowRight } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import { formatPrice } from '../types';
@@ -529,7 +530,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
-        staff={staff}
+        staff={staffForService(staff, bookingService)}
         selectedStaffId={selectedStaffId}
         onSelectStaff={setSelectedStaffId}
         isDateClosed={isDateClosed}

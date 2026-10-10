@@ -192,7 +192,7 @@ app.get('/sitemap.xml', (c) => {
 });
 
 const NON_STORE_ROUTES = new Set([
-  '', 'guide', 'sign-in', 'sign-up', 'onboarding', 'dashboard', 'admin', 'claim', 'pay', 'api', 'assets',
+  '', 'guide', 'sign-in', 'sign-up', 'onboarding', 'dashboard', 'admin', 'claim', 'pay', 'manage', 'api', 'assets',
   'robots.txt', 'sitemap.xml', 'favicon.svg', 'health',
 ]);
 

@@ -10,6 +10,7 @@ export interface StarterService {
   priceCents: number;
   durationMinutes: number;
   description?: string;
+  category?: string;
   depositCents?: number;
 }
 
@@ -28,7 +29,8 @@ export interface BusinessType {
   starterServices: StarterService[];
 }
 
-const s = (name: string, dollars: number, durationMinutes: number, extra: Partial<StarterService> = {}): StarterService => ({
+const s = (category: string, name: string, dollars: number, durationMinutes: number, extra: Partial<StarterService> = {}): StarterService => ({
+  category,
   name,
   priceCents: Math.round(dollars * 100),
   durationMinutes,
@@ -84,58 +86,58 @@ export const BUSINESS_TYPES: BusinessType[] = [
     id: 'barber', label: 'Barbershop', emoji: '💈', group: 'services', mode: 'book', industry: 'Barbershop',
     themeId: 'bold',
     why: ['A dark, sharp look that barbershop clients expect', 'Your services and prices up front, with a Book button always in reach on phones', 'Great for showing off fresh cuts'],
-    starterServices: [s('Haircut', 30, 30), s('Beard trim', 15, 20), s('Cut & beard', 40, 45), s('Kids cut', 22, 30)],
+    starterServices: [s('Haircuts', 'Haircut', 30, 30), s('Haircuts', 'Kids cut', 22, 30), s('Beard', 'Beard trim', 15, 20), s('Combos', 'Cut & beard', 40, 45)],
   },
   {
     id: 'hair_salon', label: 'Hair salon', emoji: '💇', group: 'services', mode: 'book', industry: 'Hair salon',
     themeId: 'editorial',
     why: ['Elegant, upscale styling that matches a salon experience', 'Clear service menu with times and prices', 'Room for before-and-after photos'],
-    starterServices: [s('Women\'s cut', 55, 45), s('Blowout', 45, 45), s('Color', 120, 120), s('Highlights', 160, 150)],
+    starterServices: [s('Cuts & styling', 'Women\'s cut', 55, 45), s('Cuts & styling', 'Blowout', 45, 45), s('Color', 'Color', 120, 120), s('Color', 'Highlights', 160, 150)],
   },
   {
     id: 'natural_hair', label: 'Natural hair', emoji: '🌿', group: 'services', mode: 'book', industry: 'Natural hair',
     themeId: 'warm',
     why: ['Warm, welcoming colors that feel personal', 'Easy booking for longer appointments', 'Space to show your work'],
-    starterServices: [s('Wash & style', 85, 90), s('Twist-out', 95, 120), s('Silk press', 110, 120), s('Trim', 40, 45)],
+    starterServices: [s('Styling', 'Wash & style', 85, 90), s('Styling', 'Twist-out', 95, 120), s('Styling', 'Silk press', 110, 120), s('Care', 'Trim', 40, 45)],
   },
   {
     id: 'braids_locs', label: 'Braids & locs', emoji: '✨', group: 'services', mode: 'book', industry: 'Braids & locs',
     themeId: 'editorial',
     why: ['Big, bold photos let your styles sell themselves', 'Built for long appointments with a deposit to hold the spot', 'Elegant look that matches premium pricing'],
     starterServices: [
-      s('Knotless braids', 220, 240, { depositCents: 5000 }),
-      s('Loc retwist', 90, 120),
-      s('Loc maintenance', 100, 120),
-      s('Starter locs', 180, 180, { depositCents: 5000 }),
+      s('Braids', 'Knotless braids', 220, 240, { depositCents: 5000 }),
+      s('Locs', 'Loc retwist', 90, 120),
+      s('Locs', 'Loc maintenance', 100, 120),
+      s('Locs', 'Starter locs', 180, 180, { depositCents: 5000 }),
     ],
   },
   {
     id: 'nails', label: 'Nails', emoji: '💅', group: 'services', mode: 'book', industry: 'Nails',
     themeId: 'bright',
     why: ['Fun, colorful look that fits nail art', 'Photo-friendly layout for your designs', 'Quick booking on phones'],
-    starterServices: [s('Manicure', 30, 45), s('Pedicure', 45, 60), s('Gel set', 55, 90), s('Full set', 70, 120)],
+    starterServices: [s('Hands', 'Manicure', 30, 45), s('Feet', 'Pedicure', 45, 60), s('Hands', 'Gel set', 55, 90), s('Hands', 'Full set', 70, 120)],
   },
   {
     id: 'lashes_brows', label: 'Lashes & brows', emoji: '👁️', group: 'services', mode: 'book', industry: 'Lashes & brows',
     themeId: 'minimal',
     why: ['A clean, soft layout that feels polished and professional', 'Services and prices easy to scan', 'Simple booking for fills and refreshes'],
-    starterServices: [s('Classic lashes', 120, 120), s('Volume lashes', 150, 150), s('Lash fill', 65, 60), s('Brow shape', 30, 30)],
+    starterServices: [s('Lashes', 'Classic lashes', 120, 120), s('Lashes', 'Volume lashes', 150, 150), s('Lashes', 'Lash fill', 65, 60), s('Brows', 'Brow shape', 30, 30)],
   },
   {
     id: 'spa_massage', label: 'Spa & massage', emoji: '🧖', group: 'services', mode: 'book', industry: 'Spa & massage',
     themeId: 'warm',
     why: ['Calm, warm colors that set a relaxing tone', 'Clear treatment menu with durations', 'Easy online booking for repeat clients'],
-    starterServices: [s('Swedish massage', 90, 60), s('Deep tissue massage', 110, 60), s('Facial', 85, 60), s('Hot stone massage', 130, 90)],
+    starterServices: [s('Massage', 'Swedish massage', 90, 60), s('Massage', 'Deep tissue massage', 110, 60), s('Facials', 'Facial', 85, 60), s('Massage', 'Hot stone massage', 130, 90)],
   },
   {
     id: 'tattoo', label: 'Tattoo', emoji: '🖋️', group: 'services', mode: 'book', industry: 'Tattoo',
     themeId: 'bold',
     why: ['Dark, high-contrast look that lets your artwork stand out', 'Deposits to hold sessions are built in', 'Big gallery space for your portfolio'],
     starterServices: [
-      s('Consultation', 0, 30),
-      s('Small piece', 100, 60, { depositCents: 5000 }),
-      s('Half-day session', 400, 240, { depositCents: 10000 }),
-      s('Touch-up', 50, 30),
+      s('Sessions', 'Consultation', 0, 30),
+      s('Sessions', 'Small piece', 100, 60, { depositCents: 5000 }),
+      s('Sessions', 'Half-day session', 400, 240, { depositCents: 10000 }),
+      s('Sessions', 'Touch-up', 50, 30),
     ],
   },
 

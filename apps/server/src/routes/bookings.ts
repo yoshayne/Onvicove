@@ -8,6 +8,8 @@ import { createBookingPaymentIntent, usableStripeIds } from '../services/stripe'
 import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { sendPaymentLinkEmail, sendBookingCancelled, sendTenantBookingCancelled, sendBookingConfirmation, sendTenantNewBooking } from '../services/email';
 import { slotsForService, holdsTime } from '../services/slots';
+import { formatBookingTime } from '../lib/time';
+import { manageUrlFor, newManageToken } from '../services/bookingManage';
 
 const app = new Hono();
 
@@ -143,7 +145,7 @@ app.post('/', async (c) => {
   const booking = rows[0];
 
   if (bookingStatus === 'confirmed' && d.customer_email) {
-    const fmt = (t: string) => new Date(t).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+    const fmt = (t: string) => formatBookingTime(t, (tenant as unknown as { timezone?: string }).timezone);
     const baseUrl = getBaseUrl();
     sendBookingConfirmation({
       toEmail: d.customer_email,
@@ -152,6 +154,8 @@ app.post('/', async (c) => {
       startTime: fmt(d.start_time),
       endTime: fmt(d.end_time),
       companyName: tenantFull.company_name,
+        manageUrl: await manageUrlFor(tenant, booking.id as string),
+        cancelWindowHours: (tenant as unknown as { cancel_window_hours?: number }).cancel_window_hours ?? 24,
       tenantId: tenant.id,
       bookingId: booking.id as string,
     }).catch((err) => console.error('Dashboard booking confirmation email error:', err));
@@ -215,7 +219,7 @@ app.patch('/:id', async (c) => {
       db`SELECT u.email FROM users u JOIN tenants t ON t.clerk_user_id = u.clerk_user_id WHERE t.id = ${tenant.id} LIMIT 1`,
     ]);
     const serviceName = (svcRows[0]?.name as string) ?? 'your appointment';
-    const fmt = (t: string) => new Date(t).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+    const fmt = (t: string) => formatBookingTime(t, (tenant as unknown as { timezone?: string }).timezone);
     const startTime = fmt(booking.start_time as string);
     const endTime = fmt(booking.end_time as string);
     const baseUrl = getBaseUrl();
@@ -228,6 +232,8 @@ app.patch('/:id', async (c) => {
         startTime,
         endTime,
         companyName: tenant.company_name,
+        manageUrl: await manageUrlFor(tenant, booking.id as string),
+        cancelWindowHours: (tenant as unknown as { cancel_window_hours?: number }).cancel_window_hours ?? 24,
         tenantId: tenant.id,
         bookingId: booking.id as string,
       }).catch((err) => console.error('Booking confirmed email error:', err));

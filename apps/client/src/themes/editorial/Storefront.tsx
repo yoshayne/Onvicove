@@ -2,6 +2,7 @@
 // Google Fonts in index.html, e.g.:
 // <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 import { useState } from 'react';
+import { staffForService } from '../shared/bookingFlow';
 import { ShoppingCart } from 'lucide-react';
 import type { ThemeProps } from '../types';
 import { formatPrice } from '../types';
@@ -263,7 +264,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
-        staff={staff}
+        staff={staffForService(staff, bookingService)}
         selectedStaffId={selectedStaffId}
         onSelectStaff={setSelectedStaffId}
         isDateClosed={isDateClosed}

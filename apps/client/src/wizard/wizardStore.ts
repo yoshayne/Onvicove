@@ -22,6 +22,8 @@ export interface WizardService {
   description?: string;
   requiresDeposit?: boolean;
   depositCents?: number | null;
+  /** Group on the site (e.g. Haircuts) */
+  category?: string;
   /** An example from the starter menu the owner hasn't edited yet */
   starter?: boolean;
 }
@@ -214,6 +216,7 @@ export const useWizardStore = create<WizardState>()(
                   priceCents: x.priceCents,
                   durationMinutes: x.durationMinutes,
                   description: x.description ?? '',
+                  category: x.category,
                   requiresDeposit: !!x.depositCents,
                   depositCents: x.depositCents ?? null,
                   starter: true,

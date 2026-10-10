@@ -61,6 +61,7 @@ function buildWizardData(state: WizardState) {
     services: state.services.map((s) => ({
       name: s.name,
       description: s.description,
+      category: s.category,
       priceCents: s.priceCents,
       durationMinutes: s.durationMinutes,
       requiresDeposit: s.requiresDeposit ?? false,
@@ -120,6 +121,7 @@ function applyWizardData(state: WizardState, data: Record<string, unknown>, slug
         description: s.description ?? '',
         priceCents: s.priceCents ?? 0,
         durationMinutes: s.durationMinutes ?? 30,
+        category: typeof s.category === 'string' ? s.category : undefined,
         requiresDeposit: s.requiresDeposit ?? false,
         depositCents: s.depositCents ?? null,
       });

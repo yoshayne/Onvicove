@@ -66,6 +66,7 @@ import AdminCreateTenant from './admin/CreateTenant';
 const Wizard = lazy(() => import('./wizard/Wizard'));
 const StorefrontRouter = lazy(() => import('./storefront/StorefrontRouter'));
 const PayBalance = lazy(() => import('./storefront/PayBalance'));
+const ManageBooking = lazy(() => import('./storefront/ManageBooking'));
 const ClaimPage = lazy(() => import('./storefront/ClaimPage'));
 
 const queryClient = new QueryClient();
@@ -132,6 +133,7 @@ function StoreHostApp({ slug }: { slug: string }) {
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/pay/booking/:id" element={<PayBalance />} />
+              <Route path="/manage/booking/:token" element={<ManageBooking />} />
               <Route path="*" element={<StorefrontRouter slug={slug} />} />
             </Routes>
           </Suspense>
@@ -207,6 +209,7 @@ export default function App() {
               </Route>
 
               <Route path="/pay/booking/:id" element={<PayBalance />} />
+              <Route path="/manage/booking/:token" element={<ManageBooking />} />
 
               <Route
                 path="/admin/*"

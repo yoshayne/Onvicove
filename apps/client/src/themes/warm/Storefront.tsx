@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { staffForService } from '../shared/bookingFlow';
 // NOTE: This theme expects 'Lora' and 'Inter' to be loaded via
 // Google Fonts in index.html, e.g.:
 // <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
@@ -267,7 +268,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         onSelectDate={selectBookingDate}
         onSelectSlot={selectBookingSlot}
         onConfirm={confirmBooking}
-        staff={staff}
+        staff={staffForService(staff, bookingService)}
         selectedStaffId={selectedStaffId}
         onSelectStaff={setSelectedStaffId}
         isDateClosed={isDateClosed}

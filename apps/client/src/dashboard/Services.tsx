@@ -18,6 +18,7 @@ interface ServiceFormState {
   price_cents: number;
   duration_minutes: number;
   buffer_minutes: number;
+  category: string;
   requires_deposit: boolean;
   deposit_cents: number | null;
   is_active: boolean;
@@ -26,6 +27,7 @@ interface ServiceFormState {
 const emptyForm: ServiceFormState = {
   name: '',
   description: '',
+  category: '',
   price_cents: 0,
   duration_minutes: 30,
   buffer_minutes: 0,
@@ -79,6 +81,7 @@ export default function Services() {
     setForm({
       name: service.name,
       description: service.description ?? '',
+      category: service.category ?? '',
       price_cents: service.price_cents,
       duration_minutes: service.duration_minutes,
       buffer_minutes: service.buffer_minutes,
@@ -100,6 +103,7 @@ export default function Services() {
     const body: Partial<Service> = {
       name: form.name,
       description: form.description || null,
+      category: form.category.trim() || null,
       price_cents: form.price_cents,
       duration_minutes: form.duration_minutes,
       buffer_minutes: form.buffer_minutes,
@@ -199,6 +203,21 @@ export default function Services() {
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             rows={3}
           />
+          <div>
+            <Input
+              label="Category (optional)"
+              list="service-categories"
+              placeholder="e.g. Haircuts, Color, Beard"
+              value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+            />
+            <datalist id="service-categories">
+              {Array.from(new Set((data?.services ?? []).map((sv) => sv.category).filter(Boolean) as string[])).map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+            <p className="mt-1 text-xs text-slate-500">Services with the same category are grouped together on your site.</p>
+          </div>
           <div className="grid grid-cols-3 gap-3">
             <Input
               label="Price (USD)"

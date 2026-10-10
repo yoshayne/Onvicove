@@ -25,6 +25,8 @@ interface SettingsFormState {
   currency: string;
   booking_mode: BookingMode;
   show_live_calendar: boolean;
+  booking_notice_minutes: number;
+  cancel_window_hours: number;
   font_pair_id: FontPairId;
 }
 
@@ -39,6 +41,8 @@ function tenantToForm(tenant: Tenant): SettingsFormState {
     currency: tenant.currency,
     booking_mode: tenant.booking_mode,
     show_live_calendar: tenant.show_live_calendar,
+    booking_notice_minutes: tenant.booking_notice_minutes ?? 60,
+    cancel_window_hours: tenant.cancel_window_hours ?? 24,
     font_pair_id: (tenant.font_pair_id as FontPairId) ?? 'classic',
   };
 }
@@ -180,6 +184,8 @@ export default function Settings() {
       currency: form.currency,
       booking_mode: form.booking_mode,
       show_live_calendar: form.show_live_calendar,
+      booking_notice_minutes: form.booking_notice_minutes,
+      cancel_window_hours: form.cancel_window_hours,
       font_pair_id: form.font_pair_id,
     };
     // Include slug update if new slug is available and different
@@ -293,6 +299,39 @@ export default function Settings() {
           />
           Show live calendar availability on storefront
         </label>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="text-sm font-medium text-slate-700">Booking notice</label>
+            <select
+              value={form.booking_notice_minutes}
+              onChange={(e) => setForm((f) => (f ? { ...f, booking_notice_minutes: Number(e.target.value) } : f))}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              {[0, 30, 60, 120, 240, 720, 1440, 2880].map((m) => (
+                <option key={m} value={m}>
+                  {m === 0 ? 'Right up to the start time' : m < 60 ? `${m} minutes before` : m < 1440 ? `${m / 60} hour${m === 60 ? '' : 's'} before` : `${m / 1440} day${m === 1440 ? '' : 's'} before`}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-slate-500">How soon before an appointment a customer can still book it.</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700">Customers can cancel or reschedule</label>
+            <select
+              value={form.cancel_window_hours}
+              onChange={(e) => setForm((f) => (f ? { ...f, cancel_window_hours: Number(e.target.value) } : f))}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              {[0, 2, 6, 12, 24, 48, 72].map((h) => (
+                <option key={h} value={h}>
+                  {h === 0 ? 'Up to the start time' : `Up to ${h} hours before`}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-slate-500">They get a link in their confirmation email. Deposits aren't refunded automatically; you decide.</p>
+          </div>
+        </div>
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-slate-700">Typography</label>

@@ -32,6 +32,8 @@ export interface Tenant {
   plan: PlanId;
   plan_expires_at: string | null;
   booking_mode: BookingMode;
+  booking_notice_minutes?: number | null;
+  cancel_window_hours?: number | null;
   show_live_calendar: boolean;
   google_cal_enabled?: boolean;
   outlook_cal_enabled?: boolean;

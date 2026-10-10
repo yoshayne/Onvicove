@@ -1,4 +1,5 @@
 import type { AvailableSlot } from '../types';
+import { useBookingFlow } from './bookingFlow';
 
 interface SlotPickerProps {
   slots: AvailableSlot[];
@@ -35,9 +36,26 @@ export default function SlotPicker({ slots, selectedSlot, selectedDate, onSelect
   const dark = tone === 'dark';
   const free = slots.filter((s) => s.available).sort((a, b) => minutesOf(a.time) - minutesOf(b.time));
   const muted = dark ? 'text-white/50' : 'text-black/50';
+  const next = useBookingFlow((st) => st.next);
+  const pickNext = useBookingFlow((st) => st.pickNext);
+  const nextLabel = next
+    ? `${new Date(next.start).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} at ${new Date(next.start).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
+    : null;
+  const nextButton =
+    nextLabel && pickNext ? (
+      <button
+        type="button"
+        onClick={pickNext}
+        className={`mb-3 w-full border px-3 py-2 text-left text-sm ${dark ? 'border-white/30 bg-white/5 text-white' : 'border-black/25 bg-black/[0.03] text-black'}`}
+      >
+        <span className="block text-[11px] uppercase tracking-wide opacity-60">Next available</span>
+        <span className="font-medium">{nextLabel}</span>
+        <span className="float-right underline">Pick this time</span>
+      </button>
+    ) : null;
 
-  if (!selectedDate) return <p className={`text-sm ${muted}`}>Select a date to see available times.</p>;
-  if (free.length === 0) return <p className={`text-sm ${muted}`}>No times available on this date — please pick another day.</p>;
+  if (!selectedDate) return <div>{nextButton}<p className={`text-sm ${muted}`}>Select a date to see available times.</p></div>;
+  if (free.length === 0) return <div>{nextButton}<p className={`text-sm ${muted}`}>No times available on this date. Please pick another day.</p></div>;
 
   const options = (list: AvailableSlot[]) =>
     list.map((s) => (
@@ -49,6 +67,7 @@ export default function SlotPicker({ slots, selectedSlot, selectedDate, onSelect
 
   return (
     <div>
+      {nextButton}
       <select
         value={selectedSlot ?? ''}
         onChange={(e) => e.target.value && onSelectSlot(e.target.value)}

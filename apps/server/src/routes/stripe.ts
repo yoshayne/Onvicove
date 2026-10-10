@@ -7,6 +7,8 @@ import { getBaseUrl, getCustomerBaseUrl, getStoreUrl } from '../lib/baseUrl';
 import { applySubscription, type StripeSubscriptionLike } from '../services/subscriptions';
 import { STRIPE_CARD_FEE } from '../services/chargeModel';
 import { holdsTime } from '../services/slots';
+import { manageUrlFor } from '../services/bookingManage';
+import { formatBookingTime } from '../lib/time';
 import { recordAccountState } from '../services/stripeAccounts';
 import { summarizeAccount } from '../services/stripeRequirements';
 import { stripeDetailsSchema, buildPrefill, guessMcc, mccForBusinessType, MCC_OPTIONS, type StripeDetails } from '../services/stripePrefill';
@@ -25,11 +27,12 @@ const app = new Hono();
 async function notifyBookingPaid(booking: Record<string, unknown>, tenantId: string) {
   const baseUrl = getBaseUrl();
   const svcRow = await db`SELECT name FROM services WHERE id = ${booking.service_id as string} LIMIT 1`;
-  const tenantRows = await db`SELECT t.company_name, u.email AS owner_email FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${tenantId} LIMIT 1`;
+  const tenantRows = await db`SELECT t.*, u.email AS owner_email FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${tenantId} LIMIT 1`;
   const t = tenantRows[0];
   const serviceName = (svcRow[0]?.name as string) ?? 'your appointment';
-  const startFmt = new Date(booking.start_time as string).toLocaleString();
-  const endFmt = new Date(booking.end_time as string).toLocaleString();
+  const startFmt = formatBookingTime(booking.start_time as string, t?.timezone as string);
+  const endFmt = formatBookingTime(booking.end_time as string, t?.timezone as string);
+  const manageUrl = t ? await manageUrlFor(t, booking.id as string) : undefined;
   Promise.all([
     sendBookingConfirmation({
       toEmail: booking.customer_email as string,

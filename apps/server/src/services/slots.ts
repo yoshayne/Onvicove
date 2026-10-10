@@ -58,6 +58,7 @@ async function slotsForResource(
   service: { duration_minutes: number; buffer_minutes?: number | null },
   date: string,
   staff: StaffRow | undefined,
+  excludeBookingId?: string | null,
 ): Promise<{ slots: TimeSlot[]; reason: SlotsReason }> {
   const timezone = tenant.timezone || 'America/New_York';
   const { availability, source } = resolveAvailability(staff?.availability, tenant);
@@ -72,11 +73,13 @@ async function slotsForResource(
         SELECT start_time, end_time FROM bookings
         WHERE tenant_id = ${tenant.id}
           AND (staff_id = ${staff.id as string} OR staff_id IS NULL)
+          AND id <> ${excludeBookingId ?? '00000000-0000-0000-0000-000000000000'}
           AND ${holdsTime()}
           AND start_time < ${end.toISOString()} AND end_time > ${start.toISOString()}`
     : await db`
         SELECT start_time, end_time FROM bookings
         WHERE tenant_id = ${tenant.id}
+          AND id <> ${excludeBookingId ?? '00000000-0000-0000-0000-000000000000'}
           AND ${holdsTime()}
           AND start_time < ${end.toISOString()} AND end_time > ${start.toISOString()}`;
 
@@ -109,6 +112,8 @@ export async function slotsForService(params: {
   staffId?: string | null;
   /** Skip the "not in the past" filter (owner-made bookings) */
   allowPast?: boolean;
+  /** A booking being moved: its own time doesn't count as taken */
+  excludeBookingId?: string | null;
 }): Promise<SlotsResult> {
   const { tenant, service, date, staffId } = params;
   const timezone = tenant.timezone || 'America/New_York';
@@ -142,7 +147,7 @@ export async function slotsForService(params: {
     }
   }
 
-  const results = await Promise.all(pool.map((st) => slotsForResource(tenant, service, date, st)));
+  const results = await Promise.all(pool.map((st) => slotsForResource(tenant, service, date, st, params.excludeBookingId)));
   const merged = new Map<string, TimeSlot>();
   for (const r of results) for (const sl of r.slots) if (!merged.has(sl.start)) merged.set(sl.start, sl);
   let slots = [...merged.values()].sort((a, b) => a.start.localeCompare(b.start));
@@ -173,6 +178,7 @@ export async function pickStaffForSlot(params: {
   startISO: string;
   staffId?: string | null;
   allowPast?: boolean;
+  excludeBookingId?: string | null;
 }): Promise<{ staffId: string | null } | null> {
   const { tenant, service, startISO, staffId } = params;
   const timezone = tenant.timezone || 'America/New_York';
@@ -189,7 +195,7 @@ export async function pickStaffForSlot(params: {
   const prevDate = format(addDays(parse(date, 'yyyy-MM-dd', new Date()), -1), 'yyyy-MM-dd');
   for (const id of candidates) {
     for (const d of [date, prevDate]) {
-      const r = await slotsForService({ tenant, service, date: d, staffId: id, allowPast: params.allowPast });
+      const r = await slotsForService({ tenant, service, date: d, staffId: id, allowPast: params.allowPast, excludeBookingId: params.excludeBookingId });
       if (r.slots.some((sl) => new Date(sl.start).getTime() === wanted)) return { staffId: id };
     }
   }

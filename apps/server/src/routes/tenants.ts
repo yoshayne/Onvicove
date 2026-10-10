@@ -42,6 +42,8 @@ const updateTenantSchema = z.object({
   timezone: z.string().optional(),
   booking_mode: z.enum(['instant', 'manual']).optional(),
   show_live_calendar: z.boolean().optional(),
+  booking_notice_minutes: z.number().int().min(0).max(60 * 24 * 14).optional(),
+  cancel_window_hours: z.number().int().min(0).max(24 * 30).optional(),
   currency: z.string().optional(),
   slug: z.string().min(1).max(60).regex(/^[a-z0-9-]+$/).optional(),
   business_hours: weeklyHoursSchema.nullable().optional(),

@@ -137,13 +137,15 @@ app.post('/complete', async (c) => {
 
   // Persist services
   if (Array.isArray(data.services)) {
+    let order = 0;
     for (const s of data.services) {
       await db`
-        INSERT INTO services (tenant_id, name, description, price_cents, duration_minutes, image_keys, requires_deposit, deposit_cents)
+        INSERT INTO services (tenant_id, name, description, price_cents, duration_minutes, image_keys, requires_deposit, deposit_cents, category, sort_order)
         VALUES (
           ${result.id}, ${s.name}, ${s.description ?? null}, ${s.priceCents ?? 0},
           ${s.durationMinutes ?? 30}, ${db.json(s.imageKeys ?? [])},
-          ${s.requiresDeposit ?? false}, ${s.requiresDeposit ? s.depositCents ?? 0 : null}
+          ${s.requiresDeposit ?? false}, ${s.requiresDeposit ? s.depositCents ?? 0 : null},
+          ${typeof s.category === 'string' && s.category.trim() ? s.category.trim() : null}, ${order++}
         )
       `;
     }
