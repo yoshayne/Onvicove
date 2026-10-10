@@ -111,6 +111,7 @@ app.post('/complete', async (c) => {
         city = ${data.city ?? tenant.city},
         industry = ${data.industry ?? tenant.industry},
         business_type = ${typeof data.businessType === 'string' && data.businessType ? data.businessType : tenant.business_type},
+        recommended_theme_id = ${typeof data.recommendedThemeId === 'string' && data.recommendedThemeId ? data.recommendedThemeId : tenant.recommended_theme_id},
         logo_key = ${data.logoKey ?? tenant.logo_key},
         favicon_key = ${data.faviconKey ?? tenant.favicon_key},
         hero_image_key = ${data.heroImageKey ?? tenant.hero_image_key},

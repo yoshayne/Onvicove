@@ -66,7 +66,18 @@ app.get('/funnel', async (c) => {
     FROM tenants WHERE clerk_user_id IS NOT NULL
   `;
 
+  // Did people take the theme the wizard recommended for their kind of business?
+  const recRows = await db`
+    SELECT recommended_theme_id AS theme, COUNT(*)::int AS offered, COUNT(*) FILTER (WHERE theme_id = recommended_theme_id)::int AS accepted
+    FROM tenants
+    WHERE wizard_completed = TRUE AND recommended_theme_id IS NOT NULL AND clerk_user_id IS NOT NULL
+    GROUP BY recommended_theme_id ORDER BY offered DESC
+  `;
+  const recTotal = recRows.reduce((n, r) => n + Number(r.offered), 0);
+  const recAccepted = recRows.reduce((n, r) => n + Number(r.accepted), 0);
+
   return c.json({
+    recommendations: { offered: recTotal, accepted: recAccepted, by_theme: recRows },
     counts: {
       signed_up_no_store: signedUpNoStore.length,
       in_wizard: inWizard.length,

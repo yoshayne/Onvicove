@@ -13,6 +13,7 @@ interface Person {
 interface WizardRow { id: string; company_name: string; email: string | null; step: number; created_at: string; updated_at: string }
 interface LaunchedRow { id: string; company_name: string; email: string | null; stripe_started: boolean; created_at: string; updated_at: string }
 interface FunnelResponse {
+  recommendations?: { offered: number; accepted: number; by_theme: { theme: string; offered: number; accepted: number }[] };
   counts: { signed_up_no_store: number; in_wizard: number; launched: number; launched_no_payments: number; payments_ready: number };
   signed_up_no_store: Person[];
   in_wizard: WizardRow[];
@@ -77,6 +78,23 @@ export default function Funnel() {
           </div>
         ))}
       </div>
+
+      {data.recommendations && data.recommendations.offered > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <div className="text-sm font-semibold text-slate-900">Did people take the recommended look?</div>
+          <p className="text-xs text-slate-500">
+            {data.recommendations.accepted} of {data.recommendations.offered} launched stores ({Math.round((data.recommendations.accepted / data.recommendations.offered) * 100)}%) kept the theme we suggested for their business type.
+          </p>
+          <div className="mt-3 flex flex-col gap-2">
+            {data.recommendations.by_theme.map((r) => (
+              <div key={r.theme} className="flex items-center justify-between text-sm">
+                <span className="capitalize text-slate-700">{r.theme}</span>
+                <span className="text-slate-500">{r.accepted} of {r.offered} kept it</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Section title="Signed in but never started a store" hint="They created an account and did nothing after. These are your 'signed in, then nothing' people." empty={data.signed_up_no_store.length === 0}>
         {data.signed_up_no_store.map((p, i) => (

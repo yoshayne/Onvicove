@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import WizardLayout from './WizardLayout';
+import { BUSINESS_TYPE_BY_ID } from './businessTypes';
 import { useWizardStore, selectWizardCompleteness, WIZARD_STEPS_VERSION, WIZARD_TOTAL_STEPS, type WizardState } from './wizardStore';
 import { useApi } from '../lib/api';
 
@@ -39,6 +40,8 @@ function buildWizardData(state: WizardState) {
   return {
     stepsVersion: WIZARD_STEPS_VERSION,
     businessType: state.businessType,
+    // What we suggested for this kind of business, saved so we can see whether it was taken
+    recommendedThemeId: BUSINESS_TYPE_BY_ID[state.businessType]?.why.length ? BUSINESS_TYPE_BY_ID[state.businessType].themeId : undefined,
     businessName: state.businessName,
     tagline: state.tagline,
     mode: state.mode,

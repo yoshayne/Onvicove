@@ -540,3 +540,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_manage_token ON bookings(manage_t
 ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_theme_id_check;
 ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
   CHECK (theme_id IN ('editorial','minimal','bold','warm','classic','bright','obsidian','aurora','magazine','brutalist','neon-tokyo','craft','lens','barber','studio','ink'));
+
+-- The theme the wizard recommended for this store's business type (compare with theme_id to see if it was taken)
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS recommended_theme_id TEXT;
