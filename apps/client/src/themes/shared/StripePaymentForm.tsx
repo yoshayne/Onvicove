@@ -70,7 +70,14 @@ export default function StripePaymentForm({
   }
 
   return (
-    <Elements stripe={stripePromise} options={{ clientSecret }}>
+    <Elements
+      stripe={stripePromise}
+      options={{
+        clientSecret,
+        // Tighter spacing so the form fits a phone screen with less scrolling
+        appearance: { theme: 'stripe', variables: { spacingUnit: '3px', spacingGridRow: '10px', spacingGridColumn: '10px', fontSizeBase: '15px' } },
+      }}
+    >
       <PaymentInner amountCents={amountCents} currency={currency} returnUrl={returnUrl} onSuccess={onSuccess} onCancel={onCancel} />
     </Elements>
   );
@@ -113,10 +120,11 @@ function PaymentInner({
   }
 
   return (
-    <div className="flex flex-col gap-4 text-left">
-      <PaymentElement />
+    <div className="flex flex-col gap-3 text-left">
+      <PaymentElement options={{ layout: { type: 'tabs', defaultCollapsed: false } }} />
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <div className="flex gap-3">
+      {/* Stays at the bottom of the screen while the form scrolls, so Pay is always in reach */}
+      <div className="sticky bottom-0 -mx-1 flex gap-3 bg-white px-1 pb-1 pt-2">
         <button
           type="button"
           onClick={onCancel}

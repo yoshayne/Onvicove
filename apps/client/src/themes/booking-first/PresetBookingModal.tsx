@@ -36,7 +36,7 @@ export default function PresetBookingModal({
 
   const accent = `var(--brand-color, ${p.accent})`;
   const canConfirm = Boolean(selectedDate && selectedSlot && name.trim() && email.trim());
-  const field = 'w-full px-3 py-3 text-base outline-none';
+  const field = 'w-full px-3 py-2.5 text-base outline-none';
   const fieldStyle = { background: p.surface, color: p.text, border: `1px solid ${p.border}`, borderRadius: Math.min(p.radius, 12) } as const;
   const heading = { fontFamily: p.headingFont, textTransform: p.uppercaseHeadings ? ('uppercase' as const) : undefined, letterSpacing: p.uppercaseHeadings ? '0.04em' : undefined };
 
@@ -47,10 +47,10 @@ export default function PresetBookingModal({
         aria-modal="true"
         aria-label={`Book ${service.name}`}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[94vh] w-full max-w-lg overflow-y-auto"
+        className="max-h-[94dvh] w-full max-w-lg overflow-y-auto"
         style={{ background: p.bg, color: p.text, fontFamily: p.bodyFont, borderRadius: `${Math.min(p.radius * 1.5, 24)}px ${Math.min(p.radius * 1.5, 24)}px 0 0` }}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 p-5" style={{ background: p.bg, borderBottom: `1px solid ${p.border}` }}>
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 p-4" style={{ background: p.bg, borderBottom: `1px solid ${p.border}` }}>
           <div>
             <h2 className="text-xl" style={heading}>{service.name}</h2>
             <p className="mt-0.5 text-sm" style={{ color: p.muted }}>
@@ -63,7 +63,7 @@ export default function PresetBookingModal({
           </button>
         </div>
 
-        <div className="flex flex-col gap-6 p-5">
+        <div className="flex flex-col gap-3 p-4">
           {cityLabel && (
             <p className="px-3 py-2 text-sm" style={{ background: p.surface, border: `1px solid ${p.border}`, borderRadius: Math.min(p.radius, 12) }}>
               📍 {cityLabel}
@@ -108,6 +108,11 @@ export default function PresetBookingModal({
             isDateClosed={isDateClosed}
           />
 
+          {!selectedSlot && (
+            <p className="text-center text-xs" style={{ color: p.muted }}>Pick a day and a time to continue.</p>
+          )}
+
+          {selectedSlot && (
           <form
             className="flex flex-col gap-3"
             onSubmit={(e) => {
@@ -127,6 +132,7 @@ export default function PresetBookingModal({
               Continue
             </button>
           </form>
+          )}
         </div>
       </div>
     </div>

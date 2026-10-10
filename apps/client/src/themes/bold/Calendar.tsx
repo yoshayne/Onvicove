@@ -88,7 +88,7 @@ export default function Calendar({
               title={closed ? 'Unavailable' : undefined}
               disabled={disabled}
               onClick={() => onSelectDate(d)}
-              className={`aspect-square text-sm font-bold uppercase transition ${
+              className={`h-9 sm:h-auto sm:aspect-square text-sm font-bold uppercase transition ${
                 selected && !closed
                   ? 'bg-[var(--brand-color,#e8ff00)] text-[#0a0a0a]'
                   : closed

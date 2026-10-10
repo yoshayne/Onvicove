@@ -28,8 +28,8 @@ export default function BookingStatusOverlay({
   if (status === 'idle') return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 text-center text-[#111111]">
+    <div className="fixed inset-0 z-[70] flex overflow-y-auto bg-black/70 p-3 sm:p-4">
+      <div className="m-auto w-full max-w-sm rounded-lg bg-white p-4 sm:p-6 text-center text-[#111111]">
         {status === 'submitting' && <p className="text-sm text-gray-600">Booking your appointment…</p>}
         {status === 'payment' && clientSecret && (
           <>

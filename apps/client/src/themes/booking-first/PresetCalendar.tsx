@@ -31,7 +31,7 @@ export default function PresetCalendar({ preset: p, selectedDate, selectedSlot, 
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between">
         <button type="button" aria-label="Previous month" onClick={() => setView(new Date(y, m - 1, 1))} className="p-2" style={{ color: p.muted }}>
           <ChevronLeft size={18} />
         </button>
@@ -47,7 +47,7 @@ export default function PresetCalendar({ preset: p, selectedDate, selectedSlot, 
           <div key={i}>{w}</div>
         ))}
       </div>
-      <div className="mb-5 grid grid-cols-7 gap-1">
+      <div className="mb-3 grid grid-cols-7 gap-y-0.5">
         {cells.map((date, i) => {
           if (!date) return <div key={`e${i}`} />;
           const past = date < startOfToday;
@@ -61,7 +61,7 @@ export default function PresetCalendar({ preset: p, selectedDate, selectedSlot, 
               disabled={off}
               title={closed ? 'Unavailable' : undefined}
               onClick={() => onSelectDate(date)}
-              className="aspect-square text-sm transition-colors"
+              className="h-8 text-sm transition-colors"
               style={{
                 borderRadius: Math.min(p.radius, 999),
                 background: sel ? accent(p) : 'transparent',
@@ -77,7 +77,7 @@ export default function PresetCalendar({ preset: p, selectedDate, selectedSlot, 
           );
         })}
       </div>
-      <div className="mb-2 text-xs uppercase tracking-widest" style={{ color: p.muted }}>Available times</div>
+      <div className="mb-1.5 text-xs uppercase tracking-widest" style={{ color: p.muted }}>Choose a time</div>
       <SlotPicker slots={availableSlots} selectedSlot={selectedSlot} selectedDate={selectedDate} onSelectSlot={onSelectSlot} tone={dark ? 'dark' : 'light'} className={p.radius === 0 ? '' : 'rounded-lg'} />
     </div>
   );

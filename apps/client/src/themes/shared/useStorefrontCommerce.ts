@@ -1,4 +1,3 @@
-import { useBookingFlow } from './bookingFlow';
 import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../lib/api';
 import type { AvailableSlot, CartItem, ProductData, ProductVariantData, ServiceData } from '../types';
@@ -193,35 +192,6 @@ export function useStorefrontCommerce(slug: string | undefined) {
     setBookingCityLabel(null);
     setBookingStatus('idle');
     setBookingError(null);
-    void loadNextAvailable(service, null);
-  }
-
-  // "Next available" shortcut: the first open time (for the chosen person, or anyone), one tap to select it
-  async function loadNextAvailable(service: ServiceData, staffId: string | null) {
-    const flow = useBookingFlow.getState();
-    flow.set({ next: null, pickNext: null });
-    if (!slug) return;
-    try {
-      const res = await apiGet<{ next: { date: string; start: string } | null }>(
-        `/api/public/${slug}/next-available?service_id=${service.id}${staffId ? `&staff_id=${staffId}` : ''}`
-      );
-      if (!res.next) return;
-      const next = res.next;
-      useBookingFlow.getState().set({
-        next,
-        pickNext: () => {
-          const [y, m, d] = next.date.split('-').map(Number);
-          const day = new Date(y, m - 1, d);
-          setSelectedDate(day);
-          setSelectedSlot(null);
-          void fetchSlots(service, day, staffId).then(() => {
-            setSelectedSlot(new Date(next.start).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }));
-          });
-        },
-      });
-    } catch {
-      /* the shortcut is optional */
-    }
   }
 
   // Choosing a person re-reads that person's open times (and next available)
@@ -229,7 +199,6 @@ export function useStorefrontCommerce(slug: string | undefined) {
     setSelectedStaffId(staffId);
     setSelectedSlot(null);
     if (bookingService) {
-      void loadNextAvailable(bookingService, staffId);
       if (selectedDate) {
         setAvailableSlots([]);
         void fetchSlots(bookingService, selectedDate, staffId);

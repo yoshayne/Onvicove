@@ -46,7 +46,7 @@ export default function Calendar({ selectedDate, selectedSlot, availableSlots, o
           const isSelected = selectedDate && isSameDay(date, selectedDate);
           return (
             <button key={date.toISOString()} type="button" title={closed ? 'Unavailable' : undefined} disabled={isPast || closed} onClick={() => onSelectDate(date)}
-              className={`aspect-square rounded-full text-sm flex items-center justify-center transition-all ${isSelected && !closed ? 'text-white font-bold' : closed ? 'text-white/20 cursor-not-allowed line-through' : isPast ? 'text-white/20 cursor-not-allowed' : 'text-white/60 hover:text-[var(--brand-color,#ff2d9b)]'}`}
+              className={`h-9 sm:h-auto sm:aspect-square rounded-full text-sm flex items-center justify-center transition-all ${isSelected && !closed ? 'text-white font-bold' : closed ? 'text-white/20 cursor-not-allowed line-through' : isPast ? 'text-white/20 cursor-not-allowed' : 'text-white/60 hover:text-[var(--brand-color,#ff2d9b)]'}`}
               style={isSelected && !closed ? { background: '#ff2d9b', boxShadow: '0 0 12px #ff2d9b' } : {}}>
               {date.getDate()}
             </button>

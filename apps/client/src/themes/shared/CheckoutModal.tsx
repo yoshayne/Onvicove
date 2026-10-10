@@ -105,8 +105,8 @@ export default function CheckoutModal({
 
   if (status === 'success') {
     return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
-        <div className="w-full max-w-md rounded-lg bg-white p-6 text-center text-[#111111]">
+      <div className="fixed inset-0 z-[60] flex overflow-y-auto bg-black/70 p-3 sm:p-4">
+        <div className="m-auto w-full max-w-md rounded-lg bg-white p-4 sm:p-6 text-center text-[#111111]">
           <p className="mb-2 text-lg font-semibold">Order placed!</p>
           {orderNumber && (
             <p className="mb-4 text-sm text-gray-600">
@@ -128,8 +128,8 @@ export default function CheckoutModal({
 
   if (status === 'payment' && clientSecret) {
     return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
-        <div className="w-full max-w-md rounded-lg bg-white p-6 text-[#111111]">
+      <div className="fixed inset-0 z-[60] flex overflow-y-auto bg-black/70 p-3 sm:p-4">
+        <div className="m-auto w-full max-w-md rounded-lg bg-white p-4 sm:p-6 text-[#111111]">
           <h2 className="mb-4 text-lg font-semibold">Payment</h2>
           <StripePaymentForm
             clientSecret={clientSecret}
@@ -145,8 +145,8 @@ export default function CheckoutModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 text-[#111111]">
+    <div className="fixed inset-0 z-[60] flex overflow-y-auto bg-black/70 p-3 sm:p-4">
+      <div className="m-auto w-full max-w-md rounded-lg bg-white p-4 sm:p-6 text-[#111111]">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Checkout</h2>
           <button type="button" aria-label="Close" onClick={onClose} className="text-gray-400 hover:text-gray-700">

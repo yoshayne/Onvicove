@@ -72,7 +72,7 @@ export default function Calendar({
 
       <div className="grid grid-cols-7 gap-px mb-8 border border-[#1a3a5c]/10 bg-[#1a3a5c]/10">
         {cells.map((date, i) => {
-          if (!date) return <div key={`empty-${i}`} className="bg-white aspect-square" />;
+          if (!date) return <div key={`empty-${i}`} className="bg-white h-9 sm:h-auto sm:aspect-square" />;
           const isToday = isSameDay(date, today);
           const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
           const closed = !!isDateClosed?.(date);
@@ -84,7 +84,7 @@ export default function Calendar({
               title={closed ? 'Unavailable' : undefined}
               disabled={isPast || closed}
               onClick={() => onSelectDate(date)}
-              className={`aspect-square text-sm font-serif flex items-center justify-center transition-colors ${
+              className={`h-9 sm:h-auto sm:aspect-square text-sm font-serif flex items-center justify-center transition-colors ${
                 isSelected && !closed
                   ? 'bg-[#1a3a5c] text-white font-bold'
                   : closed
