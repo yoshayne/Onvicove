@@ -1,5 +1,6 @@
 import { useWizardStore } from '../wizardStore';
 import type { ThemeId } from '../../themes/types';
+import { BUSINESS_TYPE_BY_ID } from '../businessTypes';
 
 interface ThemeOption {
   id: ThemeId;
@@ -29,6 +30,9 @@ export default function Step3_Theme() {
   const setThemeId = useWizardStore((s) => s.setThemeId);
   const plan = useWizardStore((s) => s.plan);
   const isPro = plan === 'pro' || plan === 'business';
+  const businessType = useWizardStore((s) => s.businessType);
+  const type = BUSINESS_TYPE_BY_ID[businessType];
+  const recommended = type && type.why.length > 0 ? THEME_OPTIONS.find((t) => t.id === type.themeId) : undefined;
 
   function handleSelect(theme: ThemeOption) {
     if (theme.premium && !isPro) {
@@ -50,6 +54,37 @@ export default function Step3_Theme() {
         </p>
       </div>
 
+      {recommended && type && (
+        <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Recommended for {type.label.toLowerCase()}</p>
+          <div className="mt-2 flex items-center gap-3">
+            <div className="flex h-10 w-24 shrink-0 overflow-hidden rounded-lg border border-blue-100">
+              {recommended.colors.map((color, i) => (
+                <div key={i} className="flex-1" style={{ backgroundColor: color }} />
+              ))}
+            </div>
+            <div>
+              <p className="font-medium text-gray-900">{recommended.name}</p>
+              <p className="text-xs text-gray-600">{recommended.description}</p>
+            </div>
+          </div>
+          <p className="mt-3 text-sm font-medium text-gray-900">Why it fits:</p>
+          <ul className="mt-1 list-disc pl-5 text-sm text-gray-700">
+            {type.why.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => handleSelect(recommended)}
+            className="mt-3 rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
+          >
+            {themeId === recommended.id ? '✓ Using this look' : 'Use this look'}
+          </button>
+          <p className="mt-2 text-xs text-gray-500">Not feeling it? Pick any look below. You can change it anytime.</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         {freeThemes.map((theme) => (
           <button
@@ -68,7 +103,10 @@ export default function Step3_Theme() {
               ))}
             </div>
             <div>
-              <p className="font-medium text-gray-900">{theme.name}</p>
+              <p className="flex items-center gap-2 font-medium text-gray-900">
+                {theme.name}
+                {recommended?.id === theme.id && <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">Recommended</span>}
+              </p>
               <p className="text-xs text-gray-500">{theme.description}</p>
             </div>
           </button>

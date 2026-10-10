@@ -24,6 +24,7 @@ export default function Step10_Launch() {
   const setStep = useWizardStore((s) => s.setStep);
   const completeness = useWizardStore(selectWizardCompleteness);
 
+  const starterLeft = services.filter((sv) => sv.starter).length;
   const missing: { label: string; step: number }[] = [];
   if (!completeness.businessNameDone) missing.push({ label: 'Business name', step: 1 });
   if (!completeness.modeDone) missing.push({ label: 'Store type', step: 2 });
@@ -58,6 +59,16 @@ export default function Step10_Launch() {
         />
         <SummaryRow label="Plan" value={PLAN_LABELS[plan] ?? plan} />
       </div>
+
+      {starterLeft > 0 && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+          {starterLeft} of your services are still starter examples with sample prices.{' '}
+          <button type="button" onClick={() => setStep(7)} className="underline hover:text-blue-700">
+            Check your services
+          </button>{' '}
+          before you launch.
+        </div>
+      )}
 
       {missing.length > 0 ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">

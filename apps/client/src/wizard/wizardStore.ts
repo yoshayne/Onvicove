@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { v4 as uuidv4 } from 'uuid';
+import { BUSINESS_TYPE_BY_ID } from './businessTypes';
 import type { ThemeId, StoreMode } from '../themes/types';
 import type { FontPairId } from '../themes/shared/fontPairs';
 
@@ -20,6 +22,8 @@ export interface WizardService {
   description?: string;
   requiresDeposit?: boolean;
   depositCents?: number | null;
+  /** An example from the starter menu the owner hasn't edited yet */
+  starter?: boolean;
 }
 
 export interface WizardStaffMember {
@@ -53,6 +57,8 @@ export interface WizardState {
   currentStep: number;
 
   businessName: string;
+  /** What kind of business this is (see businessTypes.ts); drives the suggested look and starter services */
+  businessType: string;
   slug: string;
   mode: StoreMode;
   themeId: ThemeId;
@@ -85,6 +91,7 @@ export interface WizardState {
   prevStep: () => void;
 
   setBusinessName: (name: string) => void;
+  setBusinessType: (id: string) => void;
   setSlug: (slug: string) => void;
   setMode: (mode: StoreMode) => void;
   setThemeId: (themeId: ThemeId) => void;
@@ -123,6 +130,7 @@ export interface WizardState {
 
 const initialState: Omit<
   WizardState,
+  | 'setBusinessType'
   | 'setStep'
   | 'nextStep'
   | 'prevStep'
@@ -153,6 +161,7 @@ const initialState: Omit<
   | 'reset'
 > = {
   currentStep: 1,
+  businessType: '',
   businessName: '',
   slug: '',
   mode: 'both',
@@ -191,6 +200,35 @@ export const useWizardStore = create<WizardState>()(
       prevStep: () => set((s) => ({ currentStep: Math.max(1, s.currentStep - 1) })),
 
       setBusinessName: (name) => set({ businessName: name }),
+      setBusinessType: (id) =>
+        set((st) => {
+          const type = BUSINESS_TYPE_BY_ID[id];
+          if (!type) return {};
+          // Starter menu: fill an empty list, or swap one the owner hasn't touched. Never overwrite their own services.
+          const untouched = st.services.length === 0 || st.services.every((sv) => sv.starter);
+          const starterServices =
+            untouched && type.mode !== 'store'
+              ? type.starterServices.map((x) => ({
+                  id: uuidv4(),
+                  name: x.name,
+                  priceCents: x.priceCents,
+                  durationMinutes: x.durationMinutes,
+                  description: x.description ?? '',
+                  requiresDeposit: !!x.depositCents,
+                  depositCents: x.depositCents ?? null,
+                  starter: true,
+                }))
+              : untouched && type.mode === 'store'
+                ? []
+                : st.services;
+          return {
+            businessType: id,
+            mode: type.mode,
+            // 'Something else' keeps whatever they typed before
+            industry: type.industry || st.industry,
+            services: starterServices,
+          };
+        }),
       setSlug: (slug) => set({ slug }),
       setMode: (mode) => set({ mode }),
       setThemeId: (themeId) => set({ themeId }),
@@ -217,7 +255,7 @@ export const useWizardStore = create<WizardState>()(
       addService: (service) => set((s) => ({ services: [...s.services, service] })),
       updateService: (id, updates) =>
         set((s) => ({
-          services: s.services.map((sv) => (sv.id === id ? { ...sv, ...updates } : sv)),
+          services: s.services.map((sv) => (sv.id === id ? { ...sv, ...updates, starter: false } : sv)),
         })),
       removeService: (id) =>
         set((s) => ({ services: s.services.filter((sv) => sv.id !== id) })),

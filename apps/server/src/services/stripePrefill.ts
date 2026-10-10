@@ -29,18 +29,34 @@ export type StripeDetails = z.infer<typeof stripeDetailsSchema>;
 
 /** What the store sells -> Stripe merchant category code. */
 export const MCC_OPTIONS = [
+  { mcc: '5651', label: 'Clothing & accessories' },
+  { mcc: '5944', label: 'Jewelry' },
+  { mcc: '5970', label: 'Art, crafts & handmade goods' },
+  { mcc: '5499', label: 'Food, drink & bakery' },
+  { mcc: '5977', label: 'Beauty & skincare products' },
+  { mcc: '5719', label: 'Candles, home & gifts' },
+  { mcc: '5999', label: 'Other retail' },
+  { mcc: '7230', label: 'Hair, barber, nails & lashes' },
+  { mcc: '7298', label: 'Spa, massage & wellness' },
+  { mcc: '7299', label: 'Tattoo & other services' },
   { mcc: '7221', label: 'Photography' },
-  { mcc: '7230', label: 'Beauty, hair & barber' },
-  { mcc: '7298', label: 'Health & wellness / spa' },
   { mcc: '7991', label: 'Fitness & recreation' },
   { mcc: '8299', label: 'Classes, coaching & tutoring' },
   { mcc: '7311', label: 'Marketing & creative services' },
   { mcc: '8999', label: 'Consulting & professional services' },
-  { mcc: '5812', label: 'Food & drink' },
-  { mcc: '5651', label: 'Clothing & accessories' },
-  { mcc: '5970', label: 'Art, crafts & handmade goods' },
-  { mcc: '5999', label: 'Other retail' },
+  { mcc: '5812', label: 'Restaurant & cafe' },
 ] as const;
+
+/** The business type picked in the setup wizard -> Stripe's category code */
+const MCC_BY_BUSINESS_TYPE: Record<string, string> = {
+  clothing: '5651', retail: '5999', jewelry: '5944', handmade: '5970', food: '5499', beauty_products: '5977', home_gifts: '5719',
+  barber: '7230', hair_salon: '7230', natural_hair: '7230', braids_locs: '7230', nails: '7230', lashes_brows: '7230',
+  spa_massage: '7298', tattoo: '7299',
+};
+
+export function mccForBusinessType(id: string | null | undefined): string | undefined {
+  return id ? MCC_BY_BUSINESS_TYPE[id] : undefined;
+}
 
 /** Best guess from the free-text industry the owner typed in the setup wizard. */
 export function guessMcc(industry: string | null | undefined): string | undefined {
@@ -61,13 +77,13 @@ export function guessMcc(industry: string | null | undefined): string | undefine
   return rules.find(([re]) => re.test(t))?.[1];
 }
 
-interface TenantLike { company_name: string; slug: string; industry?: string | null; tagline?: string | null }
+interface TenantLike { company_name: string; slug: string; industry?: string | null; tagline?: string | null; business_type?: string | null }
 interface UserLike { email?: string | null; first_name?: string | null; last_name?: string | null }
 
 /** Fields to pre-fill on the connected account. Only what we actually know is included. */
 export function buildPrefill(tenant: TenantLike, user: UserLike | undefined, details: Partial<StripeDetails>): Stripe.AccountUpdateParams {
   const url = `${getBaseUrl()}/${tenant.slug}`;
-  const mcc = details.mcc ?? guessMcc(tenant.industry);
+  const mcc = details.mcc ?? mccForBusinessType(tenant.business_type) ?? guessMcc(tenant.industry);
   const profile: Stripe.AccountUpdateParams.BusinessProfile = { name: tenant.company_name, url };
   if (mcc) profile.mcc = mcc;
   if (details.phone) profile.support_phone = details.phone;

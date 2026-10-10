@@ -38,6 +38,7 @@ export interface WizardCompleteResponse {
 function buildWizardData(state: WizardState) {
   return {
     stepsVersion: WIZARD_STEPS_VERSION,
+    businessType: state.businessType,
     businessName: state.businessName,
     tagline: state.tagline,
     mode: state.mode,
@@ -86,6 +87,7 @@ function applyWizardData(state: WizardState, data: Record<string, unknown>, slug
   const d = data as Record<string, any>;
   if (typeof d.businessName === 'string') state.setBusinessName(d.businessName);
   if (slug) state.setSlug(slug);
+  if (typeof d.businessType === 'string' && d.businessType) useWizardStore.setState({ businessType: d.businessType });
   if (typeof d.tagline === 'string') state.setTagline(d.tagline);
   if (d.mode) state.setMode(d.mode);
   if (d.themeId) state.setThemeId(d.themeId);

@@ -104,6 +104,7 @@ export default function Step4_BrandInfo() {
   const brandColor = useWizardStore((s) => s.brandColor);
   const city = useWizardStore((s) => s.city);
   const industry = useWizardStore((s) => s.industry);
+  const businessType = useWizardStore((s) => s.businessType);
   const logoPreviewUrl = useWizardStore((s) => s.logoPreviewUrl);
   const faviconPreviewUrl = useWizardStore((s) => s.faviconPreviewUrl);
 
@@ -192,19 +193,21 @@ export default function Step4_BrandInfo() {
         />
       </div>
 
+      {(!businessType || businessType === 'other') && (
       <div>
-        <label htmlFor="industry" className="mb-1 block text-sm font-medium text-gray-700">
-          Industry
-        </label>
-        <input
-          id="industry"
-          type="text"
-          value={industry}
-          onChange={(e) => setIndustry(e.target.value)}
-          placeholder="e.g. Coffee shop, salon, photography"
-          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-base focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-        />
-      </div>
+          <label htmlFor="industry" className="mb-1 block text-sm font-medium text-gray-700">
+            Industry
+          </label>
+          <input
+            id="industry"
+            type="text"
+            value={industry}
+            onChange={(e) => setIndustry(e.target.value)}
+            placeholder="e.g. Coffee shop, salon, photography"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-base focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+          />
+        </div>
+      )}
     </div>
   );
 }

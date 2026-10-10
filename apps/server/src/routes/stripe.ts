@@ -9,7 +9,7 @@ import { STRIPE_CARD_FEE } from '../services/chargeModel';
 import { holdsTime } from '../services/slots';
 import { recordAccountState } from '../services/stripeAccounts';
 import { summarizeAccount } from '../services/stripeRequirements';
-import { stripeDetailsSchema, buildPrefill, guessMcc, MCC_OPTIONS, type StripeDetails } from '../services/stripePrefill';
+import { stripeDetailsSchema, buildPrefill, guessMcc, mccForBusinessType, MCC_OPTIONS, type StripeDetails } from '../services/stripePrefill';
 import { stripe, computePlatformFee, createBookingPaymentIntent, createStorePaymentIntent, ensureConnectedProfile, getOrCreateStripeCustomer } from '../services/stripe';
 import {
   sendStripeConnected, sendAdminStripeConnected,
@@ -57,12 +57,12 @@ async function notifyBookingPaid(booking: Record<string, unknown>, tenantId: str
 // GET /api/stripe/business-details — what we'll pre-fill on Stripe (saved earlier, or a guess from the wizard)
 app.get('/business-details', requireAuth, async (c) => {
   const clerkUserId = c.get('clerkUserId') as string;
-  const rows = await db`SELECT company_name, industry, stripe_details FROM tenants WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
+  const rows = await db`SELECT company_name, industry, business_type, stripe_details FROM tenants WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
   const tenant = rows[0];
   if (!tenant) return c.json({ error: 'No tenant account found' }, 404);
   const saved = (tenant.stripe_details as Partial<StripeDetails> | null) ?? {};
   return c.json({
-    details: { business_type: 'individual', ...saved, mcc: saved.mcc ?? guessMcc(tenant.industry as string | null) },
+    details: { business_type: 'individual', ...saved, mcc: saved.mcc ?? mccForBusinessType(tenant.business_type as string | null) ?? guessMcc(tenant.industry as string | null) },
     mcc_options: MCC_OPTIONS,
   });
 });
@@ -87,7 +87,7 @@ app.post('/connect-link', requireAuth, async (c) => {
 
   const userRows = await db`SELECT email, first_name, last_name FROM users WHERE clerk_user_id = ${clerkUserId} LIMIT 1`;
   const prefill = buildPrefill(
-    { company_name: tenant.company_name as string, slug: tenant.slug as string, industry: tenant.industry as string | null, tagline: tenant.tagline as string | null },
+    { company_name: tenant.company_name as string, slug: tenant.slug as string, industry: tenant.industry as string | null, tagline: tenant.tagline as string | null, business_type: tenant.business_type as string | null },
     userRows[0] as { email?: string; first_name?: string; last_name?: string } | undefined,
     details,
   );

@@ -22,6 +22,15 @@ export default function Step6b_Services() {
         </p>
       </div>
 
+      {services.some((sv) => sv.starter) && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+          <p className="font-medium">These are starter examples. Make them yours.</p>
+          <p className="mt-0.5 text-blue-800">
+            Change the names, prices and times, or remove any you don't offer. The prices here are just examples, not recommendations.
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-4">
         {services.map((service) => (
           <ServiceCard

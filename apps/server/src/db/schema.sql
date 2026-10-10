@@ -526,3 +526,6 @@ WHERE r.gross_amount_cents < 0 AND r.refund_of IS NULL;
 
 -- Set when a store is re-attached to its owner after the Clerk application changed (lets us roll back)
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS previous_clerk_user_id TEXT;
+
+-- What kind of business the owner picked in the setup wizard (drives suggested theme, starter services, Stripe category)
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS business_type TEXT;
