@@ -232,7 +232,7 @@ const PLANS = [
     desc: 'Everything you need to grow your business.',
     price: null,
     priceNote: null,
-    features: ['Custom domain included', 'Unlimited products & services', 'All 6 themes', 'AI product photos', 'Discount codes', 'Advanced analytics', 'Priority support'],
+    features: ['Custom domain included', 'Unlimited products & services', 'All 16 themes', 'AI product photos', 'Discount codes', 'Advanced analytics', 'Priority support'],
     cta: 'Get started',
     highlight: true,
   },

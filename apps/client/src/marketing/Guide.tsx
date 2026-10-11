@@ -351,7 +351,7 @@ export default function Guide() {
                 highlight: true,
                 badge: 'Most Popular',
                 desc: '2% platform fee + Stripe fees',
-                perks: ['Custom domain', 'Unlimited products & services', 'All 12 themes', 'Discount codes', 'AI product photos'],
+                perks: ['Custom domain', 'Unlimited products & services', 'All 16 themes', 'Discount codes', 'AI product photos'],
               },
               {
                 name: 'Business',

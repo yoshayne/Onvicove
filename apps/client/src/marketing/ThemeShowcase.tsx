@@ -3,7 +3,10 @@ import { SAMPLE_FAQS } from '../themes/shared/FaqBlock';
 import { useState, Suspense, lazy, type ComponentType } from 'react';
 import type { ThemeId, ThemeProps, ProductData, ServiceData } from '../themes/types';
 
-const THEMES: { id: ThemeId; name: string; desc: string; premium?: boolean }[] = [
+const THEMES: { id: ThemeId; name: string; desc: string; premium?: boolean; isNew?: boolean }[] = [
+  { id: 'barber', name: 'Barber', desc: 'Barbershops: dark, sharp, booking first', isNew: true },
+  { id: 'studio', name: 'Studio', desc: 'Hair, nails, lashes & spa', isNew: true },
+  { id: 'ink', name: 'Ink', desc: 'Tattoo & braids: your work first', isNew: true },
   { id: 'editorial', name: 'Editorial', desc: 'Dark luxury, serif headlines' },
   { id: 'minimal', name: 'Minimal', desc: 'Swiss grid, clean whitespace' },
   { id: 'bold', name: 'Bold', desc: 'Streetwear, neon yellow' },
@@ -691,9 +694,9 @@ export default function ThemeShowcase() {
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
-      <h2 className="text-center text-3xl font-bold tracking-tight">Thirteen stunning themes</h2>
+      <h2 className="text-center text-3xl font-bold tracking-tight">Sixteen themes, built for how you work</h2>
       <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
-        Six free themes for every brand. Six next-level premium themes for Pro & Business plans.
+        Nine free themes, including three new booking-first looks for barbers, salons and tattoo artists. Seven premium themes for Pro & Business plans.
       </p>
 
       {/* Tab switcher */}
@@ -730,8 +733,13 @@ export default function ThemeShowcase() {
                 className="group cursor-pointer overflow-hidden rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
                 onClick={() => { setActiveTheme(t.id); setTab('full'); }}
               >
-                <div className="h-48 overflow-hidden">
+                <div className="relative h-48 overflow-hidden">
                   <MiniMockup id={t.id} />
+                  {t.isNew && (
+                    <span className="absolute top-2 right-2 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm">
+                      New
+                    </span>
+                  )}
                 </div>
                 <div className="border-t border-slate-100 bg-white p-3">
                   <p className="text-sm font-semibold text-slate-900">{t.name}</p>
