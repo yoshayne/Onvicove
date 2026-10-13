@@ -265,26 +265,40 @@ export default function Bookings() {
   const formatCents = useMoney();
   const api = useApi();
   const queryClient = useQueryClient();
-  const [view, setView] = useState<'upcoming' | 'past' | 'all'>('upcoming');
+  type View = 'upcoming' | 'unpaid' | 'past' | 'cancelled' | 'all';
+  const [view, setView] = useState<View>('upcoming');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const params = new URLSearchParams();
-  if (statusFilter) params.set('status', statusFilter);
-  // Upcoming shoots first by default (the list used to start with the oldest booking ever made)
+  // Everything comes down once; the tabs, counts and filters are worked out here so switching is instant
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['bookings'],
+    queryFn: () => api.get<{ bookings: Booking[] }>('/bookings'),
+  });
+
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
-  if (dateFrom) params.set('date_from', dateFrom);
-  else if (view === 'upcoming') params.set('date_from', startOfToday.toISOString());
-  if (dateTo) params.set('date_to', dateTo);
-  else if (view === 'past') params.set('date_to', startOfToday.toISOString());
-  const query = params.toString();
+  const all = data?.bookings ?? [];
+  const isCancelled = (b: Booking) => b.status === 'cancelled';
+  const isUnpaid = (b: Booking) => b.status === 'awaiting_payment';
+  const inFuture = (b: Booking) => new Date(b.start_time) >= startOfToday;
+  const tabFilters: Record<View, (b: Booking) => boolean> = {
+    // Real appointments still to come (confirmed, or waiting for your approval)
+    upcoming: (b) => !isCancelled(b) && !isUnpaid(b) && inFuture(b),
+    unpaid: isUnpaid,
+    past: (b) => !isCancelled(b) && !isUnpaid(b) && !inFuture(b),
+    cancelled: isCancelled,
+    all: () => true,
+  };
+  const counts = Object.fromEntries((Object.keys(tabFilters) as View[]).map((v) => [v, all.filter(tabFilters[v]).length])) as Record<View, number>;
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['bookings', view, statusFilter, dateFrom, dateTo],
-    queryFn: () => api.get<{ bookings: Booking[] }>(`/bookings${query ? `?${query}` : ''}`),
-  });
+  let visible = all.filter(tabFilters[view]);
+  if (statusFilter) visible = visible.filter((b) => b.status === statusFilter);
+  if (dateFrom) visible = visible.filter((b) => new Date(b.start_time) >= new Date(`${dateFrom}T00:00:00`));
+  if (dateTo) visible = visible.filter((b) => new Date(b.start_time) <= new Date(`${dateTo}T23:59:59`));
+  // Soonest first for what's ahead; most recent first for everything that has already happened or been dropped
+  visible = [...visible].sort((x, y) => (view === 'upcoming' ? 1 : -1) * (new Date(x.start_time).getTime() - new Date(y.start_time).getTime()));
 
   const updateMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: BookingStatus }) =>
@@ -317,15 +331,24 @@ export default function Bookings() {
 
       <CityScheduleCalendar />
 
-      <div className="inline-flex self-start rounded-lg border border-slate-200 bg-slate-100 p-1">
-        {(['upcoming', 'past', 'all'] as const).map((v) => (
+      <div className="flex max-w-full flex-wrap gap-1 self-start rounded-lg border border-slate-200 bg-slate-100 p-1">
+        {([
+          ['upcoming', 'Upcoming'],
+          ['unpaid', 'Not paid'],
+          ['past', 'Past'],
+          ['cancelled', 'Cancelled'],
+          ['all', 'All'],
+        ] as [View, string][]).map(([v, label]) => (
           <button
             key={v}
             type="button"
-            onClick={() => setView(v)}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium capitalize transition-colors ${view === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            onClick={() => { setView(v); setStatusFilter(''); }}
+            className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${view === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
-            {v}
+            {label}
+            {counts[v] > 0 && (
+              <span className={`rounded-full px-1.5 text-[11px] ${v === 'unpaid' && view !== v ? 'bg-amber-200 text-amber-900' : 'bg-slate-200 text-slate-600'}`}>{counts[v]}</span>
+            )}
           </button>
         ))}
       </div>
@@ -357,9 +380,9 @@ export default function Bookings() {
         />
       </div>
 
-      {(data?.bookings ?? []).some((b) => b.status === 'awaiting_payment') && !statusFilter && (
+      {view === 'unpaid' && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {(data?.bookings ?? []).filter((b) => b.status === 'awaiting_payment').length} booking attempt(s) haven't been paid. They stay on the list so you can follow up, and release their time slot after 30 minutes.
+          These people started booking but didn't pay. Send a payment link to follow up. Their time slot is released after 30 minutes, and attempts older than 14 days drop off this list.
         </div>
       )}
       {linkNotice && <div className="rounded-lg bg-slate-100 px-4 py-2 text-sm text-slate-700">{linkNotice}</div>}
@@ -370,9 +393,9 @@ export default function Bookings() {
         </div>
       ) : isError ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">Failed to load bookings.</div>
-      ) : !data?.bookings.length ? (
+      ) : !visible.length ? (
         <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
-          No bookings found.
+          {{ upcoming: 'No upcoming appointments.', unpaid: 'Nobody is waiting to pay.', past: 'No past appointments yet.', cancelled: 'No cancelled appointments.', all: 'No bookings found.' }[view]}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -389,7 +412,7 @@ export default function Bookings() {
               </tr>
             </thead>
             <tbody>
-              {(view === 'past' ? [...data.bookings].reverse() : data.bookings).map((b) => (
+              {visible.map((b) => (
                 <tr key={b.id} className="border-t border-slate-100">
                   <td className="px-4 py-3">
                     <div className="font-medium text-slate-900">{b.customer_name}</div>
@@ -443,10 +466,10 @@ export default function Bookings() {
                           variant="secondary"
                           onClick={() => updateMutation.mutate({ id: b.id, status: 'confirmed' })}
                         >
-                          Confirm
+                          {b.status === 'cancelled' ? 'Restore' : 'Confirm'}
                         </Button>
                       )}
-                      {b.status !== 'completed' && (
+                      {b.status !== 'completed' && b.status !== 'cancelled' && (
                         <Button
                           size="sm"
                           variant="secondary"
