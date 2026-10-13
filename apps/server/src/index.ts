@@ -211,6 +211,22 @@ async function buildStoreHtml(
   opts: { path: string; search: string; origin: string; hostSlug?: string },
 ): Promise<StoreMetaResult> {
   const segments = opts.path.split('/').filter(Boolean);
+  // A claim link keeps its own preview ("Your site is ready"): the home page now has the general one
+  if (segments[0] === 'claim') {
+    const claimTags = [
+      `<meta property="og:type" content="website" />`,
+      `<meta property="og:site_name" content="Shop Suite Direct" />`,
+      `<meta property="og:title" content="Your site is ready: claim it now" />`,
+      `<meta property="og:description" content="Your online store has been built for you on Shop Suite Direct. Create your free account to take ownership and start selling." />`,
+      `<meta property="og:image" content="${opts.origin}/og-invite.png" />`,
+      `<meta property="og:image:width" content="1200" />`,
+      `<meta property="og:image:height" content="630" />`,
+      `<meta name="twitter:card" content="summary_large_image" />`,
+      `<meta name="twitter:title" content="Your site is ready: claim it now" />`,
+      `<meta name="twitter:image" content="${opts.origin}/og-invite.png" />`,
+    ].join('\n    ');
+    return { html: html.replace(/<meta (?:property="og:|name="twitter:)[^>]*>\s*/g, () => '').replace('</head>', () => `    ${claimTags}\n  </head>`) };
+  }
   const pathSlug = segments[0] === 'store' ? segments[1] : segments[0];
   const slug = opts.hostSlug ?? (pathSlug && !NON_STORE_ROUTES.has(pathSlug) ? pathSlug : undefined);
   if (!slug) return { html };
