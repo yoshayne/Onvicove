@@ -21,14 +21,48 @@ function btn(text: string, url: string) {
   return `<p style="margin:24px 0"><a href="${url}" style="display:inline-block;padding:12px 24px;background:#111111;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600">${text}</a></p>`;
 }
 
-function wrap(title: string, body: string) {
+/** `brand` is the store's name on customer-facing emails; platform emails keep Shop Suite Direct. */
+function wrap(title: string, body: string, brand?: string) {
+  const name = (brand ?? '').trim() || 'Shop Suite Direct';
+  const footer = brand?.trim()
+    ? `${escapeHtml(name)} · Sent through Shop Suite Direct.`
+    : `Shop Suite Direct · You're receiving this because you have an account with us.`;
   return `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1e293b;max-width:600px;margin:0 auto;padding:32px 16px">
-    <p style="font-weight:700;font-size:18px;margin-bottom:24px">Shop Suite Direct</p>
+    <p style="font-weight:700;font-size:18px;margin-bottom:24px">${escapeHtml(name)}</p>
     <h2 style="font-size:22px;margin-bottom:16px">${title}</h2>
     ${body}
     <hr style="margin-top:40px;border:none;border-top:1px solid #e2e8f0"/>
-    <p style="font-size:12px;color:#94a3b8;margin-top:16px">Shop Suite Direct · You're receiving this because you have an account with us.</p>
+    <p style="font-size:12px;color:#94a3b8;margin-top:16px">${footer}</p>
   </body></html>`;
+}
+
+function escapeHtml(t: string) {
+  return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/** A display name that is safe in an email From header. */
+function safeFromName(name?: string | null): string | null {
+  const cleaned = (name ?? '').replace(/[<>"\\\r\n]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  return cleaned || null;
+}
+
+/**
+ * Where a customer's reply should go: the store's contact email, else its owner. (The sending address is ours, so
+ * without this a reply would go to a mailbox nobody reads.) Found by tenant id, or by name when only one store has it.
+ */
+async function storeReplyTo(data: { tenantId?: string; companyName?: string }): Promise<{ email: string } | undefined> {
+  try {
+    const rows = data.tenantId
+      ? await db`SELECT t.page_content->>'contact.email' AS contact, u.email AS owner FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${data.tenantId} LIMIT 2`
+      : data.companyName
+        ? await db`SELECT t.page_content->>'contact.email' AS contact, u.email AS owner FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.company_name = ${data.companyName} LIMIT 2`
+        : [];
+    if (rows.length !== 1) return undefined;
+    const email = ((rows[0].contact as string | null)?.trim() || (rows[0].owner as string | null)) ?? '';
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? { email } : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 interface EmailMeta {
@@ -43,6 +77,8 @@ export async function sendTransacEmail(payload: {
   subject: string;
   htmlContent: string;
   replyTo?: { email: string };
+  /** Display name shown as the sender (the sending address stays ours). Customer emails use the store's name. */
+  fromName?: string;
 }, meta?: EmailMeta): Promise<void> {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) throw new Error('BREVO_API_KEY environment variable is required');
@@ -56,7 +92,7 @@ export async function sendTransacEmail(payload: {
       Accept: 'application/json',
       'api-key': apiKey,
     },
-    body: JSON.stringify({ sender: SENDER, ...payload }),
+    body: JSON.stringify({ sender: { name: safeFromName(payload.fromName) ?? SENDER.name, email: SENDER.email }, ...(({ fromName: _f, ...rest }) => rest)(payload) }),
   });
 
   if (!response.ok) {
@@ -302,6 +338,8 @@ interface OrderEmailData {
 
 export async function sendBookingConfirmation(data: BookingEmailData): Promise<void> {
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName }],
     subject: `Booking confirmed — ${data.companyName}`,
     htmlContent: wrap('Your booking is confirmed!', `
@@ -311,12 +349,14 @@ export async function sendBookingConfirmation(data: BookingEmailData): Promise<v
       <p><strong>End:</strong> ${data.endTime}</p>
       <p>Thank you — we look forward to seeing you!</p>
       ${manageBlock(data)}
-    `),
+    `, data.companyName),
   }, data.tenantId ? { tenantId: data.tenantId, type: 'booking_confirmation', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
 
 export async function sendBookingReminder(data: BookingEmailData): Promise<void> {
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName }],
     subject: `Reminder: appointment tomorrow — ${data.companyName}`,
     htmlContent: wrap('Appointment reminder', `
@@ -326,24 +366,28 @@ export async function sendBookingReminder(data: BookingEmailData): Promise<void>
       <p><strong>End:</strong> ${data.endTime}</p>
       <p>See you soon!</p>
       ${manageBlock(data)}
-    `),
+    `, data.companyName),
   }, data.tenantId ? { tenantId: data.tenantId, type: 'booking_reminder', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
 
 export async function sendBookingCancelled(data: BookingEmailData): Promise<void> {
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName }],
     subject: `Appointment cancelled — ${data.companyName}`,
     htmlContent: wrap('Your appointment has been cancelled', `
       <p>Hi ${data.toName},</p>
       <p>Your appointment for <strong>${data.serviceName}</strong> with <strong>${data.companyName}</strong> has been cancelled.</p>
       <p>If you'd like to rebook or have questions, please contact ${data.companyName} directly.</p>
-    `),
+    `, data.companyName),
   }, data.tenantId ? { tenantId: data.tenantId, type: 'booking_cancelled', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
 
 export async function sendOrderConfirmation(data: OrderEmailData): Promise<void> {
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName }],
     subject: `Order confirmed — ${data.orderNumber}`,
     htmlContent: wrap('Thank you for your order!', `
@@ -351,7 +395,7 @@ export async function sendOrderConfirmation(data: OrderEmailData): Promise<void>
       <p>Your order <strong>${data.orderNumber}</strong> with <strong>${data.companyName}</strong> has been received.</p>
       <p><strong>Total:</strong> $${(data.totalCents / 100).toFixed(2)}</p>
       <p>We'll send you a shipping confirmation with tracking info once your order is on its way.</p>
-    `),
+    `, data.companyName),
   }, data.tenantId ? { tenantId: data.tenantId, type: 'order_confirmation', referenceType: 'order', referenceId: data.orderId } : undefined);
 }
 
@@ -368,13 +412,15 @@ export async function sendOrderShipped(data: {
     : `<p><strong>Tracking number:</strong> ${data.trackingNumber}</p>`;
 
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName }],
     subject: `Your order has shipped — ${data.orderNumber}`,
     htmlContent: wrap('Your order is on its way!', `
       <p>Hi ${data.toName},</p>
       <p>Good news! Your order <strong>${data.orderNumber}</strong> from <strong>${data.companyName}</strong> has shipped.</p>
       ${trackingBlock}
-    `),
+    `, data.companyName),
   });
 }
 
@@ -386,13 +432,15 @@ export async function sendOrderRefunded(data: {
   companyName: string;
 }): Promise<void> {
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName }],
     subject: `Refund processed — ${data.orderNumber}`,
     htmlContent: wrap('Your refund has been processed', `
       <p>Hi ${data.toName},</p>
       <p>Your refund of <strong>$${(data.totalCents / 100).toFixed(2)}</strong> for order <strong>${data.orderNumber}</strong> with <strong>${data.companyName}</strong> has been processed.</p>
       <p>Funds typically appear in your account within 5–10 business days depending on your bank.</p>
-    `),
+    `, data.companyName),
   });
 }
 
@@ -406,13 +454,15 @@ export async function sendBookingRefunded(data: {
   bookingId?: string;
 }): Promise<void> {
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName }],
     subject: `Refund processed — ${data.companyName}`,
     htmlContent: wrap('Your refund has been processed', `
       <p>Hi ${data.toName},</p>
       <p>Your payment of <strong>$${(data.amountCents / 100).toFixed(2)}</strong> for <strong>${data.serviceName}</strong> with <strong>${data.companyName}</strong> has been refunded.</p>
       <p>Funds typically appear in your account within 5–10 business days depending on your bank.</p>
-    `),
+    `, data.companyName),
   }, data.tenantId ? { tenantId: data.tenantId, type: 'booking_refunded', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
 
@@ -431,6 +481,8 @@ export async function sendPaymentLinkEmail(data: PaymentLinkEmailData): Promise<
   const baseUrl = data.baseUrl ?? getBaseUrl();
   const payUrl = `${baseUrl}/pay/booking/${data.bookingId}`;
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName }],
     subject: `Payment requested — ${data.companyName}`,
     htmlContent: wrap('Remaining balance due', `
@@ -438,7 +490,7 @@ export async function sendPaymentLinkEmail(data: PaymentLinkEmailData): Promise<
       <p>Thanks for visiting <strong>${data.companyName}</strong>! Your <strong>${data.serviceName}</strong> appointment has a remaining balance of <strong>$${(data.amountCents / 100).toFixed(2)}</strong>.</p>
       ${btn('Pay now', payUrl)}
       <p style="font-size:13px;color:#64748b">Or copy this link: ${payUrl}</p>
-    `),
+    `, data.companyName),
   }, data.tenantId ? { tenantId: data.tenantId, type: 'payment_link', referenceType: 'booking', referenceId: data.bookingId } : undefined);
 }
 
@@ -579,13 +631,15 @@ export async function sendSubscriberWelcome(data: {
   companyName: string;
 }): Promise<void> {
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName || data.toEmail }],
     subject: `Thanks for subscribing to ${data.companyName}!`,
     htmlContent: wrap(`You're on the list!`, `
       <p>Hi${data.toName ? ` ${data.toName.split(' ')[0]}` : ''},</p>
       <p>Thanks for subscribing to <strong>${data.companyName}</strong>. You'll be the first to hear about new products, offers, and updates.</p>
       <p style="font-size:13px;color:#64748b">If you didn't subscribe, you can safely ignore this email.</p>
-    `),
+    `, data.companyName),
   });
 }
 
@@ -706,6 +760,8 @@ export async function sendPaymentFailed(data: {
   retryUrl: string;
 }): Promise<void> {
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName }],
     subject: `Payment failed — ${data.companyName}`,
     htmlContent: wrap('Your payment could not be processed', `
@@ -714,7 +770,7 @@ export async function sendPaymentFailed(data: {
       <p>This can happen if your card was declined, expired, or has insufficient funds. Please try again with a different payment method.</p>
       ${btn('Try again', data.retryUrl)}
       <p style="font-size:13px;color:#64748b">If you continue to have trouble, contact ${data.companyName} directly.</p>
-    `),
+    `, data.companyName),
   });
 }
 
@@ -733,6 +789,8 @@ export async function sendBookingAwaitingPayment(data: {
   const baseUrl = data.baseUrl ?? getBaseUrl();
   const payUrl = `${baseUrl}/pay/booking/${data.bookingId}`;
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName }],
     subject: `Complete your booking — ${data.companyName}`,
     htmlContent: wrap('One step left to confirm your booking', `
@@ -741,7 +799,7 @@ export async function sendBookingAwaitingPayment(data: {
       <p>Please complete your payment of <strong>$${(data.amountCents / 100).toFixed(2)}</strong> to lock in your spot.</p>
       ${btn('Pay now to confirm', payUrl)}
       <p style="font-size:13px;color:#64748b">Your spot is not guaranteed until payment is received.</p>
-    `),
+    `, data.companyName),
   });
 }
 
@@ -777,13 +835,15 @@ export async function sendCustomOrderConfirmation(data: {
   companyName: string;
 }): Promise<void> {
   await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
     to: [{ email: data.customerEmail, name: data.customerName }],
     subject: `We received your custom order request — ${data.companyName}`,
     htmlContent: wrap('We got your request!', `
       <p>Hi ${data.customerName},</p>
       <p>Thank you for reaching out to <strong>${data.companyName}</strong>! We've received your custom order request and will be in touch with you soon.</p>
       <p style="font-size:13px;color:#64748b">If you have any additional details to share, just reply to this email.</p>
-    `),
+    `, data.companyName),
   });
 }
 
