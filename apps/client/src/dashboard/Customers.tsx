@@ -8,6 +8,21 @@ import Button from '../components/shared/Button';
 import Modal from '../components/shared/Modal';
 import { Input, Textarea } from '../components/shared/Input';
 
+// Tags should be a list, but older records saved them as text; never let a bad value crash the page
+function asTags(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map(String);
+  if (typeof v === 'string') {
+    try {
+      const parsed = JSON.parse(v);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {
+      /* plain text */
+    }
+    return v.trim() ? [v.trim()] : [];
+  }
+  return [];
+}
+
 export default function Customers() {
   const formatCents = useMoney();
   const api = useApi();
@@ -35,7 +50,7 @@ export default function Customers() {
   function openCustomer(customer: Customer) {
     setSelected(customer);
     setNotes(customer.notes ?? '');
-    setTags((customer.tags ?? []).join(', '));
+    setTags(asTags(customer.tags).join(', '));
   }
 
   function handleSubmit(e: FormEvent) {
@@ -118,7 +133,7 @@ export default function Customers() {
                       </span>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{(c.tags ?? []).join(', ') || '-'}</td>
+                  <td className="px-4 py-3 text-slate-700">{asTags(c.tags).join(', ') || '-'}</td>
                 </tr>
               ))}
             </tbody>

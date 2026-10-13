@@ -265,18 +265,24 @@ export default function Bookings() {
   const formatCents = useMoney();
   const api = useApi();
   const queryClient = useQueryClient();
+  const [view, setView] = useState<'upcoming' | 'past' | 'all'>('upcoming');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
   const params = new URLSearchParams();
   if (statusFilter) params.set('status', statusFilter);
+  // Upcoming shoots first by default (the list used to start with the oldest booking ever made)
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
   if (dateFrom) params.set('date_from', dateFrom);
+  else if (view === 'upcoming') params.set('date_from', startOfToday.toISOString());
   if (dateTo) params.set('date_to', dateTo);
+  else if (view === 'past') params.set('date_to', startOfToday.toISOString());
   const query = params.toString();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['bookings', statusFilter, dateFrom, dateTo],
+    queryKey: ['bookings', view, statusFilter, dateFrom, dateTo],
     queryFn: () => api.get<{ bookings: Booking[] }>(`/bookings${query ? `?${query}` : ''}`),
   });
 
@@ -310,6 +316,19 @@ export default function Bookings() {
       </div>
 
       <CityScheduleCalendar />
+
+      <div className="inline-flex self-start rounded-lg border border-slate-200 bg-slate-100 p-1">
+        {(['upcoming', 'past', 'all'] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setView(v)}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium capitalize transition-colors ${view === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
 
       <div className="flex flex-wrap gap-3">
         <select
@@ -362,7 +381,7 @@ export default function Bookings() {
               <tr>
                 <th className="px-4 py-3 font-medium">Customer</th>
                 <th className="px-4 py-3 font-medium">Service</th>
-                <th className="px-4 py-3 font-medium">Start</th>
+                <th className="px-4 py-3 font-medium">Appointment date</th>
                 <th className="px-4 py-3 font-medium">Price</th>
                 <th className="px-4 py-3 font-medium">Paid</th>
                 <th className="px-4 py-3 font-medium">Status</th>
@@ -370,7 +389,7 @@ export default function Bookings() {
               </tr>
             </thead>
             <tbody>
-              {data.bookings.map((b) => (
+              {(view === 'past' ? [...data.bookings].reverse() : data.bookings).map((b) => (
                 <tr key={b.id} className="border-t border-slate-100">
                   <td className="px-4 py-3">
                     <div className="font-medium text-slate-900">{b.customer_name}</div>
@@ -381,8 +400,15 @@ export default function Bookings() {
                     {b.staff_name && <div className="text-xs text-slate-400">{b.staff_name}</div>}
                   </td>
                   <td className="px-4 py-3 text-slate-700">
-                    {new Date(b.start_time).toLocaleString([], { timeZone: tenantData?.tenant.timezone || undefined })}
-                    <div className="text-xs text-slate-400">until {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: tenantData?.tenant.timezone || undefined })}</div>
+                    <div className="font-medium text-slate-900">
+                      {new Date(b.start_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: tenantData?.tenant.timezone || undefined })}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {new Date(b.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: tenantData?.tenant.timezone || undefined })}
+                      {' – '}
+                      {new Date(b.end_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: tenantData?.tenant.timezone || undefined })}
+                    </div>
+                    <div className="text-[11px] text-slate-400">booked {new Date(b.created_at).toLocaleDateString()}</div>
                   </td>
                   <td className="px-4 py-3 text-slate-700">{formatCents(b.amount_cents)}</td>
                   <td className="px-4 py-3 text-slate-700">{b.status === 'awaiting_payment' ? '-' : formatCents(b.deposit_paid_cents ?? 0)}</td>

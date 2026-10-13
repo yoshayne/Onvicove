@@ -543,3 +543,10 @@ ALTER TABLE tenants ADD CONSTRAINT tenants_theme_id_check
 
 -- The theme the wizard recommended for this store's business type (compare with theme_id to see if it was taken)
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS recommended_theme_id TEXT;
+
+-- Repair: tags / image_keys saved as a JSON *string* (double-encoded) instead of a JSON array. Made the Customers page crash
+-- and hid service photos. Idempotent: only touches rows that hold a string.
+UPDATE customers SET tags = (tags #>> '{}')::jsonb WHERE jsonb_typeof(tags) = 'string' AND (tags #>> '{}') ~ '^\s*\[';
+UPDATE customers SET tags = '[]'::jsonb WHERE jsonb_typeof(tags) = 'string';
+UPDATE services SET image_keys = (image_keys #>> '{}')::jsonb WHERE jsonb_typeof(image_keys) = 'string' AND (image_keys #>> '{}') ~ '^\s*\[';
+UPDATE services SET image_keys = '[]'::jsonb WHERE jsonb_typeof(image_keys) = 'string';

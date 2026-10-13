@@ -240,7 +240,8 @@ export default function Overview() {
       label: isUnpaidBooking(b) ? `Booking not paid: ${b.service_name ?? 'Appointment'}`
         : b.status === 'cancelled' ? `Booking cancelled: ${b.service_name ?? 'Appointment'}`
         : `Booking: ${b.service_name ?? 'Appointment'}`,
-      sub: b.customer_name,
+      // The date of the appointment itself (the time on the right is when it was booked)
+      sub: `${b.customer_name} · for ${new Date(b.start_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: tz || undefined })}`,
       time: b.created_at, iconBg: isUnpaidBooking(b) ? AMBER : 'bg-violet-100 text-violet-600',
     })),
   ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 9);
@@ -544,8 +545,9 @@ export default function Overview() {
                       <p className="truncate text-xs font-semibold text-slate-900">{b.service_name ?? 'Appointment'}</p>
                       <p className="text-[11px] text-slate-500">{b.customer_name}</p>
                     </div>
-                    <span className="shrink-0 text-[11px] font-medium text-slate-500">
-                      {new Date(b.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: tz || undefined })}
+                    <span className="shrink-0 text-right text-[11px] font-medium text-slate-500">
+                      <span className="block">{new Date(b.start_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: tz || undefined })}</span>
+                      <span className="block text-slate-400">{new Date(b.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: tz || undefined })}</span>
                     </span>
                   </li>
                 ))}
