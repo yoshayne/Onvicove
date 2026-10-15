@@ -1,3 +1,4 @@
+import { checkFirstSale } from './milestones';
 import { db } from '../db/client';
 import { getBaseUrl } from '../lib/baseUrl';
 import { formatBookingTime } from '../lib/time';
@@ -195,6 +196,10 @@ export async function applySucceededPayment(
       }
       await notifyBookingPaid(booking, tenant_id);
     }
+  }
+  // The store's first sale: celebrate it with a flyer (never blocks or fails the payment)
+  if ((reference_type === 'order' || reference_type === 'booking') && reference_id && tenant_id) {
+    checkFirstSale(tenant_id, reference_type, reference_id).catch((err) => console.error('First-sale milestone error:', err));
   }
   return 'applied';
 }

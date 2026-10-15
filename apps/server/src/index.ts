@@ -1,6 +1,7 @@
 import { startPaymentReconcileJob } from './jobs/paymentReconcile';
 import 'dotenv/config';
 import { startStripeNudgeJob } from './jobs/stripeNudge';
+import milestoneRoutes from './routes/milestones';
 import { startBookingReminderJob } from './jobs/bookingReminder';
 import { startInviteNudgeJob } from './jobs/inviteNudge';
 import { startDomainRecheckJob } from './jobs/domainRecheck';
@@ -92,6 +93,7 @@ app.route('/api/uploads', uploadRoutes);
 app.route('/api/stripe', stripeRoutes);
 app.route('/api/wizard', wizardRoutes);
 app.route('/api/ai-photos', aiPhotoRoutes);
+app.route('/api/milestones', milestoneRoutes);
 app.route('/api/discounts', discountRoutes);
 app.route('/api/public', publicRoutes);
 app.route('/api/admin', adminRoutes);

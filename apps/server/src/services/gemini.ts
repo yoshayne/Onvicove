@@ -12,23 +12,21 @@ interface GeminiResponse {
   }[];
 }
 
-async function generateImage(prompt: string, imageBuffer?: Buffer, mimeType = 'image/png'): Promise<Buffer> {
+async function generateImage(prompt: string, imageBuffer?: Buffer | Buffer[], mimeType = 'image/png', aspectRatio?: string): Promise<Buffer> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY environment variable is required');
   }
 
   const parts: Record<string, unknown>[] = [{ text: prompt }];
-  if (imageBuffer) {
-    parts.unshift({
-      inlineData: { mimeType, data: imageBuffer.toString('base64') },
-    });
+  for (const img of [imageBuffer].flat().reverse()) {
+    if (img) parts.unshift({ inlineData: { mimeType, data: img.toString('base64') } });
   }
 
   const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts }] }),
+    body: JSON.stringify({ contents: [{ parts }], ...(aspectRatio ? { generationConfig: { imageConfig: { aspectRatio } } } : {}) }),
   });
 
   if (!response.ok) {
@@ -137,6 +135,11 @@ export async function generateStyledPhoto(
     .join(' ');
 
   return generateImage(prompt, cutoutBuffer);
+}
+
+/** A branded promo graphic. Pictures given are reference images (product photo first, then logo). */
+export function generatePromoGraphic(prompt: string, references: Buffer[], aspectRatio: '1:1' | '9:16'): Promise<Buffer> {
+  return generateImage(prompt, references, 'image/png', aspectRatio);
 }
 
 export const AI_PHOTO_STYLES: { id: string; label: string; prompt: string; bypass?: 'studio-white' }[] = [

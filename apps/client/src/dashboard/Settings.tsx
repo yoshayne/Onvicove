@@ -28,6 +28,7 @@ interface SettingsFormState {
   booking_notice_minutes: number;
   cancel_window_hours: number;
   reminder_hours: string;
+  milestone_emails: boolean;
   font_pair_id: FontPairId;
 }
 
@@ -45,6 +46,7 @@ function tenantToForm(tenant: Tenant): SettingsFormState {
     booking_notice_minutes: tenant.booking_notice_minutes ?? 60,
     cancel_window_hours: tenant.cancel_window_hours ?? 24,
     reminder_hours: tenant.reminder_hours ?? '24',
+    milestone_emails: tenant.milestone_emails !== false,
     font_pair_id: (tenant.font_pair_id as FontPairId) ?? 'classic',
   };
 }
@@ -189,6 +191,7 @@ export default function Settings() {
       booking_notice_minutes: form.booking_notice_minutes,
       cancel_window_hours: form.cancel_window_hours,
       reminder_hours: form.reminder_hours,
+      milestone_emails: form.milestone_emails,
       font_pair_id: form.font_pair_id,
     };
     // Include slug update if new slug is available and different
@@ -335,6 +338,19 @@ export default function Settings() {
             <p className="mt-1 text-xs text-slate-500">They get a link in their confirmation email. Deposits aren't refunded automatically; you decide.</p>
           </div>
         </div>
+
+        <label className="flex items-start gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={form.milestone_emails}
+            onChange={(e) => setForm((f) => (f ? { ...f, milestone_emails: e.target.checked } : f))}
+          />
+          <span>
+            Celebrate milestones by email
+            <span className="block text-xs text-slate-500">When something big happens, like your first sale, we'll send a note and a free flyer you can share. Your flyers stay in your dashboard even if this is off.</span>
+          </span>
+        </label>
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-slate-700">Appointment reminders</label>

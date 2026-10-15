@@ -574,3 +574,21 @@ CREATE INDEX IF NOT EXISTS idx_booking_payments_booking ON booking_payments(book
 INSERT INTO booking_reminders (booking_id, hours_before)
   SELECT id, 24 FROM bookings WHERE reminder_sent = TRUE
   ON CONFLICT DO NOTHING;
+
+-- Milestones (first sale flyer): free for owners, one free redo; owners are opted in to the emails and can opt out
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS milestone_emails BOOLEAN DEFAULT TRUE;
+CREATE TABLE IF NOT EXISTS milestones (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  item_name TEXT,
+  item_image_key TEXT,
+  reference_type TEXT,
+  reference_id UUID,
+  flyer_runs INTEGER NOT NULL DEFAULT 0,
+  flyer_keys JSONB NOT NULL DEFAULT '{}',
+  generating_since TIMESTAMPTZ,
+  emailed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (tenant_id, kind)
+);

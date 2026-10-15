@@ -12,6 +12,7 @@ import type { Tenant, Order, Booking, Product, Service } from '../types';
 import { isPaidOrder, isLiveBooking, isUnpaidBooking, isUnpaidOrder, moneyEvents, sumOnDay, dayKey, lastDayKeys, formatMoney } from '../lib/metrics';
 import Spinner from '../components/shared/Spinner';
 import StripeStatusCard from '../components/stripe/StripeStatusCard';
+import MilestoneCard from './MilestoneCard';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -320,6 +321,7 @@ export default function Overview() {
         )}
       </div>
 
+      <MilestoneCard />
       <StripeStatusCard />
 
       {(unpaidBookings.length > 0 || unpaidOrders.length > 0) && (
