@@ -7,13 +7,13 @@ const TOTAL_STEPS = WIZARD_TOTAL_STEPS;
 const STEP_LABELS: Record<number, string> = {
   1: 'Business name',
   2: 'Store type',
-  3: 'Theme',
-  4: 'Brand info',
-  5: 'Hero photo',
-  6: 'Products',
-  7: 'Services',
-  8: 'Staff & Hours',
-  9: 'Plan',
+  3: 'Plan',
+  4: 'Theme',
+  5: 'Brand info',
+  6: 'Hero photo',
+  7: 'Products',
+  8: 'Services',
+  9: 'Staff & Hours',
   10: 'Launch',
 };
 

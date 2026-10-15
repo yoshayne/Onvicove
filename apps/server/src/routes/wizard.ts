@@ -5,7 +5,8 @@ import { db } from '../db/client';
 import { getOrFetchUser } from '../services/users';
 import { requireAuth } from '../middleware/clerk';
 import { slugify, generateUniqueSlug } from '../lib/slugify';
-import { checkItemLimit } from '../services/settings';
+import { checkItemLimit, getPlanLimits } from '../services/settings';
+import { PREMIUM_THEMES, freeThemeFor } from '../services/subscriptions';
 import { hasAnyWindow } from '../services/businessHours';
 import { sendTenantWelcome, sendSiteLive, sendAdminNewSignup } from '../services/email';
 
@@ -93,6 +94,12 @@ app.post('/save', async (c) => {
   return c.json(rows[0], 201);
 });
 
+// GET /api/wizard/plan-limits — what a free Starter store can have, so the wizard can warn before launch
+app.get('/plan-limits', async (c) => {
+  const limits = await getPlanLimits('starter');
+  return c.json({ starter: { products: limits.product, services: limits.service } });
+});
+
 // POST /api/wizard/complete — finalize tenant from wizard_data
 app.post('/complete', async (c) => {
   const clerkUserId = c.get('clerkUserId') as string;
@@ -107,7 +114,16 @@ app.post('/complete', async (c) => {
   const data = (tenant.wizard_data || {}) as Record<string, any>;
   tenant.slug = await syncDraftIdentity(tenant as never, data.businessName);
 
+  // Choosing Pro in the wizard doesn't make a store Pro until it pays: a Pro-only look stays queued until then
   const planId = (data.plan || tenant.plan) as string;
+  const entitled = tenant.plan !== 'starter';
+  let liveTheme = (data.themeId || tenant.theme_id) as string;
+  let desiredTheme: string | null = typeof data.desiredThemeId === 'string' && PREMIUM_THEMES.has(data.desiredThemeId) ? data.desiredThemeId : null;
+  if (PREMIUM_THEMES.has(liveTheme) && !entitled) {
+    desiredTheme = liveTheme;
+    liveTheme = freeThemeFor(liveTheme);
+  }
+  if (entitled) desiredTheme = null;
   const productCount = Array.isArray(data.products) ? data.products.length : 0;
   const serviceCount = Array.isArray(data.services) ? data.services.length : 0;
   const [productCheck, serviceCheck] = await Promise.all([
@@ -127,7 +143,8 @@ app.post('/complete', async (c) => {
     SET company_name = ${data.businessName || tenant.company_name},
         tagline = ${data.tagline ?? tenant.tagline},
         mode = ${data.mode || tenant.mode},
-        theme_id = ${data.themeId || tenant.theme_id},
+        theme_id = ${liveTheme},
+        desired_theme_id = ${desiredTheme},
         brand_color = ${data.brandColor ?? tenant.brand_color},
         city = ${data.city ?? tenant.city},
         industry = ${data.industry ?? tenant.industry},

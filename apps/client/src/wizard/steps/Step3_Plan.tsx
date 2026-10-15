@@ -49,17 +49,18 @@ const PLANS: PlanOption[] = [
   },
 ];
 
-export default function Step9_Plan() {
+export default function Step3_Plan() {
   const plan = useWizardStore((s) => s.plan);
   const setPlan = useWizardStore((s) => s.setPlan);
+  const setDesiredThemeId = useWizardStore((s) => s.setDesiredThemeId);
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900">Choose your plan</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">Pick a plan to start with</h2>
         <p className="mt-1 text-sm text-gray-500">
-          You can change plans anytime from your dashboard. Start free, upgrade when you're
-          ready.
+          You can preview every theme on any plan, and change plans anytime. You only pay after your
+          site is live, never during setup.
         </p>
       </div>
 
@@ -70,7 +71,7 @@ export default function Step9_Plan() {
             <button
               key={option.id}
               type="button"
-              onClick={() => setPlan(option.id)}
+              onClick={() => { setPlan(option.id); if (option.id !== 'starter') setDesiredThemeId(undefined); }}
               className={`rounded-xl border p-4 text-left transition ${
                 isSelected
                   ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900'
@@ -78,7 +79,10 @@ export default function Step9_Plan() {
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-base font-semibold text-gray-900">{option.name}</span>
+                <span className="flex items-center gap-2 text-base font-semibold text-gray-900">
+                  {option.name}
+                  {option.id === 'pro' && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">Most popular</span>}
+                </span>
                 <span className="text-base font-semibold text-gray-900">{option.price}</span>
               </div>
               <p className="mt-1 text-sm text-gray-500">{option.description}</p>

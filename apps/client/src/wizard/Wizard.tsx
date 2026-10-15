@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import WizardLayout from './WizardLayout';
 import { BUSINESS_TYPE_BY_ID } from './businessTypes';
-import { useWizardStore, selectWizardCompleteness, WIZARD_STEPS_VERSION, WIZARD_TOTAL_STEPS, type WizardState } from './wizardStore';
+import { useWizardStore, selectWizardCompleteness, migrateStepNumber, WIZARD_STEPS_VERSION, WIZARD_TOTAL_STEPS, type WizardState } from './wizardStore';
+import { planIssues, useStarterLimits } from './planGate';
 import { useApi } from '../lib/api';
 
 import StripeStatusCard from '../components/stripe/StripeStatusCard';
@@ -16,19 +17,19 @@ import Step5_HeroPhoto from './steps/Step5_HeroPhoto';
 import Step6_Products from './steps/Step6_Products';
 import Step6b_Services from './steps/Step6b_Services';
 import Step7_Availability from './steps/Step7_Availability';
-import Step9_Plan from './steps/Step9_Plan';
+import Step3_Plan from './steps/Step3_Plan';
 import Step10_Launch from './steps/Step10_Launch';
 
 const STEP_COMPONENTS: Record<number, React.ComponentType> = {
   1: Step1_BusinessName,
   2: Step2_Mode,
-  3: Step3_Theme,
-  4: Step4_BrandInfo,
-  5: Step5_HeroPhoto,
-  6: Step6_Products,
-  7: Step6b_Services,
-  8: Step7_Availability,
-  9: Step9_Plan,
+  3: Step3_Plan,
+  4: Step3_Theme,
+  5: Step4_BrandInfo,
+  6: Step5_HeroPhoto,
+  7: Step6_Products,
+  8: Step6b_Services,
+  9: Step7_Availability,
   10: Step10_Launch,
 };
 
@@ -54,6 +55,7 @@ function buildWizardData(state: WizardState) {
     faviconKey: state.faviconFileKey,
     heroImageKey: state.heroImageFileKey,
     plan: state.plan,
+    desiredThemeId: state.desiredThemeId,
     products: state.products.map((p) => ({
       name: p.name,
       description: p.description,
@@ -103,6 +105,7 @@ function applyWizardData(state: WizardState, data: Record<string, unknown>, slug
   if (typeof d.faviconKey === 'string') state.setFavicon(d.faviconKey, undefined);
   if (typeof d.heroImageKey === 'string') state.setHeroImage(d.heroImageKey, undefined);
   if (d.plan) state.setPlan(d.plan);
+  if (typeof d.desiredThemeId === 'string') state.setDesiredThemeId(d.desiredThemeId as never);
 
   if (Array.isArray(d.products)) {
     for (const p of d.products) {
@@ -187,11 +190,9 @@ export default function Wizard() {
         }
         if (progress.wizard_step > 0) {
           applyWizardData(state, progress.wizard_data, progress.slug);
-          // Progress saved before payments moved to after launch has one more step past step 9
-          const saved = progress.wizard_data?.stepsVersion === WIZARD_STEPS_VERSION || progress.wizard_step < 10
-            ? progress.wizard_step
-            : progress.wizard_step - 1;
-          useWizardStore.getState().setStep(Math.min(WIZARD_TOTAL_STEPS, Math.max(1, saved)));
+          // Progress saved under an older step order is moved to today's numbering
+          const savedVersion = typeof progress.wizard_data?.stepsVersion === 'number' ? progress.wizard_data.stepsVersion : progress.wizard_step < 10 ? 2 : 1;
+          useWizardStore.getState().setStep(migrateStepNumber(progress.wizard_step, savedVersion));
         }
       })
       .catch((err) => console.error('wizard/progress failed:', err))
@@ -259,6 +260,8 @@ export default function Wizard() {
     nextStep();
   }
 
+  const limits = useStarterLimits();
+  const unresolvedPlanIssues = planIssues(state, limits);
   const completeness = selectWizardCompleteness(state);
   const isLastStep = currentStep === WIZARD_TOTAL_STEPS;
 
@@ -268,7 +271,7 @@ export default function Wizard() {
       onNext={isLastStep ? handleLaunch : handleNext}
       canGoBack={currentStep > 1 && !launchedSlug}
       canGoNext={
-        isLastStep ? completeness.isReadyToLaunch && !isLaunching && !launchedSlug : true
+        isLastStep ? completeness.isReadyToLaunch && unresolvedPlanIssues.length === 0 && !isLaunching && !launchedSlug : true
       }
       nextLabel={isLastStep ? (isLaunching ? 'Launching…' : 'Launch my site') : 'Next'}
       hideNav={isLastStep}
@@ -280,7 +283,7 @@ export default function Wizard() {
           isLaunching={isLaunching}
           error={launchError}
           launchedSlug={launchedSlug}
-          canLaunch={completeness.isReadyToLaunch}
+          canLaunch={completeness.isReadyToLaunch && unresolvedPlanIssues.length === 0}
           onBack={prevStep}
           subClientSecret={subClientSecret}
           subPriceCents={subPriceCents}

@@ -87,6 +87,8 @@ export interface WizardState {
   stripeAccountId?: string;
 
   plan: PlanId;
+  /** A Pro theme picked while on Starter: kept so it can be switched on after an upgrade */
+  desiredThemeId?: ThemeId;
 
   setStep: (step: number) => void;
   nextStep: () => void;
@@ -126,6 +128,7 @@ export interface WizardState {
   setStripeConnected: (connected: boolean, accountId?: string) => void;
 
   setPlan: (plan: PlanId) => void;
+  setDesiredThemeId: (themeId: ThemeId | undefined) => void;
 
   reset: () => void;
 }
@@ -160,6 +163,7 @@ const initialState: Omit<
   | 'removeStaff'
   | 'setStripeConnected'
   | 'setPlan'
+  | 'setDesiredThemeId'
   | 'reset'
 > = {
   currentStep: 1,
@@ -186,11 +190,27 @@ const initialState: Omit<
   stripeConnected: false,
   stripeAccountId: undefined,
   plan: 'starter',
+  desiredThemeId: undefined,
 };
 
 /** Payments moved out of the wizard (it now comes after launch), so there are 10 steps; saved progress is migrated. */
 export const WIZARD_TOTAL_STEPS = 10;
-export const WIZARD_STEPS_VERSION = 2;
+export const WIZARD_STEPS_VERSION = 3;
+
+/**
+ * Map a saved step number to today's numbering.
+ * v1 had a Payments step (Plan 10, Launch 11). v2 had Plan at 9. v3 asks for the plan early (step 3):
+ * steps 3-8 each moved down one and the old Plan step is gone.
+ */
+export function migrateStepNumber(step: number, fromVersion: number): number {
+  let s = step;
+  if (fromVersion < 2 && s >= 10) s -= 1;
+  if (fromVersion < 3) {
+    if (s >= 3 && s <= 8) s += 1;
+    else if (s === 9) s = 10;
+  }
+  return Math.min(WIZARD_TOTAL_STEPS, Math.max(1, s));
+}
 
 export const useWizardStore = create<WizardState>()(
   persist(
@@ -274,18 +294,16 @@ export const useWizardStore = create<WizardState>()(
         set({ stripeConnected: connected, stripeAccountId: accountId }),
 
       setPlan: (plan) => set({ plan }),
+      setDesiredThemeId: (desiredThemeId) => set({ desiredThemeId }),
 
       reset: () => set({ ...initialState }),
     }),
     {
       name: 'shopsuitedirect-wizard',
       version: WIZARD_STEPS_VERSION,
-      // Version 1 had a Payments step at 9: Plan was 10 and Launch 11. Move people who were past it back one.
       migrate: (persisted, version) => {
         const state = persisted as { currentStep?: number };
-        if (version < 2 && typeof state.currentStep === 'number' && state.currentStep >= 10) {
-          state.currentStep -= 1;
-        }
+        if (typeof state.currentStep === 'number') state.currentStep = migrateStepNumber(state.currentStep, version);
         return state as never;
       },
     }

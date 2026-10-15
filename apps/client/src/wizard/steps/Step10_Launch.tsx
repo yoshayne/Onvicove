@@ -1,4 +1,5 @@
 import { useWizardStore, selectWizardCompleteness } from '../wizardStore';
+import { FREE_THEME_FOR, PREMIUM_THEME_IDS, THEME_LABEL, planIssues, useStarterLimits } from '../planGate';
 
 const MODE_LABELS: Record<string, string> = {
   store: 'Online store',
@@ -23,19 +24,27 @@ export default function Step10_Launch() {
   const stripeConnected = useWizardStore((s) => s.stripeConnected);
   const setStep = useWizardStore((s) => s.setStep);
   const completeness = useWizardStore(selectWizardCompleteness);
+  const setPlan = useWizardStore((s) => s.setPlan);
+  const setThemeId = useWizardStore((s) => s.setThemeId);
+  const desiredThemeId = useWizardStore((s) => s.desiredThemeId);
+  const setDesiredThemeId = useWizardStore((s) => s.setDesiredThemeId);
+  const limits = useStarterLimits();
+  const issues = planIssues({ plan, themeId, products, services, mode }, limits);
+  const themeIssue = issues.find((i) => i.kind === 'theme');
+  const limitIssues = issues.filter((i) => i.kind !== 'theme');
 
   const starterLeft = services.filter((sv) => sv.starter).length;
   const missing: { label: string; step: number }[] = [];
   if (!completeness.businessNameDone) missing.push({ label: 'Business name', step: 1 });
   if (!completeness.modeDone) missing.push({ label: 'Store type', step: 2 });
-  if (!completeness.themeDone) missing.push({ label: 'Theme', step: 3 });
-  if (!completeness.brandInfoDone) missing.push({ label: 'Tagline and city', step: 4 });
-  if (!completeness.heroPhotoDone) missing.push({ label: 'Hero photo', step: 5 });
+  if (!completeness.themeDone) missing.push({ label: 'Theme', step: 4 });
+  if (!completeness.brandInfoDone) missing.push({ label: 'Tagline and city', step: 5 });
+  if (!completeness.heroPhotoDone) missing.push({ label: 'Hero photo', step: 6 });
   if (!completeness.catalogDone) {
-    missing.push({ label: mode === 'book' ? 'Services' : mode === 'store' ? 'Products' : 'Products or services', step: mode === 'book' ? 7 : 6 });
+    missing.push({ label: mode === 'book' ? 'Services' : mode === 'store' ? 'Products' : 'Products or services', step: mode === 'book' ? 8 : 7 });
   }
-  if (!completeness.availabilityDone) missing.push({ label: 'Availability', step: 8 });
-  if (!completeness.planDone) missing.push({ label: 'Plan', step: 9 });
+  if (!completeness.availabilityDone) missing.push({ label: 'Availability', step: 9 });
+  if (!completeness.planDone) missing.push({ label: 'Plan', step: 3 });
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,10 +69,50 @@ export default function Step10_Launch() {
         <SummaryRow label="Plan" value={PLAN_LABELS[plan] ?? plan} />
       </div>
 
+      {issues.length > 0 && (
+        <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4">
+          <p className="text-base font-semibold text-amber-900">Your store needs Pro for:</p>
+          <ul className="mt-1 list-disc pl-5 text-sm text-amber-900">
+            {issues.map((i) => <li key={i.kind}>{i.label}</li>)}
+          </ul>
+          <p className="mt-2 text-sm text-amber-800">Upgrade and launch exactly as you built it, or launch free and keep what you picked for later.</p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <button type="button" onClick={() => setPlan('pro')} className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">Upgrade to Pro, $29/mo</button>
+            {themeIssue && (
+              <button
+                type="button"
+                onClick={() => { setDesiredThemeId(themeId); setThemeId(FREE_THEME_FOR[themeId] ?? 'editorial'); }}
+                className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100"
+              >
+                Launch free with {THEME_LABEL[FREE_THEME_FOR[themeId]] ?? 'a free look'} (keep {THEME_LABEL[themeId] ?? 'this theme'} for later)
+              </button>
+            )}
+            {limitIssues.some((i) => i.kind === 'products') && (
+              <button type="button" onClick={() => setStep(7)} className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100">Trim my products</button>
+            )}
+            {limitIssues.some((i) => i.kind === 'services') && (
+              <button type="button" onClick={() => setStep(8)} className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100">Trim my services</button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {plan === 'starter' && desiredThemeId && PREMIUM_THEME_IDS.has(desiredThemeId) && issues.length === 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          We'll keep <strong>{THEME_LABEL[desiredThemeId] ?? desiredThemeId}</strong> ready for you. Upgrade to Pro anytime and it switches on instantly.
+        </div>
+      )}
+
+      {plan !== 'starter' && PREMIUM_THEME_IDS.has(themeId) && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+          Your site launches right away, and <strong>{THEME_LABEL[themeId] ?? themeId}</strong> switches on as soon as your {plan === 'pro' ? 'Pro' : 'Business'} payment goes through.
+        </div>
+      )}
+
       {starterLeft > 0 && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
           {starterLeft} of your services are still starter examples with sample prices.{' '}
-          <button type="button" onClick={() => setStep(7)} className="underline hover:text-blue-700">
+          <button type="button" onClick={() => setStep(8)} className="underline hover:text-blue-700">
             Check your services
           </button>{' '}
           before you launch.

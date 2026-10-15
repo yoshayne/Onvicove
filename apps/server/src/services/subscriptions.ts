@@ -9,6 +9,20 @@ export const ENDED_STATUSES = new Set(['canceled', 'unpaid', 'incomplete_expired
 
 export const PREMIUM_THEMES = new Set(['obsidian', 'aurora', 'magazine', 'brutalist', 'neon-tokyo', 'craft']);
 
+/** The free look closest in style to each Pro theme (used when a Starter store can't keep the one it picked) */
+export const FREE_THEME_FOR: Record<string, string> = {
+  obsidian: 'editorial',
+  aurora: 'ink',
+  magazine: 'minimal',
+  brutalist: 'bold',
+  'neon-tokyo': 'bold',
+  craft: 'warm',
+};
+
+export function freeThemeFor(themeId: string): string {
+  return FREE_THEME_FOR[themeId] ?? 'editorial';
+}
+
 export function priceIdFor(plan: PaidPlan): string | undefined {
   return plan === 'pro' ? process.env.STRIPE_PRICE_PRO_MONTHLY : process.env.STRIPE_PRICE_BUSINESS_MONTHLY;
 }
@@ -67,6 +81,8 @@ export async function applySubscription(sub: StripeSubscriptionLike): Promise<{ 
           plan_expires_at = ${periodEnd}, updated_at = NOW()
       WHERE id = ${tenant.id}
     `;
+    // The Pro theme they picked while on Starter turns on now that they're paid up
+    await db`UPDATE tenants SET theme_id = desired_theme_id, desired_theme_id = NULL WHERE id = ${tenant.id} AND desired_theme_id IS NOT NULL`;
     return { plan, status: display };
   }
 

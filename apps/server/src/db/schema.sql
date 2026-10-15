@@ -592,3 +592,6 @@ CREATE TABLE IF NOT EXISTS milestones (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE (tenant_id, kind)
 );
+
+-- A Pro theme a Starter store picked: remembered, and switched on the moment they upgrade
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS desired_theme_id TEXT;

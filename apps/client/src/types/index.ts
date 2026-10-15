@@ -36,6 +36,8 @@ export interface Tenant {
   cancel_window_hours?: number | null;
   reminder_hours?: string | null;
   milestone_emails?: boolean | null;
+  /** A Pro theme picked on Starter: switches on after an upgrade */
+  desired_theme_id?: string | null;
   show_live_calendar: boolean;
   google_cal_enabled?: boolean;
   outlook_cal_enabled?: boolean;

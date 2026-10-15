@@ -1,6 +1,7 @@
 import { useWizardStore } from '../wizardStore';
 import type { ThemeId } from '../../themes/types';
 import { BUSINESS_TYPE_BY_ID } from '../businessTypes';
+import { FREE_THEME_FOR, THEME_LABEL } from '../planGate';
 
 interface ThemeOption {
   id: ThemeId;
@@ -37,12 +38,14 @@ export default function Step3_Theme() {
   const type = BUSINESS_TYPE_BY_ID[businessType];
   const recommended = type && type.why.length > 0 ? THEME_OPTIONS.find((t) => t.id === type.themeId) : undefined;
 
+  const setPlan = useWizardStore((s) => s.setPlan);
+  const setDesiredThemeId = useWizardStore((s) => s.setDesiredThemeId);
+  const selected = THEME_OPTIONS.find((t) => t.id === themeId);
+
+  // Every look can be previewed on any plan; Pro looks are only held back when the site goes live
   function handleSelect(theme: ThemeOption) {
-    if (theme.premium && !isPro) {
-      alert('Premium themes are available on Pro and Business plans. You can upgrade after launching your site.');
-      return;
-    }
     setThemeId(theme.id);
+    if (!theme.premium) setDesiredThemeId(undefined);
   }
 
   const freeThemes = THEME_OPTIONS.filter((t) => !t.premium);
@@ -53,7 +56,7 @@ export default function Step3_Theme() {
       <div>
         <h2 className="text-2xl font-semibold text-gray-900">Choose a look for your site</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Watch the preview update on the right as you pick.
+          Watch the preview update as you pick. Every look is open to preview, including Pro themes.
         </p>
       </div>
 
@@ -85,6 +88,23 @@ export default function Step3_Theme() {
             {themeId === recommended.id ? '✓ Using this look' : 'Use this look'}
           </button>
           <p className="mt-2 text-xs text-gray-500">Not feeling it? Pick any look below. You can change it anytime.</p>
+        </div>
+      )}
+
+      {selected?.premium && !isPro && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-medium text-amber-900">You're previewing {selected.name}, a Pro theme.</p>
+          <p className="mt-1 text-sm text-amber-800">Keep exploring. It needs Pro to go live, and at the end you can choose to upgrade or launch with a free look and keep {selected.name} for later.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={() => setPlan('pro')} className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700">Start with Pro</button>
+            <button
+              type="button"
+              onClick={() => { setDesiredThemeId(selected.id); setThemeId(FREE_THEME_FOR[selected.id] ?? 'editorial'); }}
+              className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-900 hover:bg-amber-100"
+            >
+              Use {THEME_LABEL[FREE_THEME_FOR[selected.id]] ?? 'a free look'} for now
+            </button>
+          </div>
         </div>
       )}
 
@@ -136,7 +156,7 @@ export default function Step3_Theme() {
                   themeId === theme.id
                     ? 'border-amber-500 ring-1 ring-amber-500'
                     : locked
-                      ? 'border-amber-100 hover:border-amber-200 cursor-default'
+                      ? 'border-amber-100 hover:border-amber-300'
                       : 'border-amber-200 hover:border-amber-300'
                 }`}
               >
@@ -148,10 +168,10 @@ export default function Step3_Theme() {
                 <div>
                   <div className="flex items-center gap-1.5">
                     <p className="font-medium text-gray-900">{theme.name}</p>
-                    {locked && <span className="text-xs">🔒</span>}
+                    {locked && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Pro</span>}
                   </div>
                   <p className="text-xs text-gray-500">{theme.description}</p>
-                  {locked && <p className="mt-1 text-xs text-amber-600">Upgrade to unlock</p>}
+                  {locked && <p className="mt-1 text-xs text-amber-600">Tap to preview</p>}
                 </div>
               </button>
             );

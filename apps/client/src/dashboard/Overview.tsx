@@ -13,6 +13,7 @@ import { isPaidOrder, isLiveBooking, isUnpaidBooking, isUnpaidOrder, moneyEvents
 import Spinner from '../components/shared/Spinner';
 import StripeStatusCard from '../components/stripe/StripeStatusCard';
 import MilestoneCard from './MilestoneCard';
+import PendingThemeBanner from './PendingThemeBanner';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -321,6 +322,7 @@ export default function Overview() {
         )}
       </div>
 
+      {tenant && <PendingThemeBanner tenant={tenant} />}
       <MilestoneCard />
       <StripeStatusCard />
 

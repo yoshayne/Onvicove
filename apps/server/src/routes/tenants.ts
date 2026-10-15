@@ -173,6 +173,11 @@ app.patch('/me', requireAuth, requireTenant, async (c) => {
     WHERE id = ${tenant.id}
     RETURNING *
   `;
+  // Choosing a look on purpose replaces any Pro theme that was waiting for an upgrade
+  if (updates.theme_id) {
+    const fresh = await db`UPDATE tenants SET desired_theme_id = NULL WHERE id = ${tenant.id} AND desired_theme_id IS NOT NULL RETURNING id`;
+    if (fresh[0]) result[0].desired_theme_id = null;
+  }
 
   if (updates.slug) {
     const before = tenant as unknown as { slug?: string; custom_domain?: string | null };
