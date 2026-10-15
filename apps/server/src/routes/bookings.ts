@@ -11,6 +11,9 @@ import { sendPaymentLinkEmail, sendBookingCancelled, sendTenantBookingCancelled,
 import { slotsForService, holdsTime } from '../services/slots';
 import { formatBookingTime } from '../lib/time';
 import { manageUrlFor, newManageToken } from '../services/bookingManage';
+import { sendReminderForBooking } from '../services/reminders';
+import { refundStorePayment } from '../services/stripe';
+import { sendBookingRefunded } from '../services/email';
 
 const app = new Hono();
 
@@ -30,6 +33,10 @@ const updateBookingSchema = z.object({
     start: z.string().regex(/^\d{2}:\d{2}$/),
     end: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   }).optional(),
+  /** Where it happens (shown to the customer in emails) */
+  location: z.string().max(300).nullable().optional(),
+  /** One-off length in minutes, instead of the type's usual length */
+  duration_minutes: z.number().int().min(5).max(1440).optional(),
   /** Change the type of booking (its length then sets the end time) */
   service_id: z.string().uuid().optional(),
   /** Change the professional (null = anyone) */
@@ -212,13 +219,13 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   }
 
-  const { reschedule, force, notify, ...fields } = parsed.data;
+  const { reschedule, force, notify, duration_minutes: customMinutes, ...fields } = parsed.data;
   const updates: Record<string, unknown> = { ...fields };
   const tz = ((tenant as unknown as { timezone?: string }).timezone) || 'America/New_York';
   let movedTo: { start: string; end: string } | null = null;
   let changedWhat = false;
 
-  if (reschedule || fields.service_id || fields.staff_id !== undefined) {
+  if (reschedule || customMinutes || fields.service_id || fields.staff_id !== undefined) {
     const curRows = await db`
       SELECT b.*, s.duration_minutes AS current_minutes
       FROM bookings b JOIN services s ON s.id = b.service_id
@@ -234,6 +241,7 @@ app.patch('/:id', async (c) => {
       minutes = sv[0].duration_minutes as number;
       changedWhat = true;
     }
+    if (customMinutes) minutes = customMinutes;
     let staffId = (cur.staff_id as string | null) ?? null;
     if (fields.staff_id !== undefined) {
       if (fields.staff_id) {
@@ -251,7 +259,7 @@ app.patch('/:id', async (c) => {
     if (reschedule?.end) {
       newEnd = fromZonedTime(`${reschedule.date} ${reschedule.end}:00`, tz);
       if (newEnd <= newStart) newEnd = new Date(newEnd.getTime() + 24 * 3600_000);
-    } else if (reschedule || (fields.service_id && fields.service_id !== cur.service_id)) {
+    } else if (reschedule || customMinutes || (fields.service_id && fields.service_id !== cur.service_id)) {
       newEnd = new Date(newStart.getTime() + minutes * 60_000); // the service's length decides how long it runs
     } else {
       newEnd = currentEnd;
@@ -289,7 +297,7 @@ app.patch('/:id', async (c) => {
     return c.json({ booking: existing[0] });
   }
 
-  const before = await db`SELECT status FROM bookings WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
+  const before = await db`SELECT status, location FROM bookings WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
 
   const rows = await db`
     UPDATE bookings
@@ -300,6 +308,8 @@ app.patch('/:id', async (c) => {
 
   if (!rows[0]) return c.json({ error: 'Booking not found' }, 404);
   const booking = rows[0];
+  if (updates.start_time) await db`DELETE FROM booking_reminders WHERE booking_id = ${id}`;
+  if (fields.location !== undefined && (fields.location ?? null) !== ((before[0]?.location as string | null) ?? null)) changedWhat = true;
 
   // The owner changed a confirmed appointment (time, type or professional): tell the customer
   if (changedWhat && notify !== false && booking.status === 'confirmed' && booking.customer_email) {
@@ -315,6 +325,7 @@ app.patch('/:id', async (c) => {
       bookingId: booking.id as string,
       manageUrl: await manageUrlFor(tenant, booking.id as string),
       cancelWindowHours: (tenant as unknown as { cancel_window_hours?: number }).cancel_window_hours ?? 24,
+      location: booking.location as string | null,
     }).catch((err) => console.error('Changed booking email error:', err));
   }
 
@@ -499,6 +510,175 @@ app.post('/:id/send-payment-link', async (c) => {
     baseUrl: getCustomerBaseUrl(tenant),
   });
 
+  return c.json({ sent: true });
+});
+
+const recordPaymentSchema = z.object({
+  amount_cents: z.number().int().min(1),
+  method: z.enum(['cash', 'check', 'zelle', 'venmo', 'cashapp', 'other']),
+  note: z.string().max(300).nullable().optional(),
+});
+
+/** What's been paid and refunded on a booking, newest first */
+async function paymentHistory(tenantId: string, bookingId: string) {
+  return db`
+    SELECT id, amount_cents, method, note, created_at FROM booking_payments
+    WHERE tenant_id = ${tenantId} AND booking_id = ${bookingId} ORDER BY created_at DESC
+  `;
+}
+
+// GET /api/bookings/:id/payments — payment history + reminder history for the edit window
+app.get('/:id/payments', async (c) => {
+  const tenant = c.get('tenant') as { id: string };
+  const id = c.req.param('id');
+  const rows = await db`SELECT amount_cents, deposit_paid_cents FROM bookings WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
+  if (!rows[0]) return c.json({ error: 'Booking not found' }, 404);
+  const reminders = await db`SELECT hours_before, sent_at FROM booking_reminders WHERE booking_id = ${id} ORDER BY sent_at DESC`;
+  // Money that went through Stripe and can still be refunded to the customer's card
+  const card = await db`
+    SELECT COALESCE(SUM(gross_amount_cents), 0)::int AS net FROM platform_transactions
+    WHERE tenant_id = ${tenant.id} AND reference_type = 'booking' AND reference_id = ${id}
+  `;
+  return c.json({
+    amount_cents: rows[0].amount_cents ?? 0,
+    paid_cents: rows[0].deposit_paid_cents ?? 0,
+    card_refundable_cents: Math.max(card[0]?.net as number ?? 0, 0),
+    payments: await paymentHistory(tenant.id, id),
+    reminders,
+  });
+});
+
+// POST /api/bookings/:id/record-payment — the customer paid in person / another way
+app.post('/:id/record-payment', async (c) => {
+  const tenant = c.get('tenant') as { id: string };
+  const id = c.req.param('id');
+  const parsed = recordPaymentSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+  const { amount_cents, method, note } = parsed.data;
+
+  const rows = await db`
+    UPDATE bookings
+    SET deposit_paid_cents = COALESCE(deposit_paid_cents, 0) + ${amount_cents},
+        status = CASE WHEN status IN ('awaiting_payment', 'pending') AND COALESCE(deposit_paid_cents, 0) + ${amount_cents} >= COALESCE(amount_cents, 0) THEN 'confirmed' ELSE status END,
+        updated_at = NOW()
+    WHERE id = ${id} AND tenant_id = ${tenant.id} RETURNING *
+  `;
+  if (!rows[0]) return c.json({ error: 'Booking not found' }, 404);
+  await db`INSERT INTO booking_payments (tenant_id, booking_id, amount_cents, method, note) VALUES (${tenant.id}, ${id}, ${amount_cents}, ${method}, ${note ?? null})`;
+  return c.json({ booking: rows[0] });
+});
+
+const refundBookingSchema = z.object({
+  /** Leave out to refund everything that was paid */
+  amount_cents: z.number().int().min(1).optional(),
+  /** Also cancel the appointment */
+  cancel: z.boolean().optional(),
+  notify: z.boolean().optional(),
+});
+
+// POST /api/bookings/:id/refund — give money back: to the card for what was paid through Stripe, the rest is recorded as handed back by the owner
+app.post('/:id/refund', async (c) => {
+  const tenant = c.get('tenant') as { id: string; company_name: string; stripe_account_id: string | null };
+  const id = c.req.param('id');
+  const parsed = refundBookingSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+
+  const rows = await db`
+    SELECT b.*, s.name AS service_name FROM bookings b JOIN services s ON s.id = b.service_id
+    WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
+  `;
+  const booking = rows[0];
+  if (!booking) return c.json({ error: 'Booking not found' }, 404);
+  const paid = (booking.deposit_paid_cents as number | null) ?? 0;
+  if (paid <= 0) return c.json({ error: 'Nothing has been paid on this booking.' }, 400);
+  const amount = parsed.data.amount_cents ?? paid;
+  if (amount > paid) return c.json({ error: `You can refund at most $${(paid / 100).toFixed(2)}.` }, 400);
+
+  // Card payments first (newest first), each limited to what is left of it
+  const charges = await db`
+    SELECT t.id, t.gross_amount_cents, t.platform_fee_cents, t.stripe_transfer_id,
+           t.gross_amount_cents + COALESCE((SELECT SUM(r.gross_amount_cents) FROM platform_transactions r WHERE r.refund_of = t.id), 0) AS left_cents
+    FROM platform_transactions t
+    WHERE t.tenant_id = ${tenant.id} AND t.reference_type = 'booking' AND t.reference_id = ${id}
+      AND t.gross_amount_cents > 0 AND t.stripe_transfer_id LIKE 'pi\_%'
+    ORDER BY t.created_at DESC
+  `;
+  let remaining = amount;
+  let toCard = 0;
+  for (const ch of charges) {
+    if (remaining <= 0) break;
+    const take = Math.min(remaining, ch.left_cents as number);
+    if (take <= 0) continue;
+    let result;
+    try {
+      result = await refundStorePayment(ch.stripe_transfer_id as string, tenant.stripe_account_id ?? null, take);
+    } catch (err) {
+      return c.json({ error: `Stripe refund failed: ${String(err)}${toCard ? ` (the first $${(toCard / 100).toFixed(2)} was already refunded)` : ''}` }, 502);
+    }
+    const gross = ch.gross_amount_cents as number;
+    const fee = Math.round(((ch.platform_fee_cents as number) * take) / gross);
+    await db`
+      INSERT INTO platform_transactions (tenant_id, reference_id, reference_type, gross_amount_cents, platform_fee_cents, stripe_fee_cents, net_to_tenant_cents, stripe_transfer_id, refund_of)
+      VALUES (${tenant.id}, ${id}, 'booking', ${-take}, ${-fee}, 0, ${-(take - fee)}, ${result.refund.id}, ${ch.id})
+    `;
+    await db`INSERT INTO booking_payments (tenant_id, booking_id, amount_cents, method, note, stripe_ref) VALUES (${tenant.id}, ${id}, ${-take}, 'card refund', 'Refunded to the customer\'s card', ${result.refund.id})`;
+    toCard += take;
+    remaining -= take;
+  }
+  if (remaining > 0) {
+    await db`INSERT INTO booking_payments (tenant_id, booking_id, amount_cents, method, note) VALUES (${tenant.id}, ${id}, ${-remaining}, 'refund', 'Returned by the business (not through Stripe)')`;
+  }
+
+  const updated = await db`
+    UPDATE bookings SET deposit_paid_cents = GREATEST(COALESCE(deposit_paid_cents, 0) - ${amount}, 0),
+      status = ${parsed.data.cancel ? 'cancelled' : (booking.status as string)}, updated_at = NOW()
+    WHERE id = ${id} RETURNING *
+  `;
+  if (parsed.data.notify !== false && booking.customer_email) {
+    sendBookingRefunded({
+      toEmail: booking.customer_email as string,
+      toName: booking.customer_name as string,
+      serviceName: booking.service_name as string,
+      amountCents: amount,
+      companyName: tenant.company_name,
+      tenantId: tenant.id,
+      bookingId: id,
+    }).catch((err) => console.error('Booking refund email error:', err));
+  }
+  return c.json({ booking: updated[0], refunded_to_card_cents: toCard, refunded_other_cents: remaining });
+});
+
+// POST /api/bookings/:id/resend-confirmation
+app.post('/:id/resend-confirmation', async (c) => {
+  const tenant = c.get('tenant') as { id: string; company_name: string; timezone?: string; cancel_window_hours?: number };
+  const id = c.req.param('id');
+  const rows = await db`
+    SELECT b.*, s.name AS service_name FROM bookings b JOIN services s ON s.id = b.service_id
+    WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
+  `;
+  const b = rows[0];
+  if (!b) return c.json({ error: 'Booking not found' }, 404);
+  await sendBookingConfirmation({
+    toEmail: b.customer_email as string,
+    toName: b.customer_name as string,
+    serviceName: b.service_name as string,
+    startTime: formatBookingTime(b.start_time as string, tenant.timezone),
+    endTime: formatBookingTime(b.end_time as string, tenant.timezone),
+    companyName: tenant.company_name,
+    tenantId: tenant.id,
+    bookingId: id,
+    manageUrl: await manageUrlFor(tenant, id),
+    cancelWindowHours: tenant.cancel_window_hours ?? 24,
+    location: b.location as string | null,
+  });
+  return c.json({ sent: true });
+});
+
+// POST /api/bookings/:id/send-reminder — send the reminder now
+app.post('/:id/send-reminder', async (c) => {
+  const tenant = c.get('tenant') as { id: string };
+  const sent = await sendReminderForBooking(c.req.param('id'), { tenantId: tenant.id });
+  if (!sent) return c.json({ error: 'Booking not found' }, 404);
   return c.json({ sent: true });
 });
 

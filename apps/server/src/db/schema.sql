@@ -550,3 +550,27 @@ UPDATE customers SET tags = (tags #>> '{}')::jsonb WHERE jsonb_typeof(tags) = 's
 UPDATE customers SET tags = '[]'::jsonb WHERE jsonb_typeof(tags) = 'string';
 UPDATE services SET image_keys = (image_keys #>> '{}')::jsonb WHERE jsonb_typeof(image_keys) = 'string' AND (image_keys #>> '{}') ~ '^\s*\[';
 UPDATE services SET image_keys = '[]'::jsonb WHERE jsonb_typeof(image_keys) = 'string';
+
+-- Booking edit window: where it happens, reminders on a schedule, payment history
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS location TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS reminder_hours TEXT DEFAULT '24';
+CREATE TABLE IF NOT EXISTS booking_reminders (
+  booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  hours_before INTEGER NOT NULL,
+  sent_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (booking_id, hours_before)
+);
+CREATE TABLE IF NOT EXISTS booking_payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  amount_cents INTEGER NOT NULL,
+  method TEXT NOT NULL,
+  note TEXT,
+  stripe_ref TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_booking_payments_booking ON booking_payments(booking_id);
+INSERT INTO booking_reminders (booking_id, hours_before)
+  SELECT id, 24 FROM bookings WHERE reminder_sent = TRUE
+  ON CONFLICT DO NOTHING;

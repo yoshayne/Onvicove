@@ -5,6 +5,7 @@ import type { Booking, Tenant } from '../types';
 import Modal from '../components/shared/Modal';
 import Button from '../components/shared/Button';
 import { Input } from '../components/shared/Input';
+import BookingPaymentPanel from './BookingPaymentPanel';
 
 interface Props {
   booking: Booking | null;
@@ -28,6 +29,8 @@ export default function EditBookingModal({ booking, onClose }: Props) {
   const [staffId, setStaffId] = useState('');
   const [internalNotes, setInternalNotes] = useState('');
   const [notify, setNotify] = useState(true);
+  const [location, setLocation] = useState('');
+  const [customMinutes, setCustomMinutes] = useState('');
   const [priceTouched, setPriceTouched] = useState(false);
   const tenantQ = useQuery({ queryKey: ['tenant', 'me'], queryFn: () => api.get<{ tenant: Tenant }>('/tenants/me') });
   const tz = tenantQ.data?.tenant.timezone || undefined;
@@ -35,7 +38,10 @@ export default function EditBookingModal({ booking, onClose }: Props) {
   const staffQ = useQuery({ queryKey: ['staff'], queryFn: () => api.get<{ staff: { id: string; name: string; is_active: boolean; service_ids?: string[] }[] }>('/staff') });
   const services = servicesQ.data?.services ?? [];
   const chosenService = services.find((sv) => sv.id === serviceId);
-  const minutes = chosenService?.duration_minutes ?? (booking ? Math.round((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / 60000) : 0);
+  const serviceMinutes = chosenService?.duration_minutes ?? 0;
+  const currentLen = booking ? Math.round((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / 60000) : 0;
+  const custom = parseInt(customMinutes, 10) || 0;
+  const minutes = custom || (chosenService?.duration_minutes ?? (booking ? Math.round((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / 60000) : 0));
   // End time = start + the service's length
   const endLabel = (() => {
     if (!date || !startTime || !minutes) return '';
@@ -68,10 +74,18 @@ export default function EditBookingModal({ booking, onClose }: Props) {
       setStaffId(booking.staff_id ?? '');
       setInternalNotes(booking.internal_notes ?? '');
       setNotify(true);
+      setLocation(booking.location ?? '');
+      setCustomMinutes('');
       setPriceTouched(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking, tz]);
+
+  // A booking whose length differs from its type's usual length keeps that custom length
+  useEffect(() => {
+    if (booking && serviceId === booking.service_id && serviceMinutes && currentLen !== serviceMinutes) setCustomMinutes(String(currentLen));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booking?.id, serviceMinutes]);
 
   const editMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
@@ -94,11 +108,15 @@ export default function EditBookingModal({ booking, onClose }: Props) {
     const was = { date: wall(booking.start_time).date, start: wall(booking.start_time).time };
     const serviceChanged = serviceId !== booking.service_id;
     const timeMoved = date !== was.date || startTime !== was.start;
+    const lengthChanged = custom ? custom !== currentLen : !!serviceMinutes && currentLen !== serviceMinutes;
+    const locationChanged = location.trim() !== (booking.location ?? '');
     editMutation.mutate({
-      ...(timeMoved || serviceChanged ? { reschedule: { date, start: startTime }, force } : {}),
+      ...(timeMoved || serviceChanged || lengthChanged ? { reschedule: { date, start: startTime }, force } : {}),
+      ...(custom && (lengthChanged || serviceChanged || timeMoved) ? { duration_minutes: custom } : {}),
+      ...(locationChanged ? { location: location.trim() || null } : {}),
       ...(serviceChanged ? { service_id: serviceId } : {}),
       ...(staffId !== (booking.staff_id ?? '') ? { staff_id: staffId || null } : {}),
-      ...(timeMoved || serviceChanged || staffId !== (booking.staff_id ?? '') ? { notify } : {}),
+      ...(timeMoved || serviceChanged || lengthChanged || locationChanged || staffId !== (booking.staff_id ?? '') ? { notify } : {}),
       internal_notes: internalNotes.trim() || null,
       customer_name: customerName.trim(),
       customer_email: customerEmail.trim(),
@@ -121,6 +139,7 @@ export default function EditBookingModal({ booking, onClose }: Props) {
             value={serviceId}
             onChange={(e) => {
               setServiceId(e.target.value);
+              setCustomMinutes(''); // a different type brings its own length
               const sv = services.find((x) => x.id === e.target.value);
               if (sv && !priceTouched) setPrice((sv.price_cents / 100).toFixed(2));
             }}
@@ -152,9 +171,19 @@ export default function EditBookingModal({ booking, onClose }: Props) {
             <input type="time" step={900} value={startTime} onChange={(e) => setStartTime(e.target.value)} required className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
           </div>
           <p className="text-xs text-slate-500">
-            {endLabel ? <>Ends at <strong>{endLabel}</strong> ({minutes} min, set by the type of booking). </> : null}
+            {endLabel ? <>Ends at <strong>{endLabel}</strong> ({minutes} min, {custom ? 'custom length' : 'set by the type of booking'}). </> : null}
             Your business's timezone.
           </p>
+          <div className="mt-1 flex items-center gap-2 text-sm text-slate-600">
+            <span>Custom length</span>
+            <input type="number" min={5} max={1440} step={5} placeholder={serviceMinutes ? String(serviceMinutes) : ''} value={customMinutes} onChange={(e) => setCustomMinutes(e.target.value)} className="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm" />
+            <span className="text-xs text-slate-500">min (leave empty to use the type's length)</span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-slate-700">Location <span className="font-normal text-slate-400">(shown in the customer's emails)</span></label>
+          <input value={location} onChange={(e) => setLocation(e.target.value)} maxLength={300} placeholder="Address, studio, or a video call link" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
         </div>
 
         {/* Price */}
@@ -223,10 +252,12 @@ export default function EditBookingModal({ booking, onClose }: Props) {
           />
         </div>
 
+        {booking && <BookingPaymentPanel booking={booking} timezone={tz} />}
+
         {booking?.status === 'confirmed' && (
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
-            Email the customer if the time, type or person changes
+            Email the customer if the time, type, person or location changes
           </label>
         )}
 

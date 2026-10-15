@@ -319,6 +319,14 @@ interface BookingEmailData {
   /** Private link to reschedule or cancel */
   manageUrl?: string;
   cancelWindowHours?: number;
+  /** Where the appointment takes place */
+  location?: string | null;
+  /** For reminders: "in about 2 hours", "tomorrow"… */
+  whenLabel?: string;
+}
+
+function locationLine(data: BookingEmailData): string {
+  return data.location ? `<p><strong>Where:</strong> ${data.location.replace(/</g, '&lt;')}</p>` : '';
 }
 
 function manageBlock(data: BookingEmailData): string {
@@ -347,6 +355,7 @@ export async function sendBookingConfirmation(data: BookingEmailData): Promise<v
       <p>Your appointment for <strong>${data.serviceName}</strong> with <strong>${data.companyName}</strong> is confirmed.</p>
       <p><strong>Start:</strong> ${data.startTime}</p>
       <p><strong>End:</strong> ${data.endTime}</p>
+      ${locationLine(data)}
       <p>Thank you — we look forward to seeing you!</p>
       ${manageBlock(data)}
     `, data.companyName),
@@ -358,12 +367,13 @@ export async function sendBookingReminder(data: BookingEmailData): Promise<void>
     fromName: data.companyName,
     replyTo: await storeReplyTo(data),
     to: [{ email: data.toEmail, name: data.toName }],
-    subject: `Reminder: appointment tomorrow — ${data.companyName}`,
+    subject: `Reminder: your appointment ${data.whenLabel ?? 'is coming up'} — ${data.companyName}`,
     htmlContent: wrap('Appointment reminder', `
       <p>Hi ${data.toName},</p>
       <p>This is a reminder for your upcoming appointment for <strong>${data.serviceName}</strong> with <strong>${data.companyName}</strong>.</p>
       <p><strong>Start:</strong> ${data.startTime}</p>
       <p><strong>End:</strong> ${data.endTime}</p>
+      ${locationLine(data)}
       <p>See you soon!</p>
       ${manageBlock(data)}
     `, data.companyName),

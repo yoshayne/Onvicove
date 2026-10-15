@@ -34,6 +34,7 @@ export interface Tenant {
   booking_mode: BookingMode;
   booking_notice_minutes?: number | null;
   cancel_window_hours?: number | null;
+  reminder_hours?: string | null;
   show_live_calendar: boolean;
   google_cal_enabled?: boolean;
   outlook_cal_enabled?: boolean;
@@ -186,6 +187,7 @@ export interface Booking {
   platform_fee_cents: number | null;
   deposit_paid_cents: number | null;
   reminder_sent: boolean;
+  location?: string | null;
   created_at: string;
   updated_at: string;
   service_name?: string;

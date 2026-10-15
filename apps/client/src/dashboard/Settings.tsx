@@ -27,6 +27,7 @@ interface SettingsFormState {
   show_live_calendar: boolean;
   booking_notice_minutes: number;
   cancel_window_hours: number;
+  reminder_hours: string;
   font_pair_id: FontPairId;
 }
 
@@ -43,6 +44,7 @@ function tenantToForm(tenant: Tenant): SettingsFormState {
     show_live_calendar: tenant.show_live_calendar,
     booking_notice_minutes: tenant.booking_notice_minutes ?? 60,
     cancel_window_hours: tenant.cancel_window_hours ?? 24,
+    reminder_hours: tenant.reminder_hours ?? '24',
     font_pair_id: (tenant.font_pair_id as FontPairId) ?? 'classic',
   };
 }
@@ -186,6 +188,7 @@ export default function Settings() {
       show_live_calendar: form.show_live_calendar,
       booking_notice_minutes: form.booking_notice_minutes,
       cancel_window_hours: form.cancel_window_hours,
+      reminder_hours: form.reminder_hours,
       font_pair_id: form.font_pair_id,
     };
     // Include slug update if new slug is available and different
@@ -331,6 +334,32 @@ export default function Settings() {
             </select>
             <p className="mt-1 text-xs text-slate-500">They get a link in their confirmation email. Deposits aren't refunded automatically; you decide.</p>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-700">Appointment reminders</label>
+          <p className="text-xs text-slate-500">Email customers automatically before their appointment. Pick as many as you like.</p>
+          <div className="flex flex-wrap gap-2">
+            {[72, 48, 24, 12, 4, 2, 1].map((h) => {
+              const on = form.reminder_hours.split(',').filter(Boolean).map(Number).includes(h);
+              return (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => setForm((f) => {
+                    if (!f) return f;
+                    const cur = new Set(f.reminder_hours.split(',').filter(Boolean).map(Number));
+                    if (cur.has(h)) cur.delete(h); else cur.add(h);
+                    return { ...f, reminder_hours: [...cur].sort((a, b) => b - a).join(',') };
+                  })}
+                  className={`rounded-full border px-3 py-1.5 text-sm transition ${on ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 text-slate-600 hover:border-slate-400'}`}
+                >
+                  {h >= 24 && h % 24 === 0 ? `${h / 24} day${h === 24 ? '' : 's'} before` : `${h} hour${h === 1 ? '' : 's'} before`}
+                </button>
+              );
+            })}
+          </div>
+          {!form.reminder_hours && <p className="text-xs text-amber-600">No automatic reminders. You can still send one by hand from a booking.</p>}
         </div>
 
         <div className="flex flex-col gap-2">
