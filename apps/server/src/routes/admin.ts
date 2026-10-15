@@ -15,6 +15,9 @@ import {
   sendOrderRefunded, sendBookingRefunded, sendAdminRefund,
   sendInvite,
 } from '../services/email';
+import { renderFlyerSet, FLYER_FORMATS } from '../services/milestones';
+import { getSignedFileUrl } from '../services/storage';
+import { sendFirstSaleMilestone } from '../services/email';
 import { generateImpersonationToken } from '../lib/impersonate-token';
 import { randomBytes } from 'crypto';
 
@@ -441,6 +444,64 @@ app.get('/transactions', async (c) => {
   `;
 
   return c.json({ transactions, summary, page, page_size: PAGE_SIZE });
+});
+
+// ─── Milestone flyer preview (try a store's flyer without a real sale) ──────
+
+app.get('/milestone-preview/products', async (c) => {
+  const tenantId = c.req.query('tenant_id');
+  if (!tenantId) return c.json({ error: 'tenant_id is required' }, 400);
+  const products = await db`SELECT id, name, (image_keys->>0 IS NOT NULL) AS has_image FROM products WHERE tenant_id = ${tenantId} ORDER BY created_at DESC LIMIT 100`;
+  return c.json({ products });
+});
+
+const milestonePreviewSchema = z.object({
+  tenant_id: z.string().uuid(),
+  product_id: z.string().uuid().nullable().optional(),
+  send_email: z.boolean().optional(),
+});
+
+// POST /api/admin/milestone-preview — make the first-sale flyers for any store; optionally email the test to the admin
+app.post('/milestone-preview', async (c) => {
+  const parsed = milestonePreviewSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
+  const { tenant_id, product_id, send_email } = parsed.data;
+
+  const trows = await db`SELECT id, company_name, brand_color, logo_key FROM tenants WHERE id = ${tenant_id} LIMIT 1`;
+  const t = trows[0];
+  if (!t) return c.json({ error: 'Store not found' }, 404);
+  const prows = product_id
+    ? await db`SELECT name, image_keys->>0 AS image FROM products WHERE id = ${product_id} AND tenant_id = ${tenant_id} LIMIT 1`
+    : await db`SELECT name, image_keys->>0 AS image FROM products WHERE tenant_id = ${tenant_id} AND image_keys->>0 IS NOT NULL ORDER BY created_at DESC LIMIT 1`;
+  const item = prows[0] ?? null;
+
+  let keys: Record<string, string>;
+  try {
+    keys = await renderFlyerSet(
+      { company: t.company_name as string, color: t.brand_color as string | null, logoKey: t.logo_key as string | null, itemName: (item?.name as string) ?? null, itemImageKey: (item?.image as string) ?? null },
+      `milestones/${tenant_id}/preview-${Date.now()}`,
+    );
+  } catch (err) {
+    return c.json({ error: `Flyer generation failed: ${err instanceof Error ? err.message : String(err)}` }, 502);
+  }
+  const flyers = await Promise.all(FLYER_FORMATS.filter((f) => keys[f.id]).map(async (f) => ({ format: f.id, label: f.label, url: await getSignedFileUrl(keys[f.id]) })));
+
+  let emailed_to: string | null = null;
+  if (send_email) {
+    const adminEmail = (c as unknown as { get: (k: string) => unknown }).get('adminEmail') as string;
+    const base = getBaseUrl();
+    try {
+      await sendFirstSaleMilestone({
+        toEmail: adminEmail, toName: adminEmail.split('@')[0], companyName: t.company_name as string, itemName: (item?.name as string) ?? null,
+        dashboardUrl: `${base}/dashboard`, settingsUrl: `${base}/dashboard/settings`, hasFlyers: true, preview: true,
+      });
+      emailed_to = adminEmail;
+    } catch (err) {
+      return c.json({ flyers, item_name: item?.name ?? null, email_error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  await logAdminAction(c, 'milestone_preview', 'tenant', tenant_id, { emailed_to });
+  return c.json({ flyers, item_name: item?.name ?? null, emailed_to });
 });
 
 const refundSchema = z.object({

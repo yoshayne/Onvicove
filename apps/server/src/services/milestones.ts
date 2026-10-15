@@ -38,25 +38,37 @@ function promptFor(format: (typeof FORMATS)[number], d: { company: string; item:
   ].filter(Boolean).join(' ');
 }
 
+/** Make the flyer set for a store and item; files are stored under `prefix`. Returns format → storage key. */
+export async function renderFlyerSet(
+  s: { company: string; color: string | null; logoKey: string | null; itemName: string | null; itemImageKey: string | null },
+  prefix: string,
+): Promise<Record<string, string>> {
+  const [photo, logo] = await Promise.all([fetchBuffer(s.itemImageKey), fetchBuffer(s.logoKey)]);
+  const refs = [photo, logo].filter((b): b is Buffer => !!b);
+  const keys: Record<string, string> = {};
+  for (const f of FORMATS) {
+    const raw = await generatePromoGraphic(
+      promptFor(f, { company: s.company, item: s.itemName, color: s.color || '#111111', hasPhoto: !!photo, hasLogo: !!logo }),
+      refs,
+      f.ratio,
+    );
+    const png = await sharp(raw).resize(f.w, f.h, { fit: 'cover' }).png().toBuffer();
+    keys[f.id] = await uploadFile(`${prefix}/${f.id}.png`, png, 'image/png');
+  }
+  return keys;
+}
+
 async function regenerateFiles(milestoneId: string): Promise<void> {
   const rows = await db`
     SELECT m.*, t.company_name, t.brand_color, t.logo_key FROM milestones m JOIN tenants t ON t.id = m.tenant_id WHERE m.id = ${milestoneId}
   `;
   const m = rows[0];
   if (!m) return;
-  const [photo, logo] = await Promise.all([fetchBuffer(m.item_image_key as string | null), fetchBuffer(m.logo_key as string | null)]);
-  const refs = [photo, logo].filter((b): b is Buffer => !!b);
   const run = (m.flyer_runs as number) + 1;
-  const keys: Record<string, string> = {};
-  for (const f of FORMATS) {
-    const raw = await generatePromoGraphic(
-      promptFor(f, { company: m.company_name as string, item: m.item_name as string | null, color: (m.brand_color as string) || '#111111', hasPhoto: !!photo, hasLogo: !!logo }),
-      refs,
-      f.ratio,
-    );
-    const png = await sharp(raw).resize(f.w, f.h, { fit: 'cover' }).png().toBuffer();
-    keys[f.id] = await uploadFile(`milestones/${m.tenant_id}/${m.id}/${f.id}-${run}.png`, png, 'image/png');
-  }
+  const keys = await renderFlyerSet(
+    { company: m.company_name as string, color: m.brand_color as string | null, logoKey: m.logo_key as string | null, itemName: m.item_name as string | null, itemImageKey: m.item_image_key as string | null },
+    `milestones/${m.tenant_id}/${m.id}/run-${run}`,
+  );
   await db`UPDATE milestones SET flyer_keys = ${db.json(keys as never)}, flyer_runs = ${run} WHERE id = ${milestoneId}`;
 }
 
@@ -128,6 +140,8 @@ export async function checkFirstSale(tenantId: string, referenceType: 'order' | 
   });
   await db`UPDATE milestones SET emailed_at = NOW() WHERE id = ${id}`;
 }
+
+export const FLYER_FORMATS = FORMATS;
 
 export async function listMilestones(tenantId: string) {
   const rows = await db`SELECT * FROM milestones WHERE tenant_id = ${tenantId} ORDER BY created_at DESC`;

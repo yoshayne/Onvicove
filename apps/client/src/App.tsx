@@ -60,6 +60,7 @@ import AdminAuditLog from './admin/AuditLog';
 import AdminFunnel from './admin/Funnel';
 import AdminSettings from './admin/Settings';
 import AdminCoupons from './admin/Coupons';
+import AdminMilestonePreview from './admin/MilestonePreview';
 import AdminDomainRequests from './admin/DomainRequests';
 import AdminCreateTenant from './admin/CreateTenant';
 
@@ -233,6 +234,7 @@ export default function App() {
                 <Route path="audit-log" element={<AdminAuditLog />} />
                 <Route path="domain-requests" element={<AdminDomainRequests />} />
                 <Route path="coupons" element={<AdminCoupons />} />
+                <Route path="milestone-preview" element={<AdminMilestonePreview />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 

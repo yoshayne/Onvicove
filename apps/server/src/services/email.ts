@@ -512,11 +512,13 @@ export async function sendFirstSaleMilestone(data: {
   dashboardUrl: string;
   settingsUrl: string;
   hasFlyers: boolean;
+  /** An admin's test send */
+  preview?: boolean;
   tenantId?: string;
 }): Promise<void> {
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],
-    subject: `🎉 ${data.companyName} just made its first sale!`,
+    subject: `${data.preview ? '[TEST] ' : ''}🎉 ${data.companyName} just made its first sale!`,
     htmlContent: wrap('You made your first sale!', `
       <p>Hi ${escapeHtml(data.toName.split(' ')[0])},</p>
       <p>Congratulations! <strong>${escapeHtml(data.companyName)}</strong> just made its first sale${data.itemName ? ` — <strong>${escapeHtml(data.itemName)}</strong>` : ''}. That is a real milestone, and it started with you putting yourself out there.</p>
