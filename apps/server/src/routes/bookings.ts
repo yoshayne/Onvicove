@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
-import { createBookingPaymentIntent, usableStripeIds } from '../services/stripe';
+import { createBookingPaymentIntent, usableStripeIds, computePlatformFee } from '../services/stripe';
 import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { sendPaymentLinkEmail, sendBookingCancelled, sendTenantBookingCancelled, sendBookingConfirmation, sendTenantNewBooking } from '../services/email';
 import { slotsForService, holdsTime } from '../services/slots';
@@ -24,11 +24,18 @@ const updateBookingSchema = z.object({
   notes: z.string().nullable().optional(),
   amount_cents: z.number().int().min(0).optional(),
   // Move the appointment: wall-clock date and times in the business's timezone
+  // The end follows from the service's length unless one is given
   reschedule: z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     start: z.string().regex(/^\d{2}:\d{2}$/),
-    end: z.string().regex(/^\d{2}:\d{2}$/),
+    end: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   }).optional(),
+  /** Change the type of booking (its length then sets the end time) */
+  service_id: z.string().uuid().optional(),
+  /** Change the professional (null = anyone) */
+  staff_id: z.string().uuid().nullable().optional(),
+  /** Email the customer about a change to time / service / professional (default yes) */
+  notify: z.boolean().optional(),
   /** Move it even if it overlaps another booking */
   force: z.boolean().optional(),
 });
@@ -205,31 +212,75 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   }
 
-  const { reschedule, force, ...fields } = parsed.data;
+  const { reschedule, force, notify, ...fields } = parsed.data;
   const updates: Record<string, unknown> = { ...fields };
+  const tz = ((tenant as unknown as { timezone?: string }).timezone) || 'America/New_York';
   let movedTo: { start: string; end: string } | null = null;
-  if (reschedule) {
-    const tz = ((tenant as unknown as { timezone?: string }).timezone) || 'America/New_York';
-    const start = fromZonedTime(`${reschedule.date} ${reschedule.start}:00`, tz);
-    let end = fromZonedTime(`${reschedule.date} ${reschedule.end}:00`, tz);
-    if (end <= start) end = new Date(end.getTime() + 24 * 3600_000); // an end after midnight
-    const cur = await db`SELECT staff_id FROM bookings WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
-    if (!cur[0]) return c.json({ error: 'Booking not found' }, 404);
-    const staffId = (cur[0].staff_id as string | null) ?? null;
-    if (!force) {
-      const clash = await db`
-        SELECT 1 FROM bookings
-        WHERE tenant_id = ${tenant.id} AND id <> ${id} AND ${holdsTime()}
-          AND (${staffId}::uuid IS NULL OR staff_id = ${staffId}::uuid OR staff_id IS NULL)
-          AND start_time < ${end.toISOString()} AND end_time > ${start.toISOString()}
-        LIMIT 1
-      `;
-      if (clash[0]) return c.json({ error: 'That time overlaps another booking.', conflict: true }, 409);
+  let changedWhat = false;
+
+  if (reschedule || fields.service_id || fields.staff_id !== undefined) {
+    const curRows = await db`
+      SELECT b.*, s.duration_minutes AS current_minutes
+      FROM bookings b JOIN services s ON s.id = b.service_id
+      WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
+    `;
+    const cur = curRows[0];
+    if (!cur) return c.json({ error: 'Booking not found' }, 404);
+
+    let minutes = cur.current_minutes as number;
+    if (fields.service_id && fields.service_id !== cur.service_id) {
+      const sv = await db`SELECT duration_minutes FROM services WHERE id = ${fields.service_id} AND tenant_id = ${tenant.id} LIMIT 1`;
+      if (!sv[0]) return c.json({ error: 'That service was not found' }, 404);
+      minutes = sv[0].duration_minutes as number;
+      changedWhat = true;
     }
-    movedTo = { start: start.toISOString(), end: end.toISOString() };
-    updates.start_time = movedTo.start;
-    updates.end_time = movedTo.end;
-    updates.reminder_sent = false;
+    let staffId = (cur.staff_id as string | null) ?? null;
+    if (fields.staff_id !== undefined) {
+      if (fields.staff_id) {
+        const st = await db`SELECT 1 FROM staff WHERE id = ${fields.staff_id} AND tenant_id = ${tenant.id} LIMIT 1`;
+        if (!st[0]) return c.json({ error: 'That team member was not found' }, 404);
+      }
+      if (fields.staff_id !== staffId) changedWhat = true;
+      staffId = fields.staff_id;
+    }
+
+    const currentStart = new Date(cur.start_time as string);
+    const currentEnd = new Date(cur.end_time as string);
+    const newStart = reschedule ? fromZonedTime(`${reschedule.date} ${reschedule.start}:00`, tz) : currentStart;
+    let newEnd: Date;
+    if (reschedule?.end) {
+      newEnd = fromZonedTime(`${reschedule.date} ${reschedule.end}:00`, tz);
+      if (newEnd <= newStart) newEnd = new Date(newEnd.getTime() + 24 * 3600_000);
+    } else if (reschedule || (fields.service_id && fields.service_id !== cur.service_id)) {
+      newEnd = new Date(newStart.getTime() + minutes * 60_000); // the service's length decides how long it runs
+    } else {
+      newEnd = currentEnd;
+    }
+
+    const timeChanged = newStart.getTime() !== currentStart.getTime() || newEnd.getTime() !== currentEnd.getTime();
+    if (timeChanged || fields.staff_id !== undefined) {
+      if (!force) {
+        const clash = await db`
+          SELECT 1 FROM bookings
+          WHERE tenant_id = ${tenant.id} AND id <> ${id} AND ${holdsTime()}
+            AND (${staffId}::uuid IS NULL OR staff_id = ${staffId}::uuid OR staff_id IS NULL)
+            AND start_time < ${newEnd.toISOString()} AND end_time > ${newStart.toISOString()}
+          LIMIT 1
+        `;
+        if (clash[0]) return c.json({ error: 'That time overlaps another booking.', conflict: true }, 409);
+      }
+    }
+    if (timeChanged) {
+      movedTo = { start: newStart.toISOString(), end: newEnd.toISOString() };
+      updates.start_time = movedTo.start;
+      updates.end_time = movedTo.end;
+      updates.reminder_sent = false;
+      changedWhat = true;
+    }
+  }
+  // A new price changes what our fee is on any later payment for this booking
+  if (typeof fields.amount_cents === 'number') {
+    updates.platform_fee_cents = await computePlatformFee(fields.amount_cents, tenant.id);
   }
   const keys = Object.keys(updates);
   if (keys.length === 0) {
@@ -250,22 +301,21 @@ app.patch('/:id', async (c) => {
   if (!rows[0]) return c.json({ error: 'Booking not found' }, 404);
   const booking = rows[0];
 
-  // The owner moved a confirmed appointment: tell the customer the new time
-  if (movedTo && booking.status === 'confirmed' && booking.customer_email) {
-    const tz = (tenant as unknown as { timezone?: string }).timezone;
+  // The owner changed a confirmed appointment (time, type or professional): tell the customer
+  if (changedWhat && notify !== false && booking.status === 'confirmed' && booking.customer_email) {
     const svc = await db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`;
     sendBookingConfirmation({
       toEmail: booking.customer_email as string,
       toName: booking.customer_name as string,
       serviceName: (svc[0]?.name as string) ?? 'your appointment',
-      startTime: formatBookingTime(movedTo.start, tz),
-      endTime: formatBookingTime(movedTo.end, tz),
+      startTime: formatBookingTime(booking.start_time as string, tz),
+      endTime: formatBookingTime(booking.end_time as string, tz),
       companyName: tenant.company_name,
       tenantId: tenant.id,
       bookingId: booking.id as string,
       manageUrl: await manageUrlFor(tenant, booking.id as string),
       cancelWindowHours: (tenant as unknown as { cancel_window_hours?: number }).cancel_window_hours ?? 24,
-    }).catch((err) => console.error('Moved booking email error:', err));
+    }).catch((err) => console.error('Changed booking email error:', err));
   }
 
   const statusChanged = updates.status && before[0]?.status !== updates.status;

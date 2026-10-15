@@ -24,9 +24,28 @@ export default function EditBookingModal({ booking, onClose }: Props) {
   const [conflict, setConflict] = useState(false);
   const [date, setDate] = useState('');
   const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [serviceId, setServiceId] = useState('');
+  const [staffId, setStaffId] = useState('');
+  const [internalNotes, setInternalNotes] = useState('');
+  const [notify, setNotify] = useState(true);
+  const [priceTouched, setPriceTouched] = useState(false);
   const tenantQ = useQuery({ queryKey: ['tenant', 'me'], queryFn: () => api.get<{ tenant: Tenant }>('/tenants/me') });
   const tz = tenantQ.data?.tenant.timezone || undefined;
+  const servicesQ = useQuery({ queryKey: ['services'], queryFn: () => api.get<{ services: { id: string; name: string; price_cents: number; duration_minutes: number; category: string | null }[] }>('/services') });
+  const staffQ = useQuery({ queryKey: ['staff'], queryFn: () => api.get<{ staff: { id: string; name: string; is_active: boolean; service_ids?: string[] }[] }>('/staff') });
+  const services = servicesQ.data?.services ?? [];
+  const chosenService = services.find((sv) => sv.id === serviceId);
+  const minutes = chosenService?.duration_minutes ?? (booking ? Math.round((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / 60000) : 0);
+  // End time = start + the service's length
+  const endLabel = (() => {
+    if (!date || !startTime || !minutes) return '';
+    const [h, m] = startTime.split(':').map(Number);
+    const total = h * 60 + m + minutes;
+    const eh = Math.floor((total % 1440) / 60);
+    const em = total % 60;
+    const ampm = eh >= 12 ? 'PM' : 'AM';
+    return `${((eh + 11) % 12) + 1}:${String(em).padStart(2, '0')} ${ampm}${total >= 1440 ? ' (next day)' : ''}`;
+  })();
 
   // The appointment's date and times as the business sees them (its own timezone)
   const wall = (iso: string) => ({
@@ -45,7 +64,11 @@ export default function EditBookingModal({ booking, onClose }: Props) {
       setConflict(false);
       setDate(wall(booking.start_time).date);
       setStartTime(wall(booking.start_time).time);
-      setEndTime(wall(booking.end_time).time);
+      setServiceId(booking.service_id);
+      setStaffId(booking.staff_id ?? '');
+      setInternalNotes(booking.internal_notes ?? '');
+      setNotify(true);
+      setPriceTouched(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking, tz]);
@@ -68,10 +91,15 @@ export default function EditBookingModal({ booking, onClose }: Props) {
     if (!booking) return;
     setError(null);
     setConflict(false);
-    const was = { date: wall(booking.start_time).date, start: wall(booking.start_time).time, end: wall(booking.end_time).time };
-    const moved = date !== was.date || startTime !== was.start || endTime !== was.end;
+    const was = { date: wall(booking.start_time).date, start: wall(booking.start_time).time };
+    const serviceChanged = serviceId !== booking.service_id;
+    const timeMoved = date !== was.date || startTime !== was.start;
     editMutation.mutate({
-      ...(moved ? { reschedule: { date, start: startTime, end: endTime }, force } : {}),
+      ...(timeMoved || serviceChanged ? { reschedule: { date, start: startTime }, force } : {}),
+      ...(serviceChanged ? { service_id: serviceId } : {}),
+      ...(staffId !== (booking.staff_id ?? '') ? { staff_id: staffId || null } : {}),
+      ...(timeMoved || serviceChanged || staffId !== (booking.staff_id ?? '') ? { notify } : {}),
+      internal_notes: internalNotes.trim() || null,
       customer_name: customerName.trim(),
       customer_email: customerEmail.trim(),
       customer_phone: customerPhone.trim() || null,
@@ -86,15 +114,47 @@ export default function EditBookingModal({ booking, onClose }: Props) {
     <Modal isOpen={!!booking} onClose={onClose} title="Edit booking">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
+        {/* What */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-slate-700">Type of booking</label>
+          <select
+            value={serviceId}
+            onChange={(e) => {
+              setServiceId(e.target.value);
+              const sv = services.find((x) => x.id === e.target.value);
+              if (sv && !priceTouched) setPrice((sv.price_cents / 100).toFixed(2));
+            }}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            {services.length === 0 && <option value={serviceId}>{booking?.service_name ?? 'Loading…'}</option>}
+            {services.map((sv) => (
+              <option key={sv.id} value={sv.id}>{sv.name} ({sv.duration_minutes} min, ${(sv.price_cents / 100).toFixed(2)})</option>
+            ))}
+          </select>
+          {(staffQ.data?.staff ?? []).filter((m) => m.is_active).length > 0 && (
+            <>
+              <label className="mt-2 text-sm font-medium text-slate-700">With</label>
+              <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">Anyone</option>
+                {(staffQ.data?.staff ?? []).filter((m) => m.is_active).map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </>
+          )}
+        </div>
+
         {/* When */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-slate-700">Appointment date and time</label>
-          <div className="grid grid-cols-3 gap-2">
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className="col-span-3 rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-1" />
-            <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-            <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+          <label className="text-sm font-medium text-slate-700">Date and start time</label>
+          <div className="grid grid-cols-2 gap-2">
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            <input type="time" step={900} value={startTime} onChange={(e) => setStartTime(e.target.value)} required className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
           </div>
-          <p className="text-xs text-slate-500">Date, start and end (your business's timezone). If the booking is confirmed, the customer is emailed the new time.</p>
+          <p className="text-xs text-slate-500">
+            {endLabel ? <>Ends at <strong>{endLabel}</strong> ({minutes} min, set by the type of booking). </> : null}
+            Your business's timezone.
+          </p>
         </div>
 
         {/* Price */}
@@ -112,7 +172,7 @@ export default function EditBookingModal({ booking, onClose }: Props) {
               min="0"
               step="0.01"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => { setPrice(e.target.value); setPriceTouched(true); }}
               className="w-full rounded-lg border border-slate-300 py-2 pl-7 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -152,6 +212,23 @@ export default function EditBookingModal({ booking, onClose }: Props) {
             </div>
           </div>
         </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-slate-700">Private note (only you see this)</label>
+          <textarea
+            value={internalNotes}
+            onChange={(e) => setInternalNotes(e.target.value)}
+            rows={2}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {booking?.status === 'confirmed' && (
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
+            Email the customer if the time, type or person changes
+          </label>
+        )}
 
         {error && (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
