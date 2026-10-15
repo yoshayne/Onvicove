@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
+    "test:flyers": "tsx --test src/services/flyers/flyers.test.ts",
     "start": "node dist/index.js",
     "migrate": "tsx src/db/migrate.ts",
     "backfill-owner-emails": "tsx src/scripts/backfillOwnerEmails.ts"
@@ -13,6 +14,7 @@
     "@aws-sdk/s3-request-presigner": "^3.0.0",
     "@clerk/backend": "^1.0.0",
     "@hono/node-server": "^1.0.0",
+    "@resvg/resvg-js": "^2.6.2",
     "date-fns": "^3.0.0",
     "date-fns-tz": "^3.0.0",
     "dotenv": "^16.0.0",

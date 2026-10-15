@@ -18,6 +18,7 @@ export default function MilestonePreview() {
   const [tenantId, setTenantId] = useState('');
   const [itemKey, setItemKey] = useState('');
   const [sendEmail, setSendEmail] = useState(true);
+  const [variant, setVariant] = useState(0);
 
   const tenants = useQuery({ queryKey: ['admin', 'tenants', 'all'], queryFn: () => api.get<{ tenants: { id: string; company_name: string }[] }>('/admin/tenants') });
   const itemsQ = useQuery({
@@ -28,7 +29,7 @@ export default function MilestonePreview() {
   const run = useMutation({
     mutationFn: () => {
       const [type, id] = itemKey.split(':');
-      return api.post<PreviewResult>('/admin/milestone-preview', { tenant_id: tenantId, item: itemKey ? { type, id } : null, send_email: sendEmail });
+      return api.post<PreviewResult>('/admin/milestone-preview', { tenant_id: tenantId, item: itemKey ? { type, id } : null, send_email: sendEmail, variant });
     },
   });
 
@@ -56,13 +57,21 @@ export default function MilestonePreview() {
           </>
         )}
 
+        <label className="text-sm font-medium text-slate-700">Layout</label>
+        <select value={variant} onChange={(e) => setVariant(Number(e.target.value))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+          <option value={0}>Chosen for this kind of business</option>
+          <option value={1}>Redo layout (what the free redo shows)</option>
+          <option value={2}>Another layout</option>
+          <option value={3}>Another layout</option>
+        </select>
+
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} /> Also email the test to me
         </label>
         <div>
           <Button disabled={!tenantId} isLoading={run.isPending} onClick={() => run.mutate()}>Make flyers</Button>
         </div>
-        {run.isPending && <p className="flex items-center gap-2 text-sm text-slate-500"><Spinner /> Designing two flyers. This takes about a minute…</p>}
+        {run.isPending && <p className="flex items-center gap-2 text-sm text-slate-500"><Spinner /> Designing two flyers…</p>}
         {run.isError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{(run.error as Error).message}</p>}
       </div>
 

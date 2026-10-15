@@ -525,7 +525,7 @@ export async function sendFirstSaleMilestone(data: {
       <p>Congratulations! <strong>${escapeHtml(data.companyName)}</strong> just ${data.kind === 'booking' ? 'got its first booking' : 'made its first sale'}${data.itemName ? ` — <strong>${escapeHtml(data.itemName)}</strong>` : ''}. That is a real milestone, and it started with you putting yourself out there.</p>
       <p>${data.hasFlyers ? 'We made two ready-to-post flyers for you, free: one for your feed and one for Stories.' : 'We have a ready-to-post flyer waiting for you, free: one tap in your dashboard creates it.'} Share it, tell people where to buy, and keep the momentum going.</p>
       ${btn(data.hasFlyers ? 'See my flyers' : 'Create my flyer', data.dashboardUrl)}
-      <p style="font-size:13px;color:#64748b">Don't love it? You can redo it once, free, from the same page.</p>
+      <p style="font-size:13px;color:#64748b">Want a different look? You can try another layout once, free, from the same page.</p>
       <p style="font-size:12px;color:#94a3b8">We send a note like this for big moments in your business. Prefer not to get them? <a href="${data.settingsUrl}" style="color:#94a3b8">Turn them off in Settings</a> — your flyers will still be waiting in your dashboard.</p>
     `),
   }, data.tenantId ? { tenantId: data.tenantId, type: 'milestone_first_sale' } : undefined);

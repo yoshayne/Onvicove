@@ -15,7 +15,7 @@ import {
   sendOrderRefunded, sendBookingRefunded, sendAdminRefund,
   sendInvite,
 } from '../services/email';
-import { renderFlyerSet, FLYER_FORMATS } from '../services/milestones';
+import { renderFlyerSet, loadFlyerStore, FLYER_FORMATS } from '../services/milestones';
 import { getSignedFileUrl } from '../services/storage';
 import { sendFirstSaleMilestone } from '../services/email';
 import { generateImpersonationToken } from '../lib/impersonate-token';
@@ -460,15 +460,17 @@ const milestonePreviewSchema = z.object({
   tenant_id: z.string().uuid(),
   item: z.object({ type: z.enum(['order', 'booking']), id: z.string().uuid() }).nullable().optional(),
   send_email: z.boolean().optional(),
+  /** 0 = the look for this kind of business, 1-3 = the other layouts */
+  variant: z.number().int().min(0).max(3).optional(),
 });
 
 // POST /api/admin/milestone-preview — make the first-sale flyers for any store; optionally email the test to the admin
 app.post('/milestone-preview', async (c) => {
   const parsed = milestonePreviewSchema.safeParse(await c.req.json().catch(() => ({})));
   if (!parsed.success) return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
-  const { tenant_id, item: chosen, send_email } = parsed.data;
+  const { tenant_id, item: chosen, send_email, variant } = parsed.data;
 
-  const trows = await db`SELECT id, company_name, brand_color, logo_key, hero_image_key FROM tenants WHERE id = ${tenant_id} LIMIT 1`;
+  const trows = await db`SELECT id, company_name FROM tenants WHERE id = ${tenant_id} LIMIT 1`;
   const t = trows[0];
   if (!t) return c.json({ error: 'Store not found' }, 404);
   // A chosen product/service, else the newest product with a photo, else the newest service (stores that only take bookings)
@@ -484,10 +486,9 @@ app.post('/milestone-preview', async (c) => {
 
   let keys: Record<string, string>;
   try {
-    keys = await renderFlyerSet(
-      { company: t.company_name as string, color: t.brand_color as string | null, logoKey: t.logo_key as string | null, itemName: (item?.name as string) ?? null, itemImageKey: (item?.image as string) ?? (kind === 'booking' ? (t.hero_image_key as string | null) : null), kind },
-      `milestones/${tenant_id}/preview-${Date.now()}`,
-    );
+    const store = await loadFlyerStore(tenant_id, kind, (item?.name as string) ?? null, (item?.image as string) ?? null);
+    if (!store) return c.json({ error: 'Store not found' }, 404);
+    keys = await renderFlyerSet(store, `milestones/${tenant_id}/preview-${Date.now()}`, variant ?? 0);
   } catch (err) {
     return c.json({ error: `Flyer generation failed: ${err instanceof Error ? err.message : String(err)}` }, 502);
   }

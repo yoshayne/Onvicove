@@ -71,7 +71,7 @@ export default function MilestoneCard() {
           className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           <RefreshCw size={14} />
-          {hasFlyers ? 'Not feeling it? Redo it (1 free redo)' : 'Create my flyer (free)'}
+          {hasFlyers ? 'Try a different layout (1 free redo)' : 'Create my flyer (free)'}
         </button>
       )}
       {!busy && hasFlyers && !first.can_generate && <p className="mt-3 text-xs text-slate-500">You've used your free redo.</p>}
