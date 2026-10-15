@@ -1,3 +1,4 @@
+import { useBookingSummary } from './bookingFlow';
 import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../lib/api';
 import type { AvailableSlot, CartItem, ProductData, ProductVariantData, ServiceData } from '../types';
@@ -190,6 +191,9 @@ export function useStorefrontCommerce(slug: string | undefined) {
   const [bookingAmountCents, setBookingAmountCents] = useState(0);
   const slotMapRef = useRef<Map<string, { start: string; end: string }>>(new Map());
   const bookingIdRef = useRef<string | null>(null);
+  // Which date's times are on screen: a slow answer for an earlier tap must never replace the date now selected
+  const slotRequestRef = useRef(0);
+  const slotDateRef = useRef<string | null>(null);
   const orderIdRef = useRef<string | null>(null);
 
   function openBooking(service: ServiceData) {
@@ -227,10 +231,12 @@ export function useStorefrontCommerce(slug: string | undefined) {
 
   async function fetchSlots(service: ServiceData, date: Date, staffId: string | null = selectedStaffId) {
     if (!slug) return;
+    const requestId = ++slotRequestRef.current;
     try {
       const res = await apiGet<AvailabilityResponse>(
         `/api/public/${slug}/availability?service_id=${service.id}&date=${toDateParam(date)}${staffId ? `&staff_id=${staffId}` : ''}`
       );
+      if (requestId !== slotRequestRef.current) return; // a newer tap has already replaced this one
       const map = new Map<string, { start: string; end: string }>();
       const slots: AvailableSlot[] = (res.slots ?? []).map((s) => {
         const time = new Date(s.start).toLocaleTimeString(undefined, {
@@ -241,15 +247,19 @@ export function useStorefrontCommerce(slug: string | undefined) {
         return { time, available: true };
       });
       slotMapRef.current = map;
+      slotDateRef.current = toDateParam(date);
       setAvailableSlots(slots);
       setBookingCityLabel(res.city_label ?? null);
     } catch {
+      if (requestId !== slotRequestRef.current) return;
       setAvailableSlots([]);
       setBookingCityLabel(null);
     }
   }
 
   async function selectBookingDate(date: Date) {
+    slotMapRef.current = new Map();
+    slotDateRef.current = null;
     setSelectedDate(date);
     setSelectedSlot(null);
     setAvailableSlots([]);
@@ -276,6 +286,16 @@ export function useStorefrontCommerce(slug: string | undefined) {
     if (!slug || !bookingService || !selectedSlot) return;
     const slot = slotMapRef.current.get(selectedSlot);
     if (!slot) return;
+    // Belt and braces: the time must belong to the day shown as selected
+    if (!selectedDate || slotDateRef.current !== toDateParam(selectedDate)) {
+      setBookingError('Please pick your date and time again, then continue.');
+      setBookingStatus('error');
+      return;
+    }
+    useBookingSummary.getState().set({
+      service: bookingService.name,
+      when: new Date(slot.start).toLocaleString(undefined, { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+    });
     setBookingStatus('submitting');
     setBookingError(null);
     try {

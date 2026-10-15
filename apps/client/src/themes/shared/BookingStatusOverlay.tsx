@@ -1,4 +1,5 @@
 import StripePaymentForm from './StripePaymentForm';
+import { useBookingSummary } from './bookingFlow';
 
 interface BookingStatusOverlayProps {
   status: 'idle' | 'submitting' | 'payment' | 'success' | 'error';
@@ -25,6 +26,7 @@ export default function BookingStatusOverlay({
   onPaymentSuccess,
   onPaymentCancel,
 }: BookingStatusOverlayProps) {
+  const summary = useBookingSummary();
   if (status === 'idle') return null;
 
   return (
@@ -33,7 +35,14 @@ export default function BookingStatusOverlay({
         {status === 'submitting' && <p className="text-sm text-gray-600">Booking your appointment…</p>}
         {status === 'payment' && clientSecret && (
           <>
-            <p className="mb-4 text-lg font-semibold">Pay to confirm your booking</p>
+            <p className="mb-2 text-lg font-semibold">Pay to confirm your booking</p>
+            {summary.when && (
+              <p className="mb-4 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                <span className="font-medium">{summary.service}</span>
+                <br />
+                {summary.when}
+              </p>
+            )}
             <StripePaymentForm
               clientSecret={clientSecret}
               amountCents={amountCents ?? 0}
