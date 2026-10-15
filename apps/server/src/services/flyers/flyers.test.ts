@@ -39,7 +39,7 @@ test('industry detection adapts to the store', () => {
 });
 
 test('redo cycles through different layouts', () => {
-  const fams = [0, 1, 2, 3].map((v) => familyForVariant('cinematic', v));
+  const fams = [0, 1, 2, 3].map((v) => familyForVariant('bold', v));
   assert.equal(new Set(fams).size, 4);
 });
 
@@ -63,7 +63,7 @@ test('BG Visuals: photo + logo, both formats, exact sizes, readable', async () =
     assert.equal(r.width, FLYER_SIZES[fmt].w);
     assert.equal(r.height, FLYER_SIZES[fmt].h);
     assert.ok(r.contrast >= 4.5, `contrast ${r.contrast}`);
-    assert.equal(r.family, 'cinematic');
+    assert.equal(r.family, 'bold');
     assert.ok(r.usedPhoto && r.usedLogo);
     await save(`bg-${fmt}`, r.png);
   }

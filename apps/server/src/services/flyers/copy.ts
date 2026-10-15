@@ -27,7 +27,7 @@ export function classifyIndustry(about: (string | null | undefined)[], listings:
 /** The look each kind of business starts with (a redo cycles to the next ones) */
 export function primaryFamily(industry: Industry, kind: SaleKind): Family {
   switch (industry) {
-    case 'photography': return 'cinematic';
+    case 'photography': return 'bold';
     case 'beauty': case 'fashion': return 'editorial';
     case 'barber': case 'food': return 'bold';
     case 'professional': return 'clean';
