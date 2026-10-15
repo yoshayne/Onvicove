@@ -137,6 +137,34 @@ export async function generateStyledPhoto(
   return generateImage(prompt, cutoutBuffer);
 }
 
+/**
+ * Does this photo already show the business's logo or name as a graphic (so a second logo on top would double up)?
+ * Any trouble (no key, timeout, odd answer) counts as "no", which keeps the old behaviour: the logo is added.
+ */
+export async function imageShowsLogo(image: Buffer, company: string): Promise<boolean> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return false;
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(20_000),
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { inlineData: { mimeType: 'image/jpeg', data: (await sharp(image).rotate().resize(768, 768, { fit: 'inside' }).jpeg().toBuffer()).toString('base64') } },
+          { text: `Does this image already contain a business logo, brand mark, or the text of a business name ("${company}" or similar) added as a graphic overlay or watermark? Ignore signs or text that are naturally part of a photographed scene. Answer with exactly one word: YES or NO.` },
+        ] }],
+        generationConfig: { temperature: 0, maxOutputTokens: 5 },
+      }),
+    });
+    if (!res.ok) return false;
+    const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+    return /^\s*yes/i.test(json.candidates?.[0]?.content?.parts?.[0]?.text ?? '');
+  } catch {
+    return false;
+  }
+}
+
 /** A branded promo graphic. Pictures given are reference images (product photo first, then logo). */
 export function generatePromoGraphic(prompt: string, references: Buffer[], aspectRatio: '1:1' | '9:16'): Promise<Buffer> {
   return generateImage(prompt, references, 'image/png', aspectRatio);

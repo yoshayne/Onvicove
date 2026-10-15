@@ -24,6 +24,8 @@ export interface FlyerInput {
   photo: Buffer | null;
   /** Public store address, shown only when we have one */
   url: string | null;
+  /** The photo already carries the store's logo, so we don't add a second one */
+  photoHasLogo?: boolean;
   /** 0 = the look chosen for this kind of business; 1, 2, 3 = the other layouts (used by "redo") */
   variant: number;
 }
@@ -162,7 +164,7 @@ export async function renderFlyer(input: FlyerInput, format: FlyerFormat): Promi
 
   const logoMaxW = 300, logoMaxH = 120;
   const logoBg = light ? PAPER : [20, 20, 22] as RGB;
-  const cornerLogo = input.logo && (hasPhoto || light) ? await prepareLogo(input.logo, logoMaxW, logoMaxH, logoBg) : null;
+  const cornerLogo = input.logo && !(hasPhoto && input.photoHasLogo) && (hasPhoto || light) ? await prepareLogo(input.logo, logoMaxW, logoMaxH, logoBg) : null;
   const heroLogo = input.logo && !hasPhoto && !light ? await prepareLogo(input.logo, 560, 300, [20, 20, 22]) : null;
 
   const build = (scale: number): { items: Item[]; total: number } => {

@@ -70,6 +70,16 @@ test('BG Visuals: photo + logo, both formats, exact sizes, readable', async () =
   assert.equal(FLYER_SIZES.post.w / FLYER_SIZES.post.h, 4 / 5);
 });
 
+test('a photo that already carries the logo does not get a second one', async () => {
+  const ph = photo('hair-hero.jpg');
+  const withLogo = await renderFlyer({ ...base, photo: ph, logo: goldLogo(), photoHasLogo: false }, 'post');
+  const already = await renderFlyer({ ...base, photo: ph, logo: goldLogo(), photoHasLogo: true }, 'post');
+  assert.ok(withLogo.usedLogo);
+  assert.ok(!already.usedLogo);
+  const noLogoPhoto = await renderFlyer({ ...base, photo: ph, logo: goldLogo() }, 'story'); // default: logo is added
+  assert.ok(noLogoPhoto.usedLogo);
+});
+
 test('every layout renders for a photography store (redo variants)', async () => {
   const ph = photo('hair-hero.jpg');
   const fams = new Set<string>();

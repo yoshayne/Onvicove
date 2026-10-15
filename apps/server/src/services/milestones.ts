@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import { db } from '../db/client';
 import { getBaseUrl, getStoreUrl } from '../lib/baseUrl';
 import { renderFlyer } from './flyers/render';
+import { imageShowsLogo } from './gemini';
 import { getSignedFileUrl, uploadFile } from './storage';
 import { sendFirstSaleMilestone } from './email';
 
@@ -46,10 +47,12 @@ export interface FlyerStore {
 export async function renderFlyerSet(s: FlyerStore, prefix: string, variant = 0): Promise<Record<string, string>> {
   const [photo, logo] = await Promise.all([fetchBuffer(s.photoKey), fetchBuffer(s.logoKey)]);
   const keys: Record<string, string> = {};
+  // If the photo already carries the logo, don't put a second one on top
+  const photoHasLogo = photo && logo ? await imageShowsLogo(photo, s.company) : false;
   for (const f of FORMATS) {
     const r = await renderFlyer({
       company: s.company, kind: s.kind, itemName: s.itemName, industry: s.industry, businessType: s.businessType,
-      listingNames: s.listingNames, brandColor: s.color, logo, photo, url: s.url, variant,
+      listingNames: s.listingNames, brandColor: s.color, logo, photo, photoHasLogo, url: s.url, variant,
     }, f.id);
     keys[f.id] = await uploadFile(`${prefix}/${f.id}.png`, r.png, 'image/png');
   }
