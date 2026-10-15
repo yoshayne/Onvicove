@@ -1,3 +1,4 @@
+import { startPaymentReconcileJob } from './jobs/paymentReconcile';
 import 'dotenv/config';
 import { startStripeNudgeJob } from './jobs/stripeNudge';
 import { startBookingReminderJob } from './jobs/bookingReminder';
@@ -333,3 +334,4 @@ startStripeNudgeJob();
 startBookingReminderJob();
 startInviteNudgeJob();
 startDomainRecheckJob();
+startPaymentReconcileJob();

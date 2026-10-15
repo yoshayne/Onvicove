@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserButton, useUser } from '@clerk/clerk-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   LayoutDashboard, ShoppingCart, CalendarDays, Package, Sparkles,
   Users, UserCheck, BarChart3, Palette, LayoutTemplate, Camera,
@@ -90,6 +90,17 @@ function LayoutInner() {
     if (!noStore || checkingAdmin) return;
     navigate(isAdmin ? '/admin' : '/onboarding', { replace: true });
   }, [noStore, checkingAdmin, isAdmin, navigate]);
+
+  // Opening the dashboard asks Stripe about anything still shown as unpaid, so a payment whose notification was
+  // missed shows up as paid (and its time is blocked) right away
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!data?.tenant) return;
+    api.post<{ fixed: number }>('/stripe/reconcile', {})
+      .then((r) => { if (r.fixed > 0) queryClient.invalidateQueries(); })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.tenant?.id]);
 
   const tenant = data?.tenant;
   const isPublished = !!(tenant?.wizard_completed && tenant?.is_active);

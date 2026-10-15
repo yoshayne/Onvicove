@@ -129,6 +129,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
         discount_code: info.discountCode ?? null,
       });
       setOrderNumber(res.order.order_number);
+      orderIdRef.current = res.order.id;
       const pi = await apiPost<PaymentIntentResponse>('/api/stripe/payment-intent', {
         reference_type: 'order',
         reference_id: res.order.id,
@@ -142,7 +143,14 @@ export function useStorefrontCommerce(slug: string | undefined) {
     }
   }
 
+  // The payment just succeeded: have our server confirm it with Stripe right now (a safety net alongside Stripe's webhook)
+  function confirmWithServer(type: 'order' | 'booking', id: string | null) {
+    if (!id) return;
+    void apiPost('/api/stripe/confirm', { reference_type: type, reference_id: id }).catch(() => {});
+  }
+
   function confirmOrderPayment() {
+    confirmWithServer('order', orderIdRef.current);
     setOrderStatus('success');
     setCart([]);
   }
@@ -181,6 +189,8 @@ export function useStorefrontCommerce(slug: string | undefined) {
   const [bookingClientSecret, setBookingClientSecret] = useState<string | null>(null);
   const [bookingAmountCents, setBookingAmountCents] = useState(0);
   const slotMapRef = useRef<Map<string, { start: string; end: string }>>(new Map());
+  const bookingIdRef = useRef<string | null>(null);
+  const orderIdRef = useRef<string | null>(null);
 
   function openBooking(service: ServiceData) {
     setBookingService(service);
@@ -278,6 +288,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
         start_time: slot.start,
         end_time: slot.end,
       });
+      bookingIdRef.current = res.booking.id;
       const pi = await apiPost<PaymentIntentResponse>('/api/stripe/payment-intent', {
         reference_type: 'booking',
         reference_id: res.booking.id,
@@ -292,6 +303,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
   }
 
   function confirmBookingPayment() {
+    confirmWithServer('booking', bookingIdRef.current);
     setBookingStatus('success');
   }
 
