@@ -26,21 +26,28 @@ async function fetchBuffer(key: string | null | undefined): Promise<Buffer | nul
   }
 }
 
-function promptFor(format: (typeof FORMATS)[number], d: { company: string; item: string | null; color: string; hasPhoto: boolean; hasLogo: boolean }) {
+export type SaleKind = 'order' | 'booking';
+
+function promptFor(format: (typeof FORMATS)[number], d: { company: string; item: string | null; color: string; hasPhoto: boolean; hasLogo: boolean; kind: SaleKind }) {
+  const booking = d.kind === 'booking';
   return [
     `Design a polished promotional social media graphic. Style shortcuts: ${format.hint}, /premium-branding, /modern-banner, celebratory but classy.`,
-    'It announces that a small business just made its very first sale on its new website.',
-    d.hasPhoto ? `The first reference image is the real product that sold${d.item ? ` ("${d.item}")` : ''}. Feature it prominently and keep it looking exactly like the photo: do not change, redraw or invent any of its text, logos or details.` : `The business sells ${d.item ?? 'products and services'}; use tasteful abstract shapes and confetti, no invented products.`,
+    booking ? 'It announces that a small service business just got its very first booking through its new website.' : 'It announces that a small business just made its very first sale on its new website.',
+    d.hasPhoto
+      ? (booking
+        ? `The first reference image is the business's own work or space${d.item ? ` (their "${d.item}" service)` : ''}. Use it as the hero visual and keep it looking exactly like the photo: do not change or invent anything in it.`
+        : `The first reference image is the real product that sold${d.item ? ` ("${d.item}")` : ''}. Feature it prominently and keep it looking exactly like the photo: do not change, redraw or invent any of its text, logos or details.`)
+      : `The business offers ${d.item ?? 'its services'}; use tasteful abstract shapes, soft light and confetti in the brand color. Do not invent people, products or places.`,
     d.hasLogo ? `The ${d.hasPhoto ? 'second' : 'first'} reference image is the business logo: place it small and clean, exactly as it is.` : '',
     `Brand color: ${d.color}. Build the palette around it.`,
-    `Text on the graphic, spelled EXACTLY, and nothing else: headline "FIRST SALE!" in large bold type, and the business name "${d.company}" beneath it. Do not add any other words, URLs or prices.`,
+    `Text on the graphic, spelled EXACTLY, and nothing else: headline "${booking ? 'FIRST BOOKING!' : 'FIRST SALE!'}" in large bold type, and the business name "${d.company}" beneath it. Do not add any other words, URLs or prices.`,
     'Clean layout, generous spacing, high contrast, readable on a phone.',
   ].filter(Boolean).join(' ');
 }
 
 /** Make the flyer set for a store and item; files are stored under `prefix`. Returns format → storage key. */
 export async function renderFlyerSet(
-  s: { company: string; color: string | null; logoKey: string | null; itemName: string | null; itemImageKey: string | null },
+  s: { company: string; color: string | null; logoKey: string | null; itemName: string | null; itemImageKey: string | null; kind: SaleKind },
   prefix: string,
 ): Promise<Record<string, string>> {
   const [photo, logo] = await Promise.all([fetchBuffer(s.itemImageKey), fetchBuffer(s.logoKey)]);
@@ -48,7 +55,7 @@ export async function renderFlyerSet(
   const keys: Record<string, string> = {};
   for (const f of FORMATS) {
     const raw = await generatePromoGraphic(
-      promptFor(f, { company: s.company, item: s.itemName, color: s.color || '#111111', hasPhoto: !!photo, hasLogo: !!logo }),
+      promptFor(f, { company: s.company, item: s.itemName, color: s.color || '#111111', hasPhoto: !!photo, hasLogo: !!logo, kind: s.kind }),
       refs,
       f.ratio,
     );
@@ -60,13 +67,13 @@ export async function renderFlyerSet(
 
 async function regenerateFiles(milestoneId: string): Promise<void> {
   const rows = await db`
-    SELECT m.*, t.company_name, t.brand_color, t.logo_key FROM milestones m JOIN tenants t ON t.id = m.tenant_id WHERE m.id = ${milestoneId}
+    SELECT m.*, t.company_name, t.brand_color, t.logo_key, t.hero_image_key FROM milestones m JOIN tenants t ON t.id = m.tenant_id WHERE m.id = ${milestoneId}
   `;
   const m = rows[0];
   if (!m) return;
   const run = (m.flyer_runs as number) + 1;
   const keys = await renderFlyerSet(
-    { company: m.company_name as string, color: m.brand_color as string | null, logoKey: m.logo_key as string | null, itemName: m.item_name as string | null, itemImageKey: m.item_image_key as string | null },
+    { company: m.company_name as string, color: m.brand_color as string | null, logoKey: m.logo_key as string | null, itemName: m.item_name as string | null, itemImageKey: (m.item_image_key as string | null) ?? (m.reference_type === 'booking' ? (m.hero_image_key as string | null) : null), kind: m.reference_type === 'booking' ? 'booking' : 'order' },
     `milestones/${m.tenant_id}/${m.id}/run-${run}`,
   );
   await db`UPDATE milestones SET flyer_keys = ${db.json(keys as never)}, flyer_runs = ${run} WHERE id = ${milestoneId}`;
@@ -133,6 +140,7 @@ export async function checkFirstSale(tenantId: string, referenceType: 'order' | 
     toName: (t.owner_name as string) || (t.company_name as string),
     companyName: t.company_name as string,
     itemName: item.name,
+    kind: referenceType,
     dashboardUrl: `${base}/dashboard`,
     settingsUrl: `${base}/dashboard/settings`,
     hasFlyers: ((await db`SELECT flyer_runs FROM milestones WHERE id = ${id}`)[0]?.flyer_runs as number) > 0,
@@ -152,6 +160,7 @@ export async function listMilestones(tenantId: string) {
     return {
       id: m.id as string,
       kind: m.kind as string,
+      reference_type: m.reference_type as string | null,
       item_name: m.item_name as string | null,
       created_at: m.created_at as string,
       flyers,

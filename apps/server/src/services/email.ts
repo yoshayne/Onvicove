@@ -512,16 +512,17 @@ export async function sendFirstSaleMilestone(data: {
   dashboardUrl: string;
   settingsUrl: string;
   hasFlyers: boolean;
+  kind?: 'order' | 'booking';
   /** An admin's test send */
   preview?: boolean;
   tenantId?: string;
 }): Promise<void> {
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],
-    subject: `${data.preview ? '[TEST] ' : ''}🎉 ${data.companyName} just made its first sale!`,
-    htmlContent: wrap('You made your first sale!', `
+    subject: `${data.preview ? '[TEST] ' : ''}🎉 ${data.companyName} just ${data.kind === 'booking' ? 'got its first booking' : 'made its first sale'}!`,
+    htmlContent: wrap(data.kind === 'booking' ? 'You got your first booking!' : 'You made your first sale!', `
       <p>Hi ${escapeHtml(data.toName.split(' ')[0])},</p>
-      <p>Congratulations! <strong>${escapeHtml(data.companyName)}</strong> just made its first sale${data.itemName ? ` — <strong>${escapeHtml(data.itemName)}</strong>` : ''}. That is a real milestone, and it started with you putting yourself out there.</p>
+      <p>Congratulations! <strong>${escapeHtml(data.companyName)}</strong> just ${data.kind === 'booking' ? 'got its first booking' : 'made its first sale'}${data.itemName ? ` — <strong>${escapeHtml(data.itemName)}</strong>` : ''}. That is a real milestone, and it started with you putting yourself out there.</p>
       <p>${data.hasFlyers ? 'We made two ready-to-post flyers for you, free: one for your feed and one for Stories.' : 'We have a ready-to-post flyer waiting for you, free: one tap in your dashboard creates it.'} Share it, tell people where to buy, and keep the momentum going.</p>
       ${btn(data.hasFlyers ? 'See my flyers' : 'Create my flyer', data.dashboardUrl)}
       <p style="font-size:13px;color:#64748b">Don't love it? You can redo it once, free, from the same page.</p>

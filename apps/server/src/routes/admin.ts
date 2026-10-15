@@ -451,13 +451,14 @@ app.get('/transactions', async (c) => {
 app.get('/milestone-preview/products', async (c) => {
   const tenantId = c.req.query('tenant_id');
   if (!tenantId) return c.json({ error: 'tenant_id is required' }, 400);
-  const products = await db`SELECT id, name, (image_keys->>0 IS NOT NULL) AS has_image FROM products WHERE tenant_id = ${tenantId} ORDER BY created_at DESC LIMIT 100`;
-  return c.json({ products });
+  const products = await db`SELECT id, name, 'order' AS type, (image_keys->>0 IS NOT NULL) AS has_image FROM products WHERE tenant_id = ${tenantId} ORDER BY created_at DESC LIMIT 100`;
+  const services = await db`SELECT id, name, 'booking' AS type, (image_keys->>0 IS NOT NULL) AS has_image FROM services WHERE tenant_id = ${tenantId} ORDER BY created_at DESC LIMIT 100`;
+  return c.json({ items: [...products, ...services] });
 });
 
 const milestonePreviewSchema = z.object({
   tenant_id: z.string().uuid(),
-  product_id: z.string().uuid().nullable().optional(),
+  item: z.object({ type: z.enum(['order', 'booking']), id: z.string().uuid() }).nullable().optional(),
   send_email: z.boolean().optional(),
 });
 
@@ -465,20 +466,26 @@ const milestonePreviewSchema = z.object({
 app.post('/milestone-preview', async (c) => {
   const parsed = milestonePreviewSchema.safeParse(await c.req.json().catch(() => ({})));
   if (!parsed.success) return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
-  const { tenant_id, product_id, send_email } = parsed.data;
+  const { tenant_id, item: chosen, send_email } = parsed.data;
 
-  const trows = await db`SELECT id, company_name, brand_color, logo_key FROM tenants WHERE id = ${tenant_id} LIMIT 1`;
+  const trows = await db`SELECT id, company_name, brand_color, logo_key, hero_image_key FROM tenants WHERE id = ${tenant_id} LIMIT 1`;
   const t = trows[0];
   if (!t) return c.json({ error: 'Store not found' }, 404);
-  const prows = product_id
-    ? await db`SELECT name, image_keys->>0 AS image FROM products WHERE id = ${product_id} AND tenant_id = ${tenant_id} LIMIT 1`
+  // A chosen product/service, else the newest product with a photo, else the newest service (stores that only take bookings)
+  let kind: 'order' | 'booking' = chosen?.type ?? 'order';
+  let prows = chosen
+    ? await db`SELECT name, image_keys->>0 AS image FROM ${db(chosen.type === 'booking' ? 'services' : 'products')} WHERE id = ${chosen.id} AND tenant_id = ${tenant_id} LIMIT 1`
     : await db`SELECT name, image_keys->>0 AS image FROM products WHERE tenant_id = ${tenant_id} AND image_keys->>0 IS NOT NULL ORDER BY created_at DESC LIMIT 1`;
+  if (!chosen && !prows[0]) {
+    prows = await db`SELECT name, image_keys->>0 AS image FROM services WHERE tenant_id = ${tenant_id} ORDER BY (image_keys->>0 IS NOT NULL) DESC, created_at DESC LIMIT 1`;
+    if (prows[0]) kind = 'booking';
+  }
   const item = prows[0] ?? null;
 
   let keys: Record<string, string>;
   try {
     keys = await renderFlyerSet(
-      { company: t.company_name as string, color: t.brand_color as string | null, logoKey: t.logo_key as string | null, itemName: (item?.name as string) ?? null, itemImageKey: (item?.image as string) ?? null },
+      { company: t.company_name as string, color: t.brand_color as string | null, logoKey: t.logo_key as string | null, itemName: (item?.name as string) ?? null, itemImageKey: (item?.image as string) ?? (kind === 'booking' ? (t.hero_image_key as string | null) : null), kind },
       `milestones/${tenant_id}/preview-${Date.now()}`,
     );
   } catch (err) {
@@ -493,7 +500,7 @@ app.post('/milestone-preview', async (c) => {
     try {
       await sendFirstSaleMilestone({
         toEmail: adminEmail, toName: adminEmail.split('@')[0], companyName: t.company_name as string, itemName: (item?.name as string) ?? null,
-        dashboardUrl: `${base}/dashboard`, settingsUrl: `${base}/dashboard/settings`, hasFlyers: true, preview: true,
+        dashboardUrl: `${base}/dashboard`, settingsUrl: `${base}/dashboard/settings`, hasFlyers: true, preview: true, kind,
       });
       emailed_to = adminEmail;
     } catch (err) {

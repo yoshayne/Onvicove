@@ -6,6 +6,7 @@ import Spinner from '../components/shared/Spinner';
 interface Milestone {
   id: string;
   kind: string;
+  reference_type: string | null;
   item_name: string | null;
   flyers: { format: string; label: string; url: string }[];
   generating: boolean;
@@ -37,10 +38,10 @@ export default function MilestoneCard() {
     <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5">
       <div className="flex items-center gap-2">
         <PartyPopper size={20} className="text-amber-600" />
-        <h2 className="text-lg font-semibold text-slate-900">You made your first sale!</h2>
+        <h2 className="text-lg font-semibold text-slate-900">{first.reference_type === 'booking' ? 'You got your first booking!' : 'You made your first sale!'}</h2>
       </div>
       <p className="mt-1 text-sm text-slate-600">
-        {first.item_name ? <>“{first.item_name}” just sold. </> : null}
+        {first.item_name ? <>“{first.item_name}” {first.reference_type === 'booking' ? 'was just booked' : 'just sold'}. </> : null}
         Share the news. Here {hasFlyers ? 'are your flyers, free' : 'is a free flyer for you'}.
       </p>
 
@@ -55,7 +56,7 @@ export default function MilestoneCard() {
           {first.flyers.map((f) => (
             <div key={f.format} className="flex flex-col gap-2">
               <img src={f.url} alt={f.label} className="w-full rounded-lg border border-slate-200 object-cover" />
-              <a href={f.url} download={`first-sale-${f.format}.png`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700">
+              <a href={f.url} download={`first-${first.reference_type === 'booking' ? 'booking' : 'sale'}-${f.format}.png`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700">
                 <Download size={14} /> {f.label}
               </a>
             </div>

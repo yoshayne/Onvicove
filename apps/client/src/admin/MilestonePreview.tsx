@@ -16,17 +16,20 @@ interface PreviewResult {
 export default function MilestonePreview() {
   const api = useApi();
   const [tenantId, setTenantId] = useState('');
-  const [productId, setProductId] = useState('');
+  const [itemKey, setItemKey] = useState('');
   const [sendEmail, setSendEmail] = useState(true);
 
   const tenants = useQuery({ queryKey: ['admin', 'tenants', 'all'], queryFn: () => api.get<{ tenants: { id: string; company_name: string }[] }>('/admin/tenants') });
-  const products = useQuery({
-    queryKey: ['admin', 'milestone-preview', 'products', tenantId],
+  const itemsQ = useQuery({
+    queryKey: ['admin', 'milestone-preview', 'items', tenantId],
     enabled: !!tenantId,
-    queryFn: () => api.get<{ products: { id: string; name: string; has_image: boolean }[] }>(`/admin/milestone-preview/products?tenant_id=${tenantId}`),
+    queryFn: () => api.get<{ items: { id: string; name: string; type: 'order' | 'booking'; has_image: boolean }[] }>(`/admin/milestone-preview/products?tenant_id=${tenantId}`),
   });
   const run = useMutation({
-    mutationFn: () => api.post<PreviewResult>('/admin/milestone-preview', { tenant_id: tenantId, product_id: productId || null, send_email: sendEmail }),
+    mutationFn: () => {
+      const [type, id] = itemKey.split(':');
+      return api.post<PreviewResult>('/admin/milestone-preview', { tenant_id: tenantId, item: itemKey ? { type, id } : null, send_email: sendEmail });
+    },
   });
 
   return (
@@ -38,17 +41,17 @@ export default function MilestonePreview() {
 
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4">
         <label className="text-sm font-medium text-slate-700">Store</label>
-        <select value={tenantId} onChange={(e) => { setTenantId(e.target.value); setProductId(''); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <select value={tenantId} onChange={(e) => { setTenantId(e.target.value); setItemKey(''); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
           <option value="">Choose a store…</option>
           {(tenants.data?.tenants ?? []).map((t) => <option key={t.id} value={t.id}>{t.company_name}</option>)}
         </select>
 
         {tenantId && (
           <>
-            <label className="text-sm font-medium text-slate-700">Product that "sold"</label>
-            <select value={productId} onChange={(e) => setProductId(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-              <option value="">Newest product with a photo</option>
-              {(products.data?.products ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}{p.has_image ? '' : ' (no photo)'}</option>)}
+            <label className="text-sm font-medium text-slate-700">What "sold" (a product makes a "first sale" flyer, a service makes a "first booking" flyer)</label>
+            <select value={itemKey} onChange={(e) => setItemKey(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              <option value="">Automatic (newest product with a photo, else a service)</option>
+              {(itemsQ.data?.items ?? []).map((p) => <option key={p.type + p.id} value={`${p.type}:${p.id}`}>{p.type === 'booking' ? 'Service' : 'Product'}: {p.name}{p.has_image ? '' : ' (no photo)'}</option>)}
             </select>
           </>
         )}
