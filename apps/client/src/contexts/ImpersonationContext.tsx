@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 
 interface ImpersonationState {
   tenantId: string;
@@ -37,6 +37,15 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
   const endImpersonation = useCallback(() => {
     sessionStorage.removeItem('impersonation');
     setImpersonation(null);
+  }, []);
+
+  useEffect(() => {
+    const expired = () => {
+      sessionStorage.removeItem('impersonation');
+      window.location.assign('/admin/tenants?session=expired');
+    };
+    window.addEventListener('impersonation-expired', expired);
+    return () => window.removeEventListener('impersonation-expired', expired);
   }, []);
 
   return (

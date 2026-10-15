@@ -36,6 +36,8 @@ async function request<T>(
   });
 
   if (!res.ok) {
+    // An admin's temporary store session ran out: tell the app so it can send them back to pick the store again
+    if (res.status === 401 && impersonateToken) window.dispatchEvent(new Event('impersonation-expired'));
     let message = `Request failed with status ${res.status}`;
     try {
       const data = await res.json();

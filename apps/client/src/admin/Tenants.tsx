@@ -51,6 +51,9 @@ export default function Tenants() {
 
   return (
     <div className="flex flex-col gap-4">
+      {typeof window !== 'undefined' && window.location.search.includes('session=expired') && (
+        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">Your admin session for that store timed out. Open the store again with "Edit site".</p>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Tenants</h1>
         <div className="flex items-center gap-2">

@@ -19,7 +19,7 @@ export function generateImpersonationToken(tenantId: string, adminEmail: string)
   const payload: ImpersonatePayload = {
     tenant_id: tenantId,
     admin_email: adminEmail,
-    exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 8, // 8 hours (a working session)
   };
   const body = b64url(Buffer.from(JSON.stringify(payload)));
   const sig = b64url(createHmac('sha256', secret()).update(`${header}.${body}`).digest());
