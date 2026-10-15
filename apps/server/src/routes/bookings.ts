@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { fromZonedTime } from 'date-fns-tz';
 import { getBaseUrl } from '../lib/baseUrl';
 import { z } from 'zod';
 import { db } from '../db/client';
@@ -16,6 +17,20 @@ const app = new Hono();
 const updateBookingSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'cancelled', 'completed', 'no_show']).optional(),
   internal_notes: z.string().nullable().optional(),
+  // Edit-booking form (these used to be dropped silently, so edits never saved)
+  customer_name: z.string().min(1).optional(),
+  customer_email: z.string().email().optional(),
+  customer_phone: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  amount_cents: z.number().int().min(0).optional(),
+  // Move the appointment: wall-clock date and times in the business's timezone
+  reschedule: z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    start: z.string().regex(/^\d{2}:\d{2}$/),
+    end: z.string().regex(/^\d{2}:\d{2}$/),
+  }).optional(),
+  /** Move it even if it overlaps another booking */
+  force: z.boolean().optional(),
 });
 
 const createBookingSchema = z.object({
@@ -190,7 +205,32 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   }
 
-  const updates = parsed.data;
+  const { reschedule, force, ...fields } = parsed.data;
+  const updates: Record<string, unknown> = { ...fields };
+  let movedTo: { start: string; end: string } | null = null;
+  if (reschedule) {
+    const tz = ((tenant as unknown as { timezone?: string }).timezone) || 'America/New_York';
+    const start = fromZonedTime(`${reschedule.date} ${reschedule.start}:00`, tz);
+    let end = fromZonedTime(`${reschedule.date} ${reschedule.end}:00`, tz);
+    if (end <= start) end = new Date(end.getTime() + 24 * 3600_000); // an end after midnight
+    const cur = await db`SELECT staff_id FROM bookings WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
+    if (!cur[0]) return c.json({ error: 'Booking not found' }, 404);
+    const staffId = (cur[0].staff_id as string | null) ?? null;
+    if (!force) {
+      const clash = await db`
+        SELECT 1 FROM bookings
+        WHERE tenant_id = ${tenant.id} AND id <> ${id} AND ${holdsTime()}
+          AND (${staffId}::uuid IS NULL OR staff_id = ${staffId}::uuid OR staff_id IS NULL)
+          AND start_time < ${end.toISOString()} AND end_time > ${start.toISOString()}
+        LIMIT 1
+      `;
+      if (clash[0]) return c.json({ error: 'That time overlaps another booking.', conflict: true }, 409);
+    }
+    movedTo = { start: start.toISOString(), end: end.toISOString() };
+    updates.start_time = movedTo.start;
+    updates.end_time = movedTo.end;
+    updates.reminder_sent = false;
+  }
   const keys = Object.keys(updates);
   if (keys.length === 0) {
     const existing = await db`SELECT * FROM bookings WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
@@ -209,6 +249,24 @@ app.patch('/:id', async (c) => {
 
   if (!rows[0]) return c.json({ error: 'Booking not found' }, 404);
   const booking = rows[0];
+
+  // The owner moved a confirmed appointment: tell the customer the new time
+  if (movedTo && booking.status === 'confirmed' && booking.customer_email) {
+    const tz = (tenant as unknown as { timezone?: string }).timezone;
+    const svc = await db`SELECT name FROM services WHERE id = ${booking.service_id} LIMIT 1`;
+    sendBookingConfirmation({
+      toEmail: booking.customer_email as string,
+      toName: booking.customer_name as string,
+      serviceName: (svc[0]?.name as string) ?? 'your appointment',
+      startTime: formatBookingTime(movedTo.start, tz),
+      endTime: formatBookingTime(movedTo.end, tz),
+      companyName: tenant.company_name,
+      tenantId: tenant.id,
+      bookingId: booking.id as string,
+      manageUrl: await manageUrlFor(tenant, booking.id as string),
+      cancelWindowHours: (tenant as unknown as { cancel_window_hours?: number }).cancel_window_hours ?? 24,
+    }).catch((err) => console.error('Moved booking email error:', err));
+  }
 
   const statusChanged = updates.status && before[0]?.status !== updates.status;
   // Cancelling an attempt that was never paid doesn't email anyone (the customer never had a booking)
