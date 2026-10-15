@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { useApi } from '../lib/api';
 import Button from '../components/shared/Button';
@@ -13,8 +13,17 @@ interface PreviewResult {
 }
 
 /** Try the first-sale flyer (and its email) for any store without needing a real sale */
+interface SendInfo {
+  company: string;
+  owner_email: string | null;
+  opted_out: boolean;
+  first_sale: { type: 'order' | 'booking'; item_name: string | null; at: string } | null;
+  existing: { flyers_ready: boolean; emailed_at: string | null } | null;
+}
+
 export default function MilestonePreview() {
   const api = useApi();
+  const qc = useQueryClient();
   const [tenantId, setTenantId] = useState('');
   const [itemKey, setItemKey] = useState('');
   const [sendEmail, setSendEmail] = useState(true);
@@ -26,6 +35,16 @@ export default function MilestonePreview() {
     enabled: !!tenantId,
     queryFn: () => api.get<{ items: { id: string; name: string; type: 'order' | 'booking'; has_image: boolean }[] }>(`/admin/milestone-preview/products?tenant_id=${tenantId}`),
   });
+  const infoQ = useQuery({
+    queryKey: ['admin', 'milestone-send', tenantId],
+    enabled: !!tenantId,
+    queryFn: () => api.get<SendInfo>(`/admin/milestone-send/info?tenant_id=${tenantId}`),
+  });
+  const send = useMutation({
+    mutationFn: () => api.post<{ emailed_to: string }>('/admin/milestone-send', { tenant_id: tenantId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'milestone-send', tenantId] }),
+  });
+  const info = infoQ.data;
   const run = useMutation({
     mutationFn: () => {
       const [type, id] = itemKey.split(':');
@@ -74,6 +93,32 @@ export default function MilestonePreview() {
         {run.isPending && <p className="flex items-center gap-2 text-sm text-slate-500"><Spinner /> Designing two flyers…</p>}
         {run.isError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{(run.error as Error).message}</p>}
       </div>
+
+      {tenantId && info && (
+        <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4">
+          <h2 className="text-base font-semibold text-slate-900">Send the first-sale flyer to {info.company}</h2>
+          {!info.first_sale ? (
+            <p className="text-sm text-slate-500">This store has no paid sale yet, so there is nothing to celebrate.</p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-600">
+                First {info.first_sale.type === 'booking' ? 'booking' : 'sale'}{info.first_sale.item_name ? `: ${info.first_sale.item_name}` : ''}, on {new Date(info.first_sale.at).toLocaleDateString()}.
+                {' '}Goes to <strong>{info.owner_email ?? 'no email on file'}</strong>.
+              </p>
+              {info.opted_out && <p className="text-xs text-amber-700">This owner turned milestone emails off. Sending here is a manual exception.</p>}
+              {info.existing?.emailed_at && <p className="text-xs text-amber-700">Already emailed on {new Date(info.existing.emailed_at).toLocaleString()}. Sending again will email them a second time.</p>}
+              <p className="text-xs text-slate-500">Makes the two flyers if they don't exist yet (about a minute), shows them on the owner's dashboard, and emails "Congratulations on your first {info.first_sale.type === 'booking' ? 'booking' : 'sale'}" with the flyer inside.</p>
+              <div>
+                <Button isLoading={send.isPending} disabled={!info.owner_email} onClick={() => { if (window.confirm(`Email ${info.owner_email} their first-sale flyer now?`)) send.mutate(); }}>
+                  {info.existing?.emailed_at ? 'Send again' : 'Send flyer and email'}
+                </Button>
+              </div>
+            </>
+          )}
+          {send.isSuccess && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Sent to {send.data.emailed_to}.</p>}
+          {send.isError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{(send.error as Error).message}</p>}
+        </div>
+      )}
 
       {run.data && (
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4">

@@ -512,6 +512,8 @@ export async function sendFirstSaleMilestone(data: {
   dashboardUrl: string;
   settingsUrl: string;
   hasFlyers: boolean;
+  /** The flyer shown in the email itself */
+  flyerUrl?: string;
   kind?: 'order' | 'booking';
   /** An admin's test send */
   preview?: boolean;
@@ -519,12 +521,13 @@ export async function sendFirstSaleMilestone(data: {
 }): Promise<void> {
   await sendTransacEmail({
     to: [{ email: data.toEmail, name: data.toName }],
-    subject: `${data.preview ? '[TEST] ' : ''}🎉 ${data.companyName} just ${data.kind === 'booking' ? 'got its first booking' : 'made its first sale'}!`,
+    subject: `${data.preview ? '[TEST] ' : ''}🎉 Congratulations on your first ${data.kind === 'booking' ? 'booking' : 'sale'}, ${data.companyName}!`,
     htmlContent: wrap(data.kind === 'booking' ? 'You got your first booking!' : 'You made your first sale!', `
       <p>Hi ${escapeHtml(data.toName.split(' ')[0])},</p>
-      <p>Congratulations! <strong>${escapeHtml(data.companyName)}</strong> just ${data.kind === 'booking' ? 'got its first booking' : 'made its first sale'}${data.itemName ? ` — <strong>${escapeHtml(data.itemName)}</strong>` : ''}. That is a real milestone, and it started with you putting yourself out there.</p>
+      <p>Congratulations! <strong>${escapeHtml(data.companyName)}</strong> ${data.kind === 'booking' ? 'got its first booking' : 'made its first sale'}${data.itemName ? ` — <strong>${escapeHtml(data.itemName)}</strong>` : ''}. That is a real milestone, and it started with you putting yourself out there.</p>
       <p>${data.hasFlyers ? 'We made two ready-to-post flyers for you, free: one for your feed and one for Stories.' : 'We have a ready-to-post flyer waiting for you, free: one tap in your dashboard creates it.'} Share it, tell people where to buy, and keep the momentum going.</p>
-      ${btn(data.hasFlyers ? 'See my flyers' : 'Create my flyer', data.dashboardUrl)}
+      ${data.flyerUrl ? `<p style="text-align:center"><img src="${data.flyerUrl}" alt="Your flyer" width="320" style="max-width:100%;border-radius:12px;border:1px solid #e2e8f0"/></p>` : ''}
+      ${btn(data.hasFlyers ? 'Download my flyers' : 'Create my flyer', data.dashboardUrl)}
       <p style="font-size:13px;color:#64748b">Want a different look? You can try another layout once, free, from the same page.</p>
       <p style="font-size:12px;color:#94a3b8">We send a note like this for big moments in your business. Prefer not to get them? <a href="${data.settingsUrl}" style="color:#94a3b8">Turn them off in Settings</a> — your flyers will still be waiting in your dashboard.</p>
     `),

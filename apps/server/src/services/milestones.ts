@@ -108,24 +108,56 @@ export async function generateFlyers(milestoneId: string): Promise<boolean> {
 }
 
 /** Called after a payment settles. The store's very first paid order/booking starts the milestone. */
-export async function checkFirstSale(tenantId: string, referenceType: 'order' | 'booking', referenceId: string): Promise<void> {
+async function itemFor(referenceType: SaleKind, referenceId: string): Promise<{ name: string | null; image: string | null }> {
+  if (referenceType === 'order') {
+    const r = await db`
+      SELECT oi.name, p.image_keys->>0 AS image FROM order_items oi LEFT JOIN products p ON p.id = oi.product_id
+      WHERE oi.order_id = ${referenceId} ORDER BY oi.total_cents DESC LIMIT 1
+    `.catch(() => []);
+    return { name: (r[0]?.name as string) ?? null, image: (r[0]?.image as string) ?? null };
+  }
+  const r = await db`SELECT s.name, s.image_keys->>0 AS image FROM bookings b JOIN services s ON s.id = b.service_id WHERE b.id = ${referenceId}`;
+  return { name: (r[0]?.name as string) ?? null, image: (r[0]?.image as string) ?? null };
+}
+
+/** Email the owner about a milestone (with the flyer shown right in the email). Returns who it went to. */
+async function emailOwner(milestoneId: string, opts: { respectOptOut: boolean }): Promise<string | null> {
+  const m = (await db`SELECT * FROM milestones WHERE id = ${milestoneId}`)[0];
+  if (!m) return null;
+  const info = await db`
+    SELECT t.company_name, t.milestone_emails, u.email AS owner_email, u.first_name AS owner_name
+    FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${m.tenant_id} LIMIT 1
+  `;
+  const t = info[0];
+  if (!t?.owner_email) return null;
+  if (opts.respectOptOut && t.milestone_emails === false) return null;
+  const keys = (m.flyer_keys ?? {}) as Record<string, string>;
+  const base = getBaseUrl();
+  await sendFirstSaleMilestone({
+    toEmail: t.owner_email as string,
+    toName: (t.owner_name as string) || (t.company_name as string),
+    companyName: t.company_name as string,
+    itemName: m.item_name as string | null,
+    kind: m.reference_type === 'booking' ? 'booking' : 'order',
+    dashboardUrl: `${base}/dashboard`,
+    settingsUrl: `${base}/dashboard/settings`,
+    hasFlyers: (m.flyer_runs as number) > 0,
+    flyerUrl: keys.post ? await getSignedFileUrl(keys.post) : undefined,
+    tenantId: m.tenant_id as string,
+  });
+  await db`UPDATE milestones SET emailed_at = NOW() WHERE id = ${milestoneId}`;
+  return t.owner_email as string;
+}
+
+/** Called after a payment settles. The store's very first paid order/booking starts the milestone. */
+export async function checkFirstSale(tenantId: string, referenceType: SaleKind, referenceId: string): Promise<void> {
   const count = await db`
     SELECT COUNT(*)::int AS n FROM platform_transactions
     WHERE tenant_id = ${tenantId} AND reference_type IN ('order', 'booking') AND gross_amount_cents > 0
   `;
   if ((count[0]?.n as number) !== 1) return; // not the first (or the store sold before this feature existed)
 
-  let item: { name: string | null; image: string | null } = { name: null, image: null };
-  if (referenceType === 'order') {
-    const r = await db`
-      SELECT oi.name, p.image_keys->>0 AS image FROM order_items oi LEFT JOIN products p ON p.id = oi.product_id
-      WHERE oi.order_id = ${referenceId} ORDER BY oi.total_cents DESC LIMIT 1
-    `.catch(() => []);
-    item = { name: (r[0]?.name as string) ?? null, image: (r[0]?.image as string) ?? null };
-  } else {
-    const r = await db`SELECT s.name, s.image_keys->>0 AS image FROM bookings b JOIN services s ON s.id = b.service_id WHERE b.id = ${referenceId}`;
-    item = { name: (r[0]?.name as string) ?? null, image: (r[0]?.image as string) ?? null };
-  }
+  const item = await itemFor(referenceType, referenceId);
   const created = await db`
     INSERT INTO milestones (tenant_id, kind, item_name, item_image_key, reference_type, reference_id)
     VALUES (${tenantId}, 'first_sale', ${item.name}, ${item.image}, ${referenceType}, ${referenceId})
@@ -139,26 +171,65 @@ export async function checkFirstSale(tenantId: string, referenceType: 'order' | 
   } catch (err) {
     console.error('First-sale flyer generation failed (the owner can create it from the dashboard):', err);
   }
+  await emailOwner(id, { respectOptOut: true });
+}
 
-  const info = await db`
-    SELECT t.company_name, t.milestone_emails, u.email AS owner_email, u.first_name AS owner_name
-    FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${tenantId} LIMIT 1
+export interface FirstSaleInfo {
+  company: string;
+  owner_email: string | null;
+  opted_out: boolean;
+  first_sale: { type: SaleKind; item_name: string | null; at: string } | null;
+  existing: { flyers_ready: boolean; emailed_at: string | null } | null;
+}
+
+/** What an admin needs to see before sending a store its first-sale flyer */
+export async function firstSaleInfo(tenantId: string): Promise<FirstSaleInfo | null> {
+  const t = (await db`
+    SELECT t.company_name, t.milestone_emails, u.email AS owner_email FROM tenants t
+    LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${tenantId} LIMIT 1
+  `)[0];
+  if (!t) return null;
+  const sale = (await db`
+    SELECT reference_type, reference_id, created_at FROM platform_transactions
+    WHERE tenant_id = ${tenantId} AND reference_type IN ('order', 'booking') AND gross_amount_cents > 0
+    ORDER BY created_at ASC LIMIT 1
+  `)[0];
+  const ms = (await db`SELECT flyer_runs, emailed_at FROM milestones WHERE tenant_id = ${tenantId} AND kind = 'first_sale'`)[0];
+  return {
+    company: t.company_name as string,
+    owner_email: (t.owner_email as string) ?? null,
+    opted_out: t.milestone_emails === false,
+    first_sale: sale ? { type: sale.reference_type as SaleKind, item_name: (await itemFor(sale.reference_type as SaleKind, sale.reference_id as string)).name, at: sale.created_at as string } : null,
+    existing: ms ? { flyers_ready: (ms.flyer_runs as number) > 0, emailed_at: (ms.emailed_at as string) ?? null } : null,
+  };
+}
+
+/** Admin action: make the store's first-sale flyers (if they don't exist yet) and email them to the owner now, for a sale that already happened. */
+export async function sendFirstSaleToOwner(tenantId: string): Promise<{ ok: true; emailed_to: string } | { ok: false; error: string }> {
+  const sale = (await db`
+    SELECT reference_type, reference_id FROM platform_transactions
+    WHERE tenant_id = ${tenantId} AND reference_type IN ('order', 'booking') AND gross_amount_cents > 0
+    ORDER BY created_at ASC LIMIT 1
+  `)[0];
+  if (!sale) return { ok: false, error: 'This store has no paid sale yet.' };
+  const type = sale.reference_type as SaleKind;
+  const item = await itemFor(type, sale.reference_id as string);
+  await db`
+    INSERT INTO milestones (tenant_id, kind, item_name, item_image_key, reference_type, reference_id)
+    VALUES (${tenantId}, 'first_sale', ${item.name}, ${item.image}, ${type}, ${sale.reference_id as string})
+    ON CONFLICT (tenant_id, kind) DO NOTHING
   `;
-  const t = info[0];
-  if (!t?.owner_email || t.milestone_emails === false) return;
-  const base = getBaseUrl();
-  await sendFirstSaleMilestone({
-    toEmail: t.owner_email as string,
-    toName: (t.owner_name as string) || (t.company_name as string),
-    companyName: t.company_name as string,
-    itemName: item.name,
-    kind: referenceType,
-    dashboardUrl: `${base}/dashboard`,
-    settingsUrl: `${base}/dashboard/settings`,
-    hasFlyers: ((await db`SELECT flyer_runs FROM milestones WHERE id = ${id}`)[0]?.flyer_runs as number) > 0,
-    tenantId,
-  });
-  await db`UPDATE milestones SET emailed_at = NOW() WHERE id = ${id}`;
+  const m = (await db`SELECT id, flyer_runs FROM milestones WHERE tenant_id = ${tenantId} AND kind = 'first_sale'`)[0];
+  if ((m.flyer_runs as number) === 0) {
+    try {
+      const started = await generateFlyers(m.id as string);
+      if (!started) return { ok: false, error: 'The flyers are still being made. Try again in a minute.' };
+    } catch (err) {
+      return { ok: false, error: `Flyer generation failed: ${err instanceof Error ? err.message : String(err)}` };
+    }
+  }
+  const to = await emailOwner(m.id as string, { respectOptOut: false });
+  return to ? { ok: true, emailed_to: to } : { ok: false, error: "This store's owner has no email address on file." };
 }
 
 export const FLYER_FORMATS = FORMATS;

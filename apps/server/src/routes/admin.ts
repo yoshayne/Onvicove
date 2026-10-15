@@ -15,7 +15,7 @@ import {
   sendOrderRefunded, sendBookingRefunded, sendAdminRefund,
   sendInvite,
 } from '../services/email';
-import { renderFlyerSet, loadFlyerStore, FLYER_FORMATS } from '../services/milestones';
+import { renderFlyerSet, loadFlyerStore, FLYER_FORMATS, firstSaleInfo, sendFirstSaleToOwner } from '../services/milestones';
 import { getSignedFileUrl } from '../services/storage';
 import { sendFirstSaleMilestone } from '../services/email';
 import { generateImpersonationToken } from '../lib/impersonate-token';
@@ -510,6 +510,25 @@ app.post('/milestone-preview', async (c) => {
   }
   await logAdminAction(c, 'milestone_preview', 'tenant', tenant_id, { emailed_to });
   return c.json({ flyers, item_name: item?.name ?? null, emailed_to });
+});
+
+// GET /api/admin/milestone-send/info?tenant_id= — the store's first sale and whether its flyer was already sent
+app.get('/milestone-send/info', async (c) => {
+  const tenantId = c.req.query('tenant_id');
+  if (!tenantId) return c.json({ error: 'tenant_id is required' }, 400);
+  const info = await firstSaleInfo(tenantId);
+  if (!info) return c.json({ error: 'Store not found' }, 404);
+  return c.json(info);
+});
+
+// POST /api/admin/milestone-send — make the first-sale flyer and email it to the store's owner now
+app.post('/milestone-send', async (c) => {
+  const parsed = z.object({ tenant_id: z.string().uuid() }).safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Invalid request body' }, 400);
+  const result = await sendFirstSaleToOwner(parsed.data.tenant_id);
+  if (!result.ok) return c.json({ error: result.error }, 400);
+  await logAdminAction(c, 'milestone_send', 'tenant', parsed.data.tenant_id, { emailed_to: result.emailed_to });
+  return c.json(result);
 });
 
 const refundSchema = z.object({
