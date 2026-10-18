@@ -595,3 +595,34 @@ CREATE TABLE IF NOT EXISTS milestones (
 
 -- A Pro theme a Starter store picked: remembered, and switched on the moment they upgrade
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS desired_theme_id TEXT;
+
+-- Repeating and part-of-day time off ("Mon-Fri 8am-5pm, ongoing", "every Tuesday 12-2"). Whole-day date ranges still live in city_schedules.
+CREATE TABLE IF NOT EXISTS time_blocks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  -- Comma list of weekdays, 0 = Sunday ... 6 = Saturday. NULL = every day.
+  weekdays TEXT,
+  -- Local time window in the business's timezone. Both NULL = the whole day.
+  start_time TEXT,
+  end_time TEXT,
+  date_from DATE NOT NULL,
+  -- NULL = ongoing, no end date
+  date_to DATE,
+  label TEXT,
+  created_via TEXT NOT NULL DEFAULT 'manual',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CHECK ((start_time IS NULL) = (end_time IS NULL)),
+  CHECK (date_to IS NULL OR date_to >= date_from)
+);
+CREATE INDEX IF NOT EXISTS idx_time_blocks_tenant ON time_blocks(tenant_id, date_from);
+
+-- Changes made by the calendar assistant, with what is needed to undo them
+CREATE TABLE IF NOT EXISTS calendar_changes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  request_text TEXT,
+  actions JSONB NOT NULL DEFAULT '[]',
+  undo JSONB NOT NULL DEFAULT '[]',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  undone_at TIMESTAMPTZ
+);

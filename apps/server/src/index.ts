@@ -2,6 +2,8 @@ import { startPaymentReconcileJob } from './jobs/paymentReconcile';
 import 'dotenv/config';
 import { startStripeNudgeJob } from './jobs/stripeNudge';
 import milestoneRoutes from './routes/milestones';
+import timeBlockRoutes from './routes/time-blocks';
+import assistantRoutes from './routes/assistant';
 import { startBookingReminderJob } from './jobs/bookingReminder';
 import { startInviteNudgeJob } from './jobs/inviteNudge';
 import { startDomainRecheckJob } from './jobs/domainRecheck';
@@ -104,6 +106,8 @@ app.route('/api/domain-purchases', domainPurchaseRoutes);
 app.route('/api/invite', inviteRoutes);
 app.route('/api/page-sections', pageSectionRoutes);
 app.route('/api/blocked-dates', blockedDateRoutes);
+app.route('/api/time-blocks', timeBlockRoutes);
+app.route('/api/assistant', assistantRoutes);
 
 // Normalize double-slash paths (e.g. //claim/TOKEN → /claim/TOKEN)
 // Happens when CLIENT_URL has a trailing slash and gets concatenated with /path

@@ -1,3 +1,4 @@
+import CalendarAssistant from './CalendarAssistant';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
@@ -330,6 +331,7 @@ export default function Bookings() {
       </div>
 
       <CityScheduleCalendar />
+      <CalendarAssistant />
 
       <div className="flex max-w-full flex-wrap gap-1 self-start rounded-lg border border-slate-200 bg-slate-100 p-1">
         {([

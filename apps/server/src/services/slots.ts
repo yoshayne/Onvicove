@@ -4,6 +4,7 @@ import type { TimeSlot } from './availability';
 import { resolveAvailability } from './businessHours';
 import { addDays, format, parse } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
+import { blockIntervals, blocksOnDate } from './timeBlocks';
 
 /**
  * Bookings that currently hold their time. Cancelled / no-show ones don't, and neither does an unpaid attempt
@@ -83,17 +84,22 @@ async function slotsForResource(
           AND ${holdsTime()}
           AND start_time < ${end.toISOString()} AND end_time > ${start.toISOString()}`;
 
+  // Repeating / part-of-day time off counts like a booking that nobody can take
+  const blocked = blockIntervals(await blocksOnDate(tenant.id, date), date, timezone);
+
   const args = { date, timezone, durationMinutes: service.duration_minutes, bufferMinutes: service.buffer_minutes ?? 0 };
   const slots = computeAvailableSlots({
     ...args,
     availability,
-    existingBookings: existing.map((b) => ({ start_time: b.start_time as string, end_time: b.end_time as string })),
+    existingBookings: [...existing.map((b) => ({ start_time: b.start_time as string, end_time: b.end_time as string })), ...blocked],
   });
 
   let reason: SlotsReason = null;
   if (slots.length === 0) {
     const open = computeAvailableSlots({ ...args, availability, existingBookings: [] });
-    reason = open.length === 0 ? 'closed' : 'full';
+    if (open.length === 0) reason = 'closed';
+    else if (blocked.length > 0 && computeAvailableSlots({ ...args, availability, existingBookings: blocked }).length === 0) reason = 'blocked';
+    else reason = 'full';
   }
   return { slots, reason };
 }
@@ -161,6 +167,7 @@ export async function slotsForService(params: {
   let reason: SlotsReason = null;
   if (slots.length === 0) {
     if (results.every((r) => r.reason === 'no_hours')) reason = 'no_hours';
+    else if (results.every((r) => r.reason === 'blocked')) reason = 'blocked';
     else if (results.every((r) => r.reason === 'closed') && results.some((r) => r.slots.length === 0)) reason = 'closed';
     else reason = 'full';
   }
