@@ -1,254 +1,120 @@
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
-import { ArrowRight, Check, X, Store, Calendar, CreditCard, Sparkles, Receipt, ChevronRight } from 'lucide-react';
+import { ArrowRight, Check, Store, Calendar, CreditCard, PartyPopper, Monitor, ShoppingCart } from 'lucide-react';
 import ThemeShowcase from './ThemeShowcase';
 
-const BRAND = '#7C3AED'; // violet-700
+const BRAND = '#7C3AED';
+const BRAND_2 = '#A855F7';
 
-// ── Mini browser mockups for the 4 industry examples ─────────────────────────
+// ── Content ───────────────────────────────────────────────────────────────────
 
-function BrowserCard({ label, sublabel, children }: { label: string; sublabel: string; children: React.ReactNode }) {
+const INDUSTRIES = [
+  { label: 'Barbers', img: '/landing/hair-svc-1.jpg' },
+  { label: 'Salons', img: '/landing/hair-hero.jpg' },
+  { label: 'Fitness', img: '/landing/fitness-hero.jpg' },
+  { label: 'Shops', img: '/landing/candle-hero.jpg' },
+  { label: 'Photographers', img: '/landing/photo-hero.jpg' },
+  { label: 'Wellness', img: '/landing/fitness-prog-2.jpg' },
+];
+
+const FEATURES = [
+  { icon: Monitor, color: '#7C3AED', title: 'Website Builder', desc: '16 themes, professional and mobile ready.' },
+  { icon: ShoppingCart, color: '#D946EF', title: 'Online Store', desc: 'Sell your products, ship or pick up.' },
+  { icon: Calendar, color: '#3B82F6', title: 'Booking Calendar', desc: 'Clients book and pay for your services.' },
+  { icon: CreditCard, color: '#22C55E', title: 'Payments', desc: 'Get paid securely, straight to your bank.' },
+  { icon: PartyPopper, color: '#F59E0B', title: 'Built-in Growth', desc: 'Reminders, and a free flyer for your first sale.' },
+];
+
+const STEPS = [
+  { icon: '🏪', title: 'Tell us your business', desc: 'We tailor the look, starter services and wording to your industry.' },
+  { icon: '🎨', title: 'Pick a plan and try every theme', desc: 'Preview all 16 designs with your own name. Start free, upgrade anytime.' },
+  { icon: '✏️', title: 'Add your brand and what you offer', desc: 'Logo, photos, products or services, and your hours.' },
+  { icon: '🚀', title: 'Launch, then connect payments', desc: 'Your site goes live first. Connecting Stripe takes about 5 minutes.' },
+];
+
+const PLANS = [
+  {
+    name: 'Starter', price: '$0', desc: 'Everything you need to get online and start selling.', cta: 'Start free', highlight: false,
+    features: ['Online store or booking page', 'Up to 5 products and 10 services', '9 free themes', 'Stripe payments', 'Free first-sale flyer'],
+  },
+  {
+    name: 'Pro', price: '$29', desc: 'For growing businesses that want to look fully custom.', cta: 'Get Pro', highlight: true,
+    features: ['Unlimited products and services', 'All 16 themes', 'Your own branding, not ours', 'AI product photos (10 credits)', 'Discount codes and analytics', 'Priority support'],
+  },
+  {
+    name: 'Business', price: '$79', desc: 'Advanced tools for teams and high volume.', cta: 'Get Business', highlight: false,
+    features: ['Everything in Pro', 'Multiple staff and locations', 'Your own custom domain', 'Lower payment fee (1%)', 'Advanced analytics', '50 AI photo credits'],
+  },
+];
+
+const FAQ = [
+  { q: 'Do I need my own domain?', a: 'No. You get a free address right away. You can connect your own domain on the Business plan.' },
+  { q: 'How do I get paid?', a: 'Through Stripe, straight to your bank. Connecting takes about 5 minutes, right after you launch.' },
+  { q: 'Can I try the paid themes first?', a: 'Yes. Preview every theme with your own details. You only pay if you want to publish a Pro theme.' },
+  { q: 'Can I cancel anytime?', a: 'Yes. No contracts. Your site stays live on the free plan.' },
+  { q: 'Can customers reschedule?', a: 'Yes. They get a private link in their confirmation and reminder emails.' },
+  { q: "I'm not techy. Is this for me?", a: "That's who it's for. If you can use Instagram, you can build your site." },
+];
+
+const cta = 'inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-violet-300/50 transition-opacity hover:opacity-90';
+
+// ── Hero devices ─────────────────────────────────────────────────────────────
+
+function HeroDevices() {
   return (
-    <div className="rounded-xl overflow-hidden border border-slate-200 shadow-md flex flex-col">
-      <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 border-b border-slate-200">
-        <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-        <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-        <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
-        <div className="flex-1 text-[9px] text-slate-400 text-center truncate bg-white rounded px-2 py-0.5 border border-slate-200 ml-1">
-          {label.toLowerCase().replace(/\s/g, '')}.shopsuitedirect.com
+    <div className="relative h-[335px] w-full overflow-hidden sm:h-[470px] lg:h-[545px] lg:overflow-visible">
+      <div className="absolute left-0 top-0 h-[610px] w-[620px] origin-top-left scale-[.52] sm:scale-[.77] lg:scale-[.88]">
+        {/* Store site */}
+        <div className="absolute left-0 top-[60px] w-[430px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-indigo-900/20">
+          <div className="flex h-[26px] items-center gap-1.5 bg-slate-100 px-2.5">
+            {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 rounded-full bg-slate-300" />)}
+          </div>
+          <div className="flex items-center justify-between px-3.5 py-2.5 text-[11px] font-semibold">
+            <span>Luxe Studio</span><span className="font-medium text-slate-500">Home &nbsp; Shop &nbsp; Services &nbsp; Book</span>
+          </div>
+          <div className="relative h-[190px] bg-cover bg-top" style={{ backgroundImage: 'url(/landing/hair-hero.jpg)' }}>
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg,rgba(255,255,255,.92),rgba(255,255,255,.2) 62%,transparent)' }} />
+            <div className="absolute left-4 top-11 font-serif text-[30px] leading-none">LuxeTress
+              <small className="mt-1.5 block font-sans text-[8px] font-semibold tracking-[.18em] text-slate-600">BEAUTY REDEFINED</small>
+            </div>
+            <span className="absolute left-4 top-[128px] rounded bg-[#3b2f2a] px-3 py-2 text-[10px] font-semibold text-white">Book Appointment</span>
+          </div>
+          <div className="grid grid-cols-4 gap-1.5 p-2.5">
+            {['hair-svc-1', 'hair-svc-2', 'hair-hero', 'photo-sess-1'].map((n) => (
+              <div key={n} className="h-[46px] rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(/landing/${n}.jpg)` }} />
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="flex-1">{children}</div>
-      <div className="border-t border-slate-100 px-3 py-2 bg-white">
-        <p className="text-xs font-semibold text-slate-800">{label}</p>
-        <p className="text-[11px] text-slate-400">{sublabel}</p>
+
+        {/* Store cart */}
+        <div className="absolute left-[30px] top-[420px] w-[330px] rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl shadow-indigo-900/20">
+          <div className="mb-2.5 flex justify-between text-[11px] font-extrabold"><span>Urban Vault</span><span>🛍️ 2</span></div>
+          <div className="grid grid-cols-3 gap-2">
+            {[['candle-prod-1', 'Soy Candle', '$24.00'], ['candle-prod-2', 'Amber Candle', '$28.00'], ['candle-hero', 'Gift Set', '$52.00']].map(([img, name, price]) => (
+              <div key={name} className="rounded-xl border border-slate-100 p-1.5 text-[10px] font-semibold">
+                <div className="mb-1.5 h-14 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(/landing/${img}.jpg)` }} />
+                {name}<br /><span className="text-slate-500">{price}</span>
+                <span className="mt-1.5 block rounded-md bg-slate-900 py-1 text-center text-white">Add to Cart</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* The real booking window */}
+        <div className="absolute left-[380px] top-0 h-[412px] w-[214px] overflow-hidden rounded-[36px] border-8 border-slate-900 bg-slate-900 shadow-2xl shadow-indigo-900/30">
+          <img src="/landing/booking-sheet.jpg" alt="The booking window your customers see" className="block w-full" loading="eager" />
+        </div>
+
+        <div className="absolute left-[420px] top-[440px] flex items-center gap-2.5 rounded-2xl bg-white px-3.5 py-2.5 text-xs font-bold shadow-xl shadow-indigo-900/15">
+          <span className="grid h-[26px] w-[26px] place-items-center rounded-full bg-green-100 text-green-600">$</span>
+          <div>New booking paid<br /><span className="font-semibold text-slate-500">Haircut · $45.00</span></div>
+        </div>
       </div>
     </div>
   );
 }
 
-function HairStylistMockup() {
-  return (
-    <BrowserCard label="Luxe Hair Studio" sublabel="Bookings + Products">
-      <div style={{ background: '#fff0f9', fontFamily: 'sans-serif' }}>
-        <div style={{ background: '#fff', borderBottom: '1px solid #fce7f3', padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 7, fontWeight: 700, color: '#9d174d', letterSpacing: '0.1em' }}>LUXE HAIR</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {['Services', 'Book', 'Shop'].map(t => <span key={t} style={{ fontSize: 5, color: '#9d174d' }}>{t}</span>)}
-          </div>
-        </div>
-        {/* Hero with real photo */}
-        <div style={{ position: 'relative', height: 72, overflow: 'hidden' }}>
-          <img src="/landing/hair-hero.jpg" alt="Hair salon" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(131,24,77,0.75) 0%, rgba(131,24,77,0.2) 100%)', padding: '10px 10px' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 3 }}>Healthy hair.<br />Confident you.</div>
-            <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
-              <div style={{ background: '#ec4899', color: '#fff', fontSize: 4.5, fontWeight: 700, padding: '2.5px 6px', borderRadius: 10 }}>Book Now</div>
-              <div style={{ border: '1px solid rgba(255,255,255,0.7)', color: '#fff', fontSize: 4.5, fontWeight: 600, padding: '2.5px 6px', borderRadius: 10 }}>View Services</div>
-            </div>
-          </div>
-        </div>
-        <div style={{ padding: '7px 10px', background: '#fff' }}>
-          <div style={{ fontSize: 5, fontWeight: 700, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Popular Services</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-            {[["Women's Cut", "$65", '/landing/hair-svc-1.jpg'], ["Balayage", "$180", '/landing/hair-svc-2.jpg']].map(([n, p, img]) => (
-              <div key={n} style={{ borderRadius: 6, overflow: 'hidden', border: '1px solid #fce7f3' }}>
-                <img src={img} alt={n} style={{ width: '100%', height: 22, objectFit: 'cover' }} />
-                <div style={{ padding: '3px 4px' }}>
-                  <div style={{ fontSize: 4.5, fontWeight: 600, color: '#1f2937' }}>{n}</div>
-                  <div style={{ fontSize: 4, color: '#ec4899', fontWeight: 700 }}>{p}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </BrowserCard>
-  );
-}
-
-function FitnessCoachMockup() {
-  return (
-    <BrowserCard label="Peak Performance" sublabel="Bookings + Digital Products">
-      <div style={{ background: '#0a0a0a', fontFamily: 'sans-serif' }}>
-        <div style={{ background: '#111', borderBottom: '1px solid #222', padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 7, fontWeight: 900, color: '#e8ff00', letterSpacing: '0.05em' }}>PEAK</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {['Programs', 'Book', 'Shop'].map(t => <span key={t} style={{ fontSize: 5, color: '#888' }}>{t}</span>)}
-          </div>
-        </div>
-        {/* Hero with real photo */}
-        <div style={{ position: 'relative', height: 72, overflow: 'hidden' }}>
-          <img src="/landing/fitness-hero.jpg" alt="Fitness coach" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', padding: '10px 10px' }}>
-            <div style={{ fontSize: 9, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '-0.02em' }}>Stronger<br />Every Day</div>
-            <div style={{ marginTop: 6 }}>
-              <div style={{ background: '#e8ff00', color: '#000', fontSize: 4.5, fontWeight: 800, padding: '2.5px 7px', borderRadius: 4, display: 'inline-block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Book a Free Call</div>
-            </div>
-          </div>
-        </div>
-        <div style={{ padding: '7px 10px', background: '#111' }}>
-          <div style={{ fontSize: 5, fontWeight: 700, color: '#e8ff00', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Programs</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-            {[["1:1 Coaching", "$150/mo", '/landing/fitness-prog-1.jpg'], ["Nutrition Plan", "$99/mo", '/landing/fitness-prog-2.jpg']].map(([n, p, img]) => (
-              <div key={n} style={{ background: '#1a1a1a', borderRadius: 4, overflow: 'hidden' }}>
-                <img src={img} alt={n} style={{ width: '100%', height: 18, objectFit: 'cover' }} />
-                <div style={{ padding: '3px 4px' }}>
-                  <div style={{ fontSize: 4.5, fontWeight: 700, color: '#fff' }}>{n}</div>
-                  <div style={{ fontSize: 4, color: '#e8ff00', fontWeight: 700 }}>{p}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </BrowserCard>
-  );
-}
-
-function CandleStoreMockup() {
-  return (
-    <BrowserCard label="Wick & Warm" sublabel="Products">
-      <div style={{ background: '#fdf8f3', fontFamily: 'Georgia, serif' }}>
-        <div style={{ background: '#fdf8f3', borderBottom: '1px solid #e8d5c4', padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 7, fontWeight: 700, color: '#3d2b1f', letterSpacing: '0.12em' }}>WICK & WARM</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {['Shop', 'About', 'Cart'].map(t => <span key={t} style={{ fontSize: 5, color: '#7a5c46' }}>{t}</span>)}
-          </div>
-        </div>
-        {/* Hero with real photo */}
-        <div style={{ position: 'relative', height: 72, overflow: 'hidden' }}>
-          <img src="/landing/candle-hero.jpg" alt="Candle store" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(61,43,31,0.5)', padding: '10px 10px' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 3 }}>Handcrafted<br />candles for<br />every moment.</div>
-            <div style={{ marginTop: 4 }}>
-              <div style={{ background: '#8b5e3c', color: '#fff', fontSize: 4.5, fontWeight: 700, padding: '2.5px 6px', borderRadius: 4, display: 'inline-block' }}>Shop Collection</div>
-            </div>
-          </div>
-        </div>
-        <div style={{ padding: '7px 10px', background: '#fdf8f3' }}>
-          <div style={{ fontSize: 5, fontWeight: 700, color: '#3d2b1f', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Best Sellers</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4 }}>
-            {[["Vanilla Cream", "$28", '/landing/candle-prod-1.jpg'], ["Sandalwood", "$28", '/landing/candle-prod-2.jpg'], ["Sea Salt", "$24", '/landing/candle-hero.jpg']].map(([n, p, img]) => (
-              <div key={n} style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid #e8d5c4' }}>
-                <img src={img} alt={n} style={{ width: '100%', height: 20, objectFit: 'cover' }} />
-                <div style={{ padding: '3px 2px', background: '#fff' }}>
-                  <div style={{ fontSize: 4, fontWeight: 600, color: '#3d2b1f' }}>{n}</div>
-                  <div style={{ fontSize: 4, color: '#8b5e3c', fontWeight: 700 }}>{p}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </BrowserCard>
-  );
-}
-
-function PhotographerMockup() {
-  return (
-    <BrowserCard label="Captured Moments" sublabel="Bookings + Products">
-      <div style={{ background: '#fff', fontFamily: 'Georgia, serif' }}>
-        <div style={{ background: '#1a3a5c', padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 7, fontWeight: 700, color: '#c8a850', letterSpacing: '0.12em' }}>CAPTURED</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {['Portfolio', 'Sessions', 'Book'].map(t => <span key={t} style={{ fontSize: 5, color: 'rgba(255,255,255,0.7)' }}>{t}</span>)}
-          </div>
-        </div>
-        {/* Hero with real photo */}
-        <div style={{ position: 'relative', height: 72, overflow: 'hidden' }}>
-          <img src="/landing/photo-hero.jpg" alt="Photography" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(26,58,92,0.65)', padding: '10px 10px' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 3, letterSpacing: '0.02em' }}>Timeless<br />photos.<br />Real stories.</div>
-            <div style={{ marginTop: 4 }}>
-              <div style={{ background: '#c8a850', color: '#fff', fontSize: 4.5, fontWeight: 700, padding: '2.5px 6px', borderRadius: 4, display: 'inline-block' }}>Book a Session</div>
-            </div>
-          </div>
-        </div>
-        <div style={{ padding: '7px 10px', background: '#fff' }}>
-          <div style={{ fontSize: 5, fontWeight: 700, color: '#1a3a5c', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Popular Sessions</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-            {[["Portrait Session", "$250", '/landing/photo-sess-1.jpg'], ["Family Session", "$350", '/landing/photo-sess-2.jpg']].map(([n, p, img]) => (
-              <div key={n} style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-                <img src={img} alt={n} style={{ width: '100%', height: 22, objectFit: 'cover' }} />
-                <div style={{ padding: '3px 4px' }}>
-                  <div style={{ fontSize: 4.5, fontWeight: 600, color: '#1a3a5c' }}>{n}</div>
-                  <div style={{ fontSize: 4, color: '#c8a850', fontWeight: 700 }}>{p}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </BrowserCard>
-  );
-}
-
-// ── Wizard steps ──────────────────────────────────────────────────────────────
-
-const WIZARD_STEPS = [
-  { n: 1, icon: '🏪', title: 'Tell us your business', desc: "We'll tailor everything for your industry." },
-  { n: 2, icon: '🎨', title: 'Pick a theme', desc: 'Choose from 6 beautiful designs.' },
-  { n: 3, icon: '✏️', title: 'Add your brand', desc: 'Upload logo, choose colors, add a tagline.' },
-  { n: 4, icon: '🛍️', title: 'Add products or services', desc: "We'll pre-fill suggestions to save you time." },
-  { n: 5, icon: '📅', title: 'Set availability', desc: 'Add your hours and appointment types.' },
-  { n: 6, icon: '💳', title: 'Connect payments', desc: 'Securely connect Stripe and get paid.' },
-  { n: 7, icon: '🚀', title: 'Launch', desc: 'Review, choose a plan, and go live!' },
-];
-
-// ── Comparison table ──────────────────────────────────────────────────────────
-
-const COMPARE_ROWS = [
-  { feature: 'Sell products', shopify: true, calendly: false, squarespace: true },
-  { feature: 'Take bookings', shopify: 'Apps', calendly: true, squarespace: 'Limited' },
-  { feature: 'Stripe payments', shopify: true, calendly: false, squarespace: true },
-  { feature: 'Customer management', shopify: true, calendly: false, squarespace: 'Limited' },
-  { feature: 'AI product photos', shopify: false, calendly: false, squarespace: false },
-  { feature: 'One monthly bill', shopify: false, calendly: false, squarespace: false },
-];
-
-function CompareCell({ val }: { val: boolean | string }) {
-  if (val === true) return <Check size={16} className="mx-auto text-violet-600" />;
-  if (val === false) return <X size={16} className="mx-auto text-slate-300" />;
-  return <span className="text-xs text-slate-400">{val}</span>;
-}
-
-// ── Plans ─────────────────────────────────────────────────────────────────────
-
-const PLANS = [
-  {
-    name: 'Free',
-    badge: null,
-    desc: 'Get started with no credit card required.',
-    price: 'Free',
-    priceNote: 'forever',
-    features: ['Free subdomain', 'Up to 5 products & 10 services', '1 theme', 'Stripe payments', 'Basic analytics'],
-    cta: 'Start for free',
-    highlight: false,
-  },
-  {
-    name: 'Pro',
-    badge: 'Most Popular',
-    desc: 'Everything you need to grow your business.',
-    price: null,
-    priceNote: null,
-    features: ['Custom domain included', 'Unlimited products & services', 'All 16 themes', 'AI product photos', 'Discount codes', 'Advanced analytics', 'Priority support'],
-    cta: 'Get started',
-    highlight: true,
-  },
-  {
-    name: 'Business',
-    badge: null,
-    desc: 'For established businesses ready to scale.',
-    price: null,
-    priceNote: null,
-    features: ['Everything in Pro', 'Multiple staff accounts', 'Custom domain', 'Booking deposits', 'Customer notes & tags', 'Dedicated support'],
-    cta: 'Get started',
-    highlight: false,
-  },
-];
-
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Landing() {
   const { isSignedIn } = useAuth();
@@ -260,187 +126,104 @@ export default function Landing() {
       {/* ── Nav ── */}
       <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: BRAND }}>
-              <Store size={14} className="text-white" />
+          <Link to="/" className="flex items-center gap-2.5">
+            <div className="hidden h-8 w-8 items-center sm:flex justify-center rounded-[10px]" style={{ background: `linear-gradient(135deg, ${BRAND}, ${BRAND_2})` }}>
+              <Store size={16} className="text-white" />
             </div>
-            <span className="text-base font-bold tracking-tight">ShopSuiteDirect</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
-            <a href="#features" className="hover:text-slate-900 transition-colors">Features</a>
-            <a href="#themes" className="hover:text-slate-900 transition-colors">Themes</a>
-            <a href="#pricing" className="hover:text-slate-900 transition-colors">Pricing</a>
-            <Link to="/guide" className="hover:text-slate-900 transition-colors">Get prepared</Link>
+            <span className="text-base font-extrabold tracking-tight sm:text-lg">ShopSuite<span style={{ color: BRAND }}>Direct</span></span>
+          </Link>
+          <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
+            <a href="#features" className="transition-colors hover:text-slate-900">Features</a>
+            <a href="#themes" className="transition-colors hover:text-slate-900">Themes</a>
+            <a href="#pricing" className="transition-colors hover:text-slate-900">Pricing</a>
+            <Link to="/guide" className="transition-colors hover:text-slate-900">Get prepared</Link>
           </nav>
           <div className="flex items-center gap-3">
-            <Link to="/sign-in" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-              Sign in
-            </Link>
-            <Link
-              to="/onboarding"
-              className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
-              style={{ background: BRAND }}
-            >
-              Start free <ArrowRight size={14} />
+            <Link to="/sign-in" className="whitespace-nowrap text-sm font-semibold text-slate-700 transition-colors hover:text-slate-900">Sign in</Link>
+            <Link to="/onboarding" className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90" style={{ background: BRAND }}>
+              Start free
             </Link>
           </div>
         </div>
       </header>
 
       {/* ── Hero ── */}
-      <section className="pt-16 pb-8 text-center px-6" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 100%)' }}>
-        <div className="mx-auto max-w-4xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 text-xs font-semibold text-violet-700 mb-8">
-            The Shopify + Calendly alternative
+      <section className="overflow-hidden pb-6 pt-14" style={{ background: 'radial-gradient(900px 500px at 85% 10%, #ede9fe 0, transparent 60%), linear-gradient(180deg, #faf8ff, #ffffff)' }}>
+        <div className="mx-auto grid max-w-6xl items-center gap-6 px-6 lg:grid-cols-[1.02fr_1fr]">
+          <div>
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-violet-100 px-3.5 py-1.5 text-[13px] font-bold text-violet-800">
+              ✨ Free to start · no credit card
+            </div>
+            <h1 className="text-[52px] font-black leading-[.98] tracking-[-.045em] sm:text-7xl lg:text-[76px]">
+              Build Your<br />
+              <span className="relative inline-block bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(90deg, ${BRAND}, ${BRAND_2})` }}>
+                Business
+                <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 480 12" preserveAspectRatio="none" height="10" aria-hidden="true">
+                  <path d="M2 8 Q 120 1 240 6 T 478 5" fill="none" stroke="url(#u)" strokeWidth="6" strokeLinecap="round" />
+                  <defs><linearGradient id="u"><stop offset="0" stopColor={BRAND} /><stop offset="1" stopColor={BRAND_2} /></linearGradient></defs>
+                </svg>
+              </span><br />
+              Online.
+            </h1>
+            <p className="mt-8 max-w-[520px] text-lg leading-relaxed text-slate-600 sm:text-xl">
+              Your website, online store, booking calendar and payments, <b style={{ color: BRAND }}>all in one place</b>. Set up in about 10 minutes. No coding.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link to="/onboarding" className={cta} style={{ background: BRAND }}>Build my website free <ArrowRight size={16} /></Link>
+              <a href="#how" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-7 py-3.5 text-base font-bold text-slate-900 shadow-sm transition-colors hover:bg-slate-50">See how it works</a>
+            </div>
+            <p className="mt-3.5 text-[13px] text-slate-500">Takes about 10 minutes · Cancel anytime · Secure payments by Stripe</p>
+            <p className="mt-5 -rotate-2 font-serif text-xl italic sm:text-[22px]" style={{ color: BRAND }}>Any business. Any industry. One platform.</p>
           </div>
-          <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight leading-[1.05] mb-6">
-            One platform.<br />
-            <span style={{ color: BRAND }}>Any business.</span>
-          </h1>
-          <p className="text-lg text-slate-500 max-w-xl mx-auto mb-8">
-            Sell products, book appointments, and get paid —<br className="hidden sm:block" />
-            all from one beautiful website.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
-            <Link
-              to="/onboarding"
-              className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-base font-bold text-white shadow-lg hover:opacity-90 transition-opacity"
-              style={{ background: BRAND }}
-            >
-              Build my website free <ArrowRight size={16} />
-            </Link>
-            <Link
-              to="/guide"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-base font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition-colors"
-            >
-              What do I need? <ArrowRight size={16} />
-            </Link>
-          </div>
-          <p className="text-xs text-slate-400 mb-10">No credit card required · Takes about 10 minutes</p>
+          <HeroDevices />
+        </div>
 
-          {/* Feature pills */}
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {[
-              { icon: Store, label: 'Store' },
-              { icon: Calendar, label: 'Bookings' },
-              { icon: CreditCard, label: 'Payments' },
-              { icon: Sparkles, label: 'AI Product Photos' },
-              { icon: Receipt, label: 'One monthly bill' },
-            ].map(({ icon: Icon, label }) => (
-              <div key={label} className="inline-flex items-center gap-1.5 rounded-full bg-white border border-slate-200 px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-sm">
-                <Check size={13} className="text-violet-600" />
-                {label}
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mt-6 grid grid-cols-3 gap-2.5 lg:grid-cols-7">
+            {INDUSTRIES.map((i) => (
+              <div key={i.label} className="relative flex h-[120px] items-end overflow-hidden rounded-2xl bg-cover bg-center p-3 lg:h-[150px]" style={{ backgroundImage: `url(${i.img})` }}>
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, transparent 40%, rgba(15,23,42,.78))' }} />
+                <span className="relative text-[10px] font-extrabold uppercase tracking-normal text-white sm:text-xs sm:tracking-wide">{i.label}</span>
               </div>
+            ))}
+            <div className="relative flex h-[120px] items-end overflow-hidden rounded-2xl p-3 lg:h-[150px]" style={{ background: 'linear-gradient(135deg, #7c3aed, #c026d3)' }}>
+              <span className="text-xs font-extrabold uppercase tracking-wide text-white">+ Food, coaches &amp; more</span>
+            </div>
+          </div>
+
+          <div id="features" className="mt-8 grid grid-cols-2 overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-xl shadow-slate-900/5 lg:grid-cols-5">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="border-b border-r border-slate-200 p-5 last:border-r-0 lg:border-b-0">
+                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl text-white" style={{ background: f.color }}><f.icon size={20} /></div>
+                <p className="text-[15px] font-bold">{f.title}</p>
+                <p className="mt-1 text-[13px] leading-snug text-slate-500">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-x-10 gap-y-2 pb-2 pt-6 text-[13px] font-bold text-slate-700">
+            {['No coding required', 'Set up in minutes', 'Secure payments', 'Mobile friendly'].map((t) => (
+              <span key={t} className="flex items-center gap-2"><Check size={14} style={{ color: BRAND }} strokeWidth={3} />{t}</span>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Industry mockups ── */}
-      <section className="py-14 px-6">
-        <div className="mx-auto max-w-6xl grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <HairStylistMockup />
-          <FitnessCoachMockup />
-          <CandleStoreMockup />
-          <PhotographerMockup />
-        </div>
-      </section>
-
-      {/* ── Launch steps ── */}
-      <section className="py-20 px-6 bg-slate-50" id="features">
-        <div className="mx-auto max-w-4xl text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tight">Launch in 10 minutes</h2>
-          <p className="mt-3 text-slate-500">Our simple step-by-step wizard gets you live — fast.</p>
-        </div>
-        <div className="mx-auto max-w-5xl">
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
-            {WIZARD_STEPS.map((step, i) => (
-              <div key={step.n} className="flex flex-col items-center text-center gap-2 relative">
-                {i < WIZARD_STEPS.length - 1 && (
-                  <div className="hidden lg:block absolute top-6 left-[calc(50%+28px)] right-0 h-px border-t-2 border-dashed border-violet-200 z-0" />
-                )}
-                <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-sm border-2 border-violet-100 bg-white z-10 relative">
-                  {step.icon}
-                </div>
-                <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white -mt-1 z-10" style={{ background: BRAND }}>
-                  {step.n}
-                </div>
-                <p className="text-xs font-semibold text-slate-800 leading-tight">{step.title}</p>
-                <p className="text-[11px] text-slate-400 leading-snug">{step.desc}</p>
+      {/* ── How it works ── */}
+      <section id="how" className="px-6 py-20">
+        <div className="mx-auto max-w-[1104px]">
+          <span className="mb-3.5 inline-block rounded-full bg-violet-100 px-3 py-1.5 text-xs font-extrabold tracking-widest text-violet-700">HOW IT WORKS</span>
+          <h2 className="text-3xl font-black leading-[1.08] tracking-tight sm:text-[44px]">From idea to open for business<br />in about 10 minutes.</h2>
+          <div className="mt-11 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((s, i) => (
+              <div key={s.title} className="relative rounded-[20px] border border-slate-200 bg-white p-6">
+                <span className="absolute -top-3.5 left-5 grid h-[30px] w-[30px] place-items-center rounded-full text-sm font-extrabold text-white" style={{ background: BRAND }}>{i + 1}</span>
+                <div className="mb-3 text-3xl">{s.icon}</div>
+                <p className="text-[17px] font-bold">{s.title}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{s.desc}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ── AI Photos + Comparison table ── */}
-      <section className="py-20 px-6">
-        <div className="mx-auto max-w-6xl grid lg:grid-cols-2 gap-16 items-start">
-
-          {/* AI Photos */}
-          <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 border border-violet-200 px-3 py-1 text-xs font-bold text-violet-700 mb-4">
-              <Sparkles size={11} /> AI-POWERED
-            </div>
-            <h3 className="text-2xl font-bold tracking-tight mb-3">Studio-quality product photos in seconds</h3>
-            <p className="text-slate-500 mb-8">Upload a simple photo and our AI creates beautiful, professional images that sell.</p>
-            <div className="flex gap-3">
-              <div className="flex-1 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-                <div className="bg-slate-100 px-3 py-1.5 text-[10px] font-semibold text-slate-500 border-b border-slate-200">Before</div>
-                <div className="h-36 overflow-hidden">
-                  <img src="/landing/ai-before.jpg" alt="Product before AI" className="w-full h-full object-cover" />
-                </div>
-              </div>
-              <div className="flex items-center">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center shadow" style={{ background: BRAND }}>
-                  <Sparkles size={12} className="text-white" />
-                </div>
-              </div>
-              <div className="flex-1 rounded-xl overflow-hidden border-2 shadow-md" style={{ borderColor: BRAND + '40' }}>
-                <div className="px-3 py-1.5 text-[10px] font-semibold border-b" style={{ background: BRAND + '10', color: BRAND, borderColor: BRAND + '30' }}>After</div>
-                <div className="h-36 overflow-hidden">
-                  <img src="/landing/ai-after.jpg" alt="Product after AI" className="w-full h-full object-cover" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Comparison table */}
-          <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 border border-violet-200 px-3 py-1 text-xs font-bold text-violet-700 mb-4">
-              WHY BUSINESSES SWITCH
-            </div>
-            <h3 className="text-2xl font-bold tracking-tight mb-2">Everything you need. All in one place.<br />One platform. One monthly bill.</h3>
-            <div className="mt-6 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 bg-slate-50">Feature</th>
-                    <th className="px-3 py-3 text-xs font-semibold text-slate-400 bg-slate-50">Shopify</th>
-                    <th className="px-3 py-3 text-xs font-semibold text-slate-400 bg-slate-50">Calendly</th>
-                    <th className="px-3 py-3 text-xs font-semibold text-slate-400 bg-slate-50">Squarespace</th>
-                    <th className="px-3 py-3 text-xs font-bold text-white rounded-t-none" style={{ background: BRAND }}>
-                      Shop Suite Direct
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {COMPARE_ROWS.map((row, i) => (
-                    <tr key={row.feature} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                      <td className="px-4 py-2.5 text-xs font-medium text-slate-700">{row.feature}</td>
-                      <td className="px-3 py-2.5 text-center"><CompareCell val={row.shopify} /></td>
-                      <td className="px-3 py-2.5 text-center"><CompareCell val={row.calendly} /></td>
-                      <td className="px-3 py-2.5 text-center"><CompareCell val={row.squarespace} /></td>
-                      <td className="px-3 py-2.5 text-center" style={{ background: BRAND + '08' }}>
-                        <Check size={16} className="mx-auto text-violet-600" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
         </div>
       </section>
 
@@ -449,61 +232,66 @@ export default function Landing() {
         <ThemeShowcase />
       </section>
 
-      {/* ── Pricing ── */}
-      <section id="pricing" className="py-20 px-6">
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold tracking-tight">Everything included. One simple price.</h2>
-            <p className="mt-3 text-slate-500">Start free, upgrade when you're ready.</p>
+      {/* ── First-sale flyer ── */}
+      <section className="px-6 py-20">
+        <div className="mx-auto grid max-w-[1104px] items-center gap-10 overflow-hidden rounded-[32px] p-8 text-white sm:p-14 lg:grid-cols-[1fr_1.1fr]" style={{ background: 'linear-gradient(135deg, #1e1b4b, #3b0764)' }}>
+          <div>
+            <span className="mb-3.5 inline-block rounded-full bg-white/15 px-3 py-1.5 text-xs font-extrabold tracking-widest text-purple-200">YOUR FIRST SALE DESERVES A PARTY</span>
+            <h2 className="text-3xl font-black leading-[1.08] tracking-tight sm:text-[44px]">We make the flyer.<br />You share the win.</h2>
+            <p className="mt-3.5 max-w-[560px] text-lg leading-relaxed text-indigo-200">
+              The moment you get your first sale or booking, we email you a ready-to-post flyer for Instagram and Stories with your logo, your photo and your colors. Free.
+            </p>
+            <div className="mt-6 max-w-md rounded-2xl bg-white p-4 text-slate-900 shadow-2xl shadow-black/30">
+              <p className="text-xs font-semibold text-slate-500">To: you@yourbusiness.com</p>
+              <p className="my-1 text-[15px] font-bold">🎉 Congratulations on your first booking, Glow Studio!</p>
+              <p className="text-[13px] text-slate-600">Your flyers are ready: one for your feed, one for Stories. Download and post.</p>
+            </div>
           </div>
-          <div className="grid sm:grid-cols-3 gap-6">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.name}
-                className={`rounded-2xl border p-6 flex flex-col gap-4 relative ${
-                  plan.highlight
-                    ? 'border-violet-400 shadow-xl shadow-violet-100'
-                    : 'border-slate-200 shadow-sm'
-                }`}
-              >
-                {plan.badge && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="inline-block rounded-full px-3 py-0.5 text-xs font-bold text-white" style={{ background: BRAND }}>
-                      {plan.badge}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm font-semibold text-slate-500 uppercase tracking-wide">{plan.name}</p>
-                  {plan.price ? (
-                    <div className="mt-1 flex items-baseline gap-1">
-                      <span className="text-3xl font-extrabold text-slate-900">{plan.price}</span>
-                      {plan.priceNote && <span className="text-sm text-slate-400">{plan.priceNote}</span>}
-                    </div>
-                  ) : (
-                    <div className="mt-1">
-                      <span className="text-lg font-bold text-slate-700">Contact us for pricing</span>
-                    </div>
-                  )}
-                  <p className="mt-1 text-xs text-slate-500">{plan.desc}</p>
-                </div>
-                <ul className="flex flex-col gap-2 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-slate-700">
-                      <Check size={14} className="mt-0.5 shrink-0 text-violet-600" />
-                      {f}
-                    </li>
-                  ))}
+          <div className="relative mx-auto h-[420px] w-full max-w-[520px] sm:h-[470px]">
+            <img src="/landing/flyer-post.jpg" alt="Example first-booking flyer for Instagram" className="absolute left-0 top-10 w-[50%] -rotate-[3deg] rounded-2xl border border-white/20 shadow-2xl shadow-black/50" />
+            <img src="/landing/flyer-story.jpg" alt="Example first-booking flyer for Stories" className="absolute left-[52%] top-0 w-[42%] rotate-[3deg] rounded-2xl border border-white/20 shadow-2xl shadow-black/50" />
+            <span className="absolute bottom-3 right-2 -rotate-3 rounded-full bg-amber-200 px-3.5 py-2 text-[13px] font-extrabold text-amber-900">Free, every store</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing ── */}
+      <section id="pricing" className="bg-white px-6 pb-20 pt-4">
+        <div className="mx-auto max-w-[1104px]">
+          <div className="text-center">
+            <span className="mb-3.5 inline-block rounded-full bg-violet-100 px-3 py-1.5 text-xs font-extrabold tracking-widest text-violet-700">PRICING</span>
+            <h2 className="text-3xl font-black tracking-tight sm:text-[44px]">Simple pricing. Start free.</h2>
+            <p className="mt-3.5 text-lg text-slate-600">No setup fees, no contracts. Upgrade when you're ready.</p>
+          </div>
+          <div className="mt-11 grid items-stretch gap-5 md:grid-cols-3">
+            {PLANS.map((p) => (
+              <div key={p.name} className={`relative flex flex-col gap-4 rounded-3xl border bg-white p-7 ${p.highlight ? 'border-2 shadow-2xl shadow-violet-200' : 'border-slate-200'}`} style={p.highlight ? { borderColor: BRAND } : undefined}>
+                {p.highlight && <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3.5 py-1 text-xs font-extrabold text-white" style={{ background: BRAND }}>Most popular</span>}
+                <p className="text-[13px] font-bold uppercase tracking-widest text-slate-500">{p.name}</p>
+                <p className="text-5xl font-black tracking-tight">{p.price}<span className="text-[15px] font-semibold tracking-normal text-slate-500"> /month</span></p>
+                <p className="text-sm text-slate-500">{p.desc}</p>
+                <ul className="flex flex-1 flex-col gap-2.5 text-sm">
+                  {p.features.map((f) => <li key={f} className="flex items-start gap-2"><Check size={14} className="mt-0.5 shrink-0" style={{ color: BRAND }} strokeWidth={3} />{f}</li>)}
                 </ul>
-                <Link
-                  to="/onboarding"
-                  className={`mt-2 w-full rounded-xl py-2.5 text-sm font-bold text-center transition-opacity hover:opacity-90 ${
-                    plan.highlight ? 'text-white' : 'border border-slate-300 text-slate-800 hover:bg-slate-50'
-                  }`}
-                  style={plan.highlight ? { background: BRAND } : {}}
-                >
-                  {plan.cta}
-                </Link>
+                <Link to="/onboarding" className={`rounded-2xl py-3 text-center text-[15px] font-bold transition-opacity hover:opacity-90 ${p.highlight ? 'text-white' : 'border border-slate-200 text-slate-900 hover:bg-slate-50'}`} style={p.highlight ? { background: BRAND } : undefined}>{p.cta}</Link>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 rounded-2xl border border-violet-200 bg-violet-50 px-6 py-5 text-[15px]">
+            <b className="text-violet-800">Payments, honestly:</b> Stripe's card fee (2.9% + 30¢) goes to Stripe. We add 2% (1% on Business). That's all, and the money goes straight to your bank.
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section className="bg-violet-50/60 px-6 py-16">
+        <div className="mx-auto max-w-[1104px]">
+          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">Questions people ask</h2>
+          <div className="mt-8 grid gap-3.5 md:grid-cols-2">
+            {FAQ.map((f) => (
+              <div key={f.q} className="rounded-2xl border border-slate-200 bg-white p-5">
+                <p className="text-base font-bold">{f.q}</p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">{f.a}</p>
               </div>
             ))}
           </div>
@@ -511,56 +299,23 @@ export default function Landing() {
       </section>
 
       {/* ── Bottom CTA ── */}
-      <section className="py-16 px-6" style={{ background: '#1e1b4b' }}>
-        <div className="mx-auto max-w-4xl flex flex-col lg:flex-row items-center justify-between gap-8">
-          <div>
-            <h2 className="text-2xl font-bold text-white">Your business deserves better<br />than five different apps.</h2>
-            <p className="mt-2 text-indigo-300">Store. Bookings. Payments. All in one place.</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-            <Link
-              to="/onboarding"
-              className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity"
-              style={{ background: BRAND }}
-            >
-              Build my website free <ArrowRight size={14} />
-            </Link>
-          </div>
-        </div>
-        <div className="mx-auto max-w-4xl mt-8 pt-8 border-t border-white/10 grid grid-cols-3 gap-4">
-          {[
-            { icon: '🌐', title: 'Free subdomain', sub: 'Get started instantly' },
-            { icon: '🔒', title: 'SSL & security included', sub: 'Your site is always protected' },
-            { icon: '📋', title: 'No contracts, ever', sub: 'Cancel anytime, no hassle' },
-          ].map((item) => (
-            <div key={item.title} className="flex items-start gap-3">
-              <span className="text-xl">{item.icon}</span>
-              <div>
-                <p className="text-sm font-semibold text-white">{item.title}</p>
-                <p className="text-xs text-indigo-300">{item.sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+      <section className="px-6 py-20 text-center" style={{ background: '#1e1b4b' }}>
+        <h2 className="text-3xl font-black leading-tight tracking-tight text-white sm:text-[46px]">Your business deserves better<br />than five different apps.</h2>
+        <p className="mb-7 mt-3.5 text-lg text-indigo-200">Store. Bookings. Payments. All in one place.</p>
+        <Link to="/onboarding" className={cta} style={{ background: BRAND }}>Build my website free <ArrowRight size={16} /></Link>
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-slate-100 py-8 px-6">
-        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded flex items-center justify-center" style={{ background: BRAND }}>
-              <Store size={10} className="text-white" />
-            </div>
-            <span className="font-semibold text-slate-600">ShopSuiteDirect</span>
-          </div>
+      <footer className="border-t border-slate-100 px-6 py-7">
+        <div className="mx-auto flex max-w-[1104px] flex-col items-center justify-between gap-3 text-sm text-slate-500 sm:flex-row">
+          <span className="font-bold text-slate-700">ShopSuite<span style={{ color: BRAND }}>Direct</span></span>
           <p>© {new Date().getFullYear()} Shop Suite Direct. All rights reserved.</p>
           <div className="flex gap-5">
-            <a href="#" className="hover:text-slate-700 transition-colors">Privacy</a>
-            <a href="#" className="hover:text-slate-700 transition-colors">Terms</a>
+            <Link to="/guide" className="transition-colors hover:text-slate-800">Get prepared</Link>
+            <Link to="/sign-in" className="transition-colors hover:text-slate-800">Sign in</Link>
           </div>
         </div>
       </footer>
-
     </div>
   );
 }
