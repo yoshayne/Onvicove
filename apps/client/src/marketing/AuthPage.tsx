@@ -1,5 +1,5 @@
 import { SignIn, SignUp } from '@clerk/clerk-react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const appearance = {
   variables: {
@@ -57,6 +57,11 @@ export default function AuthPage({ mode }: AuthPageProps) {
             forceRedirectUrl={redirectTo}
             appearance={appearance}
           />
+        )}
+        {mode === 'sign-up' && (
+          <p className="mt-4 text-center text-xs text-slate-500">
+            By creating an account you agree to our <Link to="/terms" className="underline hover:text-slate-800">Terms</Link> and <Link to="/privacy" className="underline hover:text-slate-800">Privacy Policy</Link>.
+          </p>
         )}
       </div>
     </div>

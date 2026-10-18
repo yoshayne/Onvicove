@@ -311,6 +311,8 @@ export default function Landing() {
           <span className="font-bold text-slate-700">ShopSuite<span style={{ color: BRAND }}>Direct</span></span>
           <p>© {new Date().getFullYear()} Shop Suite Direct. All rights reserved.</p>
           <div className="flex gap-5">
+            <Link to="/privacy" className="transition-colors hover:text-slate-800">Privacy</Link>
+            <Link to="/terms" className="transition-colors hover:text-slate-800">Terms</Link>
             <Link to="/guide" className="transition-colors hover:text-slate-800">Get prepared</Link>
             <Link to="/sign-in" className="transition-colors hover:text-slate-800">Sign in</Link>
           </div>
