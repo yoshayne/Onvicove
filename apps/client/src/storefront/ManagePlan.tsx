@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiGet, apiPost } from '../lib/api';
+import StripePaymentForm from '../themes/shared/StripePaymentForm';
 
 interface PlanData {
   plan: {
@@ -8,6 +9,7 @@ interface PlanData {
     cancel_at_period_end: boolean; current_period_end: string | null; frequency: string | null; customer_name: string; canceled_at: string | null;
   };
   business: { name: string; slug: string; timezone: string };
+  card?: { brand: string; last4: string } | null;
 }
 
 const money = (c: number, cur: string) => new Intl.NumberFormat('en-US', { style: 'currency', currency: cur.toUpperCase() }).format(c / 100);
@@ -20,9 +22,41 @@ export default function ManagePlan() {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [cardSetup, setCardSetup] = useState<{ clientSecret: string; stripeAccountId: string } | null>(null);
+  const [cardBusy, setCardBusy] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
 
   const load = () => apiGet<PlanData>(`/api/public/plans/manage/${token}`).then(setData).catch(() => setError('This link is not valid or has expired.'));
   useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [token]);
+
+  async function startCardUpdate() {
+    setCardBusy(true);
+    setCardError(null);
+    try {
+      const r = await apiPost<{ client_secret: string; stripe_account_id: string }>(`/api/public/plans/manage/${token}/card-setup`, {});
+      setCardSetup({ clientSecret: r.client_secret, stripeAccountId: r.stripe_account_id });
+    } catch (err) {
+      setCardError(err instanceof Error ? err.message : 'We could not start the card update.');
+    } finally {
+      setCardBusy(false);
+    }
+  }
+
+  async function cardSaved(setupIntentId?: string) {
+    setCardSetup(null);
+    if (!setupIntentId) { setCardError('We could not confirm the new card. Please try again.'); return; }
+    setCardBusy(true);
+    try {
+      const r = await apiPost<{ status: 'updated' | 'paid' | 'declined'; message?: string }>(`/api/public/plans/manage/${token}/card-confirm`, { setup_intent_id: setupIntentId });
+      if (r.status === 'declined') setCardError(r.message ?? 'The new card was declined.');
+      else setMsg(r.status === 'paid' ? 'Your card is updated and your overdue payment went through. Thank you!' : 'Your card is updated. It will be used for your next payment.');
+      await load();
+    } catch (err) {
+      setCardError(err instanceof Error ? err.message : 'We could not update the card.');
+    } finally {
+      setCardBusy(false);
+    }
+  }
 
   async function cancel() {
     setBusy(true);
@@ -61,6 +95,31 @@ export default function ManagePlan() {
         </div>
 
         {msg && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{msg}</p>}
+
+        {!ended && (
+          <div className="mt-5 rounded-lg border border-slate-200 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Payment card</p>
+            {cardSetup ? (
+              <div className="mt-2">
+                <StripePaymentForm
+                  mode="setup"
+                  clientSecret={cardSetup.clientSecret}
+                  stripeAccountId={cardSetup.stripeAccountId}
+                  amountCents={0}
+                  payLabel="Save new card"
+                  onSuccess={cardSaved}
+                  onCancel={() => setCardSetup(null)}
+                />
+              </div>
+            ) : (
+              <div className="mt-1 flex items-center justify-between gap-3">
+                <p className="text-sm text-slate-700">{data.card ? <><span className="capitalize">{data.card.brand}</span> ending in {data.card.last4}</> : 'Card on file'}</p>
+                <button type="button" onClick={startCardUpdate} disabled={cardBusy} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{cardBusy ? 'One moment…' : 'Update card'}</button>
+              </div>
+            )}
+            {cardError && <p className="mt-2 text-sm text-red-600">{cardError}</p>}
+          </div>
+        )}
 
         {!ended && !ending && !confirming && (
           <button type="button" onClick={() => setConfirming(true)} className="mt-5 w-full rounded-lg border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">Cancel my plan</button>

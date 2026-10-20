@@ -10,7 +10,7 @@ import { addDays, format, parse } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { slotsForService, holdsTime, pickStaffForSlot } from '../services/slots';
 import { newManageToken, manageUrlFor } from '../services/bookingManage';
-import { cancelRecurring, confirmRecurringPayment, RecurringError, startRecurringCheckout } from '../services/recurring';
+import { applyNewCard, cancelRecurring, confirmRecurringPayment, createCardSetup, getPlanCard, RecurringError, startRecurringCheckout } from '../services/recurring';
 import { formatBookingTime } from '../lib/time';
 import { CHARGE_MODEL } from '../services/chargeModel';
 import { computePlatformFee, createBookingPaymentIntent, usableStripeIds } from '../services/stripe';
@@ -851,7 +851,37 @@ app.get('/plans/manage/:token', async (c) => {
       customer_name: p.customer_name, canceled_at: p.canceled_at,
     },
     business: { name: p.legal_name || p.company_name, slug: p.slug, timezone: p.timezone },
+    card: p.status === 'canceled' ? null : await getPlanCard(p.id as string),
   });
+});
+
+// POST /api/public/plans/manage/:token/card-setup — begin saving a new card
+app.post('/plans/manage/:token/card-setup', async (c) => {
+  const p = await planByToken(c.req.param('token'));
+  if (!p) return c.json({ error: 'This link is not valid' }, 404);
+  try {
+    const r = await createCardSetup(p.id as string);
+    return c.json({ client_secret: r.clientSecret, stripe_account_id: r.stripeAccountId });
+  } catch (err) {
+    if (err instanceof RecurringError) return c.json({ error: err.message }, err.status as 409);
+    console.error('card-setup failed:', err);
+    return c.json({ error: 'We could not start the card update. Please try again.' }, 502);
+  }
+});
+
+// POST /api/public/plans/manage/:token/card-confirm — the new card was saved: use it for this plan
+app.post('/plans/manage/:token/card-confirm', async (c) => {
+  const p = await planByToken(c.req.param('token'));
+  if (!p) return c.json({ error: 'This link is not valid' }, 404);
+  const parsed = z.object({ setup_intent_id: z.string().min(5).max(120) }).safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Invalid request' }, 400);
+  try {
+    return c.json(await applyNewCard(p.id as string, parsed.data.setup_intent_id));
+  } catch (err) {
+    if (err instanceof RecurringError) return c.json({ error: err.message }, err.status as 400);
+    console.error('card-confirm failed:', err);
+    return c.json({ error: 'We could not update the card. Please try again.' }, 502);
+  }
 });
 
 // POST /api/public/plans/manage/:token/cancel — stops future charges; the plan runs to the end of the period already paid

@@ -384,6 +384,67 @@ export async function confirmPendingPlans(): Promise<void> {
   for (const r of rows) await confirmRecurringPayment(r.id as string);
 }
 
+// ── Updating the card on a plan ─────────────────────────────────────────────
+export async function getPlanCard(planId: string): Promise<{ brand: string; last4: string } | null> {
+  const sub = (await db`SELECT stripe_subscription_id, stripe_account_id FROM recurring_subscriptions WHERE id = ${planId}`)[0];
+  if (!sub?.stripe_subscription_id) return null;
+  try {
+    const s = await stripe.subscriptions.retrieve(sub.stripe_subscription_id as string, { expand: ['default_payment_method'] }, { stripeAccount: sub.stripe_account_id as string });
+    const pm = s.default_payment_method as { card?: { brand: string; last4: string } } | null;
+    return pm?.card ? { brand: pm.card.brand, last4: pm.card.last4 } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** A Stripe SetupIntent the customer's browser uses to save a new card on their own plan */
+export async function createCardSetup(planId: string): Promise<{ clientSecret: string; stripeAccountId: string }> {
+  const sub = (await db`SELECT * FROM recurring_subscriptions WHERE id = ${planId}`)[0];
+  if (!sub || sub.status === 'canceled' || !sub.stripe_customer_id) throw new RecurringError('This plan can no longer be changed.', 409);
+  const si = await stripe.setupIntents.create(
+    { customer: sub.stripe_customer_id as string, usage: 'off_session', payment_method_types: ['card'], metadata: { recurring_id: planId } },
+    { stripeAccount: sub.stripe_account_id as string },
+  );
+  if (!si.client_secret) throw new RecurringError('We could not start the card update.', 502);
+  return { clientSecret: si.client_secret, stripeAccountId: sub.stripe_account_id as string };
+}
+
+/** The new card was saved: make it the plan's card, and if a payment is overdue try it right now */
+export async function applyNewCard(planId: string, setupIntentId: string): Promise<{ status: 'updated' | 'paid' | 'declined'; message?: string }> {
+  const sub = (await db`SELECT * FROM recurring_subscriptions WHERE id = ${planId}`)[0];
+  if (!sub || sub.status === 'canceled') throw new RecurringError('This plan can no longer be changed.', 409);
+  const account = sub.stripe_account_id as string;
+  const si = await stripe.setupIntents.retrieve(setupIntentId, {}, { stripeAccount: account });
+  // The card must really have been saved for THIS customer
+  if (si.status !== 'succeeded' || si.customer !== sub.stripe_customer_id || si.metadata?.recurring_id !== planId || !si.payment_method) {
+    throw new RecurringError('We could not confirm the new card. Please try again.', 400);
+  }
+  const pm = typeof si.payment_method === 'string' ? si.payment_method : si.payment_method.id;
+  await stripe.subscriptions.update(sub.stripe_subscription_id as string, { default_payment_method: pm }, { stripeAccount: account });
+  await stripe.customers.update(sub.stripe_customer_id as string, { invoice_settings: { default_payment_method: pm } }, { stripeAccount: account });
+
+  if (sub.status === 'past_due') {
+    const open = await stripe.invoices.list({ subscription: sub.stripe_subscription_id as string, status: 'open', limit: 1 }, { stripeAccount: account });
+    const inv = open.data[0];
+    if (inv) {
+      try {
+        const paid = await stripe.invoices.pay(inv.id, { payment_method: pm }, { stripeAccount: account });
+        if (paid.status === 'paid') {
+          const rawPi = paid.payment_intent;
+          await handleInvoicePaid({
+            id: paid.id, subscription: sub.stripe_subscription_id as string, payment_intent: rawPi && typeof rawPi === 'object' ? rawPi.id : (rawPi as string | null),
+            amount_paid: paid.amount_paid, billing_reason: 'subscription_cycle', lines: { data: [{ period: { end: paid.lines.data[0]?.period?.end } }] },
+          } as InvoiceLike, account);
+          return { status: 'paid' };
+        }
+      } catch (err) {
+        return { status: 'declined', message: err instanceof Error ? err.message : 'The new card was declined.' };
+      }
+    }
+  }
+  return { status: 'updated' };
+}
+
 // ── Cancelling (customer or owner) ──────────────────────────────────────────
 export async function cancelRecurring(id: string, opts: { immediately: boolean; by: 'customer' | 'owner' }): Promise<{ endsOn: string | null }> {
   const sub = (await db`SELECT * FROM recurring_subscriptions WHERE id = ${id}`)[0];

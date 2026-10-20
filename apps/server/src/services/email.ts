@@ -589,8 +589,8 @@ export async function sendRecurringPaymentFailed(data: RecurringEmailBase & { at
       <p>Hi ${escapeHtml(data.toName)},</p>
       <p>The <strong>${money(data.amountCents)}</strong> payment for <strong>${escapeHtml(data.serviceName)}</strong> didn't go through.</p>
       <p>We'll try again automatically${left > 0 ? ` (${left} more ${left === 1 ? 'try' : 'tries'})` : ''}. If it still can't be charged, your plan will end.</p>
-      ${data.payUrl ? btn('Pay now with a different card', data.payUrl) : ''}
-      <p style="font-size:13px;color:#64748b"><a href="${data.manageUrl}" style="color:#64748b">Manage your plan</a></p>
+      ${btn('Update my card', data.manageUrl)}
+      ${data.payUrl ? `<p style="font-size:13px;color:#64748b">Or <a href="${data.payUrl}" style="color:#64748b">pay this invoice directly</a>.</p>` : ''}
     `, data.companyName),
   }, { tenantId: data.tenantId, type: 'recurring_payment_failed', referenceType: 'subscription', referenceId: data.referenceId });
 }

@@ -31,10 +31,12 @@ interface StripePaymentFormProps {
   currency?: string;
   /** Where redirect-based methods (Cash App, Klarna, bank…) send the customer afterwards. Defaults to this page. */
   returnUrl?: string;
-  onSuccess: () => void;
+  onSuccess: (setupIntentId?: string) => void;
   onCancel: () => void;
   /** Button text (default: Pay $X) */
   payLabel?: string;
+  /** 'setup' saves a card without charging it (a SetupIntent) */
+  mode?: 'payment' | 'setup';
 }
 
 export default function StripePaymentForm({
@@ -46,6 +48,7 @@ export default function StripePaymentForm({
   onSuccess,
   onCancel,
   payLabel,
+  mode = 'payment',
 }: StripePaymentFormProps) {
   const [ready, setReady] = useState(false);
   const [publishableKey, setPublishableKey] = useState<string | null>(resolvedPublishableKey);
@@ -81,7 +84,7 @@ export default function StripePaymentForm({
         appearance: { theme: 'stripe', variables: { spacingUnit: '3px', spacingGridRow: '10px', spacingGridColumn: '10px', fontSizeBase: '15px' } },
       }}
     >
-      <PaymentInner amountCents={amountCents} currency={currency} returnUrl={returnUrl} onSuccess={onSuccess} onCancel={onCancel} payLabel={payLabel} />
+      <PaymentInner amountCents={amountCents} currency={currency} returnUrl={returnUrl} onSuccess={onSuccess} onCancel={onCancel} payLabel={payLabel} mode={mode} />
     </Elements>
   );
 }
@@ -93,13 +96,15 @@ function PaymentInner({
   onSuccess,
   onCancel,
   payLabel,
+  mode,
 }: {
   amountCents: number;
   currency?: string;
   returnUrl?: string;
-  onSuccess: () => void;
+  onSuccess: (setupIntentId?: string) => void;
   onCancel: () => void;
   payLabel?: string;
+  mode: 'payment' | 'setup';
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -110,12 +115,23 @@ function PaymentInner({
     if (!stripe || !elements) return;
     setSubmitting(true);
     setError(null);
-    const { error: confirmError } = await stripe.confirmPayment({
+    const confirmArgs = {
       elements,
       // Required by every redirect-based method; cards finish in place and never use it
       confirmParams: { return_url: returnUrl ?? currentPageUrl() },
-      redirect: 'if_required',
-    });
+      redirect: 'if_required' as const,
+    };
+    if (mode === 'setup') {
+      const res = await stripe.confirmSetup(confirmArgs);
+      if (res.error) {
+        setError(res.error.message ?? 'We could not save that card. Please try again.');
+        setSubmitting(false);
+        return;
+      }
+      onSuccess(res.setupIntent?.id);
+      return;
+    }
+    const { error: confirmError } = await stripe.confirmPayment(confirmArgs);
     if (confirmError) {
       setError(confirmError.message ?? 'Payment failed. Please try again.');
       setSubmitting(false);
