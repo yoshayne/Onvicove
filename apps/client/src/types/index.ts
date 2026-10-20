@@ -37,6 +37,7 @@ export interface Tenant {
   reminder_hours?: string | null;
   milestone_emails?: boolean | null;
   legal_name?: string | null;
+  product_updates_emails?: boolean | null;
   /** A Pro theme picked on Starter: switches on after an upgrade */
   desired_theme_id?: string | null;
   show_live_calendar: boolean;

@@ -684,3 +684,39 @@ ALTER TABLE platform_transactions ADD CONSTRAINT platform_transactions_reference
 ALTER TABLE recurring_subscriptions ADD COLUMN IF NOT EXISTS skipped JSONB NOT NULL DEFAULT '[]';
 ALTER TABLE services ADD COLUMN IF NOT EXISTS stripe_product_id TEXT;
 ALTER TABLE services ADD COLUMN IF NOT EXISTS stripe_product_account TEXT;
+
+-- Announcements from the platform to its store owners (email and/or an alert in the dashboard)
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS product_updates_emails BOOLEAN DEFAULT TRUE;
+CREATE TABLE IF NOT EXISTS announcements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  body TEXT NOT NULL DEFAULT '',
+  cta_label TEXT,
+  cta_url TEXT,
+  send_email BOOLEAN NOT NULL DEFAULT TRUE,
+  send_alert BOOLEAN NOT NULL DEFAULT TRUE,
+  -- { plans: ['starter','pro','business'] (empty = all), launched_only: boolean }
+  audience JSONB NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'scheduled', 'sending', 'sent', 'paused')),
+  scheduled_for TIMESTAMPTZ,
+  started_at TIMESTAMPTZ,
+  sent_at TIMESTAMPTZ,
+  recipient_count INTEGER NOT NULL DEFAULT 0,
+  emailed_count INTEGER NOT NULL DEFAULT 0,
+  failed_count INTEGER NOT NULL DEFAULT 0,
+  created_by TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- One row per store per announcement: the guard that nobody is sent the same one twice, and what the dashboard bell shows
+CREATE TABLE IF NOT EXISTS announcement_deliveries (
+  announcement_id UUID NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  email_status TEXT CHECK (email_status IN ('sent', 'failed', 'skipped')),
+  email_error TEXT,
+  alert BOOLEAN NOT NULL DEFAULT FALSE,
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (announcement_id, tenant_id)
+);
+CREATE INDEX IF NOT EXISTS idx_announcement_deliveries_tenant ON announcement_deliveries(tenant_id, created_at DESC);

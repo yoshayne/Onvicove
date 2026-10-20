@@ -47,6 +47,7 @@ const updateTenantSchema = z.object({
   /** Comma list of hours before the appointment to remind the customer, e.g. "24,2" (empty = no reminders) */
   milestone_emails: z.boolean().optional(),
   legal_name: z.string().trim().max(160).nullable().optional(),
+  product_updates_emails: z.boolean().optional(),
   reminder_hours: z.string().regex(/^(\d{1,3}(,\d{1,3}){0,3})?$/).optional(),
   currency: z.string().optional(),
   slug: z.string().min(1).max(60).regex(/^[a-z0-9-]+$/).optional(),

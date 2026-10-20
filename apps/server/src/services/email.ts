@@ -617,6 +617,31 @@ export async function sendTenantRecurringNotice(data: { tenantEmail: string; com
   });
 }
 
+// ─── Platform announcements (what's new) ─────────────────────────────────────
+
+export async function sendAnnouncementEmail(data: {
+  toEmail: string;
+  toName: string;
+  title: string;
+  bodyHtml: string;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
+  unsubscribeUrl: string;
+  tenantId?: string;
+  announcementId?: string;
+  preview?: boolean;
+}): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.toEmail, name: data.toName }],
+    subject: `${data.preview ? '[TEST] ' : ''}${data.title}`,
+    htmlContent: wrap(escapeHtml(data.title), `
+      ${data.bodyHtml}
+      ${data.ctaLabel && data.ctaUrl ? btn(escapeHtml(data.ctaLabel), data.ctaUrl) : ''}
+      <p style="font-size:12px;color:#94a3b8;margin-top:28px">You're getting this because you have a Shop Suite Direct account. <a href="${data.unsubscribeUrl}" style="color:#94a3b8">Unsubscribe from product updates</a>. You'll still get booking, payment and account emails.</p>
+    `),
+  }, data.tenantId && !data.preview ? { tenantId: data.tenantId, type: 'announcement', referenceType: 'announcement', referenceId: data.announcementId } : undefined);
+}
+
 // ─── Admin notifications ─────────────────────────────────────────────────────
 
 export async function sendAdminNewSignup(data: {

@@ -10,6 +10,7 @@ import { addDays, format, parse } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { slotsForService, holdsTime, pickStaffForSlot } from '../services/slots';
 import { newManageToken, manageUrlFor } from '../services/bookingManage';
+import { verifyUnsubscribeToken } from '../lib/announcementText';
 import { applyNewCard, cancelRecurring, confirmRecurringPayment, createCardSetup, getPlanCard, RecurringError, startRecurringCheckout } from '../services/recurring';
 import { formatBookingTime } from '../lib/time';
 import { CHARGE_MODEL } from '../services/chargeModel';
@@ -824,6 +825,21 @@ app.post('/:slug/recurring', async (c) => {
     if (err instanceof RecurringError) return c.json({ error: err.message }, err.status as 400);
     throw err;
   }
+});
+
+// GET/POST /api/public/updates/unsubscribe/:token — the unsubscribe link in "what's new" emails
+app.get('/updates/unsubscribe/:token', async (c) => {
+  const tenantId = verifyUnsubscribeToken(c.req.param('token'));
+  if (!tenantId) return c.json({ error: 'This link is not valid' }, 404);
+  const t = (await db`SELECT company_name, product_updates_emails FROM tenants WHERE id = ${tenantId}`)[0];
+  if (!t) return c.json({ error: 'This link is not valid' }, 404);
+  return c.json({ company: t.company_name, subscribed: t.product_updates_emails !== false });
+});
+app.post('/updates/unsubscribe/:token', async (c) => {
+  const tenantId = verifyUnsubscribeToken(c.req.param('token'));
+  if (!tenantId) return c.json({ error: 'This link is not valid' }, 404);
+  await db`UPDATE tenants SET product_updates_emails = FALSE WHERE id = ${tenantId}`;
+  return c.json({ ok: true });
 });
 
 // POST /api/public/plans/confirm — the customer just paid: check with Stripe right away (a safety net alongside the webhook)

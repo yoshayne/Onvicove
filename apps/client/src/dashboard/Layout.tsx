@@ -6,7 +6,7 @@ import {
   LayoutDashboard, ShoppingCart, CalendarDays, Package, Sparkles,
   Users, UserCheck, BarChart3, Palette, LayoutTemplate, Camera,
   Tag, Settings as SettingsIcon, Wallet, CreditCard, Mail, Image as GalleryIcon,
-  Menu, X, Bell, Search, Zap, Repeat, type LucideIcon,
+  Menu, X, Search, Zap, Repeat, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { to: string; label: string; icon: LucideIcon; end?: boolean; }
@@ -14,6 +14,7 @@ import { useApi } from '../lib/api';
 import { useIsAdmin } from '../lib/useIsAdmin';
 import { useImpersonation } from '../contexts/ImpersonationContext';
 import ImpersonationBanner from './ImpersonationBanner';
+import NotificationsBell from './NotificationsBell';
 import type { Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
 
@@ -246,12 +247,7 @@ function LayoutInner() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-              aria-label="Notifications"
-            >
-              <Bell size={18} />
-            </button>
+            <NotificationsBell />
             {user && (
               <span className="hidden text-sm font-medium text-slate-700 sm:block">
                 {user.firstName} {user.lastName}

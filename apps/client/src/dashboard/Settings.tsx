@@ -29,6 +29,7 @@ interface SettingsFormState {
   cancel_window_hours: number;
   reminder_hours: string;
   milestone_emails: boolean;
+  product_updates_emails: boolean;
   legal_name: string;
   font_pair_id: FontPairId;
 }
@@ -48,6 +49,7 @@ function tenantToForm(tenant: Tenant): SettingsFormState {
     cancel_window_hours: tenant.cancel_window_hours ?? 24,
     reminder_hours: tenant.reminder_hours ?? '24',
     milestone_emails: tenant.milestone_emails !== false,
+    product_updates_emails: tenant.product_updates_emails !== false,
     legal_name: tenant.legal_name ?? '',
     font_pair_id: (tenant.font_pair_id as FontPairId) ?? 'classic',
   };
@@ -194,6 +196,7 @@ export default function Settings() {
       cancel_window_hours: form.cancel_window_hours,
       reminder_hours: form.reminder_hours,
       milestone_emails: form.milestone_emails,
+      product_updates_emails: form.product_updates_emails,
       legal_name: form.legal_name.trim() || null,
       font_pair_id: form.font_pair_id,
     };
@@ -350,6 +353,19 @@ export default function Settings() {
             <p className="mt-1 text-xs text-slate-500">They get a link in their confirmation email. Deposits aren't refunded automatically; you decide.</p>
           </div>
         </div>
+
+        <label className="flex items-start gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={form.product_updates_emails}
+            onChange={(e) => setForm((f) => (f ? { ...f, product_updates_emails: e.target.checked } : f))}
+          />
+          <span>
+            Email me product updates
+            <span className="block text-xs text-slate-500">What's new on Shop Suite Direct. You'll still get booking, payment and account emails, and "what's new" alerts stay under the bell.</span>
+          </span>
+        </label>
 
         <label className="flex items-start gap-2 text-sm text-slate-700">
           <input

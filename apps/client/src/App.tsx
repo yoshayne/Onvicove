@@ -52,6 +52,8 @@ import Billing from './dashboard/Billing';
 import GalleryManager from './dashboard/GalleryManager';
 import EmailLog from './dashboard/EmailLog';
 import Privacy from './marketing/Privacy';
+import UnsubscribeUpdates from './marketing/UnsubscribeUpdates';
+import AdminAnnouncements from './admin/Announcements';
 import Terms from './marketing/Terms';
 import AdminLayout from './admin/Layout';
 import AdminOverview from './admin/Overview';
@@ -163,6 +165,7 @@ export default function App() {
               <Route path="/" element={<Landing />} />
               <Route path="/guide" element={<Guide />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/unsubscribe/updates/:token" element={<UnsubscribeUpdates />} />
               <Route path="/terms" element={<Terms />} />
 
               <Route path="/sign-in/*" element={<AuthPage mode="sign-in" />} />
@@ -244,6 +247,7 @@ export default function App() {
                 <Route path="domain-requests" element={<AdminDomainRequests />} />
                 <Route path="coupons" element={<AdminCoupons />} />
                 <Route path="milestone-preview" element={<AdminMilestonePreview />} />
+                <Route path="announcements" element={<AdminAnnouncements />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
