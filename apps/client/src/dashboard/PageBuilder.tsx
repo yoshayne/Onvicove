@@ -427,11 +427,20 @@ export default function PageBuilder() {
   const [contentFields, setContentFields] = useState({
     tagline: '',
     'about.text': '',
+    'about.eyebrow': '',
+    'about.heading': '',
+    'about.layout': 'centered',
+    'about.image_key': '',
+    'about.cta_kicker': '',
+    'about.cta_headline': '',
+    'about.cta_label': '',
     'contact.email': '',
     'contact.phone': '',
     'contact.address': '',
     'contact.hours': '',
   });
+  const [aboutImageUrl, setAboutImageUrl] = useState<string | null>(null);
+  const [aboutUploading, setAboutUploading] = useState(false);
   const [contentDirty, setContentDirty] = useState(false);
   const [contentSaving, setContentSaving] = useState(false);
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);
@@ -468,12 +477,20 @@ export default function PageBuilder() {
     setContentFields({
       tagline: t.tagline ?? '',
       'about.text': pc['about.text'] ?? '',
+      'about.eyebrow': pc['about.eyebrow'] ?? '',
+      'about.heading': pc['about.heading'] ?? '',
+      'about.layout': pc['about.layout'] || 'centered',
+      'about.image_key': pc['about.image_key'] ?? '',
+      'about.cta_kicker': pc['about.cta_kicker'] ?? '',
+      'about.cta_headline': pc['about.cta_headline'] ?? '',
+      'about.cta_label': pc['about.cta_label'] ?? '',
       'contact.email': pc['contact.email'] ?? '',
       'contact.phone': pc['contact.phone'] ?? '',
       'contact.address': pc['contact.address'] ?? '',
       'contact.hours': pc['contact.hours'] ?? '',
     });
     setHeroImageUrl(t.hero_image_url ?? null);
+    setAboutImageUrl((t as unknown as { about_image_url?: string }).about_image_url ?? null);
     if (pc['hero.image_opacity'] !== undefined) setHeroImageOpacity(Number(pc['hero.image_opacity']));
     try { if (pc['testimonials']) setTestimonials(JSON.parse(pc['testimonials'])); } catch { /* */ }
     try { if (pc['faqs']) setFaqs(JSON.parse(pc['faqs'])); } catch { /* */ }
@@ -555,6 +572,17 @@ export default function PageBuilder() {
       setHeroUploadError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setHeroUploading(false);
+    }
+  }
+
+  async function handleAboutImageUpload(file: File) {
+    setAboutUploading(true);
+    try {
+      const res = await api.upload<{ key: string; url: string }>('/uploads', file);
+      setContent('about.image_key', res.key);
+      setAboutImageUrl(res.url);
+    } finally {
+      setAboutUploading(false);
     }
   }
 
@@ -1085,12 +1113,88 @@ export default function PageBuilder() {
                   </div>
                   <div className="flex flex-col gap-3 p-3">
                     <ContentField
+                      label="Small heading above (optional)"
+                      value={contentFields['about.eyebrow']}
+                      onChange={(v) => setContent('about.eyebrow', v)}
+                      placeholder="About"
+                    />
+                    <ContentField
+                      label="Headline"
+                      value={contentFields['about.heading']}
+                      onChange={(v) => setContent('about.heading', v)}
+                      placeholder="More than just a *camera.*"
+                    />
+                    <p className="-mt-2 text-[11px] text-slate-400">Put *stars* around words to show them in your brand color.</p>
+                    <ContentField
                       label="About text"
                       value={contentFields['about.text']}
                       onChange={(v) => setContent('about.text', v)}
                       multiline
                       placeholder="Tell visitors about your business…"
                     />
+
+                    <div>
+                      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Layout</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {([
+                          ['centered', 'Centered', 'Words in the middle'],
+                          ['split', 'Photo + text', 'Photo beside the words'],
+                          ['banner', 'Banner', 'Big photo, bold headline'],
+                        ] as const).map(([id, name, desc]) => {
+                          const on = contentFields['about.layout'] === id;
+                          return (
+                            <button key={id} type="button" onClick={() => setContent('about.layout', id)}
+                              className={`rounded-lg border p-2 text-left transition ${on ? 'border-violet-500 bg-violet-50 ring-1 ring-violet-500' : 'border-slate-200 hover:border-slate-300'}`}>
+                              <div className="mb-1.5 flex h-8 overflow-hidden rounded bg-slate-100">
+                                {id === 'centered' && <div className="m-auto h-2 w-10 rounded bg-slate-300" />}
+                                {id === 'split' && (<><div className="m-1 w-1/2 rounded bg-slate-300" /><div className="m-auto h-2 w-1/3 rounded bg-slate-400" /></>)}
+                                {id === 'banner' && (<><div className="w-1/2 bg-slate-400" /><div className="m-auto h-2.5 w-1/3 rounded bg-slate-600" /></>)}
+                              </div>
+                              <p className="text-[11px] font-semibold text-slate-800">{name}</p>
+                              <p className="text-[10px] leading-tight text-slate-500">{desc}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {contentFields['about.layout'] !== 'centered' && !aboutImageUrl && (
+                        <p className="mt-1.5 text-[11px] text-amber-600">Add a photo below to use this layout. Without one, it shows as Centered.</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">About photo</label>
+                      {aboutImageUrl ? (
+                        <div className="relative overflow-hidden rounded-lg border border-slate-200">
+                          <img src={aboutImageUrl} alt="About" className="h-28 w-full object-cover" />
+                          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                            <label className="cursor-pointer rounded-md bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-white">
+                              {aboutUploading ? 'Uploading…' : 'Replace'}
+                              <input type="file" accept="image/*" className="hidden" disabled={aboutUploading}
+                                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAboutImageUpload(f); }} />
+                            </label>
+                            <button type="button" onClick={() => { setContent('about.image_key', ''); setAboutImageUrl(null); }}
+                              className="rounded-md bg-red-500/90 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500">Remove</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 py-5 hover:border-violet-400 hover:bg-violet-50 ${aboutUploading ? 'pointer-events-none opacity-50' : ''}`}>
+                          {aboutUploading ? <Spinner size="sm" /> : <Upload size={18} className="text-slate-400" />}
+                          <span className="text-xs text-slate-500">{aboutUploading ? 'Uploading…' : 'Click to upload a photo'}</span>
+                          <input type="file" accept="image/*" className="hidden" disabled={aboutUploading}
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAboutImageUpload(f); }} />
+                        </label>
+                      )}
+                    </div>
+
+                    <div className="rounded-lg bg-slate-50 p-3">
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Call to action under it (optional)</p>
+                      <div className="flex flex-col gap-2.5">
+                        <ContentField label="Small line" value={contentFields['about.cta_kicker']} onChange={(v) => setContent('about.cta_kicker', v)} placeholder="Ready to create?" />
+                        <ContentField label="Big line" value={contentFields['about.cta_headline']} onChange={(v) => setContent('about.cta_headline', v)} placeholder="Let's *work.*" />
+                        <ContentField label="Button text" value={contentFields['about.cta_label']} onChange={(v) => setContent('about.cta_label', v)} placeholder="Book a shoot" />
+                      </div>
+                      <p className="mt-1.5 text-[11px] text-slate-400">The button takes people to your services (or products if you only sell products).</p>
+                    </div>
                   </div>
                 </div>
 

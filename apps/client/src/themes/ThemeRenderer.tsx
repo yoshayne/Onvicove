@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import type { ComponentType, CSSProperties } from 'react';
 import type { ThemeId, ThemeProps } from './types';
+import { AboutContext } from './shared/AboutBlock';
 
 const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
   editorial: () => import('./editorial/Storefront'),
@@ -35,9 +36,11 @@ export default function ThemeRenderer({ themeId, ...props }: ThemeRendererProps)
 
   return (
     <div style={style}>
-      <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
-        <Storefront {...props} />
-      </Suspense>
+      <AboutContext.Provider value={props.theme.about}>
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
+          <Storefront {...props} />
+        </Suspense>
+      </AboutContext.Provider>
     </div>
   );
 }

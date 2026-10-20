@@ -67,6 +67,8 @@ export async function enrichWithUrls(row: any): Promise<any> {
   }
   if (row.logo_key) result.logo_url = await getSignedFileUrl(row.logo_key);
   if (row.hero_image_key) result.hero_image_url = await getSignedFileUrl(row.hero_image_key);
+  const aboutKey = row.page_content && typeof row.page_content === 'object' ? (row.page_content as Record<string, unknown>)['about.image_key'] : null;
+  if (typeof aboutKey === 'string' && aboutKey) result.about_image_url = await getSignedFileUrl(aboutKey);
   if (row.favicon_key) result.favicon_url = await getSignedFileUrl(row.favicon_key);
   if (row.avatar_key) result.avatar_url = await getSignedFileUrl(row.avatar_key);
   if (row.cutout_image_key) result.cutout_image_url = await getSignedFileUrl(row.cutout_image_key);

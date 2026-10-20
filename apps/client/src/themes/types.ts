@@ -5,6 +5,19 @@
 export type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft' | 'lens' | 'barber' | 'studio' | 'ink';
 export type StoreMode = 'store' | 'book' | 'both';
 
+/** The owner's About section choices (Page Builder > Content) */
+export interface AboutConfig {
+  eyebrow?: string;
+  heading?: string;
+  layout?: 'centered' | 'split' | 'banner';
+  imageUrl?: string;
+  ctaKicker?: string;
+  ctaHeadline?: string;
+  ctaLabel?: string;
+  /** Where the button goes (the services or products section) */
+  ctaHref?: string;
+}
+
 export interface ThemeData {
   companyName: string;
   tagline?: string;
@@ -22,6 +35,7 @@ export interface ThemeData {
   heroImageOpacity?: number; // 0–100; undefined = use theme default
   // Content tab — editable via Page Builder
   aboutText?: string;
+  about?: AboutConfig;
   contactEmail?: string;
   contactPhone?: string;
   contactAddress?: string;
