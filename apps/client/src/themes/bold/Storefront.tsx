@@ -239,52 +239,50 @@ export default function Storefront({ theme, products, services, staff, galleries
               <div className="hidden md:block h-px flex-1 bg-white/10 mx-8 mb-3" />
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 md:gap-x-6">
               {displayProducts.map((product) => (
-                <div key={product.id} className="product-card group relative bg-[#111] overflow-hidden cursor-pointer">
-                  {/* Image */}
-                  <div className="aspect-[3/4] overflow-hidden bg-[#1a1a1a]">
-                    <img
-                      src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Hover overlay */}
-                  <div className="product-overlay absolute inset-0 bg-black/75 flex flex-col items-center justify-end p-5">
-                    {product.description && (
-                      <p className="text-white/70 text-xs text-center mb-4 leading-relaxed">{product.description}</p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => openQuickView(product)}
-                      className="product-overlay-btn w-full bg-[var(--brand-color,#e8ff00)] text-black text-xs font-bold uppercase tracking-[0.2em] py-3 hover:bg-white transition-colors"
-                    >
-                      {theme.paymentsEnabled ? 'Quick View' : 'View Details'}
-                    </button>
-                  </div>
-
-                  {/* Compare-at badge */}
-                  {product.compareAtPriceCents && (
-                    <div className="absolute top-3 left-3 bg-[var(--brand-color,#e8ff00)] text-black text-[9px] font-bold uppercase tracking-wide px-2 py-0.5">
-                      Sale
+                <div key={product.id} className="product-card group cursor-pointer">
+                  <div className="relative bg-[#111] overflow-hidden">
+                    {/* Image */}
+                    <div className="aspect-[3/4] overflow-hidden bg-[#1a1a1a]">
+                      <img
+                        src={product.imageUrls?.[0] ?? defaults.heroImageUrl}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
 
-            {/* Product info row below grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-1">
-              {displayProducts.map((product) => (
-                <div key={product.id} className="px-1 pt-3 pb-1">
-                  <h3 className="font-bold text-sm uppercase tracking-wide leading-tight mb-1">{product.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white text-sm font-bold">{formatPrice(product.priceCents, theme.currency)}</span>
+                    {/* Hover overlay */}
+                    <div className="product-overlay absolute inset-0 bg-black/75 flex flex-col items-center justify-end p-5">
+                      {product.description && (
+                        <p className="text-white/70 text-xs text-center mb-4 leading-relaxed">{product.description}</p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => openQuickView(product)}
+                        className="product-overlay-btn w-full bg-[var(--brand-color,#e8ff00)] text-black text-xs font-bold uppercase tracking-[0.2em] py-3 hover:bg-white transition-colors"
+                      >
+                        {theme.paymentsEnabled ? 'Quick View' : 'View Details'}
+                      </button>
+                    </div>
+
+                    {/* Compare-at badge */}
                     {product.compareAtPriceCents && (
-                      <span className="text-white/30 text-xs line-through">{formatPrice(product.compareAtPriceCents, theme.currency)}</span>
+                      <div className="absolute top-3 left-3 bg-[var(--brand-color,#e8ff00)] text-black text-[9px] font-bold uppercase tracking-wide px-2 py-0.5">
+                        Sale
+                      </div>
                     )}
+                  </div>
+
+                  {/* Name and price sit under their own picture (also on phones) */}
+                  <div className="px-1 pt-3 pb-1" onClick={() => openQuickView(product)}>
+                    <h3 className="font-bold text-sm uppercase tracking-wide leading-tight mb-1">{product.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white text-sm font-bold">{formatPrice(product.priceCents, theme.currency)}</span>
+                      {product.compareAtPriceCents && (
+                        <span className="text-white/30 text-xs line-through">{formatPrice(product.compareAtPriceCents, theme.currency)}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

@@ -46,17 +46,17 @@ export default function ProductQuickView({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-white text-gray-900 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-sm shadow-2xl flex flex-col md:flex-row"
+        className="bg-white text-gray-900 w-full max-w-3xl max-h-[92dvh] overflow-y-auto rounded-sm shadow-2xl flex flex-col md:flex-row"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Image pane */}
-        <div className="md:w-1/2 bg-gray-50 relative aspect-square md:aspect-auto shrink-0">
+        <div className="md:w-1/2 bg-gray-50 relative h-[30dvh] md:h-auto shrink-0">
           {hasImages ? (
             <>
               <img
                 src={images[imageIndex]}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain md:object-cover"
               />
               {images.length > 1 && (
                 <>
@@ -105,7 +105,7 @@ export default function ProductQuickView({
         </div>
 
         {/* Details pane */}
-        <div className="flex-1 p-6 flex flex-col gap-4 min-w-0">
+        <div className="flex-1 p-4 md:p-6 flex flex-col gap-3 md:gap-4 min-w-0">
           {/* Close */}
           <div className="flex items-start justify-between gap-2">
             <div>
