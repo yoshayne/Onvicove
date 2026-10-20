@@ -36,6 +36,8 @@ export interface ThemeData {
   // Content tab — editable via Page Builder
   aboutText?: string;
   about?: AboutConfig;
+  /** Name used in the recurring-billing authorization */
+  legalName?: string;
   contactEmail?: string;
   contactPhone?: string;
   contactAddress?: string;
@@ -104,6 +106,10 @@ export interface ServiceData {
   isFeatured?: boolean;
   requiresDeposit?: boolean;
   depositCents?: number;
+  /** Monthly plans: a membership, or a recurring appointment kept on the calendar */
+  billingType?: 'one_time' | 'recurring';
+  recurringKind?: 'membership' | 'appointment';
+  appointmentFrequency?: 'weekly' | 'biweekly';
 }
 
 export interface StaffData {

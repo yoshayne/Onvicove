@@ -22,7 +22,21 @@ const serviceSchema = z.object({
   requires_deposit: z.boolean().optional(),
   deposit_cents: z.number().int().nullable().optional(),
   sort_order: z.number().int().optional(),
+  /** 'recurring' = billed monthly until cancelled */
+  billing_type: z.enum(['one_time', 'recurring']).optional(),
+  recurring_kind: z.enum(['membership', 'appointment']).nullable().optional(),
+  appointment_frequency: z.enum(['weekly', 'biweekly']).nullable().optional(),
 });
+
+/** Make the recurring settings consistent: a one-time service has none; an appointment plan needs a frequency */
+function normalizeRecurring<T extends { billing_type?: string; recurring_kind?: string | null; appointment_frequency?: string | null }>(d: T): T {
+  if (d.billing_type === 'one_time') return { ...d, recurring_kind: null, appointment_frequency: null };
+  if (d.billing_type === 'recurring') {
+    const kind = d.recurring_kind ?? 'membership';
+    return { ...d, recurring_kind: kind, appointment_frequency: kind === 'appointment' ? (d.appointment_frequency ?? 'weekly') : null };
+  }
+  return d;
+}
 
 const updateServiceSchema = serviceSchema.partial();
 
@@ -59,23 +73,29 @@ app.post('/', async (c) => {
   if (!parsed.success) {
     return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   }
-  const d = parsed.data;
+  const d = normalizeRecurring(parsed.data);
 
   const limit = await checkItemLimit(tenant, 'service');
   if (!limit.ok) {
     return c.json({ error: `Your plan allows up to ${limit.limit} services. Upgrade your plan to add more.` }, 402);
   }
 
+  if (d.billing_type === 'recurring') {
+    const rl = await checkItemLimit(tenant, 'recurring');
+    if (!rl.ok) return c.json({ error: `Your plan allows ${rl.limit} recurring service${rl.limit === 1 ? '' : 's'}. Upgrade to offer more.` }, 402);
+  }
+
   const rows = await db`
     INSERT INTO services (
       tenant_id, name, description, price_cents, duration_minutes, buffer_minutes,
       max_bookings_per_slot, image_keys, category, is_active, is_featured,
-      requires_deposit, deposit_cents, sort_order
+      requires_deposit, deposit_cents, sort_order, billing_type, recurring_kind, appointment_frequency
     ) VALUES (
       ${tenant.id}, ${d.name}, ${d.description ?? null}, ${d.price_cents}, ${d.duration_minutes},
       ${d.buffer_minutes ?? 0}, ${d.max_bookings_per_slot ?? 1}, ${db.json((d.image_keys ?? []) as never)},
       ${d.category ?? null}, ${d.is_active ?? true}, ${d.is_featured ?? false},
-      ${d.requires_deposit ?? false}, ${d.deposit_cents ?? null}, ${d.sort_order ?? 0}
+      ${d.requires_deposit ?? false}, ${d.deposit_cents ?? null}, ${d.sort_order ?? 0},
+      ${d.billing_type ?? 'one_time'}, ${d.recurring_kind ?? null}, ${d.appointment_frequency ?? null}
     )
     RETURNING *
   `;
@@ -85,7 +105,7 @@ app.post('/', async (c) => {
 
 // PATCH /api/services/:id
 app.patch('/:id', async (c) => {
-  const tenant = c.get('tenant') as { id: string };
+  const tenant = c.get('tenant') as { id: string; plan: string };
   const id = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
   const parsed = updateServiceSchema.safeParse(body);
@@ -93,7 +113,15 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
   }
 
-  const d = parsed.data;
+  const d = normalizeRecurring(parsed.data);
+  if (d.billing_type === 'recurring') {
+    // Turning an existing service into a recurring one counts against the plan's limit (a service already recurring does not)
+    const cur = await db`SELECT billing_type FROM services WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
+    if (cur[0] && cur[0].billing_type !== 'recurring') {
+      const rl = await checkItemLimit(tenant as { id: string; plan: string }, 'recurring');
+      if (!rl.ok) return c.json({ error: `Your plan allows ${rl.limit} recurring service${rl.limit === 1 ? '' : 's'}. Upgrade to offer more.` }, 402);
+    }
+  }
   const updates: Record<string, unknown> = { ...d };
   if (d.image_keys !== undefined) updates.image_keys = db.json(d.image_keys as never);
 
@@ -119,6 +147,8 @@ app.patch('/:id', async (c) => {
 app.delete('/:id', async (c) => {
   const tenant = c.get('tenant') as { id: string };
   const id = c.req.param('id');
+  const live = await db`SELECT 1 FROM recurring_subscriptions WHERE service_id = ${id} AND tenant_id = ${tenant.id} AND status IN ('active', 'past_due', 'incomplete') LIMIT 1`;
+  if (live[0]) return c.json({ error: 'People are still subscribed to this service. Cancel their plans first, or turn the service off instead.' }, 409);
   const rows = await db`
     DELETE FROM services WHERE id = ${id} AND tenant_id = ${tenant.id} RETURNING id
   `;

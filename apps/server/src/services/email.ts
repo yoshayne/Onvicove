@@ -534,6 +534,89 @@ export async function sendFirstSaleMilestone(data: {
   }, data.tenantId ? { tenantId: data.tenantId, type: 'milestone_first_sale' } : undefined);
 }
 
+// ─── Recurring plans (memberships and recurring appointments) ────────────────
+
+interface RecurringEmailBase {
+  toEmail: string;
+  toName: string;
+  serviceName: string;
+  amountCents: number;
+  companyName: string;
+  manageUrl: string;
+  tenantId: string;
+  referenceId: string;
+}
+const money = (c: number) => `$${(c / 100).toFixed(2)}`;
+
+export async function sendRecurringStarted(data: RecurringEmailBase & { appointmentLine?: string }): Promise<void> {
+  await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
+    to: [{ email: data.toEmail, name: data.toName }],
+    subject: `Your plan is active, ${data.companyName}`,
+    htmlContent: wrap('Your monthly plan is active', `
+      <p>Hi ${escapeHtml(data.toName)},</p>
+      <p>Thanks for joining <strong>${escapeHtml(data.serviceName)}</strong> with <strong>${escapeHtml(data.companyName)}</strong>. You were charged <strong>${money(data.amountCents)}</strong> today, and it renews automatically every month until you cancel.</p>
+      ${data.appointmentLine ? `<p>${escapeHtml(data.appointmentLine)}</p>` : ''}
+      ${btn('Manage or cancel my plan', data.manageUrl)}
+      <p style="font-size:13px;color:#64748b">If you cancel, you keep your plan until the end of the period you already paid for. Payments already made are not refunded automatically.</p>
+    `, data.companyName),
+  }, { tenantId: data.tenantId, type: 'recurring_started', referenceType: 'subscription', referenceId: data.referenceId });
+}
+
+export async function sendRecurringRenewed(data: RecurringEmailBase): Promise<void> {
+  await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
+    to: [{ email: data.toEmail, name: data.toName }],
+    subject: `Payment received, ${data.companyName}`,
+    htmlContent: wrap('Your monthly payment went through', `
+      <p>Hi ${escapeHtml(data.toName)},</p>
+      <p>We received your <strong>${money(data.amountCents)}</strong> payment for <strong>${escapeHtml(data.serviceName)}</strong>. Thank you!</p>
+      ${btn('Manage or cancel my plan', data.manageUrl)}
+    `, data.companyName),
+  }, { tenantId: data.tenantId, type: 'recurring_renewed', referenceType: 'subscription', referenceId: data.referenceId });
+}
+
+export async function sendRecurringPaymentFailed(data: RecurringEmailBase & { attempt: number; maxAttempts: number; payUrl?: string | null }): Promise<void> {
+  const left = Math.max(data.maxAttempts - data.attempt, 0);
+  await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
+    to: [{ email: data.toEmail, name: data.toName }],
+    subject: `Your payment didn't go through, ${data.companyName}`,
+    htmlContent: wrap('We couldn\'t process your payment', `
+      <p>Hi ${escapeHtml(data.toName)},</p>
+      <p>The <strong>${money(data.amountCents)}</strong> payment for <strong>${escapeHtml(data.serviceName)}</strong> didn't go through.</p>
+      <p>We'll try again automatically${left > 0 ? ` (${left} more ${left === 1 ? 'try' : 'tries'})` : ''}. If it still can't be charged, your plan will end.</p>
+      ${data.payUrl ? btn('Pay now with a different card', data.payUrl) : ''}
+      <p style="font-size:13px;color:#64748b"><a href="${data.manageUrl}" style="color:#64748b">Manage your plan</a></p>
+    `, data.companyName),
+  }, { tenantId: data.tenantId, type: 'recurring_payment_failed', referenceType: 'subscription', referenceId: data.referenceId });
+}
+
+export async function sendRecurringEnded(data: RecurringEmailBase & { reason: 'payment_failed' | 'canceled'; endsOn?: string | null }): Promise<void> {
+  const body = data.reason === 'payment_failed'
+    ? `<p>We couldn't collect your monthly payment after several tries, so your plan for <strong>${escapeHtml(data.serviceName)}</strong> has ended.</p><p>You're welcome to sign up again anytime.</p>`
+    : `<p>Your plan for <strong>${escapeHtml(data.serviceName)}</strong> has been cancelled${data.endsOn ? `. You keep it until <strong>${escapeHtml(data.endsOn)}</strong>` : ''}. You won't be charged again.</p>`;
+  await sendTransacEmail({
+    fromName: data.companyName,
+    replyTo: await storeReplyTo(data),
+    to: [{ email: data.toEmail, name: data.toName }],
+    subject: `Your plan has ${data.reason === 'payment_failed' ? 'ended' : 'been cancelled'}, ${data.companyName}`,
+    htmlContent: wrap(data.reason === 'payment_failed' ? 'Your plan has ended' : 'Your plan is cancelled', `<p>Hi ${escapeHtml(data.toName)},</p>${body}`, data.companyName),
+  }, { tenantId: data.tenantId, type: 'recurring_ended', referenceType: 'subscription', referenceId: data.referenceId });
+}
+
+/** A short note to the store owner about something on a customer's plan */
+export async function sendTenantRecurringNotice(data: { tenantEmail: string; companyName: string; subject: string; lines: string[] }): Promise<void> {
+  await sendTransacEmail({
+    to: [{ email: data.tenantEmail, name: data.tenantEmail }],
+    subject: data.subject,
+    htmlContent: wrap(data.subject, data.lines.map((l) => `<p>${escapeHtml(l)}</p>`).join(''), undefined),
+  });
+}
+
 // ─── Admin notifications ─────────────────────────────────────────────────────
 
 export async function sendAdminNewSignup(data: {

@@ -85,12 +85,15 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
   return value;
 }
 
-export type ItemKind = 'product' | 'service';
+export type ItemKind = 'product' | 'service' | 'recurring';
+
+/** How many recurring (monthly) services each plan may offer; null = unlimited */
+const RECURRING_LIMITS: Record<string, number | null> = { starter: 1, pro: 5, business: null };
 
 export async function getPlanLimits(planId: string): Promise<Record<ItemKind, number | null>> {
   const settings = await getPlatformSettings();
   const plan = settings.plans[planId as PlanId] ?? settings.plans.starter;
-  return { product: plan.product_limit, service: plan.service_limit };
+  return { product: plan.product_limit, service: plan.service_limit, recurring: RECURRING_LIMITS[planId] === undefined ? RECURRING_LIMITS.starter : RECURRING_LIMITS[planId] };
 }
 
 /** The fee a store on `planId` pays: its plan's override, otherwise the platform-wide default. */
@@ -112,7 +115,9 @@ export async function checkItemLimit(
 
   const [{ count }] = kind === 'product'
     ? await db`SELECT COUNT(*) AS count FROM products WHERE tenant_id = ${tenant.id}`
-    : await db`SELECT COUNT(*) AS count FROM services WHERE tenant_id = ${tenant.id}`;
+    : kind === 'recurring'
+      ? await db`SELECT COUNT(*) AS count FROM services WHERE tenant_id = ${tenant.id} AND billing_type = 'recurring'`
+      : await db`SELECT COUNT(*) AS count FROM services WHERE tenant_id = ${tenant.id}`;
 
   if (Number(count) + adding > limit) return { ok: false, limit };
   return { ok: true };

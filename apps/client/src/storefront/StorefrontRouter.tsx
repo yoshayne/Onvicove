@@ -47,6 +47,7 @@ function mapTenant(tenant: Tenant): ThemeData {
     paymentsEnabled: tenant.stripe_onboarded,
     stripeAccountId: tenant.stripe_account_id ?? undefined,
     heroImageOpacity: pc['hero.image_opacity'] !== undefined ? Number(pc['hero.image_opacity']) : undefined,
+    legalName: tenant.legal_name || undefined,
     aboutText: pc['about.text'] || undefined,
     about: {
       eyebrow: pc['about.eyebrow'] || undefined,
@@ -87,7 +88,11 @@ function mapProduct(p: Product & { variants?: ProductVariantData[] }): ProductDa
 function mapService(s: Service): ServiceData {
   return {
     id: s.id,
-    name: s.name,
+    // Monthly plans say so wherever the name is shown
+    name: s.billing_type === 'recurring' ? `${s.name} · Monthly` : s.name,
+    billingType: s.billing_type,
+    recurringKind: s.billing_type === 'recurring' ? (s.recurring_kind ?? 'membership') : undefined,
+    appointmentFrequency: s.billing_type === 'recurring' ? (s.appointment_frequency ?? undefined) : undefined,
     description: s.description ?? undefined,
     priceCents: s.price_cents,
     durationMinutes: s.duration_minutes,

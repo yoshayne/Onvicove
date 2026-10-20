@@ -626,3 +626,61 @@ CREATE TABLE IF NOT EXISTS calendar_changes (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   undone_at TIMESTAMPTZ
 );
+
+-- Recurring (monthly) services: memberships and recurring appointments, billed with Stripe subscriptions on the store's own account
+ALTER TABLE services ADD COLUMN IF NOT EXISTS billing_type TEXT NOT NULL DEFAULT 'one_time';
+ALTER TABLE services DROP CONSTRAINT IF EXISTS services_billing_type_check;
+ALTER TABLE services ADD CONSTRAINT services_billing_type_check CHECK (billing_type IN ('one_time', 'recurring'));
+-- membership = pay monthly for access; appointment = pay monthly and a repeating booking is kept on the calendar
+ALTER TABLE services ADD COLUMN IF NOT EXISTS recurring_kind TEXT;
+ALTER TABLE services DROP CONSTRAINT IF EXISTS services_recurring_kind_check;
+ALTER TABLE services ADD CONSTRAINT services_recurring_kind_check CHECK (recurring_kind IS NULL OR recurring_kind IN ('membership', 'appointment'));
+ALTER TABLE services ADD COLUMN IF NOT EXISTS appointment_frequency TEXT;
+ALTER TABLE services DROP CONSTRAINT IF EXISTS services_appointment_frequency_check;
+ALTER TABLE services ADD CONSTRAINT services_appointment_frequency_check CHECK (appointment_frequency IS NULL OR appointment_frequency IN ('weekly', 'biweekly'));
+
+-- The legal name shown in the customer's recurring-billing authorization (falls back to the store name)
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS legal_name TEXT;
+
+CREATE TABLE IF NOT EXISTS recurring_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  service_id UUID REFERENCES services(id) ON DELETE SET NULL,
+  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  customer_name TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  customer_phone TEXT,
+  service_name TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('membership', 'appointment')),
+  amount_cents INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'usd',
+  stripe_account_id TEXT NOT NULL,
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT UNIQUE,
+  status TEXT NOT NULL DEFAULT 'incomplete' CHECK (status IN ('incomplete', 'active', 'past_due', 'canceled')),
+  failed_attempts INTEGER NOT NULL DEFAULT 0,
+  cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+  current_period_end TIMESTAMPTZ,
+  -- Recurring appointments: first session, how often, who, and how long
+  frequency TEXT CHECK (frequency IS NULL OR frequency IN ('weekly', 'biweekly')),
+  first_start TIMESTAMPTZ,
+  duration_minutes INTEGER,
+  staff_id UUID REFERENCES staff(id) ON DELETE SET NULL,
+  manage_token TEXT NOT NULL UNIQUE,
+  -- What the customer agreed to, and when
+  consent JSONB NOT NULL DEFAULT '{}',
+  canceled_at TIMESTAMPTZ,
+  ended_reason TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_recurring_tenant ON recurring_subscriptions(tenant_id, status);
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS recurring_id UUID REFERENCES recurring_subscriptions(id) ON DELETE SET NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_recurring_slot ON bookings(recurring_id, start_time) WHERE recurring_id IS NOT NULL;
+
+ALTER TABLE platform_transactions DROP CONSTRAINT IF EXISTS platform_transactions_reference_type_check;
+ALTER TABLE platform_transactions ADD CONSTRAINT platform_transactions_reference_type_check CHECK (reference_type IN ('order','booking','ai_photo','subscription'));
+ALTER TABLE recurring_subscriptions ADD COLUMN IF NOT EXISTS skipped JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE services ADD COLUMN IF NOT EXISTS stripe_product_id TEXT;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS stripe_product_account TEXT;

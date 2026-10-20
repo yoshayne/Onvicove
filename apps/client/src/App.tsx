@@ -70,6 +70,8 @@ const Wizard = lazy(() => import('./wizard/Wizard'));
 const StorefrontRouter = lazy(() => import('./storefront/StorefrontRouter'));
 const PayBalance = lazy(() => import('./storefront/PayBalance'));
 const ManageBooking = lazy(() => import('./storefront/ManageBooking'));
+const ManagePlan = lazy(() => import('./storefront/ManagePlan'));
+const RecurringPlans = lazy(() => import('./dashboard/RecurringPlans'));
 const ClaimPage = lazy(() => import('./storefront/ClaimPage'));
 
 const queryClient = new QueryClient();
@@ -137,6 +139,7 @@ function StoreHostApp({ slug }: { slug: string }) {
             <Routes>
               <Route path="/pay/booking/:id" element={<PayBalance />} />
               <Route path="/manage/booking/:token" element={<ManageBooking />} />
+              <Route path="/manage/plan/:token" element={<ManagePlan />} />
               <Route path="*" element={<StorefrontRouter slug={slug} />} />
             </Routes>
           </Suspense>
@@ -199,6 +202,7 @@ export default function App() {
                 <Route path="bookings" element={<Bookings />} />
                 <Route path="products" element={<Products />} />
                 <Route path="services" element={<Services />} />
+                <Route path="monthly-plans" element={<RecurringPlans />} />
                 <Route path="staff" element={<Staff />} />
                 <Route path="customers" element={<Customers />} />
                 <Route path="analytics" element={<Analytics />} />
@@ -215,6 +219,7 @@ export default function App() {
 
               <Route path="/pay/booking/:id" element={<PayBalance />} />
               <Route path="/manage/booking/:token" element={<ManageBooking />} />
+              <Route path="/manage/plan/:token" element={<ManagePlan />} />
 
               <Route
                 path="/admin/*"

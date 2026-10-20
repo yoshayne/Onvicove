@@ -36,6 +36,7 @@ export interface Tenant {
   cancel_window_hours?: number | null;
   reminder_hours?: string | null;
   milestone_emails?: boolean | null;
+  legal_name?: string | null;
   /** A Pro theme picked on Starter: switches on after an upgrade */
   desired_theme_id?: string | null;
   show_live_calendar: boolean;
@@ -120,6 +121,9 @@ export interface Service {
   requires_deposit: boolean;
   deposit_cents: number | null;
   sort_order: number;
+  billing_type?: 'one_time' | 'recurring';
+  recurring_kind?: 'membership' | 'appointment' | null;
+  appointment_frequency?: 'weekly' | 'biweekly' | null;
   created_at: string;
   updated_at: string;
 }

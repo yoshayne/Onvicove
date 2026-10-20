@@ -1,3 +1,4 @@
+import { handleInvoiceFailed, handleInvoicePaid, handleSubscriptionChanged } from '../services/recurring';
 import { Hono } from 'hono';
 import type Stripe from 'stripe';
 import { z } from 'zod';
@@ -323,6 +324,19 @@ app.post('/webhook', async (c) => {
   // A store's Stripe account changed (verification done, payments paused...): keep our flag in step with Stripe
   if (connectAccount && event.type === 'account.updated') {
     await recordAccountState(connectAccount, event.data.object as { charges_enabled?: boolean; details_submitted?: boolean });
+    return c.json({ received: true });
+  }
+
+  if (connectAccount && (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed' || event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted')) {
+    // A store's monthly plan (membership / recurring appointment)
+    try {
+      if (event.type === 'invoice.paid') await handleInvoicePaid(event.data.object as never, connectAccount);
+      else if (event.type === 'invoice.payment_failed') await handleInvoiceFailed(event.data.object as never, connectAccount);
+      else await handleSubscriptionChanged(event.data.object as never, connectAccount, event.type === 'customer.subscription.deleted');
+    } catch (err) {
+      console.error('Recurring plan webhook error:', err);
+      return c.json({ error: 'Failed to process' }, 500); // Stripe will retry
+    }
     return c.json({ received: true });
   }
 

@@ -29,6 +29,7 @@ interface SettingsFormState {
   cancel_window_hours: number;
   reminder_hours: string;
   milestone_emails: boolean;
+  legal_name: string;
   font_pair_id: FontPairId;
 }
 
@@ -47,6 +48,7 @@ function tenantToForm(tenant: Tenant): SettingsFormState {
     cancel_window_hours: tenant.cancel_window_hours ?? 24,
     reminder_hours: tenant.reminder_hours ?? '24',
     milestone_emails: tenant.milestone_emails !== false,
+    legal_name: tenant.legal_name ?? '',
     font_pair_id: (tenant.font_pair_id as FontPairId) ?? 'classic',
   };
 }
@@ -192,6 +194,7 @@ export default function Settings() {
       cancel_window_hours: form.cancel_window_hours,
       reminder_hours: form.reminder_hours,
       milestone_emails: form.milestone_emails,
+      legal_name: form.legal_name.trim() || null,
       font_pair_id: form.font_pair_id,
     };
     // Include slug update if new slug is available and different
@@ -227,6 +230,15 @@ export default function Settings() {
             onChange={(e) => handleNameChange(e.target.value)}
             required
           />
+          <div className="mt-3">
+            <Input
+              label="Legal business name (for monthly plans)"
+              value={form.legal_name}
+              onChange={(e) => setForm((f) => (f ? { ...f, legal_name: e.target.value } : f))}
+              placeholder={form.company_name}
+            />
+            <p className="mt-1 text-xs text-slate-500">Shown in the recurring-billing authorization customers agree to. Leave empty to use your company name.</p>
+          </div>
           {/* Slug preview — only when no custom domain */}
           {!hasCustomDomain && (
             <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">

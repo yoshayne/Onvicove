@@ -6,7 +6,7 @@ import {
   LayoutDashboard, ShoppingCart, CalendarDays, Package, Sparkles,
   Users, UserCheck, BarChart3, Palette, LayoutTemplate, Camera,
   Tag, Settings as SettingsIcon, Wallet, CreditCard, Mail, Image as GalleryIcon,
-  Menu, X, Bell, Search, Zap, type LucideIcon,
+  Menu, X, Bell, Search, Zap, Repeat, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { to: string; label: string; icon: LucideIcon; end?: boolean; }
@@ -31,6 +31,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { to: '/dashboard/products', label: 'Products', icon: Package },
       { to: '/dashboard/services', label: 'Services', icon: Sparkles },
       { to: '/dashboard/bookings', label: 'Bookings', icon: CalendarDays },
+      { to: '/dashboard/monthly-plans', label: 'Monthly plans', icon: Repeat },
     ],
   },
   {

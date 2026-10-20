@@ -22,6 +22,9 @@ interface ServiceFormState {
   requires_deposit: boolean;
   deposit_cents: number | null;
   is_active: boolean;
+  billing_type: 'one_time' | 'recurring';
+  recurring_kind: 'membership' | 'appointment';
+  appointment_frequency: 'weekly' | 'biweekly';
 }
 
 const emptyForm: ServiceFormState = {
@@ -34,6 +37,9 @@ const emptyForm: ServiceFormState = {
   requires_deposit: false,
   deposit_cents: null,
   is_active: true,
+  billing_type: 'one_time',
+  recurring_kind: 'membership',
+  appointment_frequency: 'weekly',
 };
 
 export default function Services() {
@@ -88,6 +94,9 @@ export default function Services() {
       requires_deposit: service.requires_deposit,
       deposit_cents: service.deposit_cents,
       is_active: service.is_active,
+      billing_type: service.billing_type ?? 'one_time',
+      recurring_kind: service.recurring_kind ?? 'membership',
+      appointment_frequency: service.appointment_frequency ?? 'weekly',
     });
     setModalOpen(true);
   }
@@ -107,9 +116,12 @@ export default function Services() {
       price_cents: form.price_cents,
       duration_minutes: form.duration_minutes,
       buffer_minutes: form.buffer_minutes,
-      requires_deposit: form.requires_deposit,
-      deposit_cents: form.requires_deposit ? form.deposit_cents : null,
+      requires_deposit: form.billing_type === 'one_time' && form.requires_deposit,
+      deposit_cents: form.billing_type === 'one_time' && form.requires_deposit ? form.deposit_cents : null,
       is_active: form.is_active,
+      billing_type: form.billing_type,
+      recurring_kind: form.billing_type === 'recurring' ? form.recurring_kind : null,
+      appointment_frequency: form.billing_type === 'recurring' && form.recurring_kind === 'appointment' ? form.appointment_frequency : null,
     };
     if (editing) {
       updateMutation.mutate({ id: editing.id, body });
@@ -154,8 +166,11 @@ export default function Services() {
             <tbody>
               {data.services.map((s) => (
                 <tr key={s.id} className="border-t border-slate-100">
-                  <td className="px-4 py-3 font-medium text-slate-900">{s.name}</td>
-                  <td className="px-4 py-3 text-slate-700">{formatCents(s.price_cents)}</td>
+                  <td className="px-4 py-3 font-medium text-slate-900">
+                    {s.name}
+                    {s.billing_type === 'recurring' && <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase text-violet-700">{s.recurring_kind === 'appointment' ? 'Recurring appt' : 'Membership'}</span>}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">{formatCents(s.price_cents)}{s.billing_type === 'recurring' ? '/mo' : ''}</td>
                   <td className="px-4 py-3 text-slate-700">{s.duration_minutes} min</td>
                   <td className="px-4 py-3 text-slate-700">{s.buffer_minutes} min</td>
                   <td className="px-4 py-3 text-slate-700">
@@ -247,6 +262,43 @@ export default function Services() {
             />
           </div>
 
+          <fieldset className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3">
+            <legend className="px-1 text-sm font-medium text-slate-700">How do customers pay?</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {([['one_time', 'One time', 'Pay once per booking'], ['recurring', 'Monthly', 'Charged every month until they cancel']] as const).map(([id, name, desc]) => (
+                <button key={id} type="button" onClick={() => setForm((f) => ({ ...f, billing_type: id }))}
+                  className={`rounded-lg border p-2.5 text-left ${form.billing_type === id ? 'border-violet-500 bg-violet-50 ring-1 ring-violet-500' : 'border-slate-200 hover:border-slate-300'}`}>
+                  <p className="text-sm font-semibold text-slate-900">{name}</p>
+                  <p className="text-xs text-slate-500">{desc}</p>
+                </button>
+              ))}
+            </div>
+            {form.billing_type === 'recurring' && (
+              <div className="mt-1 flex flex-col gap-2">
+                <p className="text-xs text-slate-500">The price above is charged <strong>every month</strong>. Customers agree to the recurring billing terms when they sign up. Cancelling stops future charges; refunds are up to you.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {([['membership', 'Membership', 'Pay monthly for access. No set times.'], ['appointment', 'Recurring appointment', 'Pay monthly and a repeating session is kept on your calendar']] as const).map(([id, name, desc]) => (
+                    <button key={id} type="button" onClick={() => setForm((f) => ({ ...f, recurring_kind: id }))}
+                      className={`rounded-lg border p-2.5 text-left ${form.recurring_kind === id ? 'border-violet-500 bg-violet-50 ring-1 ring-violet-500' : 'border-slate-200 hover:border-slate-300'}`}>
+                      <p className="text-sm font-semibold text-slate-900">{name}</p>
+                      <p className="text-xs text-slate-500">{desc}</p>
+                    </button>
+                  ))}
+                </div>
+                {form.recurring_kind === 'appointment' && (
+                  <label className="flex flex-col gap-1 text-sm text-slate-700">
+                    How often is the session?
+                    <select value={form.appointment_frequency} onChange={(e) => setForm((f) => ({ ...f, appointment_frequency: e.target.value as 'weekly' | 'biweekly' }))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                      <option value="weekly">Every week</option>
+                      <option value="biweekly">Every 2 weeks</option>
+                    </select>
+                  </label>
+                )}
+              </div>
+            )}
+          </fieldset>
+
+          {form.billing_type === 'one_time' && (
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input
               type="checkbox"
@@ -255,7 +307,8 @@ export default function Services() {
             />
             Requires deposit
           </label>
-          {form.requires_deposit && (
+          )}
+          {form.billing_type === 'one_time' && form.requires_deposit && (
             <Input
               label="Deposit (USD)"
               type="number"
@@ -277,6 +330,9 @@ export default function Services() {
             Active
           </label>
 
+          {(createMutation.error || updateMutation.error) && (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{((createMutation.error || updateMutation.error) as Error).message}</p>
+          )}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={closeModal}>
               Cancel

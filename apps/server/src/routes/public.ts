@@ -10,6 +10,7 @@ import { addDays, format, parse } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { slotsForService, holdsTime, pickStaffForSlot } from '../services/slots';
 import { newManageToken, manageUrlFor } from '../services/bookingManage';
+import { cancelRecurring, confirmRecurringPayment, RecurringError, startRecurringCheckout } from '../services/recurring';
 import { formatBookingTime } from '../lib/time';
 import { CHARGE_MODEL } from '../services/chargeModel';
 import { computePlatformFee, createBookingPaymentIntent, usableStripeIds } from '../services/stripe';
@@ -431,6 +432,7 @@ app.post('/:slug/bookings', async (c) => {
   const services = await db`SELECT * FROM services WHERE id = ${d.service_id} AND tenant_id = ${tenant.id} LIMIT 1`;
   const service = services[0];
   if (!service) return c.json({ error: 'Service not found' }, 404);
+  if (service.billing_type === 'recurring') return c.json({ error: 'This is a monthly plan. Please use the plan checkout.' }, 400);
 
   if (new Date(d.start_time) >= new Date(d.end_time)) {
     return c.json({ error: 'start_time must be before end_time' }, 400);
@@ -789,6 +791,82 @@ async function manageContext(token: string) {
     live,
   };
 }
+
+const recurringSchema = z.object({
+  service_id: z.string().uuid(),
+  customer_name: z.string().trim().min(1).max(160),
+  customer_email: z.string().email(),
+  customer_phone: z.string().nullable().optional(),
+  start_time: z.string().datetime().nullable().optional(),
+  staff_id: z.string().uuid().nullable().optional(),
+  authorized: z.literal(true),
+  authorization_text: z.string().min(20).max(1000),
+});
+
+// POST /api/public/:slug/recurring — start a monthly plan (membership or recurring appointment)
+app.post('/:slug/recurring', async (c) => {
+  const slug = c.req.param('slug');
+  const parsed = recurringSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Please fill in your details and tick the authorization box.' }, 400);
+  const d = parsed.data;
+  const tenant = (await db`SELECT * FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`)[0];
+  if (!tenant) return c.json({ error: 'Store not found' }, 404);
+  const service = (await db`SELECT * FROM services WHERE id = ${d.service_id} AND tenant_id = ${tenant.id} AND is_active = TRUE LIMIT 1`)[0];
+  if (!service) return c.json({ error: 'Service not found' }, 404);
+  try {
+    const r = await startRecurringCheckout(tenant, service, {
+      customerName: d.customer_name, customerEmail: d.customer_email, customerPhone: d.customer_phone ?? null,
+      startTime: d.start_time ?? null, staffId: d.staff_id ?? null, authorizationText: d.authorization_text,
+      ip: c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ?? null, userAgent: c.req.header('user-agent') ?? null,
+    });
+    return c.json({ recurring_id: r.recurringId, client_secret: r.clientSecret, amount: r.amountCents, stripe_account_id: r.stripeAccountId }, 201);
+  } catch (err) {
+    if (err instanceof RecurringError) return c.json({ error: err.message }, err.status as 400);
+    throw err;
+  }
+});
+
+// POST /api/public/plans/confirm — the customer just paid: check with Stripe right away (a safety net alongside the webhook)
+app.post('/plans/confirm', async (c) => {
+  const parsed = z.object({ recurring_id: z.string().uuid() }).safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Invalid request' }, 400);
+  return c.json({ status: await confirmRecurringPayment(parsed.data.recurring_id) });
+});
+
+async function planByToken(token: string) {
+  const rows = await db`
+    SELECT r.*, t.company_name, t.slug, t.timezone, t.legal_name FROM recurring_subscriptions r JOIN tenants t ON t.id = r.tenant_id
+    WHERE r.manage_token = ${token} LIMIT 1`;
+  return rows[0] ?? null;
+}
+
+// GET /api/public/plans/manage/:token
+app.get('/plans/manage/:token', async (c) => {
+  const p = await planByToken(c.req.param('token'));
+  if (!p) return c.json({ error: 'This link is not valid' }, 404);
+  return c.json({
+    plan: {
+      service_name: p.service_name, kind: p.kind, amount_cents: p.amount_cents, currency: p.currency, status: p.status,
+      cancel_at_period_end: p.cancel_at_period_end, current_period_end: p.current_period_end, frequency: p.frequency,
+      customer_name: p.customer_name, canceled_at: p.canceled_at,
+    },
+    business: { name: p.legal_name || p.company_name, slug: p.slug, timezone: p.timezone },
+  });
+});
+
+// POST /api/public/plans/manage/:token/cancel — stops future charges; the plan runs to the end of the period already paid
+app.post('/plans/manage/:token/cancel', async (c) => {
+  const p = await planByToken(c.req.param('token'));
+  if (!p) return c.json({ error: 'This link is not valid' }, 404);
+  if (p.status === 'canceled' || p.cancel_at_period_end) return c.json({ error: 'This plan is already cancelled.' }, 409);
+  try {
+    const r = await cancelRecurring(p.id as string, { immediately: false, by: 'customer' });
+    return c.json({ ok: true, ends_on: r.endsOn });
+  } catch (err) {
+    if (err instanceof RecurringError) return c.json({ error: err.message }, err.status as 409);
+    throw err;
+  }
+});
 
 // GET /api/public/bookings/manage/:token
 app.get('/bookings/manage/:token', async (c) => {

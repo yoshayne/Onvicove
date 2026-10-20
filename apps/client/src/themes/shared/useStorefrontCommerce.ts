@@ -1,4 +1,5 @@
 import { useBookingSummary } from './bookingFlow';
+import { useRecurringCheckout } from './recurringCheckout';
 import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../lib/api';
 import type { AvailableSlot, CartItem, ProductData, ProductVariantData, ServiceData } from '../types';
@@ -197,6 +198,11 @@ export function useStorefrontCommerce(slug: string | undefined) {
   const orderIdRef = useRef<string | null>(null);
 
   function openBooking(service: ServiceData) {
+    // A membership has no time to pick: go straight to the monthly-plan checkout
+    if (service.billingType === 'recurring' && service.recurringKind === 'membership') {
+      useRecurringCheckout.getState().open({ service });
+      return;
+    }
     setBookingService(service);
     setBookingOpen(true);
     setSelectedDate(null);
@@ -290,6 +296,18 @@ export function useStorefrontCommerce(slug: string | undefined) {
     if (!selectedDate || slotDateRef.current !== toDateParam(selectedDate)) {
       setBookingError('Please pick your date and time again, then continue.');
       setBookingStatus('error');
+      return;
+    }
+    // A recurring appointment: the chosen time is the first session, then they authorize the monthly plan
+    if (bookingService.billingType === 'recurring') {
+      useRecurringCheckout.getState().open({
+        service: bookingService,
+        startTime: slot.start,
+        staffId: selectedStaffId,
+        whenLabel: new Date(slot.start).toLocaleString(undefined, { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+        prefill: info,
+      });
+      setBookingOpen(false);
       return;
     }
     useBookingSummary.getState().set({

@@ -33,6 +33,8 @@ interface StripePaymentFormProps {
   returnUrl?: string;
   onSuccess: () => void;
   onCancel: () => void;
+  /** Button text (default: Pay $X) */
+  payLabel?: string;
 }
 
 export default function StripePaymentForm({
@@ -43,6 +45,7 @@ export default function StripePaymentForm({
   returnUrl,
   onSuccess,
   onCancel,
+  payLabel,
 }: StripePaymentFormProps) {
   const [ready, setReady] = useState(false);
   const [publishableKey, setPublishableKey] = useState<string | null>(resolvedPublishableKey);
@@ -78,7 +81,7 @@ export default function StripePaymentForm({
         appearance: { theme: 'stripe', variables: { spacingUnit: '3px', spacingGridRow: '10px', spacingGridColumn: '10px', fontSizeBase: '15px' } },
       }}
     >
-      <PaymentInner amountCents={amountCents} currency={currency} returnUrl={returnUrl} onSuccess={onSuccess} onCancel={onCancel} />
+      <PaymentInner amountCents={amountCents} currency={currency} returnUrl={returnUrl} onSuccess={onSuccess} onCancel={onCancel} payLabel={payLabel} />
     </Elements>
   );
 }
@@ -89,12 +92,14 @@ function PaymentInner({
   returnUrl,
   onSuccess,
   onCancel,
+  payLabel,
 }: {
   amountCents: number;
   currency?: string;
   returnUrl?: string;
   onSuccess: () => void;
   onCancel: () => void;
+  payLabel?: string;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -139,7 +144,7 @@ function PaymentInner({
           disabled={!stripe || submitting}
           className="flex-1 rounded-lg bg-[var(--brand-color,#111111)] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
         >
-          {submitting ? 'Processing…' : `Pay ${formatPrice(amountCents, currency)}`}
+          {submitting ? 'Processing…' : (payLabel ?? `Pay ${formatPrice(amountCents, currency)}`)}
         </button>
       </div>
     </div>
