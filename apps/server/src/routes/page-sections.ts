@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
-import { getSignedFileUrl } from '../services/storage';
+import { refreshGalleryUrls } from '../services/storage';
 
 const app = new Hono();
 
@@ -34,16 +34,7 @@ app.get('/:page', async (c) => {
   const sections = rows[0]?.sections ?? [];
 
   // Re-sign gallery image URLs so they never expire in the UI
-  await Promise.all(
-    sections.map(async (section: any) => {
-      if (section.type !== 'gallery' || !Array.isArray(section.images)) return;
-      await Promise.all(
-        section.images.map(async (img: any) => {
-          if (img.key) img.url = await getSignedFileUrl(img.key);
-        })
-      );
-    })
-  );
+  await refreshGalleryUrls(sections);
 
   return c.json({ sections });
 });

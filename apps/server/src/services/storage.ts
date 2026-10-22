@@ -67,6 +67,53 @@ export async function checkStorage(): Promise<{ ok: boolean; message: string }> 
   }
 }
 
+/**
+ * Older gallery photos were saved with only their (expired) link and no file name. The file name is inside the link,
+ * so we can get it back and make a fresh link.
+ */
+export function keyFromSignedUrl(url: string | undefined | null): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    let path = decodeURIComponent(u.pathname).replace(/^\/+/, '');
+    if (BUCKET && path.startsWith(`${BUCKET}/`)) path = path.slice(BUCKET.length + 1); // path-style links start with the bucket name
+    else if (u.hostname.startsWith(`${BUCKET}.`)) { /* virtual-host style: the path is the key */ }
+    return path && /\.[a-z0-9]{2,5}$/i.test(path) ? path : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Make a fresh link for each gallery photo (using its stored file name, or the one hidden in an older link) */
+export async function refreshGalleryUrls(sections: any[]): Promise<void> {
+  await Promise.all(
+    sections.map(async (section: any) => {
+      if (section.type !== 'gallery' || !Array.isArray(section.images)) return;
+      await Promise.all(
+        section.images.map(async (img: any) => {
+          const key = img.key || keyFromSignedUrl(img.url);
+          if (key) {
+            img.key = key;
+            img.url = await getSignedFileUrl(key);
+          }
+        }),
+      );
+    }),
+  );
+}
+
+/** Forget every saved photo link, so all of them are made fresh on the next visit */
+export async function flushPhotoLinkCache(): Promise<number> {
+  let cursor = '0';
+  let removed = 0;
+  do {
+    const [next, keys] = await redis.scan(cursor, 'MATCH', 'signed_url:*', 'COUNT', 500);
+    cursor = next;
+    if (keys.length) removed += await redis.del(...keys);
+  } while (cursor !== '0');
+  return removed;
+}
+
 export async function getSignedFileUrl(key: string): Promise<string> {
   if (!key) return '';
 

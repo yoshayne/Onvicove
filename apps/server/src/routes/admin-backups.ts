@@ -4,7 +4,7 @@ import { requireAuth } from '../middleware/clerk';
 import { requireAdmin } from '../middleware/admin';
 import { recordAdminAction } from '../services/auditLog';
 import { backupConfig, listRemoteBackups, runBackup } from '../services/backup';
-import { checkStorage } from '../services/storage';
+import { checkStorage, flushPhotoLinkCache } from '../services/storage';
 
 const app = new Hono();
 app.use('*', requireAuth, requireAdmin);
@@ -17,6 +17,7 @@ app.get('/', async (c) => {
 });
 
 app.get('/storage-check', async (c) => c.json(await checkStorage()));
+app.post('/flush-photo-links', async (c) => c.json({ removed: await flushPhotoLinkCache() }));
 
 app.get('/remote', async (c) => {
   try { return c.json({ files: await listRemoteBackups() }); } catch (err) { return c.json({ error: err instanceof Error ? err.message : 'Could not list' }, 502); }

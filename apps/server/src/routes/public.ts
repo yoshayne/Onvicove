@@ -3,7 +3,7 @@ import { getBaseUrl } from '../lib/baseUrl';
 import { z } from 'zod';
 import { db } from '../db/client';
 import { rateLimitPublic } from '../middleware/ratelimit';
-import { enrichWithUrls, getSignedFileUrl } from '../services/storage';
+import { enrichWithUrls, getSignedFileUrl, refreshGalleryUrls } from '../services/storage';
 import { generateOrderNumber } from '../lib/orderNumber';
 import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { addDays, format, parse } from 'date-fns';
@@ -73,16 +73,7 @@ app.get('/:slug/page-sections/:page', async (c) => {
   `;
 
   const sections = rows[0]?.sections ?? [];
-  await Promise.all(
-    sections.map(async (section: any) => {
-      if (section.type !== 'gallery' || !Array.isArray(section.images)) return;
-      await Promise.all(
-        section.images.map(async (img: any) => {
-          if (img.key) img.url = await getSignedFileUrl(img.key);
-        })
-      );
-    })
-  );
+  await refreshGalleryUrls(sections);
 
   return c.json({ sections });
 });

@@ -21,6 +21,7 @@ export default function Backups() {
     onError: (e: Error) => { setMsg({ ok: false, text: e.message }); qc.invalidateQueries({ queryKey: ['admin', 'backups'] }); },
   });
 
+  const flush = useMutation({ mutationFn: () => api.post<{ removed: number }>('/admin/backups/flush-photo-links', {}) });
   const check = useMutation({ mutationFn: () => api.get<{ ok: boolean; message: string }>('/admin/backups/storage-check') });
 
   if (q.isLoading || !q.data) return <div className="flex justify-center py-16"><Spinner /></div>;
@@ -76,6 +77,11 @@ export default function Backups() {
         <Button size="sm" variant="secondary" className="mt-2" isLoading={check.isPending} onClick={() => check.mutate()}>Run the check</Button>
         {check.data && <p className={`mt-2 rounded-lg px-3 py-2 text-sm ${check.data.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>{check.data.message}</p>}
         {check.isError && <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{(check.error as Error).message}</p>}
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <p className="text-xs text-slate-500">Photos still broken after the storage check passes? Clear the saved photo links so every photo gets a fresh one on the next visit.</p>
+          <Button size="sm" variant="secondary" className="mt-2" isLoading={flush.isPending} onClick={() => flush.mutate()}>Refresh all photo links</Button>
+          {flush.data && <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Done. {flush.data.removed} saved links cleared. Reload a store page.</p>}
+        </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
