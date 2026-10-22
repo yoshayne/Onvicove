@@ -12,6 +12,7 @@ import { slotsForService, holdsTime } from '../services/slots';
 import { formatBookingTime } from '../lib/time';
 import { manageUrlFor, newManageToken } from '../services/bookingManage';
 import { sendReminderForBooking } from '../services/reminders';
+import { queueCalendarSync } from '../services/calendarSync';
 import { refundStorePayment } from '../services/stripe';
 import { sendBookingRefunded } from '../services/email';
 
@@ -206,6 +207,7 @@ app.post('/', async (c) => {
     }
   }
 
+  queueCalendarSync(booking.id as string);
   return c.json({ booking }, 201);
 });
 
@@ -381,6 +383,7 @@ app.patch('/:id', async (c) => {
     void baseUrl; // used in confirmed branch above
   }
 
+  queueCalendarSync(booking.id as string);
   return c.json({ booking });
 });
 

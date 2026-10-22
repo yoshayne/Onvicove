@@ -6,6 +6,8 @@ import timeBlockRoutes from './routes/time-blocks';
 import assistantRoutes from './routes/assistant';
 import recurringRoutes from './routes/recurring';
 import announcementRoutes from './routes/announcements';
+import { calendarOAuthRoutes, calendarStatusRoutes } from './routes/calendar-sync';
+import { startCalendarSyncJob } from './jobs/calendarSync';
 import adminAnnouncementRoutes from './routes/admin-announcements';
 import adminBackupRoutes from './routes/admin-backups';
 import { startBackupJob } from './jobs/backup';
@@ -119,6 +121,9 @@ app.route('/api/time-blocks', timeBlockRoutes);
 app.route('/api/assistant', assistantRoutes);
 app.route('/api/recurring', recurringRoutes);
 app.route('/api/announcements', announcementRoutes);
+app.route('/api/google-cal', calendarOAuthRoutes('google'));
+app.route('/api/outlook-cal', calendarOAuthRoutes('outlook'));
+app.route('/api/calendar-sync', calendarStatusRoutes);
 
 // Normalize double-slash paths (e.g. //claim/TOKEN → /claim/TOKEN)
 // Happens when CLIENT_URL has a trailing slash and gets concatenated with /path
@@ -352,6 +357,7 @@ startBookingReminderJob();
 startRecurringBookingsJob();
 startAnnouncementJob();
 startBackupJob();
+startCalendarSyncJob();
 startInviteNudgeJob();
 startDomainRecheckJob();
 startPaymentReconcileJob();

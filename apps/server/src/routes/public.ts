@@ -11,6 +11,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { slotsForService, holdsTime, pickStaffForSlot } from '../services/slots';
 import { newManageToken, manageUrlFor } from '../services/bookingManage';
 import { verifyUnsubscribeToken } from '../lib/announcementText';
+import { queueCalendarSync } from '../services/calendarSync';
 import { applyNewCard, cancelRecurring, confirmRecurringPayment, createCardSetup, getPlanCard, RecurringError, startRecurringCheckout } from '../services/recurring';
 import { formatBookingTime } from '../lib/time';
 import { CHARGE_MODEL } from '../services/chargeModel';
@@ -956,6 +957,7 @@ app.post('/bookings/manage/:token/cancel', async (c) => {
     return c.json({ error: `Appointments can be cancelled up to ${ctx.windowHours} hours before. Please contact ${b.company_name} directly.` }, 403);
   }
   await db`UPDATE bookings SET status = 'cancelled', internal_notes = COALESCE(internal_notes || E'\n', '') || 'Cancelled by the customer', updated_at = NOW() WHERE id = ${b.id}`;
+  queueCalendarSync(b.id as string);
 
   const when = formatBookingTime(b.start_time as string, b.timezone as string);
   sendBookingCancelled({
@@ -1011,6 +1013,7 @@ app.post('/bookings/manage/:token/reschedule', async (c) => {
     SET start_time = ${parsed.data.start_time}, end_time = ${newEnd}, staff_id = ${pick.staffId}, reminder_sent = FALSE, updated_at = NOW()
     WHERE id = ${b.id}
   `;
+  queueCalendarSync(b.id as string);
 
   const oldWhen = formatBookingTime(b.start_time as string, b.timezone as string);
   const newWhen = formatBookingTime(parsed.data.start_time, b.timezone as string);

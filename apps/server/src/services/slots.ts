@@ -5,6 +5,7 @@ import { resolveAvailability } from './businessHours';
 import { addDays, format, parse } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { blockIntervals, blocksOnDate } from './timeBlocks';
+import { externalBusy } from './calendarSync';
 
 /**
  * Bookings that currently hold their time. Cancelled / no-show ones don't, and neither does an unpaid attempt
@@ -86,12 +87,14 @@ async function slotsForResource(
 
   // Repeating / part-of-day time off counts like a booking that nobody can take
   const blocked = blockIntervals(await blocksOnDate(tenant.id, date), date, timezone);
+  // Events already on the store's own Google / Outlook calendar (never fails a booking: it just adds nothing)
+  const external = await externalBusy(tenant.id, start.toISOString(), end.toISOString()).catch(() => []);
 
   const args = { date, timezone, durationMinutes: service.duration_minutes, bufferMinutes: service.buffer_minutes ?? 0 };
   const slots = computeAvailableSlots({
     ...args,
     availability,
-    existingBookings: [...existing.map((b) => ({ start_time: b.start_time as string, end_time: b.end_time as string })), ...blocked],
+    existingBookings: [...existing.map((b) => ({ start_time: b.start_time as string, end_time: b.end_time as string })), ...blocked, ...external],
   });
 
   let reason: SlotsReason = null;

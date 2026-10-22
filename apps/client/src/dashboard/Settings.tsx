@@ -5,6 +5,7 @@ import type { Tenant, BookingMode, FontPairId, WeeklyAvailability } from '../typ
 import WeeklyHoursEditor from '../components/shared/WeeklyHoursEditor';
 import { describeHours, hasAnyHours, withAllDays, WEEKDAY_9_TO_5 } from '../lib/hours';
 import Spinner from '../components/shared/Spinner';
+import CalendarConnections from './CalendarConnections';
 import Button from '../components/shared/Button';
 import { Input } from '../components/shared/Input';
 import CustomDomainPanel from './CustomDomainPanel';
@@ -442,6 +443,8 @@ export default function Settings() {
       </form>
 
       {tenant && (tenant.mode === 'book' || tenant.mode === 'both') && <BookingHoursCard tenant={tenant} />}
+
+      {tenant && (tenant.mode === 'book' || tenant.mode === 'both') && <CalendarConnections />}
 
       {tenant && <CustomDomainPanel tenant={tenant} />}
     </div>

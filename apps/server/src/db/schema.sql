@@ -735,3 +735,16 @@ CREATE TABLE IF NOT EXISTS backup_runs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_backup_runs_created ON backup_runs(created_at DESC);
+
+-- Calendar sync (Google and Outlook): connection state, event ids on bookings, and "block my busy times"
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS google_cal_refresh_token TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS google_cal_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS google_cal_error TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS outlook_cal_refresh_token TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS outlook_cal_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS outlook_cal_error TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS calendar_block_busy BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS google_event_id TEXT;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS outlook_event_id TEXT;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS calendar_synced_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_bookings_calendar_sync ON bookings(start_time) WHERE calendar_synced_at IS NULL;

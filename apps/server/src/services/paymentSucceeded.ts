@@ -1,3 +1,4 @@
+import { queueCalendarSync } from './calendarSync';
 import { checkFirstSale } from './milestones';
 import { db } from '../db/client';
 import { getBaseUrl } from '../lib/baseUrl';
@@ -21,6 +22,7 @@ export interface SucceededPayment {
 
 /** Tell the customer their booking is confirmed and the owner about the new booking (sent once, when it is paid). */
 async function notifyBookingPaid(booking: Record<string, unknown>, tenantId: string) {
+  queueCalendarSync(booking.id as string); // onto the owner's own calendar
   const baseUrl = getBaseUrl();
   const svcRow = await db`SELECT name FROM services WHERE id = ${booking.service_id as string} LIMIT 1`;
   const tenantRows = await db`SELECT t.*, u.email AS owner_email FROM tenants t LEFT JOIN users u ON u.clerk_user_id = t.clerk_user_id WHERE t.id = ${tenantId} LIMIT 1`;
