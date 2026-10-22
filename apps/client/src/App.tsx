@@ -54,6 +54,7 @@ import EmailLog from './dashboard/EmailLog';
 import Privacy from './marketing/Privacy';
 import UnsubscribeUpdates from './marketing/UnsubscribeUpdates';
 import AdminAnnouncements from './admin/Announcements';
+import AdminBackups from './admin/Backups';
 import Terms from './marketing/Terms';
 import AdminLayout from './admin/Layout';
 import AdminOverview from './admin/Overview';
@@ -248,6 +249,7 @@ export default function App() {
                 <Route path="coupons" element={<AdminCoupons />} />
                 <Route path="milestone-preview" element={<AdminMilestonePreview />} />
                 <Route path="announcements" element={<AdminAnnouncements />} />
+                <Route path="backups" element={<AdminBackups />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 

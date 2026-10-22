@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
-import { LayoutDashboard, Building2, Receipt, ScrollText, Menu, X, Settings as SettingsIcon, Tag, Globe, Filter, PartyPopper, Megaphone } from 'lucide-react';
+import { LayoutDashboard, Building2, Receipt, ScrollText, Menu, X, Settings as SettingsIcon, Tag, Globe, Filter, PartyPopper, Megaphone, DatabaseBackup } from 'lucide-react';
 
 const navItems = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -12,6 +12,7 @@ const navItems = [
   { to: '/admin/audit-log', label: 'Audit Log', icon: ScrollText },
   { to: '/admin/coupons', label: 'Coupons', icon: Tag },
   { to: '/admin/announcements', label: 'Announcements', icon: Megaphone },
+  { to: '/admin/backups', label: 'Backups', icon: DatabaseBackup },
   { to: '/admin/milestone-preview', label: 'Flyer preview', icon: PartyPopper },
   { to: '/admin/settings', label: 'Settings', icon: SettingsIcon },
 ];

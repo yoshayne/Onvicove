@@ -720,3 +720,18 @@ CREATE TABLE IF NOT EXISTS announcement_deliveries (
   PRIMARY KEY (announcement_id, tenant_id)
 );
 CREATE INDEX IF NOT EXISTS idx_announcement_deliveries_tenant ON announcement_deliveries(tenant_id, created_at DESC);
+
+-- Nightly database backups sent to storage outside Railway
+CREATE TABLE IF NOT EXISTS backup_runs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  status TEXT NOT NULL CHECK (status IN ('ok', 'failed')),
+  object_key TEXT,
+  size_bytes BIGINT,
+  table_count INTEGER,
+  row_count BIGINT,
+  error TEXT,
+  trigger TEXT NOT NULL DEFAULT 'schedule',
+  duration_ms INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_backup_runs_created ON backup_runs(created_at DESC);

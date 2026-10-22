@@ -7,7 +7,8 @@
     "test:flyers": "tsx --test src/services/flyers/flyers.test.ts",
     "start": "node dist/index.js",
     "migrate": "tsx src/db/migrate.ts",
-    "backfill-owner-emails": "tsx src/scripts/backfillOwnerEmails.ts"
+    "backfill-owner-emails": "tsx src/scripts/backfillOwnerEmails.ts",
+    "restore-backup": "tsx src/scripts/restoreBackup.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.0.0",
