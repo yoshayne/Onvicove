@@ -5,6 +5,7 @@ import {
   DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { createHash } from 'crypto';
 import { redis } from '../db/client';
 
 // IMPORTANT: forcePathStyle MUST be true for Railway Object Storage
@@ -37,10 +38,39 @@ export async function uploadFile(
   return key;
 }
 
+// Cached links are tied to the storage credentials that signed them: when the credentials change (a rotation),
+// every old link is skipped at once instead of staying broken until the cache expires.
+const CRED_TAG = createHash('sha256')
+  .update(`${process.env.BUCKET_ENDPOINT_URL}|${process.env.BUCKET_NAME}|${process.env.BUCKET_ACCESS_KEY_ID}`)
+  .digest('hex')
+  .slice(0, 8);
+
+/** Quick test of the photo storage: write, read and delete a tiny file. Returns what is wrong, in plain words. */
+export async function checkStorage(): Promise<{ ok: boolean; message: string }> {
+  const missing = ['BUCKET_ENDPOINT_URL', 'BUCKET_NAME', 'BUCKET_ACCESS_KEY_ID', 'BUCKET_SECRET_ACCESS_KEY'].filter((k) => !process.env[k]);
+  if (missing.length) return { ok: false, message: `These variables are missing: ${missing.join(', ')}` };
+  const key = `healthcheck/${Date.now()}.txt`;
+  try {
+    await s3.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: Buffer.from('ok'), ContentType: 'text/plain' }));
+    const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET, Key: key }), { expiresIn: 60 });
+    const res = await fetch(url);
+    await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key })).catch(() => undefined);
+    if (!res.ok) return { ok: false, message: `Uploading works, but reading a file back failed (${res.status}). The bucket address or access settings may be wrong.` };
+    return { ok: true, message: 'Photo storage works: a test file was written, read and removed.' };
+  } catch (err) {
+    const e = err as { name?: string; Code?: string; $metadata?: { httpStatusCode?: number }; message?: string };
+    const status = e.$metadata?.httpStatusCode;
+    const hint = status === 403 || e.name === 'InvalidAccessKeyId' || e.name === 'SignatureDoesNotMatch'
+      ? 'The storage keys are wrong or were rotated. Copy the current keys from the Railway bucket into BUCKET_ACCESS_KEY_ID and BUCKET_SECRET_ACCESS_KEY, then redeploy.'
+      : status === 404 || e.name === 'NoSuchBucket' ? 'The bucket name or address looks wrong (BUCKET_NAME / BUCKET_ENDPOINT_URL).' : '';
+    return { ok: false, message: `${e.name ?? 'Error'}${status ? ` (${status})` : ''}: ${e.message ?? ''} ${hint}`.trim() };
+  }
+}
+
 export async function getSignedFileUrl(key: string): Promise<string> {
   if (!key) return '';
 
-  const cacheKey = `signed_url:${key}`;
+  const cacheKey = `signed_url:${CRED_TAG}:${key}`;
   const cached = await redis.get(cacheKey);
   if (cached) return cached;
 
@@ -53,7 +83,7 @@ export async function getSignedFileUrl(key: string): Promise<string> {
 
 export async function deleteFile(key: string): Promise<void> {
   await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
-  await redis.del(`signed_url:${key}`);
+  await redis.del(`signed_url:${CRED_TAG}:${key}`);
 }
 
 // Enrich any database row that has image keys with signed URLs

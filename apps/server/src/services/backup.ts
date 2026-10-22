@@ -35,6 +35,9 @@ function client() {
   return new S3Client({
     endpoint: c.endpoint, region: c.region, forcePathStyle: true,
     credentials: { accessKeyId: c.accessKeyId!, secretAccessKey: c.secretAccessKey! },
+    // Some S3-compatible stores (including R2 in some setups) reject the extra checksum headers newer SDKs add
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
   });
 }
 
@@ -142,7 +145,12 @@ export async function runBackup(trigger: 'schedule' | 'manual'): Promise<{ ok: b
     await db`INSERT INTO backup_runs (status, object_key, size_bytes, table_count, row_count, trigger, duration_ms) VALUES ('ok', ${key}, ${blob.length}, ${tables}, ${rows}, ${trigger}, ${Date.now() - started})`;
     return { ok: true, key, sizeBytes: blob.length };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const e = err as { name?: string; message?: string; $metadata?: { httpStatusCode?: number } };
+    const status = e.$metadata?.httpStatusCode;
+    const hint = status === 403 ? ' (access denied: check the R2 token has Object Read & Write on this bucket, and the key values)'
+      : status === 404 || e.name === 'NoSuchBucket' ? ' (bucket not found: check BACKUP_S3_BUCKET and BACKUP_S3_ENDPOINT)'
+      : e.name === 'TimeoutError' || /ENOTFOUND|ECONN/.test(e.message ?? '') ? ' (could not reach the endpoint: check BACKUP_S3_ENDPOINT)' : '';
+    const message = `${e.name && e.name !== 'Error' ? `${e.name}: ` : ''}${e.message ?? String(err)}${status ? ` [HTTP ${status}]` : ''}${hint}`;
     console.error('Backup failed:', message);
     await db`INSERT INTO backup_runs (status, error, trigger, duration_ms) VALUES ('failed', ${message.slice(0, 500)}, ${trigger}, ${Date.now() - started})`.catch(() => undefined);
     await alertFailure(message);

@@ -21,6 +21,8 @@ export default function Backups() {
     onError: (e: Error) => { setMsg({ ok: false, text: e.message }); qc.invalidateQueries({ queryKey: ['admin', 'backups'] }); },
   });
 
+  const check = useMutation({ mutationFn: () => api.get<{ ok: boolean; message: string }>('/admin/backups/storage-check') });
+
   if (q.isLoading || !q.data) return <div className="flex justify-center py-16"><Spinner /></div>;
   const { configured, missing, last_ok, runs } = q.data;
   const ageHours = last_ok ? (Date.now() - new Date(last_ok).getTime()) / 3_600_000 : null;
@@ -66,6 +68,14 @@ export default function Backups() {
             ))}
           </ul>
         )}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+        <p className="font-semibold text-slate-900">Photo storage check</p>
+        <p className="mt-1 text-xs text-slate-500">Tests the storage your stores' photos use (the Railway bucket): writes, reads and removes a tiny file, and says what is wrong if it can't.</p>
+        <Button size="sm" variant="secondary" className="mt-2" isLoading={check.isPending} onClick={() => check.mutate()}>Run the check</Button>
+        {check.data && <p className={`mt-2 rounded-lg px-3 py-2 text-sm ${check.data.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>{check.data.message}</p>}
+        {check.isError && <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{(check.error as Error).message}</p>}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
