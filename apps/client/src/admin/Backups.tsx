@@ -21,6 +21,7 @@ export default function Backups() {
     onError: (e: Error) => { setMsg({ ok: false, text: e.message }); qc.invalidateQueries({ queryKey: ['admin', 'backups'] }); },
   });
 
+  const sys = useQuery({ queryKey: ['admin', 'system'], queryFn: () => api.get<{ version: string; patched: boolean; needs: string }>('/admin/backups/system') });
   const flush = useMutation({ mutationFn: () => api.post<{ removed: number }>('/admin/backups/flush-photo-links', {}) });
   const check = useMutation({ mutationFn: () => api.get<{ ok: boolean; message: string }>('/admin/backups/storage-check') });
 
@@ -70,6 +71,13 @@ export default function Backups() {
           </ul>
         )}
       </div>
+
+      {sys.data && (
+        <div className={`rounded-xl border p-4 text-sm ${sys.data.patched ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}>
+          <p className="font-semibold">Server software: Node.js {sys.data.version}</p>
+          <p className="mt-1">{sys.data.patched ? 'This version includes the October 2026 security fixes.' : `This version is missing the October 2026 security fixes. It needs ${sys.data.needs} or newer.`}</p>
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
         <p className="font-semibold text-slate-900">Photo storage check</p>

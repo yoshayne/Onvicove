@@ -16,6 +16,16 @@ app.get('/', async (c) => {
   return c.json({ configured: cfg.configured, missing: cfg.missing, last_ok: lastOk?.created_at ?? null, runs });
 });
 
+// Is the server running a Node.js version with the October 2026 security fixes? (minimum patched: 22.23.4, 24.22.1, 26.12.1)
+const PATCHED: Record<number, [number, number, number]> = { 22: [22, 23, 4], 24: [24, 22, 1], 26: [26, 12, 1] };
+export function nodeStatus(version = process.version) {
+  const [maj, min, pat] = version.replace(/^v/, '').split('.').map((n) => parseInt(n, 10));
+  const need = PATCHED[maj];
+  const patched = need ? (min > need[1] || (min === need[1] && pat >= need[2])) : maj > 26;
+  return { version, patched, needs: need ? need.join('.') : maj < 22 ? 'upgrade to Node 22 or newer (older versions get no fix)' : 'a newer release' };
+}
+app.get('/system', (c) => c.json(nodeStatus()));
+
 app.get('/storage-check', async (c) => c.json(await checkStorage()));
 app.post('/flush-photo-links', async (c) => c.json({ removed: await flushPhotoLinkCache() }));
 

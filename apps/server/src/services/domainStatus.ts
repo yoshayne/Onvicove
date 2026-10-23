@@ -53,11 +53,15 @@ export async function checkRouting(domain: string, cnameTarget: string | null | 
 /** End-to-end probe: certificate valid and the request reaches this app. */
 export async function checkHttps(domain: string): Promise<boolean> {
   try {
+    // The domain belongs to a store owner, so treat what comes back as untrusted: ask for no compression and never read the body
     const res = await fetch(`https://${domain}/health`, {
       redirect: 'manual',
+      headers: { 'accept-encoding': 'identity' },
       signal: AbortSignal.timeout(6000),
     });
-    return res.headers.get('x-shopsuite') === '1';
+    const ok = res.headers.get('x-shopsuite') === '1';
+    await res.body?.cancel().catch(() => undefined);
+    return ok;
   } catch {
     return false;
   }
