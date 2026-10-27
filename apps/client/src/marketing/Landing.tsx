@@ -1,7 +1,8 @@
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
-import { ArrowRight, Check, Store, Calendar, CreditCard, PartyPopper, Monitor, ShoppingCart } from 'lucide-react';
+import { ArrowRight, Check, CheckCircle2, ClipboardList, Store, Calendar, CreditCard, PartyPopper, Monitor, ShoppingCart } from 'lucide-react';
 import ThemeShowcase from './ThemeShowcase';
+import { CHECKLISTS, COLOR_MAP } from './Guide';
 
 const BRAND = '#7C3AED';
 const BRAND_2 = '#A855F7';
@@ -136,11 +137,13 @@ export default function Landing() {
             <a href="#features" className="transition-colors hover:text-slate-900">Features</a>
             <a href="#themes" className="transition-colors hover:text-slate-900">Themes</a>
             <a href="#pricing" className="transition-colors hover:text-slate-900">Pricing</a>
-            <Link to="/guide" className="transition-colors hover:text-slate-900">Get prepared</Link>
+            <Link to="/guide#gather" className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-3.5 py-1.5 font-semibold text-violet-700 transition-colors hover:bg-violet-200">
+              <ClipboardList size={14} /> Get prepared
+            </Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link to="/sign-in" className="whitespace-nowrap text-sm font-semibold text-slate-700 transition-colors hover:text-slate-900">Sign in</Link>
-            <Link to="/onboarding" className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90" style={{ background: BRAND }}>
+            <Link to="/sign-up" className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90" style={{ background: BRAND }}>
               Start free
             </Link>
           </div>
@@ -169,10 +172,13 @@ export default function Landing() {
               Your website, online store, booking calendar and payments, <b style={{ color: BRAND }}>all in one place</b>. Set up in about 10 minutes. No coding.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/onboarding" className={cta} style={{ background: BRAND }}>Build my website free <ArrowRight size={16} /></Link>
+              <Link to="/sign-up" className={cta} style={{ background: BRAND }}>Build my website free <ArrowRight size={16} /></Link>
               <a href="#how" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-7 py-3.5 text-base font-bold text-slate-900 shadow-sm transition-colors hover:bg-slate-50">See how it works</a>
             </div>
             <p className="mt-3.5 text-[13px] text-slate-500">Takes about 10 minutes · Cancel anytime · Secure payments by Stripe</p>
+            <Link to="/guide#gather" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-3.5 py-1.5 text-[13px] font-semibold text-violet-700 transition-colors hover:bg-violet-200">
+              <ClipboardList size={14} /> Get prepared: what to gather before you start <ArrowRight size={13} />
+            </Link>
             <p className="mt-5 -rotate-2 font-serif text-xl italic sm:text-[22px]" style={{ color: BRAND }}>Any business. Any industry. One platform.</p>
           </div>
           <HeroDevices />
@@ -227,6 +233,43 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── Get prepared ── */}
+      <section id="prepared" className="scroll-mt-20 bg-violet-50/60 px-6 py-20">
+        <div className="mx-auto max-w-[1104px]">
+          <div className="text-center">
+            <span className="mb-3.5 inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-3 py-1.5 text-xs font-extrabold tracking-widest text-violet-700"><ClipboardList size={13} /> GET PREPARED</span>
+            <h2 className="text-3xl font-black tracking-tight sm:text-[44px]">Gather these first.<br />Then it takes about 10 minutes.</h2>
+            <p className="mx-auto mt-3.5 max-w-xl text-lg text-slate-600">Having your photos and details ready means you won't have to stop in the middle of setup. Your progress saves as you go either way.</p>
+          </div>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {CHECKLISTS.map((card) => {
+              const c = COLOR_MAP[card.color];
+              const Icon = card.icon;
+              return (
+                <div key={card.title} className={`rounded-2xl border ${c.border} ${c.bg} p-5`}>
+                  <div className="mb-4 flex items-center gap-2.5">
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg border bg-white shadow-sm ${c.border}`}><Icon size={18} className={c.icon} /></div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{card.title}</p>
+                      {card.note && <p className={`text-[10px] font-semibold uppercase tracking-wide ${c.badgeText}`}>{card.note}</p>}
+                    </div>
+                  </div>
+                  <ul className="flex flex-col gap-2.5">
+                    {card.items.slice(0, 4).map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-[13px] leading-snug text-slate-700"><CheckCircle2 size={14} className={`mt-0.5 shrink-0 ${c.icon}`} />{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link to="/guide#gather" className="inline-flex items-center gap-2 rounded-2xl border border-violet-200 bg-white px-6 py-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-50">See the full checklist <ArrowRight size={15} /></Link>
+            <Link to="/sign-up" className={cta} style={{ background: BRAND }}>I'm ready. Build my website free <ArrowRight size={16} /></Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── Theme showcase ── */}
       <section id="themes" className="bg-slate-50 py-4">
         <ThemeShowcase />
@@ -273,7 +316,7 @@ export default function Landing() {
                 <ul className="flex flex-1 flex-col gap-2.5 text-sm">
                   {p.features.map((f) => <li key={f} className="flex items-start gap-2"><Check size={14} className="mt-0.5 shrink-0" style={{ color: BRAND }} strokeWidth={3} />{f}</li>)}
                 </ul>
-                <Link to="/onboarding" className={`rounded-2xl py-3 text-center text-[15px] font-bold transition-opacity hover:opacity-90 ${p.highlight ? 'text-white' : 'border border-slate-200 text-slate-900 hover:bg-slate-50'}`} style={p.highlight ? { background: BRAND } : undefined}>{p.cta}</Link>
+                <Link to="/sign-up" className={`rounded-2xl py-3 text-center text-[15px] font-bold transition-opacity hover:opacity-90 ${p.highlight ? 'text-white' : 'border border-slate-200 text-slate-900 hover:bg-slate-50'}`} style={p.highlight ? { background: BRAND } : undefined}>{p.cta}</Link>
               </div>
             ))}
           </div>
@@ -302,7 +345,7 @@ export default function Landing() {
       <section className="px-6 py-20 text-center" style={{ background: '#1e1b4b' }}>
         <h2 className="text-3xl font-black leading-tight tracking-tight text-white sm:text-[46px]">Your business deserves better<br />than five different apps.</h2>
         <p className="mb-7 mt-3.5 text-lg text-indigo-200">Store. Bookings. Payments. All in one place.</p>
-        <Link to="/onboarding" className={cta} style={{ background: BRAND }}>Build my website free <ArrowRight size={16} /></Link>
+        <Link to="/sign-up" className={cta} style={{ background: BRAND }}>Build my website free <ArrowRight size={16} /></Link>
       </section>
 
       {/* ── Footer ── */}

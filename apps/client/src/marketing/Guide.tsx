@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowRight,
   Store,
@@ -13,29 +13,28 @@ import {
   Calendar,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const BRAND = '#7C3AED'; // violet-700
 
 // ── Wizard steps ──────────────────────────────────────────────────────────────
 
 const WIZARD_STEPS = [
-  { n: 1, title: 'Business name', desc: 'Your store\'s name and public URL slug' },
+  { n: 1, title: 'Business name', desc: 'Your store\'s name and public web address' },
   { n: 2, title: 'Store type', desc: 'Products only, bookings only, or both' },
-  { n: 3, title: 'Theme', desc: 'Choose from 12 designer templates' },
-  { n: 4, title: 'Brand', desc: 'Tagline, logo, favicon, brand color, city' },
-  { n: 5, title: 'Hero photo', desc: 'The main image on your storefront' },
-  { n: 6, title: 'Products', desc: 'Add items with name, price, and photo' },
-  { n: 7, title: 'Services', desc: 'Add bookable services with duration and price' },
-  { n: 8, title: 'Availability', desc: 'Set your weekly schedule for bookings' },
-  { n: 9, title: 'Payments', desc: 'Connect Stripe to accept payments (or skip)' },
-  { n: 10, title: 'Plan', desc: 'Choose Starter (free), Pro ($29/mo), or Business ($79/mo)' },
-  { n: 11, title: 'Launch', desc: 'Review and go live' },
+  { n: 3, title: 'Plan', desc: 'Start free, or pick Pro ($29/mo) or Business ($79/mo)' },
+  { n: 4, title: 'Theme', desc: 'Preview all 16 designs with your own name' },
+  { n: 5, title: 'Brand', desc: 'Tagline, logo, favicon, brand color, city' },
+  { n: 6, title: 'Hero photo', desc: 'The main image on your storefront' },
+  { n: 7, title: 'Products', desc: 'Add items with name, price, and photo' },
+  { n: 8, title: 'Services', desc: 'Add bookable services with duration and price' },
+  { n: 9, title: 'Hours', desc: 'Set your weekly schedule for bookings' },
+  { n: 10, title: 'Launch', desc: 'Review and go live. Connect Stripe right after (about 5 minutes)' },
 ];
 
 // ── Checklist items ───────────────────────────────────────────────────────────
 
-const CHECKLISTS = [
+export const CHECKLISTS = [
   {
     icon: Palette,
     title: 'Your Brand',
@@ -84,7 +83,7 @@ const CHECKLISTS = [
   },
 ];
 
-const COLOR_MAP: Record<string, { bg: string; border: string; icon: string; badge: string; badgeText: string }> = {
+export const COLOR_MAP: Record<string, { bg: string; border: string; icon: string; badge: string; badgeText: string }> = {
   violet: {
     bg: 'bg-violet-50',
     border: 'border-violet-200',
@@ -163,6 +162,14 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Guide() {
+
+  const { hash } = useLocation();
+  // Arriving from "Get prepared" (/guide#gather): jump straight to that section
+  useEffect(() => {
+    if (!hash) return;
+    const t = setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    return () => clearTimeout(t);
+  }, [hash]);
   return (
     <div className="min-h-screen bg-white text-slate-900 antialiased">
 
@@ -242,7 +249,7 @@ export default function Guide() {
       </section>
 
       {/* ── What to gather ── */}
-      <section className="py-20 px-6">
+      <section id="gather" className="scroll-mt-20 py-20 px-6">
         <div className="mx-auto max-w-5xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold tracking-tight">What to gather before you start</h2>
