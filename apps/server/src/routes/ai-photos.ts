@@ -341,6 +341,7 @@ app.post('/unlock', async (c) => {
   return c.json({
     unlocked: true,
     isFree,
+    fullImageKey: generation.full_image_key ?? null,
     fullImageUrl: generation.full_image_key
       ? await (await import('../services/storage')).getSignedFileUrl(generation.full_image_key as string)
       : null,

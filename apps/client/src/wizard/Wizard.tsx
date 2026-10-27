@@ -216,6 +216,23 @@ export default function Wizard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, hydrated]);
 
+  // Photo links expire, and only the file names are saved. Ask for fresh links once the wizard is
+  // restored so earlier uploads (product, logo, hero) still show instead of a broken picture.
+  useEffect(() => {
+    if (!hydrated) return;
+    const st = useWizardStore.getState();
+    const keys = [st.logoFileKey, st.faviconFileKey, st.heroImageFileKey, ...st.products.map((p) => p.imageKey)].filter((k): k is string => !!k);
+    if (keys.length === 0) return;
+    api.post<{ urls: Record<string, string> }>('/uploads/urls', { keys }).then(({ urls }) => {
+      const cur = useWizardStore.getState();
+      if (cur.logoFileKey && urls[cur.logoFileKey]) cur.setLogo(cur.logoFileKey, urls[cur.logoFileKey]);
+      if (cur.faviconFileKey && urls[cur.faviconFileKey]) cur.setFavicon(cur.faviconFileKey, urls[cur.faviconFileKey]);
+      if (cur.heroImageFileKey && urls[cur.heroImageFileKey]) cur.setHeroImage(cur.heroImageFileKey, urls[cur.heroImageFileKey]);
+      for (const p of cur.products) if (p.imageKey && urls[p.imageKey]) cur.updateProduct(p.id, { imageUrl: urls[p.imageKey] });
+    }).catch((err) => console.error('wizard photo links failed:', err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
+
   async function handleLaunch() {
     setIsLaunching(true);
     setLaunchError(null);

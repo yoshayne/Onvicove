@@ -41,6 +41,7 @@ interface AiPhotoGenerateResponse {
 
 interface AiPhotoUnlockResponse {
   fullImageUrl: string;
+  fullImageKey?: string | null;
 }
 
 export default function Step6_Products() {
@@ -186,7 +187,7 @@ function ProductCard({ product, onUpdate, onRemove }: ProductCardProps) {
       {showAiPanel && (
         <AiPhotoPanel
           productName={product.name || undefined}
-          onApply={(fullImageUrl) => onUpdate({ imageUrl: fullImageUrl })}
+          onApply={(fullImageUrl, fullImageKey) => onUpdate({ imageUrl: fullImageUrl, ...(fullImageKey ? { imageKey: fullImageKey } : {}) })}
         />
       )}
     </div>
@@ -211,7 +212,7 @@ type AiPhotoStage = 'upload' | 'describe' | 'style-select' | 'generating' | 'pre
 
 interface AiPhotoPanelProps {
   productName?: string;
-  onApply: (fullImageUrl: string) => void;
+  onApply: (fullImageUrl: string, fullImageKey?: string) => void;
 }
 
 function AiPhotoPanel({ productName, onApply }: AiPhotoPanelProps) {
@@ -308,7 +309,7 @@ function AiPhotoPanel({ productName, onApply }: AiPhotoPanelProps) {
         sessionId,
         generationId,
       });
-      onApply(result.fullImageUrl);
+      onApply(result.fullImageUrl, result.fullImageKey ?? undefined);
       setUnlocked(true);
       setShowAppliedBadge(true);
       setTimeout(() => setShowAppliedBadge(false), 2000);

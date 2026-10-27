@@ -51,4 +51,20 @@ app.post('/', async (c) => {
   }
 });
 
+// POST /api/uploads/urls { keys: string[] } — fresh links for photos this store owns.
+// Saved links expire, so screens that remember only a file name (like the wizard) ask for new ones.
+app.post('/urls', async (c) => {
+  const tenant = c.get('tenant') as { id: string };
+  const body = await c.req.json().catch(() => ({}));
+  const keys: string[] = Array.isArray(body?.keys) ? body.keys.filter((k: unknown): k is string => typeof k === 'string') : [];
+  const prefix = `tenants/${tenant.id}/`;
+  const urls: Record<string, string> = {};
+  await Promise.all(
+    [...new Set(keys)].slice(0, 50).filter((k) => k.startsWith(prefix) && !k.includes('..')).map(async (k) => {
+      urls[k] = await getSignedFileUrl(k);
+    }),
+  );
+  return c.json({ urls });
+});
+
 export default app;

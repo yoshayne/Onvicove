@@ -30,7 +30,15 @@ function tryParseJson<T>(s: string): T | undefined {
   try { return JSON.parse(s) as T; } catch { return undefined; }
 }
 
-function mapTenant(tenant: Tenant): ThemeData {
+// A store's mode only ever widens to match what it actually sells: a services-only store that
+// later adds a product (or the reverse) still shows it, in every theme.
+function effectiveMode(tenant: Tenant, hasProducts: boolean, hasServices: boolean): Tenant['mode'] {
+  const store = tenant.mode !== 'book' || hasProducts;
+  const book = tenant.mode !== 'store' || hasServices;
+  return store && book ? 'both' : book ? 'book' : 'store';
+}
+
+function mapTenant(tenant: Tenant, mode: Tenant['mode']): ThemeData {
   const pc = tenant.page_content ?? {};
   return {
     companyName: tenant.company_name,
@@ -38,7 +46,7 @@ function mapTenant(tenant: Tenant): ThemeData {
     logoUrl: tenant.logo_url,
     heroImageUrl: tenant.hero_image_url,
     brandColor: tenant.brand_color ?? undefined,
-    mode: tenant.mode,
+    mode,
     currency: tenant.currency,
     city: tenant.city ?? undefined,
     industry: tenant.industry ?? undefined,
@@ -57,7 +65,7 @@ function mapTenant(tenant: Tenant): ThemeData {
       ctaKicker: pc['about.cta_kicker'] || undefined,
       ctaHeadline: pc['about.cta_headline'] || undefined,
       ctaLabel: pc['about.cta_label'] || undefined,
-      ctaHref: tenant.mode === 'store' ? '#products' : '#services',
+      ctaHref: mode === 'store' ? '#products' : '#services',
     },
     contactEmail: pc['contact.email'] || undefined,
     contactPhone: pc['contact.phone'] || undefined,
@@ -248,7 +256,7 @@ export default function StorefrontRouter({ slug: hostSlug }: { slug?: string }) 
       <PaymentReturnBanner />
       <ThemeRenderer
         themeId={tenant.theme_id}
-        theme={mapTenant(tenant)}
+        theme={mapTenant(tenant, effectiveMode(tenant, (productsQuery.data ?? []).length > 0, (servicesQuery.data ?? []).length > 0))}
         products={(productsQuery.data ?? []).map(mapProduct)}
         services={(servicesQuery.data ?? []).map(mapService)}
         staff={(staffQuery.data ?? []).map(mapStaff)}

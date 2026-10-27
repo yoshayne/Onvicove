@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { enrichWithUrls } from '../services/storage';
 import { checkItemLimit } from '../services/settings';
+import { ensureStorefrontSection } from '../services/storefrontSections';
 
 const app = new Hono();
 
@@ -99,6 +100,8 @@ app.post('/', async (c) => {
     )
     RETURNING *
   `;
+
+  await ensureStorefrontSection(tenant.id, 'services').catch((err) => console.error('ensureStorefrontSection:', err));
 
   return c.json({ service: await enrichWithUrls(rows[0]) }, 201);
 });

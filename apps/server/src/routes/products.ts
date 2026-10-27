@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { enrichWithUrls } from '../services/storage';
 import { checkItemLimit } from '../services/settings';
+import { ensureStorefrontSection } from '../services/storefrontSections';
 
 const app = new Hono();
 
@@ -115,6 +116,8 @@ app.post('/', async (c) => {
   `;
 
   if (d.variants?.length) await saveVariants(rows[0].id as string, tenant.id, d.variants);
+
+  await ensureStorefrontSection(tenant.id, 'products').catch((err) => console.error('ensureStorefrontSection:', err));
 
   const enriched = await enrichWithUrls(rows[0]);
   const [withVariants] = await attachVariants([enriched]);
