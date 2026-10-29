@@ -55,31 +55,32 @@ export default function Step2_Mode() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900">How will your site work?</h2>
+        <h2 className="text-xl font-semibold text-gray-900 sm:text-2xl">How will your site work?</h2>
         <p className="mt-1 text-sm text-gray-500">You can change everything later.</p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <div className="mt-3 grid grid-cols-3 gap-2">
           {MODES.map((m) => (
             <button
               key={m.id}
               type="button"
               onClick={() => pickMode(m.id)}
               aria-pressed={mode === m.id}
-              className={`rounded-lg border p-3 text-left transition ${
+              className={`rounded-lg border p-2.5 text-center transition sm:p-3 sm:text-left ${
                 mode === m.id ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900' : 'border-gray-200 hover:border-gray-300'
               }`}
             >
               <p className="text-sm font-medium text-gray-900">{m.title}</p>
-              <p className="mt-0.5 text-xs text-gray-500">{m.description}</p>
+              <p className="mt-0.5 hidden text-xs text-gray-500 sm:block">{m.description}</p>
             </button>
           ))}
         </div>
+        <p className="mt-2 text-xs text-gray-500 sm:hidden">{MODES.find((m) => m.id === mode)?.description}</p>
       </div>
 
       <div>
         <h3 className="text-base font-semibold text-gray-900">What kind of business do you run?</h3>
-        <p className="mt-0.5 text-sm text-gray-500">Pick the closest one. We'll suggest a look that fits and set things up for you.</p>
+        <p className="mt-0.5 text-sm text-gray-500">Pick the closest one and we'll set things up for you.</p>
 
         <div className="mt-3 flex flex-col gap-3">
           {showProducts && (

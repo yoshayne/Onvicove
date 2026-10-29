@@ -55,9 +55,9 @@ export default function Step3_Plan() {
   const setDesiredThemeId = useWizardStore((s) => s.setDesiredThemeId);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900">Pick a plan to start with</h2>
+        <h2 className="text-xl font-semibold text-gray-900 sm:text-2xl">Pick a plan to start with</h2>
         <p className="mt-1 text-sm text-gray-500">
           You can preview every theme on any plan, and change plans anytime. You only pay after your
           site is live, never during setup.

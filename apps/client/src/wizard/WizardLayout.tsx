@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { Eye } from 'lucide-react';
 import WizardPreview from './WizardPreview';
 import { useWizardStore, WIZARD_TOTAL_STEPS } from './wizardStore';
 
@@ -40,11 +41,12 @@ export default function WizardLayout({
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-gray-50 md:flex-row">
+    // 100dvh follows the phone browser's toolbar, so Back / Next never slide below the visible screen
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-gray-50 md:flex-row" style={{ height: '100dvh' }}>
       {/* Left: step content (40%) */}
       <div className="flex h-full w-full flex-col md:w-[40%] md:min-w-[360px]">
-        <div className="border-b border-gray-200 bg-white px-6 py-4">
-          <div className="mb-2 flex items-center justify-between text-xs font-medium text-gray-500">
+        <div className="border-b border-gray-200 bg-white px-4 pb-2.5 pt-3 md:px-6 md:py-4">
+          <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-gray-500 md:mb-2">
             <span>
               Step {currentStep} of {TOTAL_STEPS}
             </span>
@@ -54,7 +56,7 @@ export default function WizardLayout({
             {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((step) => (
               <div
                 key={step}
-                className={`h-1.5 flex-1 rounded-full transition-colors ${
+                className={`h-1 flex-1 rounded-full transition-colors md:h-1.5 ${
                   step <= currentStep ? 'bg-gray-900' : 'bg-gray-200'
                 }`}
               />
@@ -62,20 +64,13 @@ export default function WizardLayout({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6">{children}</div>
+        <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">{children}</div>
 
-        <div className="border-t border-gray-200 bg-white px-6 py-3 md:hidden">
-          <button
-            type="button"
-            onClick={() => setMobilePreviewOpen(true)}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
-          >
-            Preview your site
-          </button>
-        </div>
-
-        {!hideNav && (
-          <div className="flex items-center justify-between gap-3 border-t border-gray-200 bg-white px-6 py-4">
+        <div
+          className={`flex items-center justify-between gap-2 border-t border-gray-200 bg-white px-4 py-3 md:px-6 md:py-4 ${hideNav ? 'md:hidden' : ''}`}
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+        >
+          {!hideNav ? (
             <button
               type="button"
               onClick={onBack}
@@ -84,6 +79,15 @@ export default function WizardLayout({
             >
               Back
             </button>
+          ) : <span />}
+          <button
+            type="button"
+            onClick={() => setMobilePreviewOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 md:hidden"
+          >
+            <Eye size={16} /> Preview
+          </button>
+          {!hideNav ? (
             <button
               type="button"
               onClick={onNext}
@@ -92,8 +96,8 @@ export default function WizardLayout({
             >
               {nextLabel}
             </button>
-          </div>
-        )}
+          ) : <span />}
+        </div>
       </div>
 
       {/* Right: live preview (60%) - desktop/tablet only */}

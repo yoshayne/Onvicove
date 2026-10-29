@@ -59,9 +59,9 @@ export default function Step1_BusinessName() {
   }, [businessName]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900">What's your business called?</h2>
+        <h2 className="text-xl font-semibold text-gray-900 sm:text-2xl">What's your business called?</h2>
         <p className="mt-1 text-sm text-gray-500">
           This is the name your customers will see on your site.
         </p>

@@ -52,16 +52,16 @@ export default function Step3_Theme() {
   const premiumThemes = THEME_OPTIONS.filter((t) => t.premium);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900">Choose a look for your site</h2>
+        <h2 className="text-xl font-semibold text-gray-900 sm:text-2xl">Choose a look for your site</h2>
         <p className="mt-1 text-sm text-gray-500">
           Watch the preview update as you pick. Every look is open to preview, including Pro themes.
         </p>
       </div>
 
       {recommended && type && (
-        <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4">
+        <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-3 sm:p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Recommended for {type.label.toLowerCase()}</p>
           <div className="mt-2 flex items-center gap-3">
             <div className="flex h-10 w-24 shrink-0 overflow-hidden rounded-lg border border-blue-100">
@@ -74,8 +74,8 @@ export default function Step3_Theme() {
               <p className="text-xs text-gray-600">{recommended.description}</p>
             </div>
           </div>
-          <p className="mt-3 text-sm font-medium text-gray-900">Why it fits:</p>
-          <ul className="mt-1 list-disc pl-5 text-sm text-gray-700">
+          <p className="mt-3 hidden text-sm font-medium text-gray-900 sm:block">Why it fits:</p>
+          <ul className="mt-1 hidden list-disc pl-5 text-sm text-gray-700 sm:block">
             {type.why.map((w) => (
               <li key={w}>{w}</li>
             ))}
@@ -83,11 +83,11 @@ export default function Step3_Theme() {
           <button
             type="button"
             onClick={() => handleSelect(recommended)}
-            className="mt-3 rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
+            className="mt-2 rounded-lg bg-blue-700 px-4 py-2 sm:mt-3 text-sm font-medium text-white hover:bg-blue-800"
           >
             {themeId === recommended.id ? '✓ Using this look' : 'Use this look'}
           </button>
-          <p className="mt-2 text-xs text-gray-500">Not feeling it? Pick any look below. You can change it anytime.</p>
+          <p className="mt-2 hidden text-xs text-gray-500 sm:block">Not feeling it? Pick any look below. You can change it anytime.</p>
         </div>
       )}
 

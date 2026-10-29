@@ -13,9 +13,9 @@ export default function Step6b_Services() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900">Add your services</h2>
+        <h2 className="text-xl font-semibold text-gray-900 sm:text-2xl">Add your services</h2>
         <p className="mt-1 text-sm text-gray-500">
           Add the services customers can book. You can edit, add photos, and add more later from
           your dashboard.
