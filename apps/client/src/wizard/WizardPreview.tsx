@@ -58,7 +58,7 @@ export default function WizardPreview() {
           priceCents: s.priceCents,
           durationMinutes: s.durationMinutes,
           category: s.category,
-          imageUrls: demo.services[i % Math.max(demo.services.length, 1)]?.imageUrls ?? [],
+          imageUrls: s.imageUrl ? [s.imageUrl] : demo.services[i % Math.max(demo.services.length, 1)]?.imageUrls ?? [],
         }))
       : demo.services;
   const staffList: StaffData[] = staff.length > 1

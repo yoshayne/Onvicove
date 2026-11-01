@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { useApi } from '../../lib/api';
 import { useWizardStore, type WizardService } from '../wizardStore';
 import PriceInput from '../../components/shared/PriceInput';
 
@@ -17,8 +19,8 @@ export default function Step6b_Services() {
       <div>
         <h2 className="text-xl font-semibold text-gray-900 sm:text-2xl">Add your services</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Add the services customers can book. You can edit, add photos, and add more later from
-          your dashboard.
+          Add the services customers can book, with a photo if you have one. You can edit and add more later
+          from your dashboard.
         </p>
       </div>
 
@@ -60,6 +62,26 @@ interface ServiceCardProps {
 }
 
 function ServiceCard({ service, onUpdate, onRemove }: ServiceCardProps) {
+  const api = useApi();
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setError(null);
+    setIsUploading(true);
+    try {
+      const result = await api.upload<{ key: string; url: string }>('/uploads', file);
+      onUpdate({ imageKey: result.key, imageUrl: result.url });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
@@ -113,6 +135,18 @@ function ServiceCard({ service, onUpdate, onRemove }: ServiceCardProps) {
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
           />
         </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-3">
+        {service.imageUrl && <img src={service.imageUrl} alt={service.name || 'Service'} className="h-16 w-16 rounded-lg object-cover" />}
+        <label className="cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
+          {isUploading ? 'Uploading…' : service.imageUrl ? 'Replace photo' : 'Add a photo'}
+          <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+        </label>
+        {service.imageUrl && (
+          <button type="button" onClick={() => onUpdate({ imageKey: undefined, imageUrl: undefined })} className="text-sm text-gray-400 hover:text-red-600">Remove photo</button>
+        )}
+        {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
 
       <div className="mt-3 flex items-center gap-4">

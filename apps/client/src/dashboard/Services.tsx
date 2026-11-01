@@ -26,6 +26,7 @@ interface ServiceFormState {
   recurring_kind: 'membership' | 'appointment';
   appointment_frequency: 'weekly' | 'biweekly';
   options: { id?: string; name: string; price_cents: number; duration_minutes: number }[];
+  images: { key: string; url: string }[];
 }
 
 const emptyForm: ServiceFormState = {
@@ -42,6 +43,7 @@ const emptyForm: ServiceFormState = {
   recurring_kind: 'membership',
   appointment_frequency: 'weekly',
   options: [],
+  images: [],
 };
 
 export default function Services() {
@@ -50,6 +52,21 @@ export default function Services() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
   const [form, setForm] = useState<ServiceFormState>(emptyForm);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  async function handlePhoto(file: File) {
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const res = await api.upload<{ key: string; url: string }>('/uploads', file);
+      setForm((f) => ({ ...f, images: [...f.images, { key: res.key, url: res.url }] }));
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['services'],
@@ -99,6 +116,7 @@ export default function Services() {
       billing_type: service.billing_type ?? 'one_time',
       recurring_kind: service.recurring_kind ?? 'membership',
       appointment_frequency: service.appointment_frequency ?? 'weekly',
+      images: (service.image_keys ?? []).map((key, i) => ({ key, url: service.image_urls?.[i] ?? '' })),
       options: (service.options ?? []).map((o) => ({ id: o.id, name: o.name, price_cents: o.price_cents, duration_minutes: o.duration_minutes })),
     });
     setModalOpen(true);
@@ -125,6 +143,7 @@ export default function Services() {
       billing_type: form.billing_type,
       recurring_kind: form.billing_type === 'recurring' ? form.recurring_kind : null,
       appointment_frequency: form.billing_type === 'recurring' && form.recurring_kind === 'appointment' ? form.appointment_frequency : null,
+      image_keys: form.images.map((im) => im.key),
       options: form.billing_type === 'one_time' ? form.options.filter((o) => o.name.trim()) : [],
     };
     if (editing) {
@@ -171,8 +190,13 @@ export default function Services() {
               {data.services.map((s) => (
                 <tr key={s.id} className="border-t border-slate-100">
                   <td className="px-4 py-3 font-medium text-slate-900">
+                    <div className="flex items-center gap-3">
+                      {s.image_urls?.[0] ? <img src={s.image_urls[0]} alt="" className="h-10 w-10 shrink-0 rounded object-cover" /> : <span className="h-10 w-10 shrink-0 rounded bg-slate-100" />}
+                      <span>
                     {s.name}
                     {s.billing_type === 'recurring' && <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase text-violet-700">{s.recurring_kind === 'appointment' ? 'Recurring appt' : 'Membership'}</span>}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-slate-700">
                     {s.options?.length ? `From ${formatCents(Math.min(...s.options.map((o) => o.price_cents)))}` : formatCents(s.price_cents)}{s.billing_type === 'recurring' ? '/mo' : ''}
@@ -224,6 +248,27 @@ export default function Services() {
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             rows={3}
           />
+          <div>
+            <p className="mb-1 text-sm font-medium text-slate-700">Photos</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {form.images.map((im, i) => (
+                <div key={im.key} className="relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200">
+                  {im.url && <img src={im.url} alt="" className="h-full w-full object-cover" />}
+                  {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-center text-[10px] font-semibold text-white">Main</span>}
+                  <button type="button" aria-label="Remove photo" onClick={() => setForm((f) => ({ ...f, images: f.images.filter((_, j) => j !== i) }))} className="absolute right-0.5 top-0.5 rounded-full bg-black/60 px-1.5 text-xs text-white">✕</button>
+                </div>
+              ))}
+              {form.images.length < 6 && (
+                <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 text-xs text-slate-500 hover:border-violet-400 hover:text-violet-600">
+                  {uploading ? <Spinner size="sm" /> : <span className="text-lg leading-none">+</span>}
+                  {uploading ? 'Uploading' : 'Add photo'}
+                  <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) void handlePhoto(file); }} />
+                </label>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-slate-500">The first photo is shown on your site. Show the result, the setup or the shop chair.</p>
+            {uploadError && <p className="mt-1 text-sm text-red-600">{uploadError}</p>}
+          </div>
           <div>
             <Input
               label="Category (optional)"

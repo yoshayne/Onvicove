@@ -71,7 +71,7 @@ function buildWizardData(state: WizardState) {
       durationMinutes: s.durationMinutes,
       requiresDeposit: s.requiresDeposit ?? false,
       depositCents: s.requiresDeposit ? s.depositCents ?? 0 : null,
-      imageKeys: [],
+      imageKeys: s.imageKey ? [s.imageKey] : [],
     })),
     availability: state.availability,
     staff: state.staff.map((st) => ({
@@ -130,6 +130,7 @@ function applyWizardData(state: WizardState, data: Record<string, unknown>, slug
         category: typeof s.category === 'string' ? s.category : undefined,
         requiresDeposit: s.requiresDeposit ?? false,
         depositCents: s.depositCents ?? null,
+        imageKey: Array.isArray(s.imageKeys) ? s.imageKeys[0] : undefined,
       });
     }
   }
@@ -221,7 +222,7 @@ export default function Wizard() {
   useEffect(() => {
     if (!hydrated) return;
     const st = useWizardStore.getState();
-    const keys = [st.logoFileKey, st.faviconFileKey, st.heroImageFileKey, ...st.products.map((p) => p.imageKey)].filter((k): k is string => !!k);
+    const keys = [st.logoFileKey, st.faviconFileKey, st.heroImageFileKey, ...st.products.map((p) => p.imageKey), ...st.services.map((sv) => sv.imageKey)].filter((k): k is string => !!k);
     if (keys.length === 0) return;
     api.post<{ urls: Record<string, string> }>('/uploads/urls', { keys }).then(({ urls }) => {
       const cur = useWizardStore.getState();
@@ -229,6 +230,7 @@ export default function Wizard() {
       if (cur.faviconFileKey && urls[cur.faviconFileKey]) cur.setFavicon(cur.faviconFileKey, urls[cur.faviconFileKey]);
       if (cur.heroImageFileKey && urls[cur.heroImageFileKey]) cur.setHeroImage(cur.heroImageFileKey, urls[cur.heroImageFileKey]);
       for (const p of cur.products) if (p.imageKey && urls[p.imageKey]) cur.updateProduct(p.id, { imageUrl: urls[p.imageKey] });
+      for (const sv of cur.services) if (sv.imageKey && urls[sv.imageKey]) cur.updateService(sv.id, { imageUrl: urls[sv.imageKey] });
     }).catch((err) => console.error('wizard photo links failed:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);

@@ -26,6 +26,8 @@ export interface WizardService {
   category?: string;
   /** An example from the starter menu the owner hasn't edited yet */
   starter?: boolean;
+  imageKey?: string;
+  imageUrl?: string;
 }
 
 export interface WizardStaffMember {
