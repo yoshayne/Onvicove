@@ -55,7 +55,7 @@ export const defaults: {
       description: 'Sheer color with a juicy finish.',
       priceCents: 1400,
       imageUrls: [
-        'https://images.unsplash.com/photo-1631214540242-3cd8c4b0b3d6?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1631214499500-2e34edcaccfe?auto=format&fit=crop&w=900&q=80',
       ],
       category: 'Makeup',
     },

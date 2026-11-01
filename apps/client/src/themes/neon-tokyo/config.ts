@@ -28,7 +28,7 @@ export const defaults: {
       id: 'neo-1', name: 'Cyber Hoodie',
       description: 'Reflective piping, thermal lining, oversized fit.',
       priceCents: 18900,
-      imageUrls: ['https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?auto=format&fit=crop&w=900&q=80'],
+      imageUrls: ['https://images.unsplash.com/photo-1513789181297-6f2ec112c0bc?auto=format&fit=crop&w=900&q=80'],
       isFeatured: true,
     },
     {
@@ -47,7 +47,7 @@ export const defaults: {
       id: 'neo-4', name: 'Glitch Cap',
       description: 'Structured cap, iridescent brim.',
       priceCents: 5500,
-      imageUrls: ['https://images.unsplash.com/photo-1556306535-38febf6cdbe1?auto=format&fit=crop&w=900&q=80'],
+      imageUrls: ['https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=900&q=80'],
     },
   ],
   services: [

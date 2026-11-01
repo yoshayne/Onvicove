@@ -28,7 +28,7 @@ export const defaults: {
       id: 'bru-1', name: 'DROP 001 HOODIE',
       description: 'Heavyweight cotton, garment-washed black.',
       priceCents: 18500,
-      imageUrls: ['https://images.unsplash.com/photo-1556821840-3a63f15732ce?auto=format&fit=crop&w=900&q=80'],
+      imageUrls: ['https://images.unsplash.com/photo-1680292783974-a9a336c10366?auto=format&fit=crop&w=900&q=80'],
       isFeatured: true,
     },
     {

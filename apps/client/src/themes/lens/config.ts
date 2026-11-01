@@ -120,7 +120,7 @@ export const defaults: {
       priceCents: 3500,
       durationMinutes: 30,
       imageUrls: [
-        'https://images.unsplash.com/photo-1567448400815-e6e6d6e72157?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=900&q=80',
       ],
     },
   ],

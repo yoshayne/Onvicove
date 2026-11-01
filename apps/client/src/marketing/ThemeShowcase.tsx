@@ -119,7 +119,7 @@ const THEME_IMAGES: Record<ThemeId, { hero: string; products: [string, string, s
     heroLabel: 'Less is more.', p1: 'Candle', p2: 'Diffuser', p3: 'Soap',
   },
   bold: {
-    hero: 'https://images.unsplash.com/photo-1556821840-3a63f15732ce?auto=format&fit=crop&w=400&q=70',
+    hero: 'https://images.unsplash.com/photo-1680292783974-a9a336c10366?auto=format&fit=crop&w=400&q=70',
     products: [
       'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=120&q=60',
       'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=120&q=60',
@@ -137,9 +137,9 @@ const THEME_IMAGES: Record<ThemeId, { hero: string; products: [string, string, s
     heroLabel: 'Made with love', p1: 'Candle', p2: 'Soap Bar', p3: 'Mist',
   },
   classic: {
-    hero: 'https://images.unsplash.com/photo-1521590832167-f3a8c1f23ed1?auto=format&fit=crop&w=400&q=70',
+    hero: 'https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?auto=format&fit=crop&w=400&q=70',
     products: [
-      'https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?auto=format&fit=crop&w=120&q=60',
+      'https://images.unsplash.com/photo-1513789181297-6f2ec112c0bc?auto=format&fit=crop&w=120&q=60',
       'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=120&q=60',
       'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=120&q=60',
     ],
@@ -184,7 +184,7 @@ const THEME_IMAGES: Record<ThemeId, { hero: string; products: [string, string, s
   brutalist: {
     hero: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?auto=format&fit=crop&w=400&q=70',
     products: [
-      'https://images.unsplash.com/photo-1556821840-3a63f15732ce?auto=format&fit=crop&w=120&q=60',
+      'https://images.unsplash.com/photo-1680292783974-a9a336c10366?auto=format&fit=crop&w=120&q=60',
       'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=120&q=60',
       'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=120&q=60',
     ],
@@ -193,7 +193,7 @@ const THEME_IMAGES: Record<ThemeId, { hero: string; products: [string, string, s
   'neon-tokyo': {
     hero: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=400&q=70',
     products: [
-      'https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?auto=format&fit=crop&w=120&q=60',
+      'https://images.unsplash.com/photo-1513789181297-6f2ec112c0bc?auto=format&fit=crop&w=120&q=60',
       'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=120&q=60',
       'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=120&q=60',
     ],
@@ -264,7 +264,7 @@ const THEME_MOCK_DATA: Record<ThemeId, { companyName: string; tagline: string; i
   bold: {
     companyName: 'HYPEDROP', tagline: 'Elevate your look.', industry: 'Streetwear',
     products: [
-      { id: '1', name: 'OVERSIZED HOODIE', description: 'Heavyweight 400gsm cotton.', priceCents: 18500, imageUrls: ['https://images.unsplash.com/photo-1556821840-3a63f15732ce?auto=format&fit=crop&w=900&q=80'], isFeatured: true },
+      { id: '1', name: 'OVERSIZED HOODIE', description: 'Heavyweight 400gsm cotton.', priceCents: 18500, imageUrls: ['https://images.unsplash.com/photo-1680292783974-a9a336c10366?auto=format&fit=crop&w=900&q=80'], isFeatured: true },
       { id: '2', name: 'NEON RUNNERS', description: 'Limited drop, size 7–13.', priceCents: 24500, imageUrls: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80'] },
       { id: '3', name: 'LOGO TEE', description: 'Oversized fit, screen print.', priceCents: 8500, imageUrls: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80'] },
       { id: '4', name: 'UTILITY BAG', description: 'Waxed canvas, 20L.', priceCents: 12000, imageUrls: ['https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=900&q=80'] },
@@ -286,7 +286,7 @@ const THEME_MOCK_DATA: Record<ThemeId, { companyName: string; tagline: string; i
     products: [
       { id: '1', name: 'Executive Portfolio', description: 'Full-grain leather, monogrammed.', priceCents: 45000, imageUrls: ['https://images.unsplash.com/photo-1591561954557-26941169b49e?auto=format&fit=crop&w=900&q=80'], isFeatured: true },
       { id: '2', name: 'Classic Fountain Pen', description: 'Matte black, 18k gold nib.', priceCents: 28000, imageUrls: ['https://images.unsplash.com/photo-1583947581924-860bda6a26df?auto=format&fit=crop&w=900&q=80'] },
-      { id: '3', name: 'Business Card Holder', description: 'Polished stainless steel.', priceCents: 8500, imageUrls: ['https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?auto=format&fit=crop&w=900&q=80'] },
+      { id: '3', name: 'Business Card Holder', description: 'Polished stainless steel.', priceCents: 8500, imageUrls: ['https://images.unsplash.com/photo-1781782361572-3d15ff2fd4d1?auto=format&fit=crop&w=900&q=80'] },
       { id: '4', name: 'Merino Dress Socks', description: 'Set of 3, navy & charcoal.', priceCents: 4200, imageUrls: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80'] },
     ],
     services: [{ id: 's1', name: 'Strategy Consultation', description: 'Executive advisory, 90 minutes.', priceCents: 75000, durationMinutes: 90 }],
@@ -341,7 +341,7 @@ const THEME_MOCK_DATA: Record<ThemeId, { companyName: string; tagline: string; i
   brutalist: {
     companyName: 'RAW STUDIO', tagline: "We don't follow trends. We set them.", industry: 'Creative Agency',
     products: [
-      { id: '1', name: 'DROP 001 HOODIE', description: 'Heavyweight cotton, garment-washed.', priceCents: 18500, imageUrls: ['https://images.unsplash.com/photo-1556821840-3a63f15732ce?auto=format&fit=crop&w=900&q=80'], isFeatured: true },
+      { id: '1', name: 'DROP 001 HOODIE', description: 'Heavyweight cotton, garment-washed.', priceCents: 18500, imageUrls: ['https://images.unsplash.com/photo-1680292783974-a9a336c10366?auto=format&fit=crop&w=900&q=80'], isFeatured: true },
       { id: '2', name: 'LOGO TEE V3', description: 'Oversized, screen-printed.', priceCents: 8500, imageUrls: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80'] },
       { id: '3', name: 'CARGO PANTS', description: 'Multi-pocket, raw hem.', priceCents: 22000, imageUrls: ['https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=900&q=80'] },
       { id: '4', name: 'CHAIN WALLET', description: 'Welded steel, heavy duty.', priceCents: 6500, imageUrls: ['https://images.unsplash.com/photo-1611532736597-de2d4265fba3?auto=format&fit=crop&w=900&q=80'] },
@@ -354,10 +354,10 @@ const THEME_MOCK_DATA: Record<ThemeId, { companyName: string; tagline: string; i
   'neon-tokyo': {
     companyName: 'TOKYO SUPPLY', tagline: 'Next-gen gear. Built for the streets.', industry: 'Urban Fashion',
     products: [
-      { id: '1', name: 'Cyber Hoodie', description: 'Reflective piping, thermal lining.', priceCents: 18900, imageUrls: ['https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?auto=format&fit=crop&w=900&q=80'], isFeatured: true },
+      { id: '1', name: 'Cyber Hoodie', description: 'Reflective piping, thermal lining.', priceCents: 18900, imageUrls: ['https://images.unsplash.com/photo-1513789181297-6f2ec112c0bc?auto=format&fit=crop&w=900&q=80'], isFeatured: true },
       { id: '2', name: 'Neon Runner', description: 'Limited drop, air-cushioned sole.', priceCents: 24500, imageUrls: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80'] },
       { id: '3', name: 'Tech Bag', description: 'Waterproof shell, modular.', priceCents: 12000, imageUrls: ['https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=900&q=80'] },
-      { id: '4', name: 'Glitch Cap', description: 'Structured, iridescent brim.', priceCents: 5500, imageUrls: ['https://images.unsplash.com/photo-1556306535-38febf6cdbe1?auto=format&fit=crop&w=900&q=80'] },
+      { id: '4', name: 'Glitch Cap', description: 'Structured, iridescent brim.', priceCents: 5500, imageUrls: ['https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=900&q=80'] },
     ],
     services: [{ id: 's1', name: 'VIP Drop Access', description: 'Early access to all limited releases.', priceCents: 9900, durationMinutes: 0 }],
   },

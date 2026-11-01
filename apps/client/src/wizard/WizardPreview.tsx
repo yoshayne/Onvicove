@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useWizardStore } from './wizardStore';
 import ThemeRenderer from '../themes/ThemeRenderer';
 import type { ThemeProps, ProductData, ServiceData, StaffData } from '../themes/types';
+import { demoContentFor } from '../themes/shared/demoContent';
 
 export default function WizardPreview() {
   const {
@@ -34,12 +35,43 @@ export default function WizardPreview() {
     return undefined;
   }, [themeId, renderedThemeId]);
 
+  // Until the owner adds their own, show example photos, products, services and team so the theme looks like a
+  // finished site. Their own items win; an item with no photo borrows a sample one so they see how photos sit.
+  const demo = demoContentFor(renderedThemeId);
+  const heroImageUrl = heroImagePreviewUrl || demo.heroImageUrl;
+  const productList: ProductData[] =
+    products.length > 0
+      ? products.map((p, i) => ({
+          id: p.id,
+          name: p.name || 'Untitled product',
+          description: p.description,
+          priceCents: p.priceCents,
+          imageUrls: p.imageUrl ? [p.imageUrl] : demo.products[i % Math.max(demo.products.length, 1)]?.imageUrls ?? [],
+        }))
+      : demo.products;
+  const serviceList: ServiceData[] =
+    services.length > 0
+      ? services.map((s, i) => ({
+          id: s.id,
+          name: s.name || 'Untitled service',
+          description: s.description,
+          priceCents: s.priceCents,
+          durationMinutes: s.durationMinutes,
+          category: s.category,
+          imageUrls: demo.services[i % Math.max(demo.services.length, 1)]?.imageUrls ?? [],
+        }))
+      : demo.services;
+  const staffList: StaffData[] = staff.length > 1
+    ? staff.map((s, i): StaffData => ({ id: s.id, name: s.name || 'Team member', avatarUrl: demo.staff[i]?.avatarUrl }))
+    : demo.staff;
+  const usingSamples = !heroImagePreviewUrl || products.some((p) => !p.imageUrl) || products.length === 0 || services.length === 0;
+
   const themeProps: ThemeProps = {
     theme: {
       companyName: businessName || 'Your Business',
       tagline,
       logoUrl: logoPreviewUrl,
-      heroImageUrl: heroImagePreviewUrl,
+      heroImageUrl,
       brandColor,
       mode,
       currency: 'USD',
@@ -47,25 +79,9 @@ export default function WizardPreview() {
       industry,
       themeId: renderedThemeId,
     },
-    products: products.map(
-      (p): ProductData => ({
-        id: p.id,
-        name: p.name || 'Untitled product',
-        description: p.description,
-        priceCents: p.priceCents,
-        imageUrls: p.imageUrl ? [p.imageUrl] : [],
-      })
-    ),
-    services: services.map(
-      (s): ServiceData => ({
-        id: s.id,
-        name: s.name || 'Untitled service',
-        description: s.description,
-        priceCents: s.priceCents,
-        durationMinutes: s.durationMinutes,
-      })
-    ),
-    staff: staff.map((s): StaffData => ({ id: s.id, name: s.name })),
+    products: productList,
+    services: serviceList,
+    staff: staffList,
   };
 
   return (
@@ -77,6 +93,11 @@ export default function WizardPreview() {
             <p className="text-sm text-gray-500">Switching theme…</p>
           </div>
         </div>
+      )}
+      {usingSamples && !isSwitching && (
+        <p className="pointer-events-none sticky top-2 z-20 mx-auto mt-2 w-fit rounded-full bg-black/70 px-3 py-1 text-[11px] font-medium text-white backdrop-blur">
+          Sample photos and items. Yours replace them as you add them.
+        </p>
       )}
       <div className={isSwitching ? 'pointer-events-none opacity-40' : ''}>
         <ThemeRenderer themeId={renderedThemeId} {...themeProps} />

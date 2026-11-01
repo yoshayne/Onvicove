@@ -45,7 +45,7 @@ export const defaults: {
       name: 'Cargo Track Pants',
       description: 'Relaxed fit utility pants with side pockets.',
       priceCents: 7400,
-      imageUrls: ['https://images.unsplash.com/photo-1602293589914-9e08fbc24c11?w=800&q=80'],
+      imageUrls: ['https://images.unsplash.com/photo-1548883354-7622d03aca27?w=800&q=80'],
       category: 'Bottoms',
       isFeatured: false,
       stockQuantity: 18,

@@ -40,7 +40,7 @@ const THEMES: ThemeOption[] = [
     name: 'Warm',
     description: 'Wellness & artisan feel',
     colors: ['#fdf8f3', '#8b5e3c', '#3d2314'],
-    hero: 'https://images.unsplash.com/photo-1600857544200-b2f468e76b53?auto=format&fit=crop&w=600&q=70',
+    hero: 'https://images.unsplash.com/photo-1777107857518-151355201542?auto=format&fit=crop&w=600&q=70',
   },
   {
     id: 'classic',
@@ -69,7 +69,7 @@ const THEMES: ThemeOption[] = [
     name: 'Aurora',
     description: 'Gradient & glassmorphism',
     colors: ['#0d0d1a', '#a78bfa', '#1a0533'],
-    hero: 'https://images.unsplash.com/photo-1518310383802-640c2de311b6?auto=format&fit=crop&w=600&q=70',
+    hero: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=70',
     premium: true,
   },
   {

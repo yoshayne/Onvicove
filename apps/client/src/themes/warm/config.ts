@@ -35,7 +35,7 @@ export const defaults: {
       name: 'Lavender Soy Candle',
       description: 'Hand-poured candle with calming lavender and oat milk notes.',
       priceCents: 2800,
-      imageUrls: ['https://images.unsplash.com/photo-1602874801006-e26c4c5b5b6c?w=800&q=80'],
+      imageUrls: ['https://images.unsplash.com/photo-1777107857518-151355201542?w=800&q=80'],
       category: 'Candles',
       isFeatured: true,
       stockQuantity: 30,
@@ -107,7 +107,7 @@ export const defaults: {
       id: 'demo-staff-2',
       name: 'Noah Reyes',
       bio: 'Massage therapist specializing in deep tissue and aromatherapy.',
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00d5a4ee9bb3?w=400&q=80',
+      avatarUrl: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400&q=80',
     },
   ],
 };
