@@ -748,3 +748,20 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS google_event_id TEXT;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS outlook_event_id TEXT;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS calendar_synced_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_bookings_calendar_sync ON bookings(start_time) WHERE calendar_synced_at IS NULL;
+
+-- Service options: one service with several choices (e.g. Kids / Adult / Long hair), each with its own price and length
+CREATE TABLE IF NOT EXISTS service_options (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  service_id UUID NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  price_cents INTEGER NOT NULL CHECK (price_cents >= 0),
+  duration_minutes INTEGER NOT NULL CHECK (duration_minutes > 0),
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_service_options_service ON service_options(service_id, sort_order);
+-- What was booked: the option chosen and the appointment length at that time
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS service_option_id UUID;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS option_name TEXT;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS duration_minutes INTEGER;

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { staffForService } from '../shared/bookingFlow';
 import { ShoppingCart, Zap, Truck, Shield } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import { formatPrice } from '../types';
+import { formatPrice, formatServicePrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -198,7 +198,7 @@ export default function Storefront({ theme, products, services, staff, galleries
                   {service.description && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 16, lineHeight: 1.6 }}>{service.description}</p>}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{service.durationMinutes > 0 ? `${service.durationMinutes} min` : 'Ongoing'}</span>
-                    <span className="neon-pink" style={{ fontWeight: 700 }}>{formatPrice(service.priceCents, theme.currency)}</span>
+                    <span className="neon-pink" style={{ fontWeight: 700 }}>{formatServicePrice(service, theme.currency)}</span>
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
                     className="neon-btn" style={{ width: '100%', padding: '12px', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', color: '#000', border: 'none', borderRadius: 4, cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4 }}>

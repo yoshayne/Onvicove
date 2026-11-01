@@ -99,7 +99,7 @@ app.get('/', async (c) => {
   const whereClause = conditions.reduce((acc, cond) => db`${acc} AND ${cond}`);
 
   const bookings = await db`
-    SELECT b.*, s.name AS service_name, st.name AS staff_name
+    SELECT b.*, s.name || COALESCE(' (' || b.option_name || ')', '') AS service_name, st.name AS staff_name
     FROM bookings b
     LEFT JOIN services s ON s.id = b.service_id
     LEFT JOIN staff st ON st.id = b.staff_id
@@ -229,7 +229,7 @@ app.patch('/:id', async (c) => {
 
   if (reschedule || customMinutes || fields.service_id || fields.staff_id !== undefined) {
     const curRows = await db`
-      SELECT b.*, s.duration_minutes AS current_minutes
+      SELECT b.*, COALESCE(b.duration_minutes, s.duration_minutes) AS current_minutes
       FROM bookings b JOIN services s ON s.id = b.service_id
       WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
     `;
@@ -242,6 +242,10 @@ app.patch('/:id', async (c) => {
       if (!sv[0]) return c.json({ error: 'That service was not found' }, 404);
       minutes = sv[0].duration_minutes as number;
       changedWhat = true;
+      // A different service: the old option no longer applies
+      updates.service_option_id = null;
+      updates.option_name = null;
+      updates.duration_minutes = null;
     }
     if (customMinutes) minutes = customMinutes;
     let staffId = (cur.staff_id as string | null) ?? null;
@@ -492,7 +496,7 @@ app.post('/:id/send-payment-link', async (c) => {
   const id = c.req.param('id');
 
   const rows = await db`
-    SELECT b.*, s.name AS service_name
+    SELECT b.*, s.name || COALESCE(' (' || b.option_name || ')', '') AS service_name
     FROM bookings b
     JOIN services s ON s.id = b.service_id
     WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
@@ -587,7 +591,7 @@ app.post('/:id/refund', async (c) => {
   if (!parsed.success) return c.json({ error: 'Invalid request body', details: parsed.error.flatten() }, 400);
 
   const rows = await db`
-    SELECT b.*, s.name AS service_name FROM bookings b JOIN services s ON s.id = b.service_id
+    SELECT b.*, s.name || COALESCE(' (' || b.option_name || ')', '') AS service_name FROM bookings b JOIN services s ON s.id = b.service_id
     WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
   `;
   const booking = rows[0];
@@ -656,7 +660,7 @@ app.post('/:id/resend-confirmation', async (c) => {
   const tenant = c.get('tenant') as { id: string; company_name: string; timezone?: string; cancel_window_hours?: number };
   const id = c.req.param('id');
   const rows = await db`
-    SELECT b.*, s.name AS service_name FROM bookings b JOIN services s ON s.id = b.service_id
+    SELECT b.*, s.name || COALESCE(' (' || b.option_name || ')', '') AS service_name FROM bookings b JOIN services s ON s.id = b.service_id
     WHERE b.id = ${id} AND b.tenant_id = ${tenant.id} LIMIT 1
   `;
   const b = rows[0];

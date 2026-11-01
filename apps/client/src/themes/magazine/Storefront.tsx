@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { staffForService } from '../shared/bookingFlow';
 import { ShoppingCart } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import { formatPrice } from '../types';
+import { formatPrice, formatServicePrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -151,7 +151,7 @@ export default function Storefront({ theme, products, services, staff, galleries
                     <div>
                     <h3 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 20, fontWeight: 400, marginBottom: 6 }}>{service.name}</h3>
                     {service.description && <p style={{ fontSize: 13, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.6 }}>{service.description}</p>}
-                    <p style={{ fontSize: 12, color: '#1a1a1a', opacity: 0.4, marginTop: 8 }}>{service.durationMinutes} min · {formatPrice(service.priceCents, theme.currency)}</p>
+                    <p style={{ fontSize: 12, color: '#1a1a1a', opacity: 0.4, marginTop: 8 }}>{service.durationMinutes} min · {formatServicePrice(service, theme.currency)}</p>
                     </div>
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}

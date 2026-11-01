@@ -3,6 +3,7 @@ import type { ComponentType, CSSProperties } from 'react';
 import type { ThemeId, ThemeProps } from './types';
 import { AboutContext } from './shared/AboutBlock';
 import RecurringCheckoutHost from './shared/RecurringCheckoutHost';
+import ServiceOptionHost from './shared/ServiceOptionHost';
 
 const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
   editorial: () => import('./editorial/Storefront'),
@@ -43,6 +44,7 @@ export default function ThemeRenderer({ themeId, ...props }: ThemeRendererProps)
           <Storefront {...props} />
         </Suspense>
         <RecurringCheckoutHost theme={props.theme} />
+        <ServiceOptionHost currency={props.theme.currency} />
       </AboutContext.Provider>
     </div>
   );

@@ -105,6 +105,13 @@ export interface Product {
   updated_at: string;
 }
 
+export interface ServiceOption {
+  id: string;
+  name: string;
+  price_cents: number;
+  duration_minutes: number;
+}
+
 export interface Service {
   id: string;
   tenant_id: string;
@@ -122,6 +129,7 @@ export interface Service {
   requires_deposit: boolean;
   deposit_cents: number | null;
   sort_order: number;
+  options?: ServiceOption[];
   billing_type?: 'one_time' | 'recurring';
   recurring_kind?: 'membership' | 'appointment' | null;
   appointment_frequency?: 'weekly' | 'biweekly' | null;

@@ -6,6 +6,7 @@ import { requireTenant } from '../middleware/tenant';
 import { enrichWithUrls } from '../services/storage';
 import { checkItemLimit } from '../services/settings';
 import { ensureStorefrontSection } from '../services/storefrontSections';
+import { attachOptions, saveOptions } from '../services/serviceOptions';
 
 const app = new Hono();
 
@@ -27,6 +28,13 @@ const serviceSchema = z.object({
   billing_type: z.enum(['one_time', 'recurring']).optional(),
   recurring_kind: z.enum(['membership', 'appointment']).nullable().optional(),
   appointment_frequency: z.enum(['weekly', 'biweekly']).nullable().optional(),
+  /** Choices under this service (e.g. Kids / Adult), each with its own price and length. Replaces the saved list. */
+  options: z.array(z.object({
+    id: z.string().uuid().optional(),
+    name: z.string().trim().min(1).max(80),
+    price_cents: z.number().int().min(0),
+    duration_minutes: z.number().int().min(1).max(1440),
+  })).max(12).optional(),
 });
 
 /** Make the recurring settings consistent: a one-time service has none; an appointment plan needs a frequency */
@@ -51,7 +59,7 @@ app.get('/', async (c) => {
     WHERE tenant_id = ${tenant.id}
     ORDER BY sort_order ASC, created_at DESC
   `;
-  const enriched = await Promise.all(rows.map((r) => enrichWithUrls(r)));
+  const enriched = await attachOptions(await Promise.all(rows.map((r) => enrichWithUrls(r))));
   return c.json({ services: enriched });
 });
 
@@ -63,7 +71,7 @@ app.get('/:id', async (c) => {
     SELECT * FROM services WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1
   `;
   if (!rows[0]) return c.json({ error: 'Service not found' }, 404);
-  return c.json({ service: await enrichWithUrls(rows[0]) });
+  return c.json({ service: (await attachOptions([await enrichWithUrls(rows[0])]))[0] });
 });
 
 // POST /api/services
@@ -86,6 +94,7 @@ app.post('/', async (c) => {
     if (!rl.ok) return c.json({ error: `Your plan allows ${rl.limit} recurring service${rl.limit === 1 ? '' : 's'}. Upgrade to offer more.` }, 402);
   }
 
+  const { options: newOptions, ...serviceFields } = d;
   const rows = await db`
     INSERT INTO services (
       tenant_id, name, description, price_cents, duration_minutes, buffer_minutes,
@@ -101,9 +110,10 @@ app.post('/', async (c) => {
     RETURNING *
   `;
 
+  if (newOptions?.length && d.billing_type !== 'recurring') await saveOptions(tenant.id, rows[0].id as string, newOptions);
   await ensureStorefrontSection(tenant.id, 'services').catch((err) => console.error('ensureStorefrontSection:', err));
 
-  return c.json({ service: await enrichWithUrls(rows[0]) }, 201);
+  return c.json({ service: (await attachOptions([await enrichWithUrls(rows[0])]))[0] }, 201);
 });
 
 // PATCH /api/services/:id
@@ -125,14 +135,16 @@ app.patch('/:id', async (c) => {
       if (!rl.ok) return c.json({ error: `Your plan allows ${rl.limit} recurring service${rl.limit === 1 ? '' : 's'}. Upgrade to offer more.` }, 402);
     }
   }
-  const updates: Record<string, unknown> = { ...d };
+  const { options: patchOptions, ...patchFields } = d;
+  const updates: Record<string, unknown> = { ...patchFields };
   if (d.image_keys !== undefined) updates.image_keys = db.json(d.image_keys as never);
 
   const keys = Object.keys(updates);
   if (keys.length === 0) {
     const existing = await db`SELECT * FROM services WHERE id = ${id} AND tenant_id = ${tenant.id} LIMIT 1`;
     if (!existing[0]) return c.json({ error: 'Service not found' }, 404);
-    return c.json({ service: await enrichWithUrls(existing[0]) });
+    if (patchOptions) await saveOptions(tenant.id, id, patchOptions);
+    return c.json({ service: (await attachOptions([await enrichWithUrls(existing[0])]))[0] });
   }
 
   const rows = await db`
@@ -143,7 +155,8 @@ app.patch('/:id', async (c) => {
   `;
 
   if (!rows[0]) return c.json({ error: 'Service not found' }, 404);
-  return c.json({ service: await enrichWithUrls(rows[0]) });
+  if (patchOptions) await saveOptions(tenant.id, id, rows[0].billing_type === 'recurring' ? [] : patchOptions);
+  return c.json({ service: (await attachOptions([await enrichWithUrls(rows[0])]))[0] });
 });
 
 // DELETE /api/services/:id

@@ -8,6 +8,7 @@ import type { ThemeData, ProductData, ProductVariantData, ServiceData, StaffData
 import type { GallerySectionData } from '../themes/shared/Gallery';
 import { getFontPair } from '../themes/shared/fontPairs';
 import { describeHours } from '../lib/hours';
+import { optionFields } from '../themes/shared/serviceOptions';
 import PaymentReturnBanner from '../components/shared/PaymentReturnBanner';
 
 interface StoredSection { id: string; type: string; enabled: boolean; [key: string]: unknown; }
@@ -102,8 +103,7 @@ function mapService(s: Service): ServiceData {
     recurringKind: s.billing_type === 'recurring' ? (s.recurring_kind ?? 'membership') : undefined,
     appointmentFrequency: s.billing_type === 'recurring' ? (s.appointment_frequency ?? undefined) : undefined,
     description: s.description ?? undefined,
-    priceCents: s.price_cents,
-    durationMinutes: s.duration_minutes,
+    ...optionFields(s),
     imageUrls: s.image_urls,
     category: s.category ?? undefined,
     isFeatured: s.is_featured,

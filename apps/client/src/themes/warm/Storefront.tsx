@@ -5,7 +5,7 @@ import { staffForService } from '../shared/bookingFlow';
 // <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 import { ShoppingBag } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import { formatPrice } from '../types';
+import { formatPrice, formatServicePrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -151,7 +151,7 @@ export default function Storefront({ theme, products, services, staff, galleries
                   )}
                   <div className="flex items-center justify-between text-sm mb-4">
                     <span className="text-[#3d2314]/50">{service.durationMinutes} min</span>
-                    <span className="text-[var(--brand-color,#8b5e3c)] font-medium">{formatPrice(service.priceCents, theme.currency)}</span>
+                    <span className="text-[var(--brand-color,#8b5e3c)] font-medium">{formatServicePrice(service, theme.currency)}</span>
                   </div>
                   <button
                     type="button"

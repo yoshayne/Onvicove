@@ -25,6 +25,7 @@ interface ServiceFormState {
   billing_type: 'one_time' | 'recurring';
   recurring_kind: 'membership' | 'appointment';
   appointment_frequency: 'weekly' | 'biweekly';
+  options: { id?: string; name: string; price_cents: number; duration_minutes: number }[];
 }
 
 const emptyForm: ServiceFormState = {
@@ -40,6 +41,7 @@ const emptyForm: ServiceFormState = {
   billing_type: 'one_time',
   recurring_kind: 'membership',
   appointment_frequency: 'weekly',
+  options: [],
 };
 
 export default function Services() {
@@ -55,7 +57,7 @@ export default function Services() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (body: Partial<Service>) => api.post<{ service: Service }>('/services', body),
+    mutationFn: (body: object) => api.post<{ service: Service }>('/services', body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
       closeModal();
@@ -63,7 +65,7 @@ export default function Services() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Service> }) =>
+    mutationFn: ({ id, body }: { id: string; body: object }) =>
       api.patch<{ service: Service }>(`/services/${id}`, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
@@ -97,6 +99,7 @@ export default function Services() {
       billing_type: service.billing_type ?? 'one_time',
       recurring_kind: service.recurring_kind ?? 'membership',
       appointment_frequency: service.appointment_frequency ?? 'weekly',
+      options: (service.options ?? []).map((o) => ({ id: o.id, name: o.name, price_cents: o.price_cents, duration_minutes: o.duration_minutes })),
     });
     setModalOpen(true);
   }
@@ -109,7 +112,7 @@ export default function Services() {
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const body: Partial<Service> = {
+    const body: Omit<Partial<Service>, 'options'> & { options: ServiceFormState['options'] } = {
       name: form.name,
       description: form.description || null,
       category: form.category.trim() || null,
@@ -122,6 +125,7 @@ export default function Services() {
       billing_type: form.billing_type,
       recurring_kind: form.billing_type === 'recurring' ? form.recurring_kind : null,
       appointment_frequency: form.billing_type === 'recurring' && form.recurring_kind === 'appointment' ? form.appointment_frequency : null,
+      options: form.billing_type === 'one_time' ? form.options.filter((o) => o.name.trim()) : [],
     };
     if (editing) {
       updateMutation.mutate({ id: editing.id, body });
@@ -170,8 +174,10 @@ export default function Services() {
                     {s.name}
                     {s.billing_type === 'recurring' && <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase text-violet-700">{s.recurring_kind === 'appointment' ? 'Recurring appt' : 'Membership'}</span>}
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{formatCents(s.price_cents)}{s.billing_type === 'recurring' ? '/mo' : ''}</td>
-                  <td className="px-4 py-3 text-slate-700">{s.duration_minutes} min</td>
+                  <td className="px-4 py-3 text-slate-700">
+                    {s.options?.length ? `From ${formatCents(Math.min(...s.options.map((o) => o.price_cents)))}` : formatCents(s.price_cents)}{s.billing_type === 'recurring' ? '/mo' : ''}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">{s.options?.length ? `${s.options.length} options` : `${s.duration_minutes} min`}</td>
                   <td className="px-4 py-3 text-slate-700">{s.buffer_minutes} min</td>
                   <td className="px-4 py-3 text-slate-700">
                     {s.requires_deposit && s.deposit_cents ? formatCents(s.deposit_cents) : '-'}
@@ -261,6 +267,33 @@ export default function Services() {
               onChange={(e) => setForm((f) => ({ ...f, buffer_minutes: Number(e.target.value) }))}
             />
           </div>
+
+          {form.billing_type === 'one_time' && (
+            <fieldset className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3">
+              <legend className="px-1 text-sm font-medium text-slate-700">Options (optional)</legend>
+              <p className="text-xs text-slate-500">
+                Offer choices under this service, like Kids / Adult / Long hair, each with its own price and time. Customers pick one when they book.
+                {form.options.length > 0 && ' The price and duration above are not used while you have options.'}
+              </p>
+              {form.options.map((o, i) => (
+                <div key={o.id ?? i} className="grid grid-cols-[1fr_5.5rem_4.5rem_auto] items-end gap-2">
+                  <Input label={i === 0 ? 'Name' : undefined} placeholder="e.g. Kids" value={o.name} onChange={(e) => setForm((f) => ({ ...f, options: f.options.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)) }))} />
+                  <Input label={i === 0 ? 'Price' : undefined} type="number" min={0} step="0.01" value={o.price_cents / 100} onChange={(e) => setForm((f) => ({ ...f, options: f.options.map((x, j) => (j === i ? { ...x, price_cents: Math.round(Number(e.target.value) * 100) } : x)) }))} />
+                  <Input label={i === 0 ? 'Min' : undefined} type="number" min={1} value={o.duration_minutes} onChange={(e) => setForm((f) => ({ ...f, options: f.options.map((x, j) => (j === i ? { ...x, duration_minutes: Number(e.target.value) } : x)) }))} />
+                  <button type="button" aria-label="Remove option" onClick={() => setForm((f) => ({ ...f, options: f.options.filter((_, j) => j !== i) }))} className="mb-2 px-2 text-slate-400 hover:text-red-600">✕</button>
+                </div>
+              ))}
+              {form.options.length < 12 && (
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, options: [...f.options, { name: '', price_cents: f.options.length ? f.options[f.options.length - 1].price_cents : f.price_cents, duration_minutes: f.options.length ? f.options[f.options.length - 1].duration_minutes : f.duration_minutes }] }))}
+                  className="self-start text-sm font-medium text-violet-700 hover:text-violet-900"
+                >
+                  + Add option
+                </button>
+              )}
+            </fieldset>
+          )}
 
           <fieldset className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3">
             <legend className="px-1 text-sm font-medium text-slate-700">How do customers pay?</legend>

@@ -30,7 +30,7 @@ async function accessFor(t: Row, p: ProviderId): Promise<string | null> {
 export async function syncBooking(bookingId: string): Promise<void> {
   const lock = await redis.set(`calsync:${bookingId}`, '1', 'EX', 30, 'NX').catch(() => 'OK');
   if (!lock) return;
-  const b = (await db`SELECT b.*, s.name AS service_name FROM bookings b JOIN services s ON s.id = b.service_id WHERE b.id = ${bookingId}`)[0];
+  const b = (await db`SELECT b.*, s.name || COALESCE(' (' || b.option_name || ')', '') AS service_name FROM bookings b JOIN services s ON s.id = b.service_id WHERE b.id = ${bookingId}`)[0];
   if (!b) return;
   const t = (await db`SELECT * FROM tenants WHERE id = ${b.tenant_id as string}`)[0];
   if (!t) return;

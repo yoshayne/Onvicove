@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { staffForService } from '../shared/bookingFlow';
 import { ShoppingCart, Leaf, Heart, Star } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import { formatPrice } from '../types';
+import { formatPrice, formatServicePrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -118,7 +118,7 @@ export default function Storefront({ theme, products, services, staff, galleries
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>{s.name}</p>
-                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{s.durationMinutes} min • {formatPrice(s.priceCents, theme.currency)}</p>
+                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{s.durationMinutes} min • {formatServicePrice(s, theme.currency)}</p>
                   </div>
                   <button type="button" onClick={() => openBooking(s)} disabled={!theme.paymentsEnabled}
                     style={{ fontSize: 11, padding: '6px 14px', borderRadius: 50, background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', color: 'var(--brand-color, #a78bfa)', cursor: 'pointer', flexShrink: 0 }}>
@@ -184,7 +184,7 @@ export default function Storefront({ theme, products, services, staff, galleries
                   {service.description && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 20, lineHeight: 1.6 }}>{service.description}</p>}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{service.durationMinutes} min</span>
-                    <span style={{ color: 'var(--brand-color, #a78bfa)', fontWeight: 600 }}>{formatPrice(service.priceCents, theme.currency)}</span>
+                    <span style={{ color: 'var(--brand-color, #a78bfa)', fontWeight: 600 }}>{formatServicePrice(service, theme.currency)}</span>
                   </div>
                   <button type="button" onClick={() => openBooking(service)} disabled={!theme.paymentsEnabled}
                     style={{ width: '100%', padding: '12px', borderRadius: 12, fontSize: 13, fontWeight: 600, background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(96,165,250,0.2))', border: '1px solid rgba(167,139,250,0.3)', color: 'var(--brand-color, #a78bfa)', cursor: theme.paymentsEnabled ? 'pointer' : 'not-allowed', opacity: theme.paymentsEnabled ? 1 : 0.4 }}>

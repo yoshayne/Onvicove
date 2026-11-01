@@ -4,7 +4,7 @@ import { apiGet, apiPost } from '../lib/api';
 
 interface ManageData {
   booking: {
-    id: string; status: string; service_id: string; service_name: string; staff_id: string | null; staff_name: string | null;
+    id: string; status: string; service_id: string; service_option_id?: string | null; service_name: string; staff_id: string | null; staff_name: string | null;
     start_time: string; end_time: string; customer_name: string; deposit_paid_cents: number; amount_cents: number;
   };
   business: { name: string; slug: string; timezone: string; currency: string };
@@ -50,7 +50,7 @@ export default function ManageBooking() {
     if (!d) return;
     try {
       const res = await apiGet<{ slots: { start: string }[] }>(
-        `/api/public/${data.business.slug}/availability?service_id=${data.booking.service_id}&date=${d}${data.booking.staff_id ? `&staff_id=${data.booking.staff_id}` : ''}&manage_token=${token}`,
+        `/api/public/${data.business.slug}/availability?service_id=${data.booking.service_id}&date=${d}${data.booking.staff_id ? `&staff_id=${data.booking.staff_id}` : ''}${data.booking.service_option_id ? `&option_id=${data.booking.service_option_id}` : ''}&manage_token=${token}`,
       );
       setSlots(res.slots ?? []);
     } catch {

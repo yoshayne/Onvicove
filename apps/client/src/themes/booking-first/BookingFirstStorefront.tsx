@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MapPin, Phone, Clock, ShoppingBag, Star } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import { formatPrice } from '../types';
+import { formatPrice, formatServicePrice } from '../types';
 import type { BookingFirstPreset } from './presets';
 import PresetBookingModal from './PresetBookingModal';
 import PresetCartDrawer from './PresetCartDrawer';
@@ -225,7 +225,7 @@ export default function BookingFirstStorefront({ preset: p, theme, products, ser
                       </div>
                       {sv.description && <p className="line-clamp-3 text-sm" style={{ color: p.muted }}>{sv.description}</p>}
                       <p className="mt-auto pt-1 text-sm font-semibold">
-                        {formatPrice(sv.priceCents, theme.currency)}
+                        {formatServicePrice(sv, theme.currency)}
                         <span style={{ color: p.muted, fontWeight: 400 }}> · {sv.durationMinutes} min{sv.requiresDeposit && sv.depositCents ? ` · ${formatPrice(sv.depositCents, theme.currency)} deposit` : ''}</span>
                       </p>
                     </div>
@@ -272,7 +272,7 @@ export default function BookingFirstStorefront({ preset: p, theme, products, ser
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
-                        <span className="font-bold">{formatPrice(sv.priceCents, theme.currency)}</span>
+                        <span className="font-bold">{formatServicePrice(sv, theme.currency)}</span>
                         <button
                           type="button"
                           onClick={() => openBooking(sv)}

@@ -95,9 +95,23 @@ export interface ProductData {
   variants?: ProductVariantData[];
 }
 
+export interface ServiceOptionData {
+  id: string;
+  name: string;
+  priceCents: number;
+  durationMinutes: number;
+}
+
 export interface ServiceData {
   id: string;
   name: string;
+  /** Choices under this service (Kids / Adult...). priceCents and durationMinutes then show the lowest. */
+  options?: ServiceOptionData[];
+  /** Set once the customer has picked an option: the service as it will be booked */
+  optionId?: string;
+  optionName?: string;
+  /** Show prices as "From $x" */
+  priceFrom?: boolean;
   description?: string;
   priceCents: number;
   durationMinutes: number;
@@ -170,6 +184,11 @@ export interface ThemeConfig {
     heading: string;
     body: string;
   };
+}
+
+/** A service's price as listed: "From $x" when it has options at different prices */
+export function formatServicePrice(service: { priceCents: number; priceFrom?: boolean }, currency = 'USD'): string {
+  return `${service.priceFrom ? 'From ' : ''}${formatPrice(service.priceCents, currency)}`;
 }
 
 export function formatPrice(cents: number, currency = 'USD'): string {

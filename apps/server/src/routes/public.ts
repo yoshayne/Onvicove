@@ -8,6 +8,7 @@ import { generateOrderNumber } from '../lib/orderNumber';
 import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { addDays, format, parse } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
+import { attachOptions, resolveBookable } from '../services/serviceOptions';
 import { slotsForService, holdsTime, pickStaffForSlot } from '../services/slots';
 import { newManageToken, manageUrlFor } from '../services/bookingManage';
 import { verifyUnsubscribeToken } from '../lib/announcementText';
@@ -129,7 +130,7 @@ app.get('/:slug/services', async (c) => {
   const services = await db`
     SELECT * FROM services WHERE tenant_id = ${tenants[0].id} AND is_active = TRUE ORDER BY sort_order ASC
   `;
-  return c.json({ services: await Promise.all(services.map(enrichWithUrls)) });
+  return c.json({ services: await attachOptions(await Promise.all(services.map(enrichWithUrls))) });
 });
 
 // GET /api/public/:slug/staff
@@ -191,8 +192,11 @@ app.get('/:slug/next-available', async (c) => {
   const tenant = tenants[0];
   if (!tenant) return c.json({ error: 'Store not found' }, 404);
   const services = await db`SELECT * FROM services WHERE id = ${serviceId} AND tenant_id = ${tenant.id} LIMIT 1`;
-  const service = services[0];
-  if (!service) return c.json({ error: 'Service not found' }, 404);
+  const baseService = services[0];
+  if (!baseService) return c.json({ error: 'Service not found' }, 404);
+  const resolvedNext = await resolveBookable(baseService as never as { id: string; name: string; price_cents: number; duration_minutes: number }, c.req.query('option_id'));
+  if (!resolvedNext.ok) return c.json({ error: resolvedNext.error }, 400);
+  const service = resolvedNext.service;
 
   const tz = (tenant.timezone as string) || 'America/New_York';
   const today = formatInTimeZone(new Date(), tz, 'yyyy-MM-dd');
@@ -226,8 +230,11 @@ app.get('/:slug/availability', async (c) => {
   const services = await db`
     SELECT * FROM services WHERE id = ${serviceId} AND tenant_id = ${tenant.id} LIMIT 1
   `;
-  const service = services[0];
-  if (!service) return c.json({ error: 'Service not found' }, 404);
+  const baseService = services[0];
+  if (!baseService) return c.json({ error: 'Service not found' }, 404);
+  const resolvedAvail = await resolveBookable(baseService as never as { id: string; name: string; price_cents: number; duration_minutes: number }, c.req.query('option_id'));
+  if (!resolvedAvail.ok) return c.json({ error: resolvedAvail.error }, 400);
+  const service = resolvedAvail.service;
 
   // A customer moving their own booking: its current time must not count as taken
   const manageToken = c.req.query('manage_token');
@@ -399,6 +406,7 @@ app.post('/:slug/orders', async (c) => {
 
 const createBookingSchema = z.object({
   service_id: z.string().uuid(),
+  option_id: z.string().uuid().nullable().optional(),
   staff_id: z.string().uuid().nullable().optional(),
   customer_name: z.string().min(1),
   customer_email: z.string().email(),
@@ -423,9 +431,15 @@ app.post('/:slug/bookings', async (c) => {
   if (!tenant) return c.json({ error: 'Store not found' }, 404);
 
   const services = await db`SELECT * FROM services WHERE id = ${d.service_id} AND tenant_id = ${tenant.id} LIMIT 1`;
-  const service = services[0];
-  if (!service) return c.json({ error: 'Service not found' }, 404);
-  if (service.billing_type === 'recurring') return c.json({ error: 'This is a monthly plan. Please use the plan checkout.' }, 400);
+  const baseService = services[0];
+  if (!baseService) return c.json({ error: 'Service not found' }, 404);
+  if (baseService.billing_type === 'recurring') return c.json({ error: 'This is a monthly plan. Please use the plan checkout.' }, 400);
+  // A service with options books one of them: its price, length and name come from the option
+  const resolved = await resolveBookable(baseService as never as { id: string; name: string; price_cents: number; duration_minutes: number }, d.option_id);
+  if (!resolved.ok) return c.json({ error: resolved.error }, 400);
+  const service = resolved.service;
+  const option = resolved.option;
+  const bookedName = option ? `${baseService.name as string} (${option.name})` : (baseService.name as string);
 
   if (new Date(d.start_time) >= new Date(d.end_time)) {
     return c.json({ error: 'start_time must be before end_time' }, 400);
@@ -484,11 +498,13 @@ app.post('/:slug/bookings', async (c) => {
   const rows = await db`
     INSERT INTO bookings (
       tenant_id, service_id, staff_id, customer_id, customer_name, customer_email,
-      customer_phone, start_time, end_time, notes, status, amount_cents, platform_fee_cents, manage_token
+      customer_phone, start_time, end_time, notes, status, amount_cents, platform_fee_cents, manage_token,
+      service_option_id, option_name, duration_minutes
     ) VALUES (
       ${tenant.id}, ${d.service_id}, ${pick.staffId}, ${customer.id},
       ${d.customer_name}, ${d.customer_email}, ${d.customer_phone ?? null},
-      ${d.start_time}, ${d.end_time}, ${d.notes ?? null}, ${status}, ${amountCents}, ${platformFee}, ${newManageToken()}
+      ${d.start_time}, ${d.end_time}, ${d.notes ?? null}, ${status}, ${amountCents}, ${platformFee}, ${newManageToken()},
+      ${option?.id ?? null}, ${option?.name ?? null}, ${service.duration_minutes as number}
     )
     RETURNING *
   `;
@@ -506,7 +522,7 @@ app.post('/:slug/bookings', async (c) => {
       ? sendBookingConfirmation({
           toEmail: d.customer_email,
           toName: d.customer_name,
-          serviceName: service.name as string,
+          serviceName: bookedName,
           startTime: startFmt,
           endTime: endFmt,
           companyName: tenant.company_name as string,
@@ -519,7 +535,7 @@ app.post('/:slug/bookings', async (c) => {
       ? sendBookingAwaitingPayment({
           toEmail: d.customer_email,
           toName: d.customer_name,
-          serviceName: service.name as string,
+          serviceName: bookedName,
           amountCents: amountCents,
           companyName: tenant.company_name as string,
           bookingId: booking.id as string,
@@ -536,7 +552,7 @@ app.post('/:slug/bookings', async (c) => {
         await sendTenantNewBooking({
           tenantEmail,
           companyName: tenant.company_name as string,
-          serviceName: service.name as string,
+          serviceName: bookedName,
           customerName: d.customer_name,
           customerEmail: d.customer_email,
           startTime: startFmt,
@@ -595,7 +611,7 @@ app.post('/:slug/discounts/validate', async (c) => {
 app.get('/bookings/:id/balance', async (c) => {
   const id = c.req.param('id');
   const rows = await db`
-    SELECT b.*, s.name AS service_name, t.company_name, t.currency, t.stripe_account_id, t.slug
+    SELECT b.*, s.name || COALESCE(' (' || b.option_name || ')', '') AS service_name, t.company_name, t.currency, t.stripe_account_id, t.slug
     FROM bookings b
     JOIN services s ON s.id = b.service_id
     JOIN tenants t ON t.id = b.tenant_id
@@ -762,7 +778,7 @@ app.post('/:slug/custom-order', async (c) => {
 
 async function manageContext(token: string) {
   const rows = await db`
-    SELECT b.*, s.name AS service_name, s.duration_minutes, s.buffer_minutes, st.name AS staff_name,
+    SELECT b.*, s.name || COALESCE(' (' || b.option_name || ')', '') AS service_name, COALESCE(b.duration_minutes, s.duration_minutes) AS duration_minutes, s.buffer_minutes, st.name AS staff_name,
            t.company_name, t.slug, t.timezone, t.currency, t.cancel_window_hours, t.booking_notice_minutes,
            t.id AS tenant_row_id, t.clerk_user_id AS tenant_owner
     FROM bookings b
@@ -916,6 +932,7 @@ app.get('/bookings/manage/:token', async (c) => {
       id: b.id,
       status: b.status,
       service_id: b.service_id,
+      service_option_id: b.service_option_id ?? null,
       service_name: b.service_name,
       staff_id: b.staff_id,
       staff_name: b.staff_name,

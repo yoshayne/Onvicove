@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { staffForService } from '../shared/bookingFlow';
 import { ShoppingCart, Calendar as CalendarIcon } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import { formatPrice } from '../types';
+import { formatPrice, formatServicePrice } from '../types';
 import { config, defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -189,7 +189,7 @@ export default function Storefront({
                     <p className="mt-1 text-sm text-gray-600">{service.description}</p>
                   )}
                   <div className="mt-2 text-sm font-bold text-[#1a3a5c]">
-                    {formatPrice(service.priceCents, theme.currency)} &middot; {service.durationMinutes} min
+                    {formatServicePrice(service, theme.currency)} &middot; {service.durationMinutes} min
                   </div>
                 </div>
                 <button

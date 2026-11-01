@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { staffForService } from '../shared/bookingFlow';
 import { ShoppingCart, Menu, X as XIcon } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import { formatPrice } from '../types';
+import { formatPrice, formatServicePrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -247,7 +247,7 @@ export default function Storefront({ theme, products, services, staff, galleries
                   )}
                   <div className="flex items-center justify-between mt-auto">
                     <span className="font-['DM_Serif_Display'] text-2xl text-[var(--brand-color,#c8b8a2)]">
-                      {formatPrice(service.priceCents, theme.currency)}
+                      {formatServicePrice(service, theme.currency)}
                     </span>
                     <button
                       type="button"

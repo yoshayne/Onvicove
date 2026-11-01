@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { staffForService } from '../shared/bookingFlow';
 import { ShoppingCart, Star, Package, Calendar, Mail, X, Menu } from 'lucide-react';
 import type { ThemeProps } from '../types';
-import { formatPrice } from '../types';
+import { formatPrice, formatServicePrice } from '../types';
 import { defaults } from './config';
 import CartDrawer from './CartDrawer';
 import BookingModal from './BookingModal';
@@ -488,7 +488,7 @@ export default function Storefront({ theme, products, services, staff, galleries
                     </div>
                     {/* Price + action */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'flex-start' : 'flex-end', gap: 12, flexShrink: 0 }}>
-                      <span style={{ fontFamily: serif, fontSize: 24, color: brand }}>{formatPrice(service.priceCents, theme.currency)}</span>
+                      <span style={{ fontFamily: serif, fontSize: 24, color: brand }}>{formatServicePrice(service, theme.currency)}</span>
                       <button
                         type="button"
                         onClick={() => openBooking(service)}

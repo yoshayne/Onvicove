@@ -18,7 +18,7 @@ function whenLabel(hours: number): string {
 export async function sendReminderForBooking(bookingId: string, opts: { tenantId?: string; hoursBefore?: number } = {}): Promise<boolean> {
   const rows = await db`
     SELECT b.id, b.tenant_id, b.start_time, b.end_time, b.location, b.customer_name, b.customer_email,
-           s.name AS service_name, t.company_name, t.timezone, t.cancel_window_hours
+           s.name || COALESCE(' (' || b.option_name || ')', '') AS service_name, t.company_name, t.timezone, t.cancel_window_hours
     FROM bookings b JOIN services s ON s.id = b.service_id JOIN tenants t ON t.id = b.tenant_id
     WHERE b.id = ${bookingId} ${opts.tenantId ? db`AND b.tenant_id = ${opts.tenantId}` : db``}
     LIMIT 1

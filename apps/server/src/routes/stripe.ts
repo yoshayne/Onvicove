@@ -383,7 +383,7 @@ app.post('/webhook', async (c) => {
       }
     } else if ((reference_type === 'booking' || reference_type === 'booking_balance') && reference_id) {
       const rows = await db`
-        SELECT b.customer_email, b.customer_name, b.amount_cents, b.id, s.name AS service_name
+        SELECT b.customer_email, b.customer_name, b.amount_cents, b.id, s.name || COALESCE(' (' || b.option_name || ')', '') AS service_name
         FROM bookings b JOIN services s ON s.id = b.service_id
         WHERE b.id = ${reference_id} LIMIT 1
       `;

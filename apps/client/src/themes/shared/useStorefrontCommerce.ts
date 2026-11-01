@@ -3,6 +3,7 @@ import { useRecurringCheckout } from './recurringCheckout';
 import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../lib/api';
 import type { AvailableSlot, CartItem, ProductData, ProductVariantData, ServiceData } from '../types';
+import { useServiceOptionPicker } from './serviceOptions';
 
 interface OrderResponse {
   order: { id: string; order_number: string };
@@ -198,6 +199,11 @@ export function useStorefrontCommerce(slug: string | undefined) {
   const orderIdRef = useRef<string | null>(null);
 
   function openBooking(service: ServiceData) {
+    // Several options (Kids / Adult...): choose one first, then carry on with that option as the service
+    if (service.options?.length && !service.optionId) {
+      useServiceOptionPicker.getState().open(service, (chosen) => openBooking(chosen));
+      return;
+    }
     // A membership has no time to pick: go straight to the monthly-plan checkout
     if (service.billingType === 'recurring' && service.recurringKind === 'membership') {
       useRecurringCheckout.getState().open({ service });
@@ -240,7 +246,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
     const requestId = ++slotRequestRef.current;
     try {
       const res = await apiGet<AvailabilityResponse>(
-        `/api/public/${slug}/availability?service_id=${service.id}&date=${toDateParam(date)}${staffId ? `&staff_id=${staffId}` : ''}`
+        `/api/public/${slug}/availability?service_id=${service.id}&date=${toDateParam(date)}${staffId ? `&staff_id=${staffId}` : ''}${service.optionId ? `&option_id=${service.optionId}` : ''}`
       );
       if (requestId !== slotRequestRef.current) return; // a newer tap has already replaced this one
       const map = new Map<string, { start: string; end: string }>();
@@ -319,6 +325,7 @@ export function useStorefrontCommerce(slug: string | undefined) {
     try {
       const res = await apiPost<BookingResponse>(`/api/public/${slug}/bookings`, {
         service_id: bookingService.id,
+        option_id: bookingService.optionId ?? null,
         staff_id: selectedStaffId ?? null,
         customer_name: info.name,
         customer_email: info.email,

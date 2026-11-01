@@ -6,6 +6,7 @@ import Spinner from '../components/shared/Spinner';
 import { getFontPair } from '../themes/shared/fontPairs';
 import { ServiceCatalog } from '../themes/shared/CatalogGrid';
 import BookingStatusOverlay from '../themes/shared/BookingStatusOverlay';
+import { optionFields } from '../themes/shared/serviceOptions';
 import { useStorefrontCommerce } from '../themes/shared/useStorefrontCommerce';
 import type { Tenant, Service, Staff } from '../types';
 import type { ThemeData, ServiceData, StaffData } from '../themes/types';
@@ -39,8 +40,7 @@ function mapService(s: Service): ServiceData {
     id: s.id,
     name: s.name,
     description: s.description ?? undefined,
-    priceCents: s.price_cents,
-    durationMinutes: s.duration_minutes,
+    ...optionFields(s),
     imageUrls: s.image_urls,
     category: s.category ?? undefined,
     isFeatured: s.is_featured,

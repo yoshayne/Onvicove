@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { ProductData, ServiceData, ProductLayout, ServiceLayout } from '../types';
-import { formatPrice } from '../types';
+import { formatPrice, formatServicePrice } from '../types';
 
 // ── Visitor toggle icons ───────────────────────────────────────────────────────
 
@@ -376,7 +376,7 @@ function CalendarFirstLayout({ services, currency, paymentsEnabled, accentColor,
                   {s.description && <p className="text-sm opacity-60 mt-1 line-clamp-2">{s.description}</p>}
                 </div>
                 <div className="shrink-0 text-right flex flex-col items-end gap-2">
-                  <p className="font-bold text-sm" style={{ color: accent }}>{formatPrice(s.priceCents, currency)}</p>
+                  <p className="font-bold text-sm" style={{ color: accent }}>{formatServicePrice(s, currency)}</p>
                   <button type="button" onClick={() => onBook(s)} disabled={!paymentsEnabled}
                     className="rounded-full px-4 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-30"
                     style={{ background: accent, color: '#fff' }}>
@@ -454,7 +454,7 @@ function ServiceCatalogFlat({
                   </td>
                   <td className="px-5 py-4 opacity-50" style={{ color: textColor }}>{s.durationMinutes} min</td>
                   <td className="px-5 py-4 text-right font-bold" style={{ color: accentColor ?? textColor }}>
-                    {formatPrice(s.priceCents, currency)}
+                    {formatServicePrice(s, currency)}
                   </td>
                   <td className="px-5 py-4 text-right">
                     <button type="button" onClick={() => onBook(s)} disabled={!paymentsEnabled}
@@ -528,7 +528,7 @@ function ServiceListRow({ service, currency, paymentsEnabled, accentColor, textC
           <p className="text-xs opacity-50 mt-0.5">{service.durationMinutes} min</p>
         </div>
         <div className="shrink-0 flex items-center gap-3">
-          <p className="font-bold text-sm" style={{ color: accentColor ?? textColor }}>{formatPrice(service.priceCents, currency)}</p>
+          <p className="font-bold text-sm" style={{ color: accentColor ?? textColor }}>{formatServicePrice(service, currency)}</p>
           <span className="opacity-40 text-sm" style={{ color: textColor }}>{open ? '▲' : '▼'}</span>
         </div>
       </button>
@@ -568,7 +568,7 @@ function ServiceCard({ service, currency, paymentsEnabled, accentColor, textColo
           </div>
           {!hasImage && (
             <div className="shrink-0 text-right">
-              <p className="font-bold text-sm" style={{ color: accentColor ?? textColor }}>{formatPrice(service.priceCents, currency)}</p>
+              <p className="font-bold text-sm" style={{ color: accentColor ?? textColor }}>{formatServicePrice(service, currency)}</p>
               <p className="text-xs opacity-40 mt-0.5" style={{ color: textColor }}>{service.durationMinutes} min</p>
             </div>
           )}
@@ -576,7 +576,7 @@ function ServiceCard({ service, currency, paymentsEnabled, accentColor, textColo
         {hasImage && (
           <div className="flex items-center justify-between text-sm mt-auto">
             <span className="opacity-50" style={{ color: textColor }}>{service.durationMinutes} min</span>
-            <span className="font-bold" style={{ color: accentColor ?? textColor }}>{formatPrice(service.priceCents, currency)}</span>
+            <span className="font-bold" style={{ color: accentColor ?? textColor }}>{formatServicePrice(service, currency)}</span>
           </div>
         )}
         <button type="button" onClick={() => onBook(service)} disabled={!paymentsEnabled}
