@@ -25,6 +25,8 @@ import { makeSectionOrder } from '../shared/sectionOrder';
 export default function BookingFirstStorefront({ preset: p, theme, products, services, staff, galleries = [], visibleSections }: ThemeProps & { preset: BookingFirstPreset }) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
+  const [proFilter, setProFilter] = useState<string | null>(null);
+  const [catFilter, setCatFilter] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
@@ -52,7 +54,7 @@ export default function BookingFirstStorefront({ preset: p, theme, products, ser
   const showProducts = hasStoreMode && products.length > 0 && sec('featured-products');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
-  const heading = { fontFamily: p.headingFont, textTransform: p.uppercaseHeadings ? ('uppercase' as const) : undefined, letterSpacing: p.uppercaseHeadings ? '0.04em' : undefined };
+  const heading = { fontFamily: p.headingFont, fontWeight: p.id === 'roster' ? 800 : undefined, textTransform: p.uppercaseHeadings ? ('uppercase' as const) : undefined, letterSpacing: p.uppercaseHeadings ? '0.04em' : undefined };
   const rounded = (n = 1) => Math.min(radius * n, 999);
   const btn = (solid: boolean): React.CSSProperties => ({
     background: solid ? accent : 'transparent',
@@ -149,8 +151,94 @@ export default function BookingFirstStorefront({ preset: p, theme, products, ser
 
       {galleryFirst && galleryEls}
 
+      {/* Services: Roster layout — choose a pro and category, then photo cards that open a side panel */}
+      {showServices && p.servicesLayout === 'roster' && (() => {
+        const pros = staff;
+        const byPro = (sv: (typeof displayServices)[number]) => !proFilter || staffForService(pros.filter((m) => m.id === proFilter), sv).length > 0;
+        const visible = displayServices.filter((sv) => byPro(sv) && (!catFilter || (sv.category?.trim() || '') === catFilter));
+        const cats = [...new Set(displayServices.filter(byPro).map((sv) => sv.category?.trim() || '').filter(Boolean))];
+        const chip = (on: boolean): React.CSSProperties => ({
+          borderRadius: 999,
+          background: on ? accent : 'transparent',
+          color: on ? p.onAccent : p.text,
+          border: `1px solid ${on ? 'transparent' : p.border}`,
+          fontWeight: on ? 700 : 500,
+        });
+        return (
+          <section id="services" className={`scroll-mt-16 ${section}`} style={ord('services')}>
+            <h2 className="mb-6 text-4xl md:text-6xl" style={heading}>Services</h2>
+
+            {pros.length > 1 && (
+              <div className="mb-5">
+                <p className="mb-2 text-xs uppercase tracking-widest" style={{ color: p.muted }}>Choose your pro</p>
+                <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
+                  {[{ id: null as string | null, name: 'Anyone', avatarUrl: undefined as string | undefined }, ...pros].map((m) => {
+                    const on = proFilter === m.id;
+                    return (
+                      <button key={m.id ?? 'any'} type="button" aria-pressed={on} onClick={() => { setProFilter(m.id); setCatFilter(''); }} className="flex w-[72px] shrink-0 flex-col items-center gap-1.5 text-center">
+                        <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full text-lg font-bold" style={{ background: p.surface, border: `2px solid ${on ? accent : p.border}`, color: p.muted }}>
+                          {m.avatarUrl ? <img src={m.avatarUrl} alt="" className="h-full w-full object-cover" /> : m.id === null ? '★' : m.name.charAt(0)}
+                        </span>
+                        <span className="line-clamp-2 text-xs leading-tight" style={{ color: on ? p.text : p.muted, fontWeight: on ? 700 : 500 }}>{m.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {cats.length > 1 && (
+              <div className="-mx-5 mb-6 flex gap-2 overflow-x-auto px-5 pb-1">
+                {['', ...cats].map((c) => (
+                  <button key={c || 'all'} type="button" aria-pressed={catFilter === c} onClick={() => setCatFilter(c)} className="shrink-0 px-4 py-1.5 text-sm" style={chip(catFilter === c)}>
+                    {c || 'View all'}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {visible.length === 0 ? (
+              <p className="py-10 text-center text-sm" style={{ color: p.muted }}>
+                {proFilter ? 'This professional does not offer anything in this category. Try "Anyone".' : 'No services yet.'}
+              </p>
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2">
+                {visible.map((sv) => (
+                  <article key={sv.id} className="flex flex-col overflow-hidden" style={{ background: p.surface, border: `1px solid ${p.border}`, borderRadius: rounded(1.5) }}>
+                    <div className={`w-full overflow-hidden ${sv.imageUrls?.[0] ? 'aspect-[4/3]' : 'aspect-[16/6]'}`} style={{ background: p.bg }}>
+                      {sv.imageUrls?.[0]
+                        ? <img src={sv.imageUrls[0]} alt={sv.name} className="h-full w-full object-cover" loading="lazy" />
+                        : <span className="flex h-full w-full items-center justify-center text-6xl" style={{ ...heading, color: p.border }}>{sv.name.charAt(0)}</span>}
+                    </div>
+                    <div className="flex flex-1 flex-col gap-2 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="text-xl leading-tight" style={heading}>{sv.name}</h3>
+                        <button
+                          type="button"
+                          onClick={() => { openBooking(sv); if (proFilter) setSelectedStaffId(proFilter); }}
+                          disabled={!theme.paymentsEnabled}
+                          className="shrink-0 px-5 py-2 text-sm font-bold disabled:opacity-40"
+                          style={chip(false)}
+                        >
+                          {theme.paymentsEnabled ? 'Select' : 'Soon'}
+                        </button>
+                      </div>
+                      {sv.description && <p className="line-clamp-3 text-sm" style={{ color: p.muted }}>{sv.description}</p>}
+                      <p className="mt-auto pt-1 text-sm font-semibold">
+                        {formatPrice(sv.priceCents, theme.currency)}
+                        <span style={{ color: p.muted, fontWeight: 400 }}> · {sv.durationMinutes} min{sv.requiresDeposit && sv.depositCents ? ` · ${formatPrice(sv.depositCents, theme.currency)} deposit` : ''}</span>
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })()}
+
       {/* Services */}
-      {showServices && (
+      {showServices && p.servicesLayout !== 'roster' && (
         <section id="services" className={`scroll-mt-16 ${section}`} style={ord('services')}>
           <h2 className="mb-5 text-2xl md:text-3xl" style={heading}>Services</h2>
           {showTabs && (

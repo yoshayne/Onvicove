@@ -51,7 +51,7 @@ interface ThemeOption {
   premium?: boolean;
 }
 
-type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft' | 'lens' | 'barber' | 'studio' | 'ink';
+type ThemeId = 'editorial' | 'minimal' | 'bold' | 'warm' | 'classic' | 'bright' | 'obsidian' | 'aurora' | 'magazine' | 'brutalist' | 'neon-tokyo' | 'craft' | 'lens' | 'barber' | 'studio' | 'ink' | 'roster';
 
 const THEMES: ThemeOption[] = [
   { id: 'editorial',   name: 'Editorial',   description: 'Dark luxury, serif headlines',     colors: ['#1a1a1a', '#d4a96a', '#ffffff'] },
@@ -70,6 +70,7 @@ const THEMES: ThemeOption[] = [
   { id: 'barber',      name: 'Barber',      description: 'Barbershops — bookings first',      colors: ['#0c0c0d', '#d4a73a', '#f4f4f5'] },
   { id: 'studio',      name: 'Studio',      description: 'Hair, nails, lashes, spa',          colors: ['#faf6f2', '#b5838d', '#2c2420'] },
   { id: 'ink',         name: 'Ink',         description: 'Tattoo & braids — work first',      colors: ['#080808', '#e63946', '#fafafa'] },
+  { id: 'roster',      name: 'Roster',      description: 'Barbershops & teams — pick a pro', colors: ['#000000', '#ffffff', '#8a8a8a'] },
 ];
 
 

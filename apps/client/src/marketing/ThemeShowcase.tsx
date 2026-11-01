@@ -7,6 +7,7 @@ const THEMES: { id: ThemeId; name: string; desc: string; premium?: boolean; isNe
   { id: 'barber', name: 'Barber', desc: 'Barbershops: dark, sharp, booking first', isNew: true },
   { id: 'studio', name: 'Studio', desc: 'Hair, nails, lashes & spa', isNew: true },
   { id: 'ink', name: 'Ink', desc: 'Tattoo & braids: your work first', isNew: true },
+  { id: 'roster', name: 'Roster', desc: 'Teams & barbershops: pick your pro', isNew: true },
   { id: 'editorial', name: 'Editorial', desc: 'Dark luxury, serif headlines' },
   { id: 'minimal', name: 'Minimal', desc: 'Swiss grid, clean whitespace' },
   { id: 'bold', name: 'Bold', desc: 'Streetwear, neon yellow' },
@@ -90,6 +91,10 @@ const MINI_STYLES: Record<ThemeId, {
   ink: {
     bg: '#080808', nav: '#080808', hero: '#121212', accent: '#e63946',
     text: '#fafafa', subtext: 'rgba(250,250,250,0.6)', headingFont: 'Bebas Neue, sans-serif', bodyFont: 'sans-serif', navText: '#fafafa',
+  },
+  roster: {
+    bg: '#000000', nav: '#000000', hero: '#161616', accent: '#ffffff',
+    text: '#ffffff', subtext: 'rgba(255,255,255,0.6)', headingFont: 'Archivo, sans-serif', bodyFont: 'sans-serif', navText: '#ffffff',
   },
 };
 
@@ -226,6 +231,11 @@ const THEME_IMAGES: Record<ThemeId, { hero: string; products: [string, string, s
     hero: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E",
     products: ["data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E"],
     heroLabel: 'Custom work.', p1: 'Consultation', p2: 'Small piece', p3: 'Half-day',
+  },
+  roster: {
+    hero: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E",
+    products: ["data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E"],
+    heroLabel: 'Pick your barber.', p1: 'Fade', p2: 'Beard trim', p3: 'Combo',
   },
 };
 
@@ -405,6 +415,15 @@ const THEME_MOCK_DATA: Record<ThemeId, { companyName: string; tagline: string; i
       { id: 's3', name: 'Half-day session', priceCents: 40000, durationMinutes: 240, category: 'Sessions' },
     ],
   },
+  roster: {
+    companyName: 'Crown Cuts Barbershop', tagline: 'Pick your barber. Book your chair.', industry: 'Barbershop',
+    products: [],
+    services: [
+      { id: 's1', name: 'Fade', priceCents: 3500, durationMinutes: 40, category: 'Haircuts' },
+      { id: 's2', name: 'Beard trim', priceCents: 2000, durationMinutes: 20, category: 'Beard' },
+      { id: 's3', name: 'Cut & beard', priceCents: 5000, durationMinutes: 60, category: 'Combos' },
+    ],
+  },
 };
 
 const themeLoaders: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
@@ -424,6 +443,7 @@ const themeLoaders: Record<ThemeId, () => Promise<{ default: ComponentType<Theme
   barber: () => import('../themes/barber/Storefront'),
   studio: () => import('../themes/studio/Storefront'),
   ink: () => import('../themes/ink/Storefront'),
+  roster: () => import('../themes/roster/Storefront'),
 };
 
 function MiniMockup({ id }: { id: ThemeId }) {

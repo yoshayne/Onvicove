@@ -33,6 +33,8 @@ export default function PresetBookingModal({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   if (!isOpen || !service) return null;
+  // Roster: the booking sheet slides in from the right on larger screens
+  const side = p.servicesLayout === 'roster';
 
   const accent = `var(--brand-color, ${p.accent})`;
   const canConfirm = Boolean(selectedDate && selectedSlot && name.trim() && email.trim());
@@ -41,14 +43,14 @@ export default function PresetBookingModal({
   const heading = { fontFamily: p.headingFont, textTransform: p.uppercaseHeadings ? ('uppercase' as const) : undefined, letterSpacing: p.uppercaseHeadings ? '0.04em' : undefined };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4" onClick={onClose}>
+    <div className={`fixed inset-0 z-50 flex items-end justify-center bg-black/60 ${side ? 'sm:items-stretch sm:justify-end' : 'sm:items-center sm:p-4'}`} onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={`Book ${service.name}`}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[94dvh] w-full max-w-lg overflow-y-auto"
-        style={{ background: p.bg, color: p.text, fontFamily: p.bodyFont, borderRadius: `${Math.min(p.radius * 1.5, 24)}px ${Math.min(p.radius * 1.5, 24)}px 0 0` }}
+        className={`w-full overflow-y-auto ${side ? 'max-h-[94dvh] rounded-t-2xl sm:max-h-none sm:h-dvh sm:max-w-md sm:rounded-none' : 'max-h-[94dvh] max-w-lg'}`}
+        style={{ background: p.bg, color: p.text, fontFamily: p.bodyFont, borderRadius: side ? undefined : `${Math.min(p.radius * 1.5, 24)}px ${Math.min(p.radius * 1.5, 24)}px 0 0`, borderLeft: side ? `1px solid ${p.border}` : undefined }}
       >
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 p-4" style={{ background: p.bg, borderBottom: `1px solid ${p.border}` }}>
           <div>

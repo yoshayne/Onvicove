@@ -23,6 +23,7 @@ const THEMES = [
   { id: 'barber',    label: 'Barber',    desc: 'Booking-first, dark — barbershops',               accent: '#d4a73a' },
   { id: 'studio',    label: 'Studio',    desc: 'Booking-first, soft — hair, nails, lashes, spa',  accent: '#b5838d' },
   { id: 'ink',       label: 'Ink',       desc: 'Work-first, high contrast — tattoo, braids',      accent: '#e63946' },
+  { id: 'roster',    label: 'Roster',    desc: 'Booking-first, dark — shops with several pros',    accent: '#ffffff' },
 ];
 
 const INDUSTRIES = [

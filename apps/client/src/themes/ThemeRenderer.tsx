@@ -21,6 +21,7 @@ const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProp
   barber: () => import('./barber/Storefront'),
   studio: () => import('./studio/Storefront'),
   ink: () => import('./ink/Storefront'),
+  roster: () => import('./roster/Storefront'),
 };
 
 interface ThemeRendererProps extends ThemeProps {

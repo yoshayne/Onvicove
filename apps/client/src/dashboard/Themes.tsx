@@ -132,6 +132,13 @@ const THEMES: ThemeOption[] = [
     colors: ['#080808', '#e63946', '#fafafa'],
     hero: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%231a1a1a%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23080808%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E",
   },
+  {
+    id: 'roster',
+    name: 'Roster',
+    description: 'Shops with a team: pick a pro, pick a service',
+    colors: ['#000000', '#ffffff', '#8a8a8a'],
+    hero: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27400%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%23222222%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23000000%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27600%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27/%3E%3C/svg%3E",
+  },
 ];
 
 function ThemeCard({

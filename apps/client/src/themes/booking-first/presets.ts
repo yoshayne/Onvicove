@@ -2,7 +2,7 @@ import type { ProductData, ServiceData, ThemeId } from '../types';
 
 /** Everything that makes Barber, Studio and Ink look different. The page itself is shared (BookingFirstStorefront). */
 export interface BookingFirstPreset {
-  id: Extract<ThemeId, 'barber' | 'studio' | 'ink'>;
+  id: Extract<ThemeId, 'barber' | 'studio' | 'ink' | 'roster'>;
   name: string;
   bg: string;
   surface: string;
@@ -19,6 +19,8 @@ export interface BookingFirstPreset {
   heroFallback: string;
   /** Show the work gallery right after the hero (tattoo / portfolio-led businesses) when no custom order is set */
   galleryFirst?: boolean;
+  /** 'roster': pick a professional and category first, then photo cards that open a side booking panel */
+  servicesLayout?: 'list' | 'roster';
   tagline: string;
   services: ServiceData[];
   products: ProductData[];
@@ -115,4 +117,30 @@ export const inkPreset: BookingFirstPreset = {
   products: [prod('print', 'Flash Print', 25, 'Signed print of a flash design.'), prod('aftercare', 'Aftercare Kit', 20, 'Everything you need to heal well.')],
 };
 
-export const presetFor = (id: string) => ({ barber: barberPreset, studio: studioPreset, ink: inkPreset } as Record<string, BookingFirstPreset>)[id];
+export const rosterPreset: BookingFirstPreset = {
+  id: 'roster',
+  name: 'Roster',
+  bg: '#000000',
+  surface: '#111111',
+  text: '#ffffff',
+  muted: 'rgba(255,255,255,0.6)',
+  border: 'rgba(255,255,255,0.18)',
+  accent: '#ffffff',
+  onAccent: '#000000',
+  radius: 10,
+  headingFont: "'Archivo', 'Inter', sans-serif",
+  bodyFont: "'Archivo', 'Inter', sans-serif",
+  uppercaseHeadings: true,
+  heroFallback: 'linear-gradient(160deg,#1c1c1c 0%,#000000 70%)',
+  servicesLayout: 'roster',
+  tagline: 'Pick your barber. Pick your service. Book your chair.',
+  services: [
+    svc('fade', 'Fade', 35, 40, 'Haircuts', 'Clean fade with a sharp line-up.'),
+    svc('kids', 'Kids cut', 25, 30, 'Haircuts'),
+    svc('beard', 'Beard trim', 20, 20, 'Beard', 'Shape-up and hot towel.'),
+    svc('combo', 'Cut & beard', 50, 60, 'Combos', 'The full works.'),
+  ],
+  products: [prod('pomade', 'Matte Pomade', 18, 'Strong hold, no shine.')],
+};
+
+export const presetFor = (id: string) => ({ barber: barberPreset, studio: studioPreset, ink: inkPreset, roster: rosterPreset } as Record<string, BookingFirstPreset>)[id];
