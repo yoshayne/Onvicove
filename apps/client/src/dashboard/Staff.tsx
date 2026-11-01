@@ -286,7 +286,7 @@ export default function StaffPage() {
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700">Weekly availability</label>
-            <p className="text-xs text-slate-500">Hours customers can book with this person. Leave every day closed to use your business's booking hours (Settings).</p>
+            <p className="text-xs text-slate-500">Hours customers can book with this person, within your business's booking hours (Settings). Days your business is closed stay closed. Leave every day closed to just use the business hours.</p>
             <WeeklyHoursEditor value={form.availability} onChange={(availability) => setForm((f) => ({ ...f, availability }))} />
           </div>
 

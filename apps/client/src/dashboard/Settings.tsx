@@ -90,7 +90,7 @@ function BookingHoursCard({ tenant }: { tenant: Tenant }) {
       <div>
         <h2 className="text-base font-semibold text-slate-900">Booking hours</h2>
         <p className="mt-1 text-sm text-slate-500">
-          When customers can book. This applies to your whole business — and to any staff member who hasn't set hours of their own.
+          When customers can book. A day marked closed here is closed for everyone, including staff who have hours of their own. Staff hours can only narrow these.
         </p>
       </div>
 

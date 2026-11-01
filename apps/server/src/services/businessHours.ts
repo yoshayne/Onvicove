@@ -129,13 +129,56 @@ export function parseHoursText(text: string | null | undefined): WeeklyAvailabil
   return found ? result : null;
 }
 
-/** Hours to book against: the staff member's own, else the business's, else whatever the hours text says. */
+const toMinutes = (t: string) => {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + (m || 0);
+};
+const fromMinutes = (m: number) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+
+/** A window as minutes from midnight; one that ends at/before its start (or at 24:00) runs into the next day */
+function span(w: { start: string; end: string }): [number, number] {
+  const a = toMinutes(w.start);
+  let b = w.end === '24:00' ? 1440 : toMinutes(w.end);
+  if (b <= a) b += 1440;
+  return [a, b];
+}
+
+/** Only the times that are in both lists of windows (per day) */
+function intersectAvailability(staff: WeeklyAvailability, business: WeeklyAvailability): WeeklyAvailability {
+  const out: WeeklyAvailability = {};
+  for (const day of DAY_KEYS) {
+    const windows: { start: string; end: string }[] = [];
+    for (const sw of staff[day] ?? []) {
+      for (const bw of business[day] ?? []) {
+        const [s1, e1] = span(sw);
+        const [s2, e2] = span(bw);
+        const start = Math.max(s1, s2);
+        const end = Math.min(e1, e2);
+        if (end <= start) continue;
+        windows.push({ start: fromMinutes(start), end: end === 1440 ? '24:00' : fromMinutes(end % 1440 === 0 ? 0 : end > 1440 ? end - 1440 : end) });
+      }
+    }
+    out[day] = windows;
+  }
+  return out;
+}
+
+/**
+ * Hours to book against. The business's booking hours apply to everyone: a day the business is closed is closed
+ * for every staff member, even one with hours of their own. A staff member's own hours can only narrow them.
+ * Without business hours, the staff member's own hours are used; failing both, whatever the hours text says.
+ */
 export function resolveAvailability(
   staffAvailability: unknown,
   tenant: { business_hours?: unknown; page_content?: Record<string, unknown> | null },
 ): { availability: WeeklyAvailability; source: 'staff' | 'business' | 'text' | 'none' } {
-  if (hasAnyWindow(staffAvailability)) return { availability: staffAvailability, source: 'staff' };
-  if (hasAnyWindow(tenant.business_hours)) return { availability: tenant.business_hours, source: 'business' };
+  const hasStaff = hasAnyWindow(staffAvailability);
+  const hasBusiness = hasAnyWindow(tenant.business_hours);
+  if (hasStaff && hasBusiness) {
+    return { availability: intersectAvailability(staffAvailability as WeeklyAvailability, tenant.business_hours as WeeklyAvailability), source: 'staff' };
+  }
+  if (hasStaff) return { availability: staffAvailability as WeeklyAvailability, source: 'staff' };
+  if (hasBusiness) return { availability: tenant.business_hours as WeeklyAvailability, source: 'business' };
   const parsed = parseHoursText(tenant.page_content?.['contact.hours'] as string | undefined);
   if (parsed) return { availability: parsed, source: 'text' };
   return { availability: {}, source: 'none' };
