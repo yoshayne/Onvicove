@@ -37,7 +37,7 @@ const BUSINESS_FEE_PERCENT = DIRECT ? 0.01 : 0.039;
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   plans: {
-    starter: { name: 'Starter', price_cents: 0, product_limit: 5, service_limit: 10, ai_credits: 0, platform_fee_percent: null, platform_fee_fixed_cents: null },
+    starter: { name: 'Starter', price_cents: 0, product_limit: 5, service_limit: 3, ai_credits: 0, platform_fee_percent: null, platform_fee_fixed_cents: null },
     pro: { name: 'Pro', price_cents: 2900, product_limit: null, service_limit: null, ai_credits: 10, platform_fee_percent: null, platform_fee_fixed_cents: null },
     business: { name: 'Business', price_cents: 7900, product_limit: null, service_limit: null, ai_credits: 50, platform_fee_percent: BUSINESS_FEE_PERCENT, platform_fee_fixed_cents: null },
   },

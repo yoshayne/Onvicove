@@ -36,7 +36,7 @@ const STEPS = [
 const PLANS = [
   {
     name: 'Starter', price: '$0', desc: 'Everything you need to get online and start selling.', cta: 'Start free', highlight: false,
-    features: ['Online store or booking page', 'Up to 5 products and 10 services', '9 free themes', 'Stripe payments', 'Free first-sale flyer'],
+    features: ['Online store or booking page', 'Up to 5 products and 3 services', '9 free themes', 'Stripe payments', 'Free first-sale flyer'],
   },
   {
     name: 'Pro', price: '$29', desc: 'For growing businesses that want to look fully custom.', cta: 'Get Pro', highlight: true,

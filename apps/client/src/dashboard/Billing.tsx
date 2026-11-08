@@ -25,7 +25,7 @@ const PLANS = [
     name: 'Starter',
     price: 'Free',
     priceCents: 0,
-    features: ['Online store or booking page', 'Up to 5 products & 10 services', 'Standard themes', 'Shop Suite Direct branding'],
+    features: ['Online store or booking page', 'Up to 5 products & 3 services', 'Standard themes', 'Shop Suite Direct branding'],
   },
   {
     id: 'pro' as PlanId,

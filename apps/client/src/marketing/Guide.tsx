@@ -349,7 +349,7 @@ export default function Guide() {
                 priceNote: 'forever',
                 highlight: false,
                 desc: '2% platform fee + Stripe fees',
-                perks: ['Free subdomain', 'Up to 5 products & 10 services', 'Basic analytics', 'Stripe payments'],
+                perks: ['Free subdomain', 'Up to 5 products & 3 services', 'Basic analytics', 'Stripe payments'],
               },
               {
                 name: 'Pro',
