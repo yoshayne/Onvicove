@@ -20,7 +20,7 @@ const THEMES: { id: ThemeId; name: string; desc: string; premium?: boolean; isNe
   { id: 'brutalist', name: 'Brutalist', desc: 'Raw, bold, unconventional', premium: true },
   { id: 'neon-tokyo', name: 'Neon Tokyo', desc: 'Cyberpunk neon energy', premium: true },
   { id: 'craft', name: 'Craft', desc: 'Handmade paper textures', premium: true },
-  { id: 'lens', name: 'Lens', desc: 'Photo-forward dark aesthetic', premium: true },
+  { id: 'lens', name: 'Lens', desc: 'Photographers: sessions & prints, dark and photo-forward' },
 ];
 
 // Per-theme color palette for mini mockups

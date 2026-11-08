@@ -15,6 +15,7 @@ const THEME_OPTIONS: ThemeOption[] = [
   { id: 'barber', name: 'Barber', description: 'Dark & sharp, booking first', colors: ['#0c0c0d', '#d4a73a', '#f4f4f5'] },
   { id: 'studio', name: 'Studio', description: 'Soft & elegant, booking first', colors: ['#faf6f2', '#b5838d', '#2c2420'] },
   { id: 'ink', name: 'Ink', description: 'High contrast, your work first', colors: ['#080808', '#e63946', '#fafafa'] },
+  { id: 'lens', name: 'Lens', description: 'Photographers: sessions & prints', colors: ['#0c0c0c', '#c8a96e', '#f0ede8'] },
   { id: 'roster', name: 'Roster', description: 'Pick your pro, pick your service', colors: ['#000000', '#ffffff', '#8a8a8a'] },
   { id: 'editorial', name: 'Editorial', description: 'Dark luxury, serif headlines', colors: ['#1a1a1a', '#d4a96a', '#ffffff'] },
   { id: 'minimal', name: 'Minimal', description: 'Swiss grid, clean whitespace', colors: ['#ffffff', '#111111', '#f8f8f8'] },
