@@ -6,7 +6,7 @@ import { requireTenant } from '../middleware/tenant';
 import { enrichWithUrls } from '../services/storage';
 import { checkItemLimit } from '../services/settings';
 import { ensureStorefrontSection } from '../services/storefrontSections';
-import { attachOptions, saveOptions } from '../services/serviceOptions';
+import { attachOptions, saveOptions, optionsBlockedForPlan } from '../services/serviceOptions';
 
 const app = new Hono();
 
@@ -95,6 +95,7 @@ app.post('/', async (c) => {
   }
 
   const { options: newOptions, ...serviceFields } = d;
+  if (optionsBlockedForPlan(tenant.plan, newOptions?.length ?? 0, 0)) return c.json({ error: 'Service options are on the Pro and Business plans. Upgrade to offer choices like Kids / Adult.' }, 402);
   const rows = await db`
     INSERT INTO services (
       tenant_id, name, description, price_cents, duration_minutes, buffer_minutes,
@@ -136,6 +137,10 @@ app.patch('/:id', async (c) => {
     }
   }
   const { options: patchOptions, ...patchFields } = d;
+  if (patchOptions) {
+    const [{ count }] = await db`SELECT COUNT(*)::int AS count FROM service_options WHERE service_id = ${id} AND tenant_id = ${tenant.id}`;
+    if (optionsBlockedForPlan(tenant.plan, patchOptions.length, count as number)) return c.json({ error: 'Service options are on the Pro and Business plans. Upgrade to add more choices.' }, 402);
+  }
   const updates: Record<string, unknown> = { ...patchFields };
   if (d.image_keys !== undefined) updates.image_keys = db.json(d.image_keys as never);
 

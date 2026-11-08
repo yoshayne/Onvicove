@@ -32,7 +32,7 @@ const PLANS = [
     name: 'Pro',
     price: '$29/mo',
     priceCents: 2900,
-    features: ['Unlimited products & services', 'All premium themes', 'Remove branding', 'AI photo generation credits', 'Priority support'],
+    features: ['Unlimited products & services', 'Service options (Kids, Adult, Long hair)', 'All premium themes', 'Remove branding', 'AI photo generation credits', 'Priority support'],
   },
   {
     id: 'business' as PlanId,

@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { useApi } from '../lib/api';
+import type { Tenant } from '../types';
+import { useStarterLimits } from '../wizard/planGate';
 import type { Service } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
@@ -67,6 +70,10 @@ export default function Services() {
       setUploading(false);
     }
   }
+
+  const tenantQ = useQuery({ queryKey: ['tenant', 'me'], queryFn: () => api.get<{ tenant: Tenant }>('/tenants/me') });
+  const isStarter = tenantQ.data?.tenant.plan === 'starter';
+  const limits = useStarterLimits();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['services'],
@@ -154,13 +161,24 @@ export default function Services() {
   }
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
+  const serviceCount = data?.services.length ?? 0;
+  const atLimit = isStarter && limits?.services != null && serviceCount >= limits.services;
+  // Free plan: options you already have stay editable, but adding more needs Pro or Business
+  const canAddOption = !isStarter || form.options.length < (editing?.options?.length ?? 0);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Services</h1>
-        <Button onClick={openCreate}>Add service</Button>
+        <Button onClick={openCreate} disabled={atLimit}>Add service</Button>
       </div>
+
+      {isStarter && limits?.services != null && (
+        <div className={`rounded-lg px-4 py-3 text-sm ${atLimit ? 'bg-amber-50 text-amber-900' : 'bg-slate-50 text-slate-600'}`}>
+          {atLimit ? `You've used all ${limits.services} services on the free plan.` : `Free plan: ${serviceCount} of ${limits.services} services used.`}{' '}
+          <Link to="/dashboard/billing" className="font-semibold underline">Upgrade for unlimited services and service options</Link>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">
@@ -328,7 +346,7 @@ export default function Services() {
                   <button type="button" aria-label="Remove option" onClick={() => setForm((f) => ({ ...f, options: f.options.filter((_, j) => j !== i) }))} className="mb-2 px-2 text-slate-400 hover:text-red-600">✕</button>
                 </div>
               ))}
-              {form.options.length < 12 && (
+              {form.options.length < 12 && canAddOption && (
                 <button
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, options: [...f.options, { name: '', price_cents: f.options.length ? f.options[f.options.length - 1].price_cents : f.price_cents, duration_minutes: f.options.length ? f.options[f.options.length - 1].duration_minutes : f.duration_minutes }] }))}
@@ -336,6 +354,11 @@ export default function Services() {
                 >
                   + Add option
                 </button>
+              )}
+              {!canAddOption && (
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  Service options are on the Pro and Business plans. <Link to="/dashboard/billing" className="font-semibold underline">Upgrade</Link> to offer choices like Kids / Adult.
+                </p>
               )}
             </fieldset>
           )}

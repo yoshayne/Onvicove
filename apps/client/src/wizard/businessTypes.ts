@@ -86,19 +86,19 @@ export const BUSINESS_TYPES: BusinessType[] = [
     id: 'barber', label: 'Barbershop', emoji: '💈', group: 'services', mode: 'book', industry: 'Barbershop',
     themeId: 'barber',
     why: ['Built for barbershops: dark, sharp and booking-first', 'Your services and prices up front, grouped by Haircuts, Beard and Combos', 'A Book button that stays in reach on phones, plus a next-available time shortcut'],
-    starterServices: [s('Haircuts', 'Haircut', 30, 30), s('Haircuts', 'Kids cut', 22, 30), s('Beard', 'Beard trim', 15, 20), s('Combos', 'Cut & beard', 40, 45)],
+    starterServices: [s('Haircuts', 'Haircut', 30, 30), s('Beard', 'Beard trim', 15, 20), s('Combos', 'Cut & beard', 40, 45)],
   },
   {
     id: 'hair_salon', label: 'Hair salon', emoji: '💇', group: 'services', mode: 'book', industry: 'Hair salon',
     themeId: 'studio',
     why: ['Soft, elegant look that matches a salon experience', 'Services grouped by category with clear times and prices', 'Pick-your-stylist booking and a work gallery for before-and-afters'],
-    starterServices: [s('Cuts & styling', 'Women\'s cut', 55, 45), s('Cuts & styling', 'Blowout', 45, 45), s('Color', 'Color', 120, 120), s('Color', 'Highlights', 160, 150)],
+    starterServices: [s('Cuts & styling', 'Women\'s cut', 55, 45), s('Cuts & styling', 'Blowout', 45, 45), s('Color', 'Color', 120, 120)],
   },
   {
     id: 'natural_hair', label: 'Natural hair', emoji: '🌿', group: 'services', mode: 'book', industry: 'Natural hair',
     themeId: 'studio',
     why: ['Warm, welcoming look that feels personal', 'Easy booking for longer appointments, with your stylists up front', 'Space to show your work'],
-    starterServices: [s('Styling', 'Wash & style', 85, 90), s('Styling', 'Twist-out', 95, 120), s('Styling', 'Silk press', 110, 120), s('Care', 'Trim', 40, 45)],
+    starterServices: [s('Styling', 'Wash & style', 85, 90), s('Styling', 'Twist-out', 95, 120), s('Styling', 'Silk press', 110, 120)],
   },
   {
     id: 'braids_locs', label: 'Braids & locs', emoji: '✨', group: 'services', mode: 'book', industry: 'Braids & locs',
@@ -107,7 +107,6 @@ export const BUSINESS_TYPES: BusinessType[] = [
     starterServices: [
       s('Braids', 'Knotless braids', 220, 240, { depositCents: 5000 }),
       s('Locs', 'Loc retwist', 90, 120),
-      s('Locs', 'Loc maintenance', 100, 120),
       s('Locs', 'Starter locs', 180, 180, { depositCents: 5000 }),
     ],
   },
@@ -115,19 +114,19 @@ export const BUSINESS_TYPES: BusinessType[] = [
     id: 'nails', label: 'Nails', emoji: '💅', group: 'services', mode: 'book', industry: 'Nails',
     themeId: 'studio',
     why: ['Soft, photo-friendly look that suits nail art', 'Services by category (Hands, Feet) with quick booking', 'Pick-your-nail-tech booking'],
-    starterServices: [s('Hands', 'Manicure', 30, 45), s('Feet', 'Pedicure', 45, 60), s('Hands', 'Gel set', 55, 90), s('Hands', 'Full set', 70, 120)],
+    starterServices: [s('Hands', 'Manicure', 30, 45), s('Feet', 'Pedicure', 45, 60), s('Hands', 'Gel set', 55, 90)],
   },
   {
     id: 'lashes_brows', label: 'Lashes & brows', emoji: '👁️', group: 'services', mode: 'book', industry: 'Lashes & brows',
     themeId: 'studio',
     why: ['A clean, polished look that feels professional', 'Lashes and Brows grouped clearly with prices and times', 'Simple booking for fills and refreshes'],
-    starterServices: [s('Lashes', 'Classic lashes', 120, 120), s('Lashes', 'Volume lashes', 150, 150), s('Lashes', 'Lash fill', 65, 60), s('Brows', 'Brow shape', 30, 30)],
+    starterServices: [s('Lashes', 'Classic lashes', 120, 120), s('Lashes', 'Volume lashes', 150, 150), s('Brows', 'Brow shape', 30, 30)],
   },
   {
     id: 'spa_massage', label: 'Spa & massage', emoji: '🧖', group: 'services', mode: 'book', industry: 'Spa & massage',
     themeId: 'studio',
     why: ['Calm, soft look that sets a relaxing tone', 'Treatments grouped (Massage, Facials) with durations', 'Easy online booking for repeat clients'],
-    starterServices: [s('Massage', 'Swedish massage', 90, 60), s('Massage', 'Deep tissue massage', 110, 60), s('Facials', 'Facial', 85, 60), s('Massage', 'Hot stone massage', 130, 90)],
+    starterServices: [s('Massage', 'Swedish massage', 90, 60), s('Massage', 'Deep tissue massage', 110, 60), s('Facials', 'Facial', 85, 60)],
   },
   {
     id: 'tattoo', label: 'Tattoo', emoji: '🖋️', group: 'services', mode: 'book', industry: 'Tattoo',
@@ -137,7 +136,6 @@ export const BUSINESS_TYPES: BusinessType[] = [
       s('Sessions', 'Consultation', 0, 30),
       s('Sessions', 'Small piece', 100, 60, { depositCents: 5000 }),
       s('Sessions', 'Half-day session', 400, 240, { depositCents: 10000 }),
-      s('Sessions', 'Touch-up', 50, 30),
     ],
   },
 

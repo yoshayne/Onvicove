@@ -19,7 +19,7 @@ const INDUSTRIES = [
 ];
 
 const FEATURES = [
-  { icon: Monitor, color: '#7C3AED', title: 'Website Builder', desc: '16 themes, professional and mobile ready.' },
+  { icon: Monitor, color: '#7C3AED', title: 'Website Builder', desc: '17 themes, professional and mobile ready.' },
   { icon: ShoppingCart, color: '#D946EF', title: 'Online Store', desc: 'Sell your products, ship or pick up.' },
   { icon: Calendar, color: '#3B82F6', title: 'Booking Calendar', desc: 'Clients book and pay for your services.' },
   { icon: CreditCard, color: '#22C55E', title: 'Payments', desc: 'Get paid securely, straight to your bank.' },
@@ -36,11 +36,11 @@ const STEPS = [
 const PLANS = [
   {
     name: 'Starter', price: '$0', desc: 'Everything you need to get online and start selling.', cta: 'Start free', highlight: false,
-    features: ['Online store or booking page', 'Up to 5 products and 3 services', '9 free themes', 'Stripe payments', 'Free first-sale flyer'],
+    features: ['Online store or booking page', 'Up to 5 products and 3 services', '11 free themes', 'Stripe payments', 'Free first-sale flyer'],
   },
   {
     name: 'Pro', price: '$29', desc: 'For growing businesses that want to look fully custom.', cta: 'Get Pro', highlight: true,
-    features: ['Unlimited products and services', 'All 16 themes', 'Your own branding, not ours', 'AI product photos (10 credits)', 'Discount codes and analytics', 'Priority support'],
+    features: ['Unlimited products and services', 'Service options (Kids, Adult, Long hair)', 'All 17 themes', 'Your own branding, not ours', 'AI product photos (10 credits)', 'Discount codes and analytics', 'Priority support'],
   },
   {
     name: 'Business', price: '$79', desc: 'Advanced tools for teams and high volume.', cta: 'Get Business', highlight: false,
@@ -52,6 +52,7 @@ const FAQ = [
   { q: 'Do I need my own domain?', a: 'No. You get a free address right away. You can connect your own domain on the Business plan.' },
   { q: 'How do I get paid?', a: 'Through Stripe, straight to your bank. Connecting takes about 5 minutes, right after you launch.' },
   { q: 'Can I try the paid themes first?', a: 'Yes. Preview every theme with your own details. You only pay if you want to publish a Pro theme.' },
+  { q: 'What does the free plan include?', a: 'Your own online store or booking page with up to 5 products and 3 services, 11 themes and Stripe payments. Pro adds unlimited products and services, service options, all 17 themes and your own branding.' },
   { q: 'Can I cancel anytime?', a: 'Yes. No contracts. Your site stays live on the free plan.' },
   { q: 'Can customers reschedule?', a: 'Yes. They get a private link in their confirmation and reminder emails.' },
   { q: "I'm not techy. Is this for me?", a: "That's who it's for. If you can use Instagram, you can build your site." },

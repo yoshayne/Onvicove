@@ -28,6 +28,7 @@ const PLANS: PlanOption[] = [
     description: 'For growing businesses ready to look fully custom.',
     features: [
       'Unlimited products & services',
+      'Service options (Kids, Adult, Long hair)',
       'All premium themes',
       'Remove Shop Suite Direct branding',
       'AI photo generation credits',

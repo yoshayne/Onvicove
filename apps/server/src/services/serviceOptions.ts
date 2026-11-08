@@ -56,3 +56,8 @@ export async function resolveBookable<S extends { id: string; name: string; pric
   if (!option) return { ok: false, error: 'That option is no longer available. Please choose again.' };
   return { ok: true, service: { ...service, price_cents: option.price_cents, duration_minutes: option.duration_minutes }, option };
 }
+
+/** Starter stores can keep options they already have, but adding more (or the first) needs Pro or Business */
+export function optionsBlockedForPlan(plan: string, wanted: number, existing: number): boolean {
+  return plan === 'starter' && wanted > existing;
+}
