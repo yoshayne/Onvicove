@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-react';
 import { Link } from 'react-router-dom';
@@ -8,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useApi } from '../lib/api';
+import { hasAnyHours } from '../lib/hours';
 import type { Tenant, Order, Booking, Product, Service } from '../types';
 import { isPaidOrder, isLiveBooking, isUnpaidBooking, isUnpaidOrder, moneyEvents, sumOnDay, dayKey, lastDayKeys, formatMoney } from '../lib/metrics';
 import Spinner from '../components/shared/Spinner';
@@ -129,15 +131,23 @@ function QuickAction({
 
 // ── Checklist item ────────────────────────────────────────────────────────────
 
-function CheckItem({ done, label }: { done: boolean; label: string }) {
-  return (
-    <div className="flex items-center gap-2.5 text-sm">
-      {done
-        ? <CheckCircle2 size={16} className="shrink-0 text-emerald-500" />
-        : <Circle size={16} className="shrink-0 text-slate-300" />}
-      <span className={done ? 'text-slate-700' : 'text-slate-400'}>{label}</span>
-    </div>
+function CheckItem({ done, label, hint, to, onClick }: { done: boolean; label: string; hint?: string; to?: string; onClick?: () => void }) {
+  const icon = done
+    ? <CheckCircle2 size={16} className="shrink-0 text-emerald-500" />
+    : <Circle size={16} className="shrink-0 text-slate-300" />;
+  const body = (
+    <>
+      {icon}
+      <span className="min-w-0">
+        <span className={done ? 'text-slate-700' : to || onClick ? 'font-medium text-slate-700' : 'text-slate-400'}>{label}</span>
+        {!done && hint && <span className="block text-[11px] text-slate-400">{hint}</span>}
+      </span>
+    </>
   );
+  const cls = 'flex items-center gap-2.5 text-sm';
+  if (done || (!to && !onClick)) return <div className={cls}>{body}</div>;
+  if (to) return <Link to={to} className={`${cls} rounded-md hover:text-violet-700`}>{body}</Link>;
+  return <button type="button" onClick={onClick} className={`${cls} text-left`}>{body}</button>;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -151,6 +161,17 @@ export default function Overview() {
   const bookingsQ = useQuery({ queryKey: ['bookings'], queryFn: () => api.get<{ bookings: Booking[] }>('/bookings') });
   const productsQ = useQuery({ queryKey: ['products'], queryFn: () => api.get<{ products: Product[] }>('/products') });
   const servicesQ = useQuery({ queryKey: ['services'], queryFn: () => api.get<{ services: Service[] }>('/services') });
+
+  // "Share your site" is ticked once the owner copies or opens their link (remembered on this device)
+  const sharedKey = `setup-shared:${tenantQ.data?.tenant?.id ?? ''}`;
+  const [shared, setShared] = useState(false);
+  useEffect(() => {
+    try { setShared(localStorage.getItem(sharedKey) === '1'); } catch { /* ignore */ }
+  }, [sharedKey]);
+  function markShared() {
+    setShared(true);
+    try { localStorage.setItem(sharedKey, '1'); } catch { /* ignore */ }
+  }
 
   if (tenantQ.isLoading || ordersQ.isLoading || bookingsQ.isLoading) {
     return (
@@ -248,17 +269,29 @@ export default function Overview() {
     })),
   ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 9);
 
-  // Setup checklist
+  // Setup checklist: six steps that depend only on the owner, matched to what the store does, each one a click away
   const hasSale = totalRevCents > 0;
-  const setupItems = [
+  const sells = tenant?.mode !== 'book';
+  const books = tenant?.mode !== 'store';
+  const firstItem = sells && books
+    ? { done: products.length > 0 || services.length > 0, label: 'Add your first product or service', to: '/dashboard/products' }
+    : sells
+      ? { done: products.length > 0, label: 'Add your first product', to: '/dashboard/products' }
+      : { done: services.length > 0, label: 'Add your first service', to: '/dashboard/services' };
+  const secondItem = books
+    ? { done: hasAnyHours(tenant?.business_hours), label: 'Set your booking hours', hint: 'So customers can book real times', to: '/dashboard/settings' }
+    : { done: products.some((p) => (p.image_urls?.length ?? 0) > 0), label: 'Add a product photo', hint: 'Photos sell products', to: '/dashboard/products' };
+  const setupItems: { done: boolean; label: string; hint?: string; to?: string; onClick?: () => void }[] = [
     { done: true, label: 'Store created' },
-    { done: !!tenant?.custom_domain_verified, label: 'Domain connected' },
-    { done: !!tenant?.stripe_onboarded, label: 'Payments connected' },
-    { done: services.length > 0, label: 'Booking calendar ready' },
-    { done: products.length > 0, label: 'First product added' },
-    { done: hasSale, label: 'Get your first sale' },
+    { done: !!tenant?.stripe_onboarded, label: 'Connect payments', hint: 'About 5 minutes. Needed to get paid', to: '/dashboard/payouts' },
+    firstItem,
+    secondItem,
+    { done: !!tenant?.page_content?.['about.text']?.trim(), label: 'Write your About text', hint: 'Tell customers who you are', to: '/dashboard/page-builder' },
+    { done: shared || hasSale, label: 'Share your site', hint: 'Copy your link and send it to 3 people', onClick: () => { void copyLink(); markShared(); } },
   ];
-  const setupPct = Math.round((setupItems.filter(s => s.done).length / setupItems.length) * 100);
+  const setupDone = setupItems.filter((i) => i.done).length;
+  const setupPct = Math.round((setupDone / setupItems.length) * 100);
+  const nextStep = setupItems.find((i) => !i.done);
 
   // Upcoming bookings
   const upcoming = bookings
@@ -509,19 +542,32 @@ export default function Overview() {
                   <span className="text-[10px] font-medium text-slate-500">Complete</span>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex min-w-0 flex-col gap-2.5">
                 {setupItems.map(item => (
-                  <CheckItem key={item.label} done={item.done} label={item.label} />
+                  <CheckItem key={item.label} done={item.done} label={item.label} hint={item.hint} to={item.to} onClick={item.onClick} />
                 ))}
               </div>
             </div>
-            {setupPct < 100 && (
-              <Link
-                to="/onboarding"
-                className="mt-4 flex items-center gap-1 text-xs font-semibold text-violet-600 hover:text-violet-700"
-              >
-                View Setup Guide <ArrowRight size={12} />
-              </Link>
+            {nextStep ? (
+              nextStep.to ? (
+                <Link to={nextStep.to} className="mt-4 flex items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-700">
+                  Next: {nextStep.label} <ArrowRight size={12} />
+                </Link>
+              ) : (
+                <button type="button" onClick={nextStep.onClick} className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-700">
+                  Next: {nextStep.label} <ArrowRight size={12} />
+                </button>
+              )
+            ) : (
+              <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800">You're all set. Next goal: your first {sells && !books ? 'order' : 'booking or order'}.</p>
+            )}
+            {!tenant?.custom_domain_verified && (
+              <p className="mt-3 text-[11px] text-slate-400">
+                Optional: use your own domain (Business plan).{' '}
+                <Link to={tenant?.plan === 'business' ? '/dashboard/settings' : '/dashboard/billing'} className="font-semibold text-violet-600 hover:underline">
+                  {tenant?.plan === 'business' ? 'Connect it' : 'Learn more'}
+                </Link>
+              </p>
             )}
           </div>
 
