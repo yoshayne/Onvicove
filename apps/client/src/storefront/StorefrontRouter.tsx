@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '../lib/api';
 import Spinner from '../components/shared/Spinner';
 import ThemeRenderer from '../themes/ThemeRenderer';
-import type { ThemeData, ProductData, ProductVariantData, ServiceData, StaffData } from '../themes/types';
+import type { CustomBlockData, ThemeData, ProductData, ProductVariantData, ServiceData, StaffData } from '../themes/types';
 import type { GallerySectionData } from '../themes/shared/Gallery';
 import { getFontPair } from '../themes/shared/fontPairs';
 import { describeHours } from '../lib/hours';
@@ -252,6 +252,14 @@ export default function StorefrontRouter({ slug: hostSlug }: { slug?: string }) 
   const enabledSections = allSections.filter((s) => s.enabled);
   const visibleSections = enabledSections.map((s) => s.id);
   const galleries = enabledSections.filter((s) => s.type === 'gallery') as unknown as GallerySectionData[];
+  // Custom blocks the owner added (the server only sends them for Pro and Business)
+  const customBlocks: CustomBlockData[] = enabledSections
+    .filter((s) => s.type === 'block')
+    .map((s) => ({
+      id: s.id, kind: s.kind as CustomBlockData['kind'], title: s.title as string | undefined, body: s.body as string | undefined,
+      imageUrl: s.imageUrl as string | undefined, imageAlt: s.imageAlt as string | undefined, buttonLabel: s.buttonLabel as string | undefined,
+      buttonHref: s.buttonHref as string | undefined, align: s.align as CustomBlockData['align'],
+    }));
   // The owner's per-section design choices (only Pro and Business ones reach here: the server drops them for free stores)
   const sectionDesigns: Record<string, SectionDesign> = {};
   for (const s of enabledSections) {
@@ -271,6 +279,7 @@ export default function StorefrontRouter({ slug: hostSlug }: { slug?: string }) 
         galleries={galleries}
         visibleSections={visibleSections}
         sectionDesigns={sectionDesigns}
+        customBlocks={customBlocks}
       />
     </div>
   );

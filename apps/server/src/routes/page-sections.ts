@@ -4,7 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { refreshGalleryUrls } from '../services/storage';
-import { applyDesignPlan } from '../services/sectionDesign';
+import { applyPlanRules, resolveBlockImages } from '../services/sectionDesign';
 
 const app = new Hono();
 
@@ -36,6 +36,7 @@ app.get('/:page', async (c) => {
 
   // Re-sign gallery image URLs so they never expire in the UI
   await refreshGalleryUrls(sections);
+  await resolveBlockImages(sections);
 
   return c.json({ sections });
 });
@@ -72,7 +73,7 @@ app.put('/:page', async (c) => {
   }
 
   // Per-section design choices are a Pro and Business feature
-  const toSave = applyDesignPlan(parsed.data.sections as { design?: unknown }[], (tenant as { plan?: string }).plan);
+  const toSave = applyPlanRules(parsed.data.sections as { type?: unknown }[], (tenant as { plan?: string }).plan, tenant.id);
 
   const rows = await db`
     INSERT INTO page_sections (tenant_id, page, sections)

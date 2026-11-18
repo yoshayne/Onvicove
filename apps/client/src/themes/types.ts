@@ -73,6 +73,19 @@ export interface ProductImage {
   alt?: string;
 }
 
+/** A text, image or button block the owner added between sections (Pro and Business) */
+export interface CustomBlockData {
+  id: string;
+  kind: 'text' | 'image' | 'cta';
+  title?: string;
+  body?: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  buttonLabel?: string;
+  buttonHref?: string;
+  align?: 'left' | 'center' | 'right';
+}
+
 export interface ProductVariantData {
   id: string;
   name: string;
@@ -169,6 +182,8 @@ export interface ThemeProps {
   galleries?: import('./shared/Gallery').GallerySectionData[];
   /** Owner's per-section design choices (Pro and Business), keyed by section id. Used by the Barber, Studio, Ink and Roster themes. */
   sectionDesigns?: Record<string, import('./shared/sectionDesign').SectionDesign>;
+  /** The owner's custom blocks (Pro and Business), in page order via visibleSections */
+  customBlocks?: CustomBlockData[];
   onAddToCart?: (product: ProductData) => void;
   onBookService?: (service: ServiceData) => void;
 }

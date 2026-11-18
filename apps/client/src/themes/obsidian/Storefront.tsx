@@ -14,6 +14,7 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import CustomBlocks from '../shared/CustomBlocks';
 import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
@@ -39,7 +40,7 @@ const G = {
 const serif = 'Playfair Display, Georgia, serif';
 const SIDEBAR_W = 72;
 
-export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections, sectionDesigns }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], customBlocks, visibleSections, sectionDesigns }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
@@ -617,6 +618,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── Galleries ── */}
+      <CustomBlocks blocks={customBlocks} ord={ord} />
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
         <div key={g.id} style={ord(g.id)}><Gallery layout={g.layout} images={g.images} title={g.title} /></div>
       ))}

@@ -17,6 +17,7 @@ import AboutBlock from '../shared/AboutBlock';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import CustomBlocks from '../shared/CustomBlocks';
 import type { SectionDesign } from '../shared/sectionDesign';
 
 const V = {
@@ -36,7 +37,7 @@ function luminance(hex: string): number {
  * The booking-first page shared by the Barber, Studio and Ink themes: your services and a Book button come first,
  * then your team, your work, reviews and your shop. Look and feel come from the preset.
  */
-export default function BookingFirstStorefront({ preset: p, theme, products, services, staff, galleries = [], visibleSections, sectionDesigns }: ThemeProps & { preset: BookingFirstPreset }) {
+export default function BookingFirstStorefront({ preset: p, theme, products, services, staff, galleries = [], customBlocks, visibleSections, sectionDesigns }: ThemeProps & { preset: BookingFirstPreset }) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [proFilter, setProFilter] = useState<string | null>(null);
@@ -207,6 +208,8 @@ export default function BookingFirstStorefront({ preset: p, theme, products, ser
           </div>
         </section>
       )}
+
+      <CustomBlocks blocks={customBlocks} ord={ord} />
 
       {galleryFirst && galleryEls}
 

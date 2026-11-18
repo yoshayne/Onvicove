@@ -9,7 +9,7 @@ import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { addDays, format, parse } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { attachOptions, resolveBookable } from '../services/serviceOptions';
-import { applyDesignPlan } from '../services/sectionDesign';
+import { applyPlanRules, resolveBlockImages } from '../services/sectionDesign';
 import { slotsForService, holdsTime, pickStaffForSlot } from '../services/slots';
 import { newManageToken, manageUrlFor } from '../services/bookingManage';
 import { verifyUnsubscribeToken } from '../lib/announcementText';
@@ -78,7 +78,9 @@ app.get('/:slug/page-sections/:page', async (c) => {
   await refreshGalleryUrls(sections);
 
   // Per-section design choices only apply on Pro and Business
-  return c.json({ sections: Array.isArray(sections) ? applyDesignPlan(sections, tenants[0].plan as string) : sections });
+  const allowed = Array.isArray(sections) ? applyPlanRules(sections, tenants[0].plan as string, tenants[0].id as string) : sections;
+  await resolveBlockImages(allowed);
+  return c.json({ sections: allowed });
 });
 
 // GET /api/public/:slug/products

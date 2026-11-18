@@ -4,7 +4,7 @@ import {
   Monitor, Tablet, Smartphone, ExternalLink, Save, RefreshCw,
   GripVertical, Eye, EyeOff, ChevronDown, ChevronRight, ChevronLeft, Plus,
   Home, ShoppingBag, Sparkles, Info, Image as ImageIcon, Users,
-  Star, MapPin, Trash2, Upload, Lock, RotateCcw, Check,
+  Star, MapPin, Trash2, Upload, Lock, RotateCcw, Check, MousePointerClick,
   Palette, Type, Phone, Mail, Clock, HelpCircle,
   type LucideIcon,
 } from 'lucide-react';
@@ -41,6 +41,15 @@ interface Section {
   images?: GalleryImageData[];
   /** Pro and Business: the owner's look for this section */
   design?: SectionDesign;
+  // custom blocks (type 'block')
+  kind?: 'text' | 'image' | 'cta';
+  body?: string;
+  imageKey?: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  buttonLabel?: string;
+  buttonHref?: string;
+  align?: 'left' | 'center' | 'right';
 }
 
 type Device = 'desktop' | 'tablet' | 'mobile';
@@ -91,7 +100,14 @@ const SECTION_META: Record<string, { label: string; icon: LucideIcon; color: str
   testimonials:       { label: 'Testimonials',       icon: Star,      color: 'bg-yellow-100 text-yellow-600' },
   faq:                { label: 'FAQ',                icon: HelpCircle,  color: 'bg-indigo-100 text-indigo-600' },
   contact:            { label: 'Contact / Location', icon: MapPin,    color: 'bg-red-100 text-red-600' },
+  'block-text':       { label: 'Text block',         icon: Type,      color: 'bg-slate-100 text-slate-600' },
+  'block-image':      { label: 'Image block',        icon: ImageIcon, color: 'bg-sky-100 text-sky-600' },
+  'block-cta':        { label: 'Button block',       icon: MousePointerClick, color: 'bg-fuchsia-100 text-fuchsia-600' },
 };
+
+const BLOCK_KINDS = ['text', 'image', 'cta'] as const;
+const MAX_BLOCKS = 8;
+const metaOf = (s: Section) => SECTION_META[s.type === 'block' ? `block-${s.kind ?? 'text'}` : s.type];
 
 const ADDABLE_SECTIONS: SectionType[] = ['hero', 'featured-products', 'services', 'about', 'gallery', 'staff', 'testimonials', 'faq', 'contact'];
 
@@ -299,6 +315,70 @@ function DesignControls({ section, isPaid, level, onChange }: { section: Section
   );
 }
 
+// ── Custom block editor (Pro and Business) ────────────────────────────────────
+
+function BlockEditor({ section, onChange, onRemove }: { section: Section; onChange: (patch: Partial<Section>) => void; onRemove: () => void }) {
+  const api = useApi();
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const kind = section.kind ?? 'text';
+  const input = 'rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400';
+
+  async function upload(file: File) {
+    setError(null);
+    setUploading(true);
+    try {
+      const res = await api.upload<{ key: string; url: string }>('/uploads', file);
+      onChange({ imageKey: res.key, imageUrl: res.url });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="mt-1 flex flex-col gap-3">
+      {kind === 'image' && (
+        <div>
+          <p className="mb-1 text-xs font-semibold text-slate-700">Photo</p>
+          {section.imageUrl && <img src={section.imageUrl} alt="" className="mb-2 h-28 w-full rounded-lg object-cover" />}
+          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
+            <Upload size={12} /> {uploading ? 'Uploading…' : section.imageUrl ? 'Replace photo' : 'Upload a photo'}
+            <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void upload(f); }} />
+          </label>
+          {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+          <input className={`${input} mt-2 w-full`} placeholder="Describe the photo (for screen readers)" maxLength={160} value={section.imageAlt ?? ''} onChange={(e) => onChange({ imageAlt: e.target.value })} />
+        </div>
+      )}
+      <label className="flex flex-col gap-1 text-xs text-slate-600">
+        Heading
+        <input className={input} maxLength={120} value={section.title ?? ''} onChange={(e) => onChange({ title: e.target.value })} placeholder={kind === 'cta' ? 'e.g. Ready for a fresh cut?' : 'Optional'} />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-slate-600">
+        {kind === 'image' ? 'Caption' : 'Text'}
+        <textarea rows={kind === 'image' ? 2 : 4} className={input} maxLength={2000} value={section.body ?? ''} onChange={(e) => onChange({ body: e.target.value })} placeholder="Optional" />
+      </label>
+      {kind !== 'image' && (
+        <div className="grid grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1 text-xs text-slate-600">
+            Button text
+            <input className={input} maxLength={40} value={section.buttonLabel ?? ''} onChange={(e) => onChange({ buttonLabel: e.target.value })} placeholder={kind === 'cta' ? 'Book now' : 'Optional'} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-slate-600">
+            Button link
+            <input className={input} maxLength={500} value={section.buttonHref ?? ''} onChange={(e) => onChange({ buttonHref: e.target.value })} placeholder="https://… or #services" />
+          </label>
+        </div>
+      )}
+      <Choice label="Text alignment" value={section.align ?? 'center'} onChange={(align) => onChange({ align })} options={[{ id: 'left', label: 'Left' }, { id: 'center', label: 'Center' }, { id: 'right', label: 'Right' }]} />
+      <button type="button" onClick={onRemove} className="flex items-center gap-1.5 self-start text-xs font-medium text-red-600 hover:text-red-700">
+        <Trash2 size={12} /> Remove this block
+      </button>
+    </div>
+  );
+}
+
 // ── Section row ───────────────────────────────────────────────────────────────
 
 function SectionRow({
@@ -307,8 +387,10 @@ function SectionRow({
   onToggle, onExpand,
   uploadingFor, onGalleryChange, onUpload, onRemoveImage, onUpdateCaption, emptyHint,
   index, nativeDrag, onHandlePointerDown, onHandlePointerMove, onHandlePointerEnd,
-  isPaid, level, onDesignChange,
+  isPaid, level, onDesignChange, onBlockChange, onRemove,
 }: {
+  onBlockChange: (patch: Partial<Section>) => void;
+  onRemove: () => void;
   isPaid: boolean;
   level: DesignLevel;
   onDesignChange: (patch: Partial<SectionDesign>) => void;
@@ -334,7 +416,7 @@ function SectionRow({
   onRemoveImage: (id: string, index: number) => void;
   onUpdateCaption: (id: string, index: number, caption: string) => void;
 }) {
-  const meta = SECTION_META[section.type] ?? { label: section.type, icon: Home, color: 'bg-slate-100 text-slate-500' };
+  const meta = metaOf(section) ?? { label: section.type, icon: Home, color: 'bg-slate-100 text-slate-500' };
   const Icon = meta.icon;
 
   return (
@@ -411,7 +493,9 @@ function SectionRow({
 
       {/* Expanded content */}
       {isExpanded && (
-        section.type === 'gallery' ? (
+        section.type === 'block' ? (
+          <div className="border-t border-slate-100 px-3 py-3"><BlockEditor section={section} onChange={onBlockChange} onRemove={onRemove} /></div>
+        ) : section.type === 'gallery' ? (
           <>
             <GalleryEditor
               section={section}
@@ -451,12 +535,15 @@ function SectionRow({
 // ── Add section popover ───────────────────────────────────────────────────────
 
 function AddSectionMenu({
-  existing, onAdd, onClose,
+  existing, onAdd, onAddBlock, isPaid, onClose,
 }: {
   existing: Section[];
   onAdd: (type: SectionType) => void;
+  onAddBlock: (kind: (typeof BLOCK_KINDS)[number]) => void;
+  isPaid: boolean;
   onClose: () => void;
 }) {
+  const blockCount = existing.filter((x) => x.type === 'block').length;
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -491,6 +578,26 @@ function AddSectionMenu({
               <div className={`flex h-6 w-6 items-center justify-center rounded-md ${meta.color}`}>
                 <Icon size={12} />
               </div>
+              <span className="font-medium text-slate-700">{meta.label}</span>
+            </button>
+          );
+        })
+      )}
+
+      <p className="mb-1.5 mt-2 border-t border-slate-100 px-2 pt-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">Your own blocks</p>
+      {!isPaid ? (
+        <p className="px-2 pb-1 text-xs text-slate-500">
+          Add your own text, image and button blocks on the Pro and Business plans. <Link to="/dashboard/billing" className="font-semibold text-violet-600 underline">See plans</Link>
+        </p>
+      ) : blockCount >= MAX_BLOCKS ? (
+        <p className="px-2 pb-1 text-xs text-slate-400">You have reached the limit of {MAX_BLOCKS} blocks.</p>
+      ) : (
+        BLOCK_KINDS.map((kind) => {
+          const meta = SECTION_META[`block-${kind}`];
+          const Icon = meta.icon;
+          return (
+            <button key={kind} type="button" onClick={() => { onAddBlock(kind); onClose(); }} className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm hover:bg-slate-50">
+              <div className={`flex h-6 w-6 items-center justify-center rounded-md ${meta.color}`}><Icon size={12} /></div>
               <span className="font-medium text-slate-700">{meta.label}</span>
             </button>
           );
@@ -888,6 +995,22 @@ export default function PageBuilder() {
     mutateSections((prev) => [...prev, newSection]);
   }
 
+  function addBlock(kind: (typeof BLOCK_KINDS)[number]) {
+    if (!isPaidPlan || sections.filter((x) => x.type === 'block').length >= MAX_BLOCKS) return;
+    const block: Section = { id: `block-${crypto.randomUUID()}`, type: 'block', kind, enabled: true, align: 'center' };
+    mutateSections((prev) => [...prev, block]);
+    setExpandedId(block.id);
+  }
+
+  function updateBlock(id: string, patch: Partial<Section>) {
+    mutateSections((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  }
+
+  function removeSectionById(id: string) {
+    if (!confirm('Remove this block?')) return;
+    mutateSections((prev) => prev.filter((x) => x.id !== id));
+  }
+
   // Gallery mutations
   function updateGallery(id: string, patch: Partial<Section>) {
     mutateSections((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -1094,6 +1217,8 @@ export default function PageBuilder() {
                       isPaid={isPaidPlan}
                       level={designLevelNow}
                       onDesignChange={(patch) => updateDesign(section.id, patch)}
+                      onBlockChange={(patch) => updateBlock(section.id, patch)}
+                      onRemove={() => removeSectionById(section.id)}
                       onGalleryChange={(patch) => updateGallery(section.id, patch)}
                       onUpload={uploadGalleryImages}
                       onRemoveImage={removeGalleryImage}
@@ -1116,6 +1241,8 @@ export default function PageBuilder() {
                       <AddSectionMenu
                         existing={sections}
                         onAdd={addSection}
+                        onAddBlock={addBlock}
+                        isPaid={isPaidPlan}
                         onClose={() => setShowAddMenu(false)}
                       />
                     )}

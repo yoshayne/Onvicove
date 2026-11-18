@@ -13,6 +13,7 @@ import BookingStatusOverlay from '../shared/BookingStatusOverlay';
 import ProductQuickView from '../shared/ProductQuickView';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import CustomBlocks from '../shared/CustomBlocks';
 import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
@@ -21,7 +22,7 @@ import ContactBlock from '../shared/ContactBlock';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 
-export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections, sectionDesigns }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], customBlocks, visibleSections, sectionDesigns }: ThemeProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [enquiry, setEnquiry] = useState({ name: '', email: '', message: '' });
@@ -481,6 +482,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       )}
 
       {/* ── Galleries ── */}
+      <CustomBlocks blocks={customBlocks} ord={ord} />
       {galleries.filter(g => g.enabled && g.images.length > 0).map(g => (
         <div key={g.id} style={ord(g.id)}><Gallery layout={g.layout} images={g.images} title={g.title} /></div>
       ))}
