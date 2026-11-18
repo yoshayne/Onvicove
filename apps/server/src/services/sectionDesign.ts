@@ -3,15 +3,18 @@ import { getSignedFileUrl } from './storage';
 /** Keep only the design choices we offer (see client themes/shared/sectionDesign.ts), with text trimmed and limited */
 const ALIGN = ['left', 'center', 'right'];
 const SPACING = ['compact', 'normal', 'roomy'];
-const BG = ['default', 'soft', 'contrast', 'accent'];
+const BG = ['default', 'soft', 'contrast', 'accent', 'photo'];
 
-export function cleanDesign(d: unknown): Record<string, string> | undefined {
+export function cleanDesign(d: unknown, tenantId?: string): Record<string, string> | undefined {
   if (!d || typeof d !== 'object') return undefined;
   const o = d as Record<string, unknown>;
   const out: Record<string, string> = {};
   if (typeof o.align === 'string' && ALIGN.includes(o.align)) out.align = o.align;
   if (typeof o.spacing === 'string' && SPACING.includes(o.spacing)) out.spacing = o.spacing;
   if (typeof o.bg === 'string' && BG.includes(o.bg)) out.bg = o.bg;
+  // A background photo must be one of the store's own files
+  if (tenantId && typeof o.bgImageKey === 'string' && o.bgImageKey.startsWith(`tenants/${tenantId}/`) && !o.bgImageKey.includes('..')) out.bgImageKey = o.bgImageKey;
+  if (out.bg === 'photo' && !out.bgImageKey) delete out.bg;
   if (typeof o.title === 'string' && o.title.trim()) out.title = o.title.trim().slice(0, 80);
   if (typeof o.intro === 'string' && o.intro.trim()) out.intro = o.intro.trim().slice(0, 300);
   return Object.keys(out).length ? out : undefined;
@@ -64,17 +67,18 @@ export function applyPlanRules<T extends { type?: unknown }>(sections: T[], plan
       continue;
     }
     const { design, ...rest } = s;
-    const cleaned = paid ? cleanDesign(design) : undefined;
+    const cleaned = paid ? cleanDesign(design, tenantId) : undefined;
     out.push(cleaned ? { ...rest, design: cleaned } : rest);
   }
   return out as T[];
 }
 
-/** Give each block photo a fresh link (links expire, so only the file name is saved) */
+/** Give each block photo and section background photo a fresh link (links expire, so only the file name is saved) */
 export async function resolveBlockImages(sections: unknown): Promise<void> {
   if (!Array.isArray(sections)) return;
-  await Promise.all(sections.map(async (s: { type?: string; imageKey?: string; imageUrl?: string }) => {
+  await Promise.all(sections.map(async (s: { type?: string; imageKey?: string; imageUrl?: string; design?: { bgImageKey?: string; bgImageUrl?: string } }) => {
     if (s?.type === 'block' && s.imageKey) s.imageUrl = await getSignedFileUrl(s.imageKey);
+    if (s?.design?.bgImageKey) s.design.bgImageUrl = await getSignedFileUrl(s.design.bgImageKey);
   }));
 }
 

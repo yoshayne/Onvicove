@@ -6,8 +6,11 @@ export interface SectionDesign {
   /** Where the heading, intro and (hero) text sit */
   align?: 'left' | 'center' | 'right';
   spacing?: 'compact' | 'normal' | 'roomy';
-  /** default = the theme; soft = the theme's second shade; contrast = the opposite of the theme; accent = the brand colour */
-  bg?: 'default' | 'soft' | 'contrast' | 'accent';
+  /** default = the theme; soft = the theme's second shade; contrast = the opposite of the theme; accent = the brand colour; photo = the owner's photo under a dark veil */
+  bg?: 'default' | 'soft' | 'contrast' | 'accent' | 'photo';
+  /** The background photo's file (saved) and its current link (added by the server when the page is read) */
+  bgImageKey?: string;
+  bgImageUrl?: string;
   /** Replaces the section heading ("Services", "Meet the team"...) */
   title?: string;
   /** A short line under the heading */
@@ -16,7 +19,7 @@ export interface SectionDesign {
 
 export const DESIGN_ALIGN = ['left', 'center', 'right'] as const;
 export const DESIGN_SPACING = ['compact', 'normal', 'roomy'] as const;
-export const DESIGN_BG = ['default', 'soft', 'contrast', 'accent'] as const;
+export const DESIGN_BG = ['default', 'soft', 'contrast', 'accent', 'photo'] as const;
 
 /** Themes that draw their sections with the shared booking-first page, which also supports section backgrounds */
 export const DESIGN_THEMES = ['barber', 'studio', 'ink', 'roster'] as const;
@@ -36,6 +39,10 @@ export function cleanDesign(d: unknown): SectionDesign | undefined {
     bg: pick(o.bg, DESIGN_BG),
     title: typeof o.title === 'string' && o.title.trim() ? o.title.trim().slice(0, 80) : undefined,
     intro: typeof o.intro === 'string' && o.intro.trim() ? o.intro.trim().slice(0, 300) : undefined,
+    bgImageKey: typeof o.bgImageKey === 'string' ? o.bgImageKey : undefined,
+    bgImageUrl: typeof o.bgImageUrl === 'string' && /^https?:\/\//i.test(o.bgImageUrl) ? o.bgImageUrl : undefined,
   };
+  // A photo background needs its photo
+  if (out.bg === 'photo' && !out.bgImageUrl) out.bg = undefined;
   return Object.values(out).some((v) => v !== undefined) ? out : undefined;
 }

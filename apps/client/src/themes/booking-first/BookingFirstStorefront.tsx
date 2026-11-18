@@ -69,7 +69,9 @@ export default function BookingFirstStorefront({ preset: p, theme, products, ser
   const darkTheme = luminance(p.bg) < 0.5;
   const brandHex = /^#[0-9a-f]{6}$/i.test(theme.brandColor ?? '') ? (theme.brandColor as string) : p.accent;
   const onBrand = luminance(brandHex) < 0.5 ? '#ffffff' : '#111111';
-  const palettes: Record<'soft' | 'contrast' | 'accent', Record<string, string>> = {
+  const palettes: Record<'soft' | 'contrast' | 'accent' | 'photo', Record<string, string>> = {
+    // Over a photo everything is light on a dark veil, whatever the theme
+    photo: { '--bf-bg': 'transparent', '--bf-surface': 'rgba(0,0,0,0.45)', '--bf-text': '#ffffff', '--bf-muted': 'rgba(255,255,255,0.78)', '--bf-border': 'rgba(255,255,255,0.28)', '--bf-accent': '#ffffff', '--bf-on-accent': '#111111' },
     soft: { '--bf-bg': p.surface, '--bf-surface': p.bg },
     contrast: darkTheme
       ? { '--bf-bg': '#f4f4f5', '--bf-surface': '#ffffff', '--bf-text': '#111111', '--bf-muted': 'rgba(17,17,17,0.62)', '--bf-border': 'rgba(0,0,0,0.14)', '--bf-accent': '#111111', '--bf-on-accent': '#ffffff' }
@@ -85,7 +87,11 @@ export default function BookingFirstStorefront({ preset: p, theme, products, ser
   const dz = (id: string, opts: { padded?: boolean } = {}): CSSProperties => {
     const d = design(id);
     const out: Record<string, unknown> = { ...ord(id) };
-    if (d.bg && d.bg !== 'default') Object.assign(out, palettes[d.bg], { background: 'var(--bf-bg)', color: 'var(--bf-text)' });
+    if (d.bg === 'photo' && d.bgImageUrl) {
+      Object.assign(out, palettes.photo, { color: '#ffffff', background: `linear-gradient(rgba(0,0,0,0.62), rgba(0,0,0,0.62)), url("${d.bgImageUrl}") center / cover no-repeat` });
+    } else if (d.bg && d.bg !== 'default' && d.bg !== 'photo') {
+      Object.assign(out, palettes[d.bg], { background: 'var(--bf-bg)', color: 'var(--bf-text)' });
+    }
     if (opts.padded) {
       if (d.spacing === 'compact') { out.paddingTop = 20; out.paddingBottom = 20; }
       if (d.spacing === 'roomy') { out.paddingTop = 88; out.paddingBottom = 88; }

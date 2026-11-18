@@ -255,6 +255,40 @@ function Choice<T extends string>({ label, value, options, onChange }: { label: 
   );
 }
 
+/** The photo behind a section (shown under a dark veil so the text stays readable) */
+function BackgroundPhoto({ design, onChange }: { design: SectionDesign; onChange: (patch: Partial<SectionDesign>) => void }) {
+  const api = useApi();
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function upload(file: File) {
+    setError(null);
+    setUploading(true);
+    try {
+      const res = await api.upload<{ key: string; url: string }>('/uploads', file);
+      onChange({ bgImageKey: res.key, bgImageUrl: res.url });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg bg-slate-50 p-2.5">
+      <div className="flex items-center gap-3">
+        {design.bgImageUrl ? <img src={design.bgImageUrl} alt="" className="h-12 w-20 rounded object-cover" /> : <div className="flex h-12 w-20 items-center justify-center rounded bg-slate-200 text-[10px] text-slate-500">No photo</div>}
+        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
+          <Upload size={12} /> {uploading ? 'Uploading…' : design.bgImageUrl ? 'Replace photo' : 'Upload a photo'}
+          <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void upload(f); }} />
+        </label>
+      </div>
+      <p className="text-[11px] text-slate-400">A dark veil goes over the photo so the text stays easy to read. Wide, simple photos work best.</p>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 /** Heading text, alignment, spacing and background for one section: choices from a short list, so a page can't break */
 function DesignControls({ section, isPaid, level, onChange }: { section: Section; isPaid: boolean; level: DesignLevel; onChange: (patch: Partial<SectionDesign>) => void }) {
   const fields = DESIGN_FIELDS[level][section.type];
@@ -306,7 +340,10 @@ function DesignControls({ section, isPaid, level, onChange }: { section: Section
         <Choice label="Spacing" value={d.spacing ?? 'normal'} onChange={(spacing) => onChange({ spacing })} options={[{ id: 'compact', label: 'Tight' }, { id: 'normal', label: 'Normal' }, { id: 'roomy', label: 'Roomy' }]} />
       )}
       {fields.bg && (
-        <Choice label="Background" value={d.bg ?? 'default'} onChange={(bg) => onChange({ bg })} options={[{ id: 'default', label: 'Theme' }, { id: 'soft', label: 'Soft' }, { id: 'contrast', label: 'Contrast' }, { id: 'accent', label: 'Brand' }]} />
+        <>
+          <Choice label="Background" value={d.bg ?? 'default'} onChange={(bg) => onChange({ bg })} options={[{ id: 'default', label: 'Theme' }, { id: 'soft', label: 'Soft' }, { id: 'contrast', label: 'Contrast' }, { id: 'accent', label: 'Brand' }, { id: 'photo', label: 'Photo' }]} />
+          {d.bg === 'photo' && <BackgroundPhoto design={d} onChange={onChange} />}
+        </>
       )}
       {level === 'basic' && !fields.bg && (
         <p className="text-[11px] text-slate-400">Section backgrounds are available on the Barber, Studio, Ink and Roster themes.</p>
