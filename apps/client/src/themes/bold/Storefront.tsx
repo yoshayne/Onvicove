@@ -14,13 +14,14 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import { DesignHeading } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
 import AboutBlock from '../shared/AboutBlock';
 import ContactBlock from '../shared/ContactBlock';
 
-export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections, sectionDesigns }: ThemeProps) {
   const {
     cart, cartOpen, setCartOpen, addToCart, updateCartQuantity, removeFromCart,
     quickViewProduct, openQuickView, closeQuickView,
@@ -48,7 +49,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
-  const ord = makeSectionOrder(visibleSections);
+  const ord = makeSectionOrder(visibleSections, sectionDesigns);
 
   // Load Anton font
   useEffect(() => {
@@ -234,7 +235,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             <div className="flex items-end justify-between mb-14">
               <div>
                 <p className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.4em] mb-2">— The Drop</p>
-                <h2 className="bold-heading text-5xl md:text-6xl uppercase leading-none">Shop The Drop</h2>
+                <DesignHeading id="featured-products" className="bold-heading text-5xl md:text-6xl uppercase leading-none">Shop The Drop</DesignHeading>
               </div>
               <div className="hidden md:block h-px flex-1 bg-white/10 mx-8 mb-3" />
             </div>
@@ -303,7 +304,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             <div className="flex items-end justify-between mb-14">
               <div>
                 <p className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.4em] mb-2">— Appointments</p>
-                <h2 className="bold-heading text-5xl md:text-6xl uppercase leading-none">Book a Session</h2>
+                <DesignHeading id="services" className="bold-heading text-5xl md:text-6xl uppercase leading-none">Book a Session</DesignHeading>
               </div>
               <div className="hidden md:block h-px flex-1 bg-white/10 mx-8 mb-3" />
             </div>
@@ -368,7 +369,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             <div className="max-w-7xl mx-auto px-6">
               <div className="mb-14 text-center">
                 <p className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.4em] mb-2">— The Crew</p>
-                <h2 className="bold-heading text-5xl md:text-6xl uppercase leading-none">Meet the Team</h2>
+                <DesignHeading id="staff" className="bold-heading text-5xl md:text-6xl uppercase leading-none">Meet the Team</DesignHeading>
               </div>
 
               <div className="flex flex-wrap justify-center gap-12 md:gap-16">

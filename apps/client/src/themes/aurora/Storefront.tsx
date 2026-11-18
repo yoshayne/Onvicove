@@ -14,13 +14,14 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
 import AboutBlock from '../shared/AboutBlock';
 import ContactBlock from '../shared/ContactBlock';
 
-export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections, sectionDesigns }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -45,7 +46,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
-  const ord = makeSectionOrder(visibleSections);
+  const ord = makeSectionOrder(visibleSections, sectionDesigns);
 
   const glass = { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' };
 
@@ -140,7 +141,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* Products */}
       {showProducts && sec('featured-products') && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', width: '100%', padding: '80px 24px', ...ord('featured-products') }}>
-          <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Ritual Essentials</h2>
+          <DesignHeading id="featured-products" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Ritual Essentials</DesignHeading>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
             {displayProducts.map((product) => (
               <div key={product.id} style={{ ...glass, borderRadius: 20, overflow: 'hidden' }}>
@@ -170,7 +171,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {showServices && sec('services') && (
         <section id="services" style={{ padding: '80px 24px', background: 'rgba(255,255,255,0.02)', ...ord('services') }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Healing Sessions</h2>
+            <DesignHeading id="services" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 40, textAlign: 'center' }}>Healing Sessions</DesignHeading>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
               {displayServices.map((service) => (
                 <div key={service.id} style={{ ...glass, borderRadius: 20, overflow: 'hidden' }}>
@@ -201,6 +202,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* ── Staff ── */}
       {sec('staff') && staff.length > 0 && (
       <section style={{ maxWidth: 1280, margin: '0 auto', width: '100%', padding: '80px 24px', ...ord('staff') }}>
+        <OptionalDesignHeading id="staff" />
         <div style={{ display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap' }}>
           {staff.map((member) => (
             <div key={member.id} style={{ textAlign: 'center' }}>

@@ -14,6 +14,7 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -30,6 +31,7 @@ export default function Storefront({
   staff,
   galleries = [],
   visibleSections,
+  sectionDesigns,
 }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -54,7 +56,7 @@ export default function Storefront({
   const displayStaff = staff.length > 0 ? staff : defaults.staff;
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
-  const ord = makeSectionOrder(visibleSections);
+  const ord = makeSectionOrder(visibleSections, sectionDesigns);
 
   return (
     <div className="flex flex-col min-h-screen bg-white font-serif text-[#1a3a5c]">
@@ -118,9 +120,9 @@ export default function Storefront({
       {/* Products */}
       {showProducts && sec('featured-products') && displayProducts.length > 0 && (
         <section id="products" className="scroll-mt-20 mx-auto w-full max-w-6xl px-6 py-16" style={ord('featured-products')}>
-          <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
+          <DesignHeading id="featured-products" className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Our Collection
-          </h2>
+          </DesignHeading>
           <div className="mx-auto mt-2 h-1 w-16 bg-[var(--brand-color,#c8a850)]" />
           <div className="mt-10 grid grid-cols-1 gap-px border border-gray-200 bg-gray-200 sm:grid-cols-2 md:grid-cols-3">
             {displayProducts.map((product) => (
@@ -162,9 +164,9 @@ export default function Storefront({
       {/* Services */}
       {showServices && sec('services') && displayServices.length > 0 && (
         <section id="services" className="scroll-mt-20 mx-auto w-full max-w-6xl px-6 py-16" style={ord('services')}>
-          <h2 className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
+          <DesignHeading id="services" className="text-center font-['Merriweather'] text-3xl font-bold text-[#1a3a5c]">
             Our Services
-          </h2>
+          </DesignHeading>
           <div className="mx-auto mt-2 h-1 w-16 bg-[var(--brand-color,#c8a850)]" />
           <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
             {displayServices.map((service) => (
@@ -210,6 +212,7 @@ export default function Storefront({
       {/* ── Staff ── */}
       {sec('staff') && displayStaff.length > 0 && (
       <section className="mx-auto w-full max-w-6xl px-6 py-16" style={ord('staff')}>
+        <OptionalDesignHeading id="staff" />
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {displayStaff.map((member) => (
             <div key={member.id} className="flex items-center gap-4 border border-gray-200 p-4">

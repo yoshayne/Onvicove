@@ -13,6 +13,7 @@ import BookingStatusOverlay from '../shared/BookingStatusOverlay';
 import ProductQuickView from '../shared/ProductQuickView';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -20,7 +21,7 @@ import ContactBlock from '../shared/ContactBlock';
 import { useStorefrontCommerce } from '../shared/useStorefrontCommerce';
 import { useStorefrontForms } from '../shared/useStorefrontForms';
 
-export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections, sectionDesigns }: ThemeProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [enquiry, setEnquiry] = useState({ name: '', email: '', message: '' });
@@ -49,7 +50,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book'  || theme.mode === 'both') && services.length > 0 && sec('services');
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
-  const ord = makeSectionOrder(visibleSections);
+  const ord = makeSectionOrder(visibleSections, sectionDesigns);
 
   const navLinks = [
     showProducts && { href: '#work', label: 'Work' },
@@ -174,7 +175,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {showProducts && sec('featured-products') && (
         <section id="work" className="scroll-mt-16 py-20 px-6 max-w-7xl mx-auto w-full" style={ord('featured-products')}>
           <div className="flex items-end justify-between mb-10">
-            <h2 className="font-['DM_Serif_Display'] text-4xl md:text-5xl">Work</h2>
+            <div><DesignHeading id="featured-products" className="font-['DM_Serif_Display'] text-4xl md:text-5xl">Work</DesignHeading></div>
             <span className="text-xs uppercase tracking-[0.2em] text-white/30 hidden sm:block">
               {displayProducts.length} pieces
             </span>
@@ -219,7 +220,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {showServices && sec('services') && (
         <section id="sessions" className="scroll-mt-16 py-20 bg-[#111] border-y border-white/5" style={ord('services')}>
           <div className="max-w-7xl mx-auto px-6">
-            <h2 className="font-['DM_Serif_Display'] text-4xl md:text-5xl mb-2">Sessions</h2>
+            <DesignHeading id="services" className="font-['DM_Serif_Display'] text-4xl md:text-5xl mb-2">Sessions</DesignHeading>
             <p className="text-white/40 text-sm mb-12 max-w-xl">
               Every shoot is a collaboration. Tell me what you're after.
             </p>
@@ -291,6 +292,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* ── Staff ── */}
       {sec('staff') && displayStaff.length > 0 && (
       <section className="py-24 px-6 max-w-7xl mx-auto w-full" style={ord('staff')}>
+        <OptionalDesignHeading id="staff" />
             <div className="flex flex-col gap-8">
               {displayStaff.map((member) => (
                 <div key={member.id} className="flex items-start gap-5">

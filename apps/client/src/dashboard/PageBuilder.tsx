@@ -22,7 +22,7 @@ import type { GalleryLayout, GalleryImageData } from '../themes/shared/Gallery';
 import { getLayoutVariants } from '../themes/shared/layoutVariants';
 import ColorPicker from '../components/shared/ColorPicker';
 import MoveButtons from '../components/shared/MoveButtons';
-import { supportsSectionDesign, type SectionDesign } from '../themes/shared/sectionDesign';
+import { designLevel, type DesignLevel, type SectionDesign } from '../themes/shared/sectionDesign';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -192,16 +192,30 @@ function GalleryEditor({
 
 // ── Section design (Pro and Business) ─────────────────────────────────────────
 
-const DESIGN_FIELDS: Record<string, { text?: boolean; align?: boolean; spacing?: boolean; bg?: boolean }> = {
-  hero: { align: true, spacing: true },
-  services: { text: true, align: true, spacing: true, bg: true },
-  staff: { text: true, align: true, spacing: true, bg: true },
-  'featured-products': { text: true, align: true, spacing: true, bg: true },
-  contact: { text: true, spacing: true, bg: true },
-  about: { bg: true },
-  testimonials: { bg: true },
-  faq: { bg: true },
-  gallery: { bg: true },
+type DesignFields = { text?: boolean; align?: boolean; spacing?: boolean; bg?: boolean };
+
+const DESIGN_FIELDS: Record<DesignLevel, Record<string, DesignFields>> = {
+  full: {
+    hero: { align: true, spacing: true },
+    services: { text: true, align: true, spacing: true, bg: true },
+    staff: { text: true, align: true, spacing: true, bg: true },
+    'featured-products': { text: true, align: true, spacing: true, bg: true },
+    contact: { text: true, spacing: true, bg: true },
+    about: { bg: true },
+    testimonials: { bg: true },
+    faq: { bg: true },
+    gallery: { bg: true },
+  },
+  // Every other theme draws its own sections: heading text, alignment and spacing work everywhere, backgrounds don't (yet)
+  basic: {
+    services: { text: true, align: true, spacing: true },
+    staff: { text: true, align: true, spacing: true },
+    'featured-products': { text: true, align: true, spacing: true },
+    contact: { text: true, align: true, spacing: true },
+    testimonials: { text: true, align: true, spacing: true },
+    faq: { text: true, align: true, spacing: true },
+    about: { spacing: true },
+  },
 };
 
 function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { id: T; label: string }[]; onChange: (v: T) => void }) {
@@ -225,8 +239,8 @@ function Choice<T extends string>({ label, value, options, onChange }: { label: 
 }
 
 /** Heading text, alignment, spacing and background for one section: choices from a short list, so a page can't break */
-function DesignControls({ section, isPaid, themeSupported, onChange }: { section: Section; isPaid: boolean; themeSupported: boolean; onChange: (patch: Partial<SectionDesign>) => void }) {
-  const fields = DESIGN_FIELDS[section.type];
+function DesignControls({ section, isPaid, level, onChange }: { section: Section; isPaid: boolean; level: DesignLevel; onChange: (patch: Partial<SectionDesign>) => void }) {
+  const fields = DESIGN_FIELDS[level][section.type];
   if (!fields) return null;
   const d = section.design ?? {};
 
@@ -239,14 +253,6 @@ function DesignControls({ section, isPaid, themeSupported, onChange }: { section
       </div>
     );
   }
-  if (!themeSupported) {
-    return (
-      <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-        Section design is available on the Barber, Studio, Ink and Roster themes for now. More themes are coming.
-      </p>
-    );
-  }
-
   return (
     <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3">
       <p className="text-xs font-semibold text-slate-700">Design this section</p>
@@ -285,6 +291,9 @@ function DesignControls({ section, isPaid, themeSupported, onChange }: { section
       {fields.bg && (
         <Choice label="Background" value={d.bg ?? 'default'} onChange={(bg) => onChange({ bg })} options={[{ id: 'default', label: 'Theme' }, { id: 'soft', label: 'Soft' }, { id: 'contrast', label: 'Contrast' }, { id: 'accent', label: 'Brand' }]} />
       )}
+      {level === 'basic' && !fields.bg && (
+        <p className="text-[11px] text-slate-400">Section backgrounds are available on the Barber, Studio, Ink and Roster themes.</p>
+      )}
     </div>
   );
 }
@@ -297,10 +306,10 @@ function SectionRow({
   onToggle, onExpand,
   uploadingFor, onGalleryChange, onUpload, onRemoveImage, onUpdateCaption, emptyHint,
   index, nativeDrag, onHandlePointerDown, onHandlePointerMove, onHandlePointerEnd,
-  isPaid, themeSupported, onDesignChange,
+  isPaid, level, onDesignChange,
 }: {
   isPaid: boolean;
-  themeSupported: boolean;
+  level: DesignLevel;
   onDesignChange: (patch: Partial<SectionDesign>) => void;
   section: Section;
   index: number;
@@ -411,7 +420,7 @@ function SectionRow({
               onRemoveImage={onRemoveImage}
               onUpdateCaption={onUpdateCaption}
             />
-            <div className="px-3 pb-3"><DesignControls section={section} isPaid={isPaid} themeSupported={themeSupported} onChange={onDesignChange} /></div>
+            <div className="px-3 pb-3"><DesignControls section={section} isPaid={isPaid} level={level} onChange={onDesignChange} /></div>
           </>
         ) : (
           <div className="border-t border-slate-100 px-3 py-3">
@@ -430,7 +439,7 @@ function SectionRow({
             {!['hero', 'about', 'contact', 'testimonials', 'faq'].includes(section.type) && (
               <p className="text-xs text-slate-400">This section pulls live data from your products, services, or staff.</p>
             )}
-            <DesignControls section={section} isPaid={isPaid} themeSupported={themeSupported} onChange={onDesignChange} />
+            <DesignControls section={section} isPaid={isPaid} level={level} onChange={onDesignChange} />
           </div>
         )
       )}
@@ -841,7 +850,7 @@ export default function PageBuilder() {
 
   // Toggle section visibility — auto-save so preview reflects the change immediately
   const isPaidPlan = !!tenantQ.data?.tenant && tenantQ.data.tenant.plan !== 'starter';
-  const designSupported = supportsSectionDesign(tenantQ.data?.tenant?.theme_id);
+  const designLevelNow = designLevel(tenantQ.data?.tenant?.theme_id);
 
   function updateDesign(id: string, patch: Partial<SectionDesign>) {
     mutateSections((prev) => prev.map((sec) => {
@@ -1080,7 +1089,7 @@ export default function PageBuilder() {
                       onExpand={() => toggleExpand(section.id)}
                       uploadingFor={uploadingFor}
                       isPaid={isPaidPlan}
-                      themeSupported={designSupported}
+                      level={designLevelNow}
                       onDesignChange={(patch) => updateDesign(section.id, patch)}
                       onGalleryChange={(patch) => updateGallery(section.id, patch)}
                       onUpload={uploadGalleryImages}

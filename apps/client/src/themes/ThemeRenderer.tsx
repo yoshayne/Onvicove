@@ -4,6 +4,7 @@ import type { ThemeId, ThemeProps } from './types';
 import { AboutContext } from './shared/AboutBlock';
 import RecurringCheckoutHost from './shared/RecurringCheckoutHost';
 import ServiceOptionHost from './shared/ServiceOptionHost';
+import { SectionDesignContext } from './shared/DesignHeading';
 
 const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
   editorial: () => import('./editorial/Storefront'),
@@ -39,6 +40,7 @@ export default function ThemeRenderer({ themeId, ...props }: ThemeRendererProps)
 
   return (
     <div style={style}>
+      <SectionDesignContext.Provider value={props.sectionDesigns ?? {}}>
       <AboutContext.Provider value={props.theme.about}>
         <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
           <Storefront {...props} />
@@ -46,6 +48,7 @@ export default function ThemeRenderer({ themeId, ...props }: ThemeRendererProps)
         <RecurringCheckoutHost theme={props.theme} />
         <ServiceOptionHost currency={props.theme.currency} />
       </AboutContext.Provider>
+      </SectionDesignContext.Provider>
     </div>
   );
 }

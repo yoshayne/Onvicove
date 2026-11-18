@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { DesignHeading } from './DesignHeading';
 
 interface Props {
   email?: string;
@@ -26,7 +27,7 @@ export default function ContactBlock({ email, phone, address, hours, heading = '
   return (
     <section id="contact-details" className={`scroll-mt-20 px-6 py-16 ${className}`} style={style}>
       <div className="mx-auto max-w-4xl">
-        <h2 style={headingStyle} className="mb-10 text-center text-3xl font-bold md:text-4xl">{heading}</h2>
+        <DesignHeading id="contact" style={headingStyle} className="mb-10 text-center text-3xl font-bold md:text-4xl">{heading}</DesignHeading>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {items.map(({ key, Icon, label, node }) => (
             <div key={key} className="flex flex-col items-center gap-2 text-center">

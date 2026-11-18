@@ -14,6 +14,7 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -38,7 +39,7 @@ const G = {
 const serif = 'Playfair Display, Georgia, serif';
 const SIDEBAR_W = 72;
 
-export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections, sectionDesigns }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const brand = theme.brandColor || G.gold;
-  const ord = makeSectionOrder(visibleSections);
+  const ord = makeSectionOrder(visibleSections, sectionDesigns);
 
   const featuredProduct = displayProducts.find(p => p.isFeatured) ?? displayProducts[0];
   const restProducts = displayProducts.filter(p => p.id !== featuredProduct?.id);
@@ -322,7 +323,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 48 }}>
               <div>
                 <p style={{ fontSize: 10, letterSpacing: '0.4em', color: brand, marginBottom: 10, textTransform: 'uppercase' }}>The Collection</p>
-                <h2 style={{ fontFamily: serif, fontSize: 'clamp(26px, 3.5vw, 40px)', fontWeight: 400 }}>Curated Excellence</h2>
+                <DesignHeading id="featured-products" style={{ fontFamily: serif, fontSize: 'clamp(26px, 3.5vw, 40px)', fontWeight: 400 }}>Curated Excellence</DesignHeading>
               </div>
             </div>
 
@@ -438,7 +439,7 @@ export default function Storefront({ theme, products, services, staff, galleries
             <div style={{ position: 'relative', zIndex: 1 }}>
               <div style={{ marginBottom: 56 }}>
                 <p style={{ fontSize: 10, letterSpacing: '0.4em', color: brand, marginBottom: 10, textTransform: 'uppercase' }}>By Appointment Only</p>
-                <h2 style={{ fontFamily: serif, fontSize: 'clamp(26px, 3.5vw, 40px)', fontWeight: 400 }}>Private Services</h2>
+                <DesignHeading id="services" style={{ fontFamily: serif, fontSize: 'clamp(26px, 3.5vw, 40px)', fontWeight: 400 }}>Private Services</DesignHeading>
               </div>
 
               {/* Numbered list layout */}
@@ -519,6 +520,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* ── Staff ── */}
       {sec('staff') && staff.length > 0 && (
       <section id="team" style={{ background: G.surface, padding: isMobile ? '64px 20px' : '96px 56px', ...ord('staff') }}>
+        <OptionalDesignHeading id="staff" />
         <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
           {staff.map((member) => (
             <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>

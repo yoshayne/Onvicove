@@ -14,6 +14,7 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import { DesignHeading } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -21,7 +22,7 @@ import AboutBlock from '../shared/AboutBlock';
 import ContactBlock from '../shared/ContactBlock';
 import StaffBlock from '../shared/StaffBlock';
 
-export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections, sectionDesigns }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -46,7 +47,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
-  const ord = makeSectionOrder(visibleSections);
+  const ord = makeSectionOrder(visibleSections, sectionDesigns);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#fff', color: '#000', fontFamily: 'Arial, sans-serif' }}>
@@ -141,7 +142,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {showProducts && sec('featured-products') && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', width: '100%', ...ord('featured-products') }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '3px solid #000', paddingBottom: 16, marginBottom: 32 }}>
-            <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em' }}>THE DROP</h2>
+            <div><DesignHeading id="featured-products" style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em' }}>THE DROP</DesignHeading></div>
             <span style={{ fontFamily: 'monospace', fontSize: 11 }}>({displayProducts.length} ITEMS)</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 0 }}>
@@ -171,7 +172,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {showServices && sec('services') && (
         <section id="services" style={{ background: '#f0f0f0', padding: '64px 24px', borderTop: '3px solid #000', ...ord('services') }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-            <h2 style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em', marginBottom: 32 }}>SERVICES</h2>
+            <DesignHeading id="services" style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.02em', marginBottom: 32 }}>SERVICES</DesignHeading>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
               {displayServices.map((service) => (
                 <div key={service.id} style={{ display: 'grid', gridTemplateColumns: service.imageUrls?.[0] ? 'auto 1fr auto' : '1fr auto', gap: 24, alignItems: 'center', padding: '24px 0', borderTop: '2px solid #000' }}>

@@ -1,5 +1,6 @@
 import { Star } from 'lucide-react';
 import type { TestimonialItem } from '../types';
+import { DesignHeading } from './DesignHeading';
 
 // Sample content for marketing previews only — never shown on a real storefront.
 export const SAMPLE_TESTIMONIALS: TestimonialItem[] = [
@@ -32,9 +33,11 @@ export default function TestimonialsBlock({
 
   return (
     <div className={className}>
-      <h2 style={headingStyle} className="text-3xl font-bold mb-10 text-center">
-        {heading}
-      </h2>
+      <div className="mx-auto max-w-6xl px-6">
+        <DesignHeading id="testimonials" style={headingStyle} className="text-3xl font-bold mb-10 text-center">
+          {heading}
+        </DesignHeading>
+      </div>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto px-6">
         {items.map((t) => (
           <div key={t.id} style={cardStyle} className="rounded-2xl p-6 flex flex-col gap-3">

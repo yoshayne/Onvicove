@@ -14,13 +14,14 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
 import AboutBlock from '../shared/AboutBlock';
 import ContactBlock from '../shared/ContactBlock';
 
-export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections, sectionDesigns }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -45,7 +46,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
-  const ord = makeSectionOrder(visibleSections);
+  const ord = makeSectionOrder(visibleSections, sectionDesigns);
 
   const categories = ['Candles', 'Soaps', 'Home Goods', 'Gift Sets'];
 
@@ -136,7 +137,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* Products */}
       {showProducts && sec('featured-products') && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', width: '100%', ...ord('featured-products') }}>
-          <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400, marginBottom: 40, textAlign: 'center' }}>From the Workshop</h2>
+          <DesignHeading id="featured-products" style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400, marginBottom: 40, textAlign: 'center' }}>From the Workshop</DesignHeading>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 24 }}>
             {displayProducts.map((product) => (
               <div key={product.id} style={{ background: '#ece5d8', borderRadius: 8, overflow: 'hidden', border: '1px solid #c4b49a' }}>
@@ -168,7 +169,7 @@ export default function Storefront({ theme, products, services, staff, galleries
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
               <p style={{ fontSize: 11, letterSpacing: '0.2em', color: '#7a6650', marginBottom: 12, textTransform: 'uppercase' }}>Learn & Create</p>
-              <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 32, fontWeight: 400 }}>Workshops</h2>
+              <DesignHeading id="services" style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 32, fontWeight: 400 }}>Workshops</DesignHeading>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
               {displayServices.map((service) => (
@@ -198,6 +199,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* ── Staff ── */}
       {sec('staff') && staff.length > 0 && (
       <section id="team" style={{ background: '#ece5d8', padding: '64px 24px', ...ord('staff') }}>
+        <OptionalDesignHeading id="staff" />
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 40, flexWrap: 'wrap' }}>
             {staff.map((member) => (

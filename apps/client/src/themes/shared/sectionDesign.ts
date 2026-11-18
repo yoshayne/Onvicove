@@ -18,9 +18,12 @@ export const DESIGN_ALIGN = ['left', 'center', 'right'] as const;
 export const DESIGN_SPACING = ['compact', 'normal', 'roomy'] as const;
 export const DESIGN_BG = ['default', 'soft', 'contrast', 'accent'] as const;
 
-/** Themes that draw their sections with the shared booking-first page, where these choices apply today */
+/** Themes that draw their sections with the shared booking-first page, which also supports section backgrounds */
 export const DESIGN_THEMES = ['barber', 'studio', 'ink', 'roster'] as const;
-export const supportsSectionDesign = (themeId: string | undefined | null) => !!themeId && (DESIGN_THEMES as readonly string[]).includes(themeId);
+
+/** 'full': heading, alignment, spacing and background. 'basic': heading, intro, alignment and spacing (every other theme). */
+export type DesignLevel = 'full' | 'basic';
+export const designLevel = (themeId: string | undefined | null): DesignLevel => ((DESIGN_THEMES as readonly string[]).includes(themeId ?? '') ? 'full' : 'basic');
 
 /** Keep only values from the lists above, with the text trimmed and limited */
 export function cleanDesign(d: unknown): SectionDesign | undefined {

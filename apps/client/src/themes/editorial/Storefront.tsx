@@ -17,13 +17,14 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
 import AboutBlock from '../shared/AboutBlock';
 import ContactBlock from '../shared/ContactBlock';
 
-export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections, sectionDesigns }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -48,7 +49,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const sec = (id: string) => !visibleSections || visibleSections.includes(id);
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
-  const ord = makeSectionOrder(visibleSections);
+  const ord = makeSectionOrder(visibleSections, sectionDesigns);
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-[#111111] font-['Inter']">
@@ -102,7 +103,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* Products */}
       {showProducts && sec('featured-products') && (
         <section id="products" className="scroll-mt-20 max-w-7xl mx-auto w-full px-6 py-20" style={ord('featured-products')}>
-          <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Shop the Collection</h2>
+          <DesignHeading id="featured-products" className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Shop the Collection</DesignHeading>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {displayProducts.map((product) => (
               <div key={product.id} className="group">
@@ -132,7 +133,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {showServices && sec('services') && (
         <section id="services" className="scroll-mt-20 bg-[#f5f5f5] py-20" style={ord('services')}>
           <div className="max-w-7xl mx-auto px-6">
-            <h2 className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Reservations</h2>
+            <DesignHeading id="services" className="font-['Playfair_Display'] text-3xl md:text-4xl mb-12 text-center">Reservations</DesignHeading>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {displayServices.map((service) => (
                 <div key={service.id} className="bg-white p-6 flex flex-col">
@@ -167,6 +168,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* ── Staff ── */}
       {sec('staff') && staff.length > 0 && (
       <section className="max-w-7xl mx-auto w-full px-6 py-20" style={ord('staff')}>
+        <OptionalDesignHeading id="staff" />
         <div className="flex flex-wrap justify-center gap-12">
           {staff.map((member) => (
             <div key={member.id} className="text-center max-w-xs">

@@ -14,13 +14,14 @@ import { useStorefrontForms } from '../shared/useStorefrontForms';
 import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
+import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
 import AboutBlock from '../shared/AboutBlock';
 import ContactBlock from '../shared/ContactBlock';
 
-export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections }: ThemeProps) {
+export default function Storefront({ theme, products, services, staff, galleries = [], visibleSections, sectionDesigns }: ThemeProps) {
   const [customOrderOpen, setCustomOrderOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const { subscribe, subscribeStatus, submitCustomOrder, customOrderStatus } = useStorefrontForms(theme.slug ?? '');
@@ -45,7 +46,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
-  const ord = makeSectionOrder(visibleSections);
+  const ord = makeSectionOrder(visibleSections, sectionDesigns);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8f6f1', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
@@ -105,7 +106,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {showProducts && sec('featured-products') && (
         <section id="products" style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 24px', width: '100%', ...ord('featured-products') }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 40, borderBottom: '1px solid #d0cdc8', paddingBottom: 16 }}>
-            <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400 }}>Featured Work</h2>
+            <div><DesignHeading id="featured-products" style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400 }}>Featured Work</DesignHeading></div>
             <span style={{ fontSize: 11, letterSpacing: '0.2em', color: '#1a1a1a', opacity: 0.4 }}>VIEW ALL</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
@@ -137,7 +138,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {showServices && sec('services') && (
         <section id="services" style={{ background: '#eeece7', padding: '80px 24px', ...ord('services') }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-            <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400, marginBottom: 40 }}>Services</h2>
+            <DesignHeading id="services" style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 28, fontWeight: 400, marginBottom: 40 }}>Services</DesignHeading>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
               {displayServices.map((service, i) => (
                 <div key={service.id} style={{ display: 'grid', gridTemplateColumns: '60px 1fr auto', gap: 24, alignItems: 'center', padding: '32px 0', borderTop: '1px solid #d0cdc8' }}>
@@ -168,6 +169,7 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* ── Staff ── */}
       {sec('staff') && staff.length > 0 && (
       <section id="team" style={{ background: '#eeece7', padding: '64px 24px', ...ord('staff') }}>
+        <OptionalDesignHeading id="staff" />
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: 48, flexWrap: 'wrap' }}>
             {staff.map((member) => (

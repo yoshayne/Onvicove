@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { FaqItem } from '../types';
+import { DesignHeading } from './DesignHeading';
 
 // Sample content for marketing previews only — never shown on a real storefront.
 export const SAMPLE_FAQS: FaqItem[] = [
@@ -34,9 +35,11 @@ export default function FaqBlock({
 
   return (
     <div className={className}>
-      <h2 style={headingStyle} className="text-3xl font-bold mb-10 text-center">
-        {heading}
-      </h2>
+      <div className="mx-auto max-w-2xl px-6">
+        <DesignHeading id="faq" style={headingStyle} className="text-3xl font-bold mb-10 text-center">
+          {heading}
+        </DesignHeading>
+      </div>
       <div className="max-w-2xl mx-auto px-6 flex flex-col gap-3">
         {items.map((item) => {
           const isOpen = openId === item.id;

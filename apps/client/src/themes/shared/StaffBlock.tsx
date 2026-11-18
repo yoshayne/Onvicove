@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { StaffData } from '../types';
+import { DesignHeading } from './DesignHeading';
 
 interface Props {
   staff: StaffData[];
@@ -14,7 +15,7 @@ export default function StaffBlock({ staff, heading = 'Meet the Team', className
   return (
     <section id="team" className={`scroll-mt-20 px-6 py-20 ${className}`} style={style}>
       <div className="mx-auto max-w-5xl">
-        <h2 style={headingStyle} className="mb-12 text-center text-3xl font-bold md:text-4xl">{heading}</h2>
+        <DesignHeading id="staff" style={headingStyle} className="mb-12 text-center text-3xl font-bold md:text-4xl">{heading}</DesignHeading>
         <div className="flex flex-wrap justify-center gap-12">
           {staff.map((m) => (
             <div key={m.id} className="max-w-xs text-center">
