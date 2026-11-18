@@ -15,7 +15,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -51,6 +51,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   // Load Anton font
   useEffect(() => {
@@ -174,7 +175,7 @@ export default function Storefront({ theme, products, services, staff, galleries
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0a0a0a] hidden md:block" />
 
         {/* Content */}
-        <div className="relative z-10 px-6 py-10 md:py-0 max-w-5xl w-full mx-auto">
+        <div className="relative z-10 px-6 py-10 md:py-0 max-w-5xl w-full mx-auto" style={hero.style} data-hero-align={hero.align}>
           <div className="inline-flex items-center gap-2 border border-[var(--brand-color,#e8ff00)]/60 px-4 py-1.5 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-color,#e8ff00)] animate-pulse" />
             <span className="text-[var(--brand-color,#e8ff00)] text-[10px] font-bold uppercase tracking-[0.35em]">
@@ -182,13 +183,11 @@ export default function Storefront({ theme, products, services, staff, galleries
             </span>
           </div>
 
-          <h1 className="bold-heading text-[clamp(4rem,14vw,11rem)] text-white leading-none uppercase mb-4">
+          <h1 className="bold-heading text-[clamp(4rem,14vw,11rem)] text-white leading-none uppercase mb-4">{hero.title || <>
             {theme.companyName}
-          </h1>
-
-          <p className="text-white/60 text-sm md:text-base uppercase tracking-[0.35em] mb-4">
+          </>}</h1><p className="text-white/60 text-sm md:text-base uppercase tracking-[0.35em] mb-4">{hero.intro || <>
             {tagline}
-          </p>
+          </>}</p>
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
             {showProducts && (

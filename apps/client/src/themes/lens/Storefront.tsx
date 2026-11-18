@@ -14,7 +14,7 @@ import ProductQuickView from '../shared/ProductQuickView';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, OptionalDesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -52,6 +52,7 @@ export default function Storefront({ theme, products, services, staff, galleries
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   const navLinks = [
     showProducts && { href: '#work', label: 'Work' },
@@ -138,16 +139,15 @@ export default function Storefront({ theme, products, services, staff, galleries
         {/* dual gradient: bottom-up fade + subtle top-down */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/20 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0d0d0d]/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 pb-16 px-8 max-w-5xl z-10">
+        <div className="absolute bottom-0 left-0 right-0 pb-16 px-8 max-w-5xl z-10" style={hero.style} data-hero-align={hero.align}>
           <p className="text-xs uppercase tracking-[0.3em] text-[var(--brand-color,#c8b8a2)] mb-4">
             {theme.city || 'Photography'}
           </p>
-          <h1 className="font-['DM_Serif_Display'] text-5xl sm:text-7xl md:text-8xl leading-[0.9] text-white mb-6">
+          <h1 className="font-['DM_Serif_Display'] text-5xl sm:text-7xl md:text-8xl leading-[0.9] text-white mb-6">{hero.title || <>
             {theme.companyName}
-          </h1>
-          <p className="text-white/60 text-base md:text-lg max-w-lg leading-relaxed">
+          </>}</h1><p className="text-white/60 text-base md:text-lg max-w-lg leading-relaxed">{hero.intro || <>
             {tagline}
-          </p>
+          </>}</p>
           <div className="flex items-center gap-5 mt-8">
             {showServices && (
               <a href="#sessions"

@@ -17,7 +17,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, OptionalDesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -49,6 +49,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-[#111111] font-['Poppins']">
@@ -89,11 +90,10 @@ export default function Storefront({ theme, products, services, staff, galleries
       <section className="relative min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-gradient-to-br from-[#f0f0ff] to-[#ffe0f0] py-24" style={ord('hero')}>
         <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full bg-[var(--brand-color,#ff3cac)]/10" />
         <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-[#f0f0ff]/60 translate-x-1/3 translate-y-1/3" />
-        <div className="relative z-10 px-6 max-w-3xl">
-          <h1 className="font-['Poppins'] font-extrabold text-5xl md:text-7xl text-[var(--brand-color,#ff3cac)] mb-6 leading-tight">
+        <div className="relative z-10 px-6 max-w-3xl" style={hero.style} data-hero-align={hero.align}>
+          <h1 className="font-['Poppins'] font-extrabold text-5xl md:text-7xl text-[var(--brand-color,#ff3cac)] mb-6 leading-tight">{hero.title || <>
             {theme.companyName}
-          </h1>
-          <p className="text-[#111111]/70 text-lg md:text-xl font-medium">{tagline}</p>
+          </>}</h1><p className="text-[#111111]/70 text-lg md:text-xl font-medium">{hero.intro || <>{tagline}</>}</p>
         </div>
       </section>
       )}

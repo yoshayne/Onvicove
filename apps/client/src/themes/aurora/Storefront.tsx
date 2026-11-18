@@ -15,7 +15,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, OptionalDesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -48,6 +48,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   const glass = { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' };
 
@@ -100,10 +101,9 @@ export default function Storefront({ theme, products, services, staff, galleries
       <section className="aurora-bg hero-sec-m" style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden', ...ord('hero') }}>
         <img src={heroImage} alt="" className="hero-img-m" />
         <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '80px 24px', display: 'grid', gridTemplateColumns: showServices ? '1fr 1fr' : '1fr', gap: 48, alignItems: 'center' }}>
-          <div>
+          <div style={hero.style} data-hero-align={hero.align}>
             <p style={{ fontSize: 12, letterSpacing: '0.2em', color: 'var(--brand-color, #a78bfa)', marginBottom: 16, textTransform: 'uppercase', opacity: 0.8 }}>Holistic Wellness</p>
-            <h1 style={{ fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 700, lineHeight: 1.1, marginBottom: 20, letterSpacing: '-0.02em' }}>{tagline}</h1>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', marginBottom: 32, lineHeight: 1.7, maxWidth: 480 }}>Holistic treatments and products to help you glow from within.</p>
+            <h1 style={{ fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 700, lineHeight: 1.1, marginBottom: 20, letterSpacing: '-0.02em' }}>{hero.title || <>{tagline}</>}</h1><p style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', marginBottom: 32, lineHeight: 1.7, maxWidth: 480 }}>{hero.intro || <>Holistic treatments and products to help you glow from within.</>}</p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               {showServices && <a href="#services" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(167,139,250,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(167,139,250,0.4)', color: 'var(--brand-color, #a78bfa)', borderRadius: 50, textDecoration: 'none' }}>Book a Session</a>}
               {showProducts && <a href="#products" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 14, fontWeight: 600, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 50, textDecoration: 'none' }}>Shop Products</a>}

@@ -15,7 +15,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, OptionalDesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -48,6 +48,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8f6f1', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
@@ -76,14 +77,13 @@ export default function Storefront({ theme, products, services, staff, galleries
       <>
 <style>{`@media (max-width: 767px) { .hero-img-m2 { aspect-ratio: auto !important; height: auto !important; } .hero-sec-m2 { min-height: 0 !important; grid-template-columns: 1fr !important; gap: 24px !important; } }`}</style>
       <section className="hero-sec-m2" style={{ maxWidth: 1280, margin: '0 auto', padding: '60px 24px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '70vh', alignItems: 'center', width: '100%', ...ord('hero') }}>
-        <div>
+        <div style={hero.style} data-hero-align={hero.align}>
           <p style={{ fontSize: 11, letterSpacing: '0.3em', color: '#1a1a1a', opacity: 0.4, marginBottom: 24, textTransform: 'uppercase' }}>
             01 / {String(displayProducts.length + displayServices.length).padStart(2, '0')}
           </p>
-          <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 'clamp(40px, 5vw, 72px)', fontWeight: 400, lineHeight: 1.05, marginBottom: 24 }}>{tagline}</h1>
-          <p style={{ fontSize: 14, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.7, maxWidth: 400, marginBottom: 32 }}>
+          <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 'clamp(40px, 5vw, 72px)', fontWeight: 400, lineHeight: 1.05, marginBottom: 24 }}>{hero.title || <>{tagline}</>}</h1><p style={{ fontSize: 14, color: '#1a1a1a', opacity: 0.55, lineHeight: 1.7, maxWidth: 400, marginBottom: 32 }}>{hero.intro || <>
             Editorial-style photography for those who appreciate the art of timeless imagery.
-          </p>
+          </>}</p>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             {showProducts && <a href="#products" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', color: '#1a1a1a', borderBottom: '1px solid #1a1a1a', paddingBottom: 4 }}>View Portfolio →</a>}
             {showServices && <a href="#services" style={{ display: 'inline-block', padding: '10px 24px', fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', background: '#1a1a1a', color: '#f8f6f1' }}>Book a Shoot</a>}

@@ -18,7 +18,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, OptionalDesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -51,6 +51,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-[#111111] font-['Inter']">
@@ -89,11 +90,10 @@ export default function Storefront({ theme, products, services, staff, galleries
       <section className="relative md:h-[80vh] md:min-h-[480px] flex flex-col md:flex-row md:items-center md:justify-center text-center overflow-hidden bg-[#1a1a1a]" style={ord('hero')}>
         <img src={heroImage} alt="" className="block w-full h-auto md:absolute md:inset-0 md:h-full md:object-cover opacity-80" />
         <div className="absolute inset-0 hidden md:block bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-[#1a1a1a]/10" />
-        <div className="relative z-10 px-6 py-10 md:py-0 max-w-3xl mx-auto md:mx-0">
-          <h1 className="font-['Playfair_Display'] text-5xl md:text-7xl text-white mb-6 leading-tight">
+        <div className="relative z-10 px-6 py-10 md:py-0 max-w-3xl mx-auto md:mx-0" style={hero.style} data-hero-align={hero.align}>
+          <h1 className="font-['Playfair_Display'] text-5xl md:text-7xl text-white mb-6 leading-tight">{hero.title || <>
             {theme.companyName}
-          </h1>
-          <p className="text-white/80 text-lg md:text-xl tracking-wide">{tagline}</p>
+          </>}</h1><p className="text-white/80 text-lg md:text-xl tracking-wide">{hero.intro || <>{tagline}</>}</p>
         </div>
       </section>
       )}

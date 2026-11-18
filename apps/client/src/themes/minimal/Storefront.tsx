@@ -17,7 +17,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, OptionalDesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -49,6 +49,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-[#111111] font-['Inter']">
@@ -84,9 +85,8 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* Hero */}
       {sec('hero') && (
       <section className="max-w-7xl mx-auto w-full px-6 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center" style={ord('hero')}>
-        <div>
-          <h1 className="text-4xl md:text-6xl font-light leading-tight mb-6">{theme.companyName}</h1>
-          <p className="text-[#111111]/60 text-lg font-light">{tagline}</p>
+        <div style={hero.style} data-hero-align={hero.align}>
+          <h1 className="text-4xl md:text-6xl font-light leading-tight mb-6">{hero.title || <>{theme.companyName}</>}</h1><p className="text-[#111111]/60 text-lg font-light">{hero.intro || <>{tagline}</>}</p>
         </div>
         <div className="md:aspect-[4/3] overflow-hidden bg-[#f8f8f8]">
           <img src={heroImage} alt="" className="block w-full h-auto md:h-full md:object-cover" />

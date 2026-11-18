@@ -40,3 +40,15 @@ export function OptionalDesignHeading({ id }: { id: string }) {
     </div>
   );
 }
+
+/**
+ * The owner's choices for the hero text on the older themes: a headline and a supporting line that replace the
+ * theme's own, left / center / right alignment of the text block, and extra or less space around it.
+ */
+export function useHeroDesign() {
+  const d = useSectionDesign('hero');
+  const style: CSSProperties = {};
+  if (d.spacing === 'compact') { style.paddingTop = 16; style.paddingBottom = 16; }
+  if (d.spacing === 'roomy') { style.paddingTop = 96; style.paddingBottom = 96; }
+  return { title: d.title?.trim() || undefined, intro: d.intro?.trim() || undefined, align: d.align, style };
+}

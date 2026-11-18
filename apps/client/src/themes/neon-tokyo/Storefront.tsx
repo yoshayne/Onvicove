@@ -15,7 +15,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -49,6 +49,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#050510', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
@@ -100,12 +101,11 @@ export default function Storefront({ theme, products, services, staff, galleries
         <img src={heroImage} alt="" className="hero-img-m" />
         <div className="hero-ovl-m" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(5,5,16,0.95) 50%, rgba(5,5,16,0.4) 100%)' }} />
         <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '80px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
-          <div>
+          <div style={hero.style} data-hero-align={hero.align}>
             <p style={{ fontSize: 11, letterSpacing: '0.3em', marginBottom: 16, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>NEXT-GEN STREETWEAR</p>
-            <h1 className="neon-pink" style={{ fontSize: 'clamp(48px, 7vw, 80px)', fontWeight: 900, lineHeight: 0.95, letterSpacing: '-0.03em', marginBottom: 16 }}>
+            <h1 className="neon-pink" style={{ fontSize: 'clamp(48px, 7vw, 80px)', fontWeight: 900, lineHeight: 0.95, letterSpacing: '-0.03em', marginBottom: 16 }}>{hero.title || <>
               {tagline}
-            </h1>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 32, lineHeight: 1.7 }}>次世代のギア。ストリートのために。</p>
+            </>}</h1><p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 32, lineHeight: 1.7 }}>{hero.intro || <>次世代のギア。ストリートのために。</>}</p>
             <div style={{ display: 'flex', gap: 12 }}>
               {showProducts && (
                 <a href="#products" className="neon-btn" style={{ display: 'inline-block', padding: '14px 28px', fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', color: '#000', textDecoration: 'none', borderRadius: 4 }}>

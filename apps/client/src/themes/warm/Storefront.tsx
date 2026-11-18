@@ -18,7 +18,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, OptionalDesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -50,6 +50,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showProducts = (theme.mode === 'store' || theme.mode === 'both') && products.length > 0 && sec('featured-products');
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fdf8f3] text-[#3d2314] font-['Inter']">
@@ -87,11 +88,10 @@ export default function Storefront({ theme, products, services, staff, galleries
       {sec('hero') && (
       <section className="bg-[#f5e8d8]" style={ord('hero')}>
         <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 items-center min-h-[70vh]">
-          <div className="py-16 md:py-0 md:pr-12">
-            <h1 className="font-['Lora'] text-4xl md:text-6xl text-[#3d2314] mb-6 leading-tight">
+          <div className="py-16 md:py-0 md:pr-12" style={hero.style} data-hero-align={hero.align}>
+            <h1 className="font-['Lora'] text-4xl md:text-6xl text-[#3d2314] mb-6 leading-tight">{hero.title || <>
               {theme.companyName}
-            </h1>
-            <p className="text-[#3d2314]/70 text-lg md:text-xl">{tagline}</p>
+            </>}</h1><p className="text-[#3d2314]/70 text-lg md:text-xl">{hero.intro || <>{tagline}</>}</p>
           </div>
           <div className="md:h-[70vh] rounded-2xl overflow-hidden">
             <img src={heroImage} alt="" className="block w-full h-auto md:h-full md:object-cover" />

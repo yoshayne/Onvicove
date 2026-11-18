@@ -196,8 +196,8 @@ export default function BookingFirstStorefront({ preset: p, theme, products, ser
             className="relative mx-auto flex max-w-5xl flex-col justify-end px-5 pb-8 pt-28 md:pt-40"
             style={{ textAlign: design('hero').align, ...(design('hero').spacing === 'compact' ? { paddingTop: 64 } : design('hero').spacing === 'roomy' ? { paddingTop: 220 } : {}) }}
           >
-            <h1 className="text-4xl md:text-6xl" style={heading}>{theme.companyName}</h1>
-            {(theme.tagline || p.tagline) && <p className={`mt-2 max-w-xl text-base md:text-lg ${alignClass('hero')}`} style={{ color: V.muted }}>{theme.tagline || p.tagline}</p>}
+            <h1 className="text-4xl md:text-6xl" style={heading}>{design('hero').title?.trim() || theme.companyName}</h1>
+            {(design('hero').intro?.trim() || theme.tagline || p.tagline) && <p className={`mt-2 max-w-xl text-base md:text-lg ${alignClass('hero')}`} style={{ color: V.muted }}>{design('hero').intro?.trim() || theme.tagline || p.tagline}</p>}
             <div className={`mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm ${justifyClass('hero')}`} style={{ color: V.muted }}>
               {avg !== null && (
                 <span className="inline-flex items-center gap-1" style={{ color: V.text }}>

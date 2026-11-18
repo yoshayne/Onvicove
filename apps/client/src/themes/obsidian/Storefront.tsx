@@ -15,7 +15,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, OptionalDesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -78,6 +78,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const brand = theme.brandColor || G.gold;
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   const featuredProduct = displayProducts.find(p => p.isFeatured) ?? displayProducts[0];
   const restProducts = displayProducts.filter(p => p.id !== featuredProduct?.id);
@@ -209,13 +210,13 @@ export default function Storefront({ theme, products, services, staff, galleries
         {sec('hero') && (
         <section style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: isMobile ? undefined : '100vh', position: 'relative', ...ord('hero') }}>
           {/* Left: text panel */}
-          <div style={{
+          <div style={{ ...hero.style,
             width: isMobile ? '100%' : '45%',
             display: 'flex', flexDirection: 'column', justifyContent: 'center',
             padding: isMobile ? '60px 24px 80px' : '80px 56px',
             position: 'relative', zIndex: 2,
             background: G.bg,
-          }}>
+          }} data-hero-align={hero.align}>
             {/* Eyebrow */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
               <div style={{ width: 24, height: 1, background: brand, opacity: 0.8 }} />
@@ -225,12 +226,11 @@ export default function Storefront({ theme, products, services, staff, galleries
             <h1 style={{
               fontFamily: serif, fontSize: isMobile ? 'clamp(36px,9vw,52px)' : 'clamp(40px,4.5vw,68px)',
               fontWeight: 400, lineHeight: 1.12, color: G.text, marginBottom: 24,
-            }}>
+            }}>{hero.title || <>
               {tagline}
-            </h1>
-            <p style={{ fontSize: 14, color: G.textMuted, lineHeight: 1.75, marginBottom: 40, maxWidth: 380 }}>
+            </>}</h1><p style={{ fontSize: 14, color: G.textMuted, lineHeight: 1.75, marginBottom: 40, maxWidth: 380 }}>{hero.intro || <>
               {theme.city ? `Based in ${theme.city}. ` : ''}Exceptional quality for those who know the difference.
-            </p>
+            </>}</p>
 
             {/* CTAs */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>

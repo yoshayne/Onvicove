@@ -18,3 +18,12 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Hero text alignment chosen in the Page Builder (older themes): the text block, its paragraphs and its button rows follow it */
+[data-hero-align='left'] { text-align: left; }
+[data-hero-align='center'] { text-align: center; }
+[data-hero-align='right'] { text-align: right; }
+[data-hero-align='center'] p, [data-hero-align='center'] h1 { margin-left: auto; margin-right: auto; }
+[data-hero-align='right'] p, [data-hero-align='right'] h1 { margin-left: auto; margin-right: 0; }
+[data-hero-align='center'] .flex, [data-hero-align='center'] [style*='display: flex'] { justify-content: center; }
+[data-hero-align='right'] .flex, [data-hero-align='right'] [style*='display: flex'] { justify-content: flex-end; }

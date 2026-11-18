@@ -213,7 +213,7 @@ type DesignFields = { text?: boolean; align?: boolean; spacing?: boolean; bg?: b
 
 const DESIGN_FIELDS: Record<DesignLevel, Record<string, DesignFields>> = {
   full: {
-    hero: { align: true, spacing: true },
+    hero: { text: true, align: true, spacing: true },
     services: { text: true, align: true, spacing: true, bg: true },
     staff: { text: true, align: true, spacing: true, bg: true },
     'featured-products': { text: true, align: true, spacing: true, bg: true },
@@ -225,6 +225,7 @@ const DESIGN_FIELDS: Record<DesignLevel, Record<string, DesignFields>> = {
   },
   // Every other theme draws its own sections: heading text, alignment and spacing work everywhere, backgrounds don't (yet)
   basic: {
+    hero: { text: true, align: true, spacing: true },
     services: { text: true, align: true, spacing: true },
     staff: { text: true, align: true, spacing: true },
     'featured-products': { text: true, align: true, spacing: true },
@@ -310,18 +311,18 @@ function DesignControls({ section, isPaid, level, onChange }: { section: Section
       {fields.text && (
         <>
           <label className="flex flex-col gap-1 text-xs text-slate-600">
-            Heading
+            {section.type === 'hero' ? 'Headline' : 'Heading'}
             <input
               type="text"
               maxLength={80}
               value={d.title ?? ''}
               onChange={(e) => onChange({ title: e.target.value })}
-              placeholder={section.type === 'staff' ? 'Meet the team' : section.type === 'featured-products' ? 'Shop' : section.type === 'contact' ? 'Visit us' : 'Services'}
+              placeholder={section.type === 'hero' ? 'Leave empty to use your business name or the theme\'s headline' : section.type === 'staff' ? 'Meet the team' : section.type === 'featured-products' ? 'Shop' : section.type === 'contact' ? 'Visit us' : 'Services'}
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-slate-600">
-              Short intro under the heading
+              {section.type === 'hero' ? 'Supporting line under the headline' : 'Short intro under the heading'}
               <textarea
                 rows={2}
                 maxLength={300}

@@ -15,7 +15,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, OptionalDesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -59,6 +59,7 @@ export default function Storefront({
   const heroImage = theme.heroImageUrl || defaults.heroImageUrl;
   const tagline = theme.tagline || defaults.tagline;
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   return (
     <div className="flex flex-col min-h-screen bg-white font-serif text-[#1a3a5c]">
@@ -100,11 +101,10 @@ export default function Storefront({
         style={{ ['--hero-bg' as string]: `linear-gradient(rgba(26,58,92,0.75), rgba(26,58,92,0.75)), url(${heroImage})`, ...ord('hero') }}
       >
         <img src={heroImage} alt="" className="block w-full h-auto md:hidden" />
-        <div className="px-6 py-10 md:py-24">
-          <h1 className="font-['Merriweather'] text-4xl font-bold text-white sm:text-5xl md:text-6xl">
+        <div className="px-6 py-10 md:py-24" style={hero.style} data-hero-align={hero.align}>
+          <h1 className="font-['Merriweather'] text-4xl font-bold text-white sm:text-5xl md:text-6xl">{hero.title || <>
             {theme.companyName}
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl font-serif text-lg text-white/90">{tagline}</p>
+          </>}</h1><p className="mx-auto mt-4 max-w-xl font-serif text-lg text-white/90">{hero.intro || <>{tagline}</>}</p>
           <a
             href={showProducts ? '#products' : '#services'}
             className="mt-8 inline-block rounded-sm bg-[var(--brand-color,#c8a850)] px-8 py-3 font-['Merriweather'] text-sm font-bold uppercase tracking-widest text-[#1a3a5c] transition hover:bg-[#b8983f]"

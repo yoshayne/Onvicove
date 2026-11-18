@@ -15,7 +15,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -49,6 +49,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#fff', color: '#000', fontFamily: 'Arial, sans-serif' }}>
@@ -84,14 +85,15 @@ export default function Storefront({ theme, products, services, staff, galleries
       <>
 <style>{`@media (max-width: 767px) { .hero-img-m2 { aspect-ratio: auto !important; height: auto !important; } .hero-sec-m2 { min-height: 0 !important; grid-template-columns: 1fr !important; gap: 24px !important; } }`}</style>
       <section className="hero-sec-m2" style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, minHeight: '60vh', alignItems: 'center', width: '100%', ...ord('hero') }}>
-        <div>
-          <h1 style={{ fontWeight: 900, fontSize: 'clamp(48px, 7vw, 96px)', lineHeight: 0.92, letterSpacing: '-0.03em', marginBottom: 20 }}>
+        <div style={hero.style} data-hero-align={hero.align}>
+          <h1 style={{ fontWeight: 900, fontSize: 'clamp(48px, 7vw, 96px)', lineHeight: 0.92, letterSpacing: '-0.03em', marginBottom: 20 }}>{hero.title || <>
             {tagline.split('.').map((part, i) => (
               <span key={i} style={{ display: 'block', color: i === tagline.split('.').length - 2 ? 'var(--brand-color, #0000ff)' : '#000' }}>
                 {part.trim().toUpperCase()}{i < tagline.split('.').length - 2 ? '.' : ''}
               </span>
             ))}
-          </h1>
+          </>}</h1>
+          {hero.intro && <p style={{ fontSize: 16, opacity: 0.7, lineHeight: 1.6, maxWidth: 520, marginBottom: 24 }}>{hero.intro}</p>}
           {theme.city && <p style={{ fontFamily: 'monospace', fontSize: 13, color: '#000', opacity: 0.5, marginBottom: 8 }}>{theme.industry} — {theme.city}</p>}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 32 }}>
             {showProducts && (

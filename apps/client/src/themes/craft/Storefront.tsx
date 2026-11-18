@@ -15,7 +15,7 @@ import CustomOrderModal from '../shared/CustomOrderModal';
 import Gallery from '../shared/Gallery';
 import { makeSectionOrder } from '../shared/sectionOrder';
 import CustomBlocks from '../shared/CustomBlocks';
-import { DesignHeading, OptionalDesignHeading } from '../shared/DesignHeading';
+import { DesignHeading, OptionalDesignHeading, useHeroDesign } from '../shared/DesignHeading';
 import type { GallerySectionData } from '../shared/Gallery';
 import TestimonialsBlock from '../shared/TestimonialsBlock';
 import FaqBlock from '../shared/FaqBlock';
@@ -48,6 +48,7 @@ export default function Storefront({ theme, products, services, staff, galleries
   const showServices = (theme.mode === 'book' || theme.mode === 'both') && services.length > 0 && sec('services');
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const ord = makeSectionOrder(visibleSections, sectionDesigns);
+  const hero = useHeroDesign();
 
   const categories = ['Candles', 'Soaps', 'Home Goods', 'Gift Sets'];
 
@@ -85,17 +86,16 @@ export default function Storefront({ theme, products, services, staff, galleries
       <>
 <style>{`@media (max-width: 767px) { .hero-img-m2 { aspect-ratio: auto !important; height: auto !important; } .hero-sec-m2 { min-height: 0 !important; grid-template-columns: 1fr !important; gap: 24px !important; } }`}</style>
       <section className="hero-sec-m2" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', minHeight: '65vh', width: '100%', ...ord('hero') }}>
-        <div>
+        <div style={hero.style} data-hero-align={hero.align}>
           {/* Stamp badge */}
           <div style={{ position: 'relative', display: 'inline-block', marginBottom: 24 }}>
             <div style={{ width: 72, height: 72, borderRadius: '50%', border: '2px solid #5c4a32', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, fontWeight: 700, letterSpacing: '0.15em', textAlign: 'center', color: '#5c4a32', lineHeight: 1.3, padding: 8, textTransform: 'uppercase' }}>
               HANDMADE<br />WITH CARE
             </div>
           </div>
-          <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 'clamp(40px, 5vw, 68px)', fontWeight: 400, lineHeight: 1.1, marginBottom: 20 }}>{tagline}</h1>
-          <p style={{ fontSize: 15, color: '#5c4a32', lineHeight: 1.7, marginBottom: 32, maxWidth: 420 }}>
+          <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 'clamp(40px, 5vw, 68px)', fontWeight: 400, lineHeight: 1.1, marginBottom: 20 }}>{hero.title || <>{tagline}</>}</h1><p style={{ fontSize: 15, color: '#5c4a32', lineHeight: 1.7, marginBottom: 32, maxWidth: 420 }}>{hero.intro || <>
             Small batch goods for a slower, more intentional life. Made with seasonal botanicals and ancestral techniques.
-          </p>
+          </>}</p>
           <div style={{ display: 'flex', gap: 12 }}>
             {showProducts && (
               <a href="#products" style={{ display: 'inline-block', padding: '12px 28px', fontSize: 12, letterSpacing: '0.15em', textDecoration: 'none', background: '#5c4a32', color: '#f5f0e8', textTransform: 'uppercase' }}>
