@@ -4,6 +4,7 @@ import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
 import { refreshGalleryUrls } from '../services/storage';
+import { applyDesignPlan } from '../services/sectionDesign';
 
 const app = new Hono();
 
@@ -70,9 +71,12 @@ app.put('/:page', async (c) => {
     }
   }
 
+  // Per-section design choices are a Pro and Business feature
+  const toSave = applyDesignPlan(parsed.data.sections as { design?: unknown }[], (tenant as { plan?: string }).plan);
+
   const rows = await db`
     INSERT INTO page_sections (tenant_id, page, sections)
-    VALUES (${tenant.id}, ${page}, ${db.json(parsed.data.sections as never)})
+    VALUES (${tenant.id}, ${page}, ${db.json(toSave as never)})
     ON CONFLICT (tenant_id, page)
     DO UPDATE SET sections = EXCLUDED.sections, updated_at = NOW()
     RETURNING sections

@@ -165,6 +165,8 @@ export interface ThemeProps {
   visibleSections?: string[];
   /** Enabled gallery sections, in order, for inline rendering inside the theme. */
   galleries?: import('./shared/Gallery').GallerySectionData[];
+  /** Owner's per-section design choices (Pro and Business), keyed by section id. Used by the Barber, Studio, Ink and Roster themes. */
+  sectionDesigns?: Record<string, import('./shared/sectionDesign').SectionDesign>;
   onAddToCart?: (product: ProductData) => void;
   onBookService?: (service: ServiceData) => void;
 }

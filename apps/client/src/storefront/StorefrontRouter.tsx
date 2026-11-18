@@ -9,6 +9,7 @@ import type { GallerySectionData } from '../themes/shared/Gallery';
 import { getFontPair } from '../themes/shared/fontPairs';
 import { describeHours } from '../lib/hours';
 import { optionFields } from '../themes/shared/serviceOptions';
+import { cleanDesign, type SectionDesign } from '../themes/shared/sectionDesign';
 import PaymentReturnBanner from '../components/shared/PaymentReturnBanner';
 
 interface StoredSection { id: string; type: string; enabled: boolean; [key: string]: unknown; }
@@ -250,6 +251,12 @@ export default function StorefrontRouter({ slug: hostSlug }: { slug?: string }) 
   const enabledSections = allSections.filter((s) => s.enabled);
   const visibleSections = enabledSections.map((s) => s.id);
   const galleries = enabledSections.filter((s) => s.type === 'gallery') as unknown as GallerySectionData[];
+  // The owner's per-section design choices (only Pro and Business ones reach here: the server drops them for free stores)
+  const sectionDesigns: Record<string, SectionDesign> = {};
+  for (const s of enabledSections) {
+    const d = cleanDesign(s.design);
+    if (d) sectionDesigns[s.id] = d;
+  }
 
   return (
     <div data-storefront>
@@ -262,6 +269,7 @@ export default function StorefrontRouter({ slug: hostSlug }: { slug?: string }) 
         staff={(staffQuery.data ?? []).map(mapStaff)}
         galleries={galleries}
         visibleSections={visibleSections}
+        sectionDesigns={sectionDesigns}
       />
     </div>
   );

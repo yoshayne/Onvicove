@@ -21,6 +21,7 @@ import { Link } from 'react-router-dom';
 import type { GalleryLayout, GalleryImageData } from '../themes/shared/Gallery';
 import { getLayoutVariants } from '../themes/shared/layoutVariants';
 import ColorPicker from '../components/shared/ColorPicker';
+import { supportsSectionDesign, type SectionDesign } from '../themes/shared/sectionDesign';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,8 @@ interface Section {
   title?: string;
   layout?: GalleryLayout;
   images?: GalleryImageData[];
+  /** Pro and Business: the owner's look for this section */
+  design?: SectionDesign;
 }
 
 type Device = 'desktop' | 'tablet' | 'mobile';
@@ -186,6 +189,105 @@ function GalleryEditor({
   );
 }
 
+// ── Section design (Pro and Business) ─────────────────────────────────────────
+
+const DESIGN_FIELDS: Record<string, { text?: boolean; align?: boolean; spacing?: boolean; bg?: boolean }> = {
+  hero: { align: true, spacing: true },
+  services: { text: true, align: true, spacing: true, bg: true },
+  staff: { text: true, align: true, spacing: true, bg: true },
+  'featured-products': { text: true, align: true, spacing: true, bg: true },
+  contact: { text: true, spacing: true, bg: true },
+  about: { bg: true },
+  testimonials: { bg: true },
+  faq: { bg: true },
+  gallery: { bg: true },
+};
+
+function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { id: T; label: string }[]; onChange: (v: T) => void }) {
+  return (
+    <div>
+      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+      <div className="flex overflow-hidden rounded-lg border border-slate-200">
+        {options.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => onChange(o.id)}
+            className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${value === o.id ? 'bg-violet-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Heading text, alignment, spacing and background for one section: choices from a short list, so a page can't break */
+function DesignControls({ section, isPaid, themeSupported, onChange }: { section: Section; isPaid: boolean; themeSupported: boolean; onChange: (patch: Partial<SectionDesign>) => void }) {
+  const fields = DESIGN_FIELDS[section.type];
+  if (!fields) return null;
+  const d = section.design ?? {};
+
+  if (!isPaid) {
+    return (
+      <div className="mt-3 rounded-lg bg-violet-50 px-3 py-2.5 text-xs text-violet-900">
+        <p className="font-semibold">Design this section</p>
+        <p className="mt-0.5 text-violet-800">Change the heading, alignment, spacing and background of each section on the Pro and Business plans.</p>
+        <Link to="/dashboard/billing" className="mt-1.5 inline-block font-semibold underline">See plans</Link>
+      </div>
+    );
+  }
+  if (!themeSupported) {
+    return (
+      <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+        Section design is available on the Barber, Studio, Ink and Roster themes for now. More themes are coming.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3">
+      <p className="text-xs font-semibold text-slate-700">Design this section</p>
+      {fields.text && (
+        <>
+          <label className="flex flex-col gap-1 text-xs text-slate-600">
+            Heading
+            <input
+              type="text"
+              maxLength={80}
+              value={d.title ?? ''}
+              onChange={(e) => onChange({ title: e.target.value })}
+              placeholder={section.type === 'staff' ? 'Meet the team' : section.type === 'featured-products' ? 'Shop' : section.type === 'contact' ? 'Visit us' : 'Services'}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-slate-600">
+              Short intro under the heading
+              <textarea
+                rows={2}
+                maxLength={300}
+                value={d.intro ?? ''}
+                onChange={(e) => onChange({ intro: e.target.value })}
+                placeholder="Optional"
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400"
+              />
+          </label>
+        </>
+      )}
+      {fields.align && (
+        <Choice label="Text alignment" value={d.align ?? 'left'} onChange={(align) => onChange({ align })} options={[{ id: 'left', label: 'Left' }, { id: 'center', label: 'Center' }, { id: 'right', label: 'Right' }]} />
+      )}
+      {fields.spacing && (
+        <Choice label="Spacing" value={d.spacing ?? 'normal'} onChange={(spacing) => onChange({ spacing })} options={[{ id: 'compact', label: 'Tight' }, { id: 'normal', label: 'Normal' }, { id: 'roomy', label: 'Roomy' }]} />
+      )}
+      {fields.bg && (
+        <Choice label="Background" value={d.bg ?? 'default'} onChange={(bg) => onChange({ bg })} options={[{ id: 'default', label: 'Theme' }, { id: 'soft', label: 'Soft' }, { id: 'contrast', label: 'Contrast' }, { id: 'accent', label: 'Brand' }]} />
+      )}
+    </div>
+  );
+}
+
 // ── Section row ───────────────────────────────────────────────────────────────
 
 function SectionRow({
@@ -194,7 +296,11 @@ function SectionRow({
   onToggle, onExpand,
   uploadingFor, onGalleryChange, onUpload, onRemoveImage, onUpdateCaption, emptyHint,
   index, nativeDrag, onHandlePointerDown, onHandlePointerMove, onHandlePointerEnd,
+  isPaid, themeSupported, onDesignChange,
 }: {
+  isPaid: boolean;
+  themeSupported: boolean;
+  onDesignChange: (patch: Partial<SectionDesign>) => void;
   section: Section;
   index: number;
   nativeDrag: boolean;
@@ -295,14 +401,17 @@ function SectionRow({
       {/* Expanded content */}
       {isExpanded && (
         section.type === 'gallery' ? (
-          <GalleryEditor
-            section={section}
-            onChange={onGalleryChange}
-            uploadingFor={uploadingFor}
-            onUpload={onUpload}
-            onRemoveImage={onRemoveImage}
-            onUpdateCaption={onUpdateCaption}
-          />
+          <>
+            <GalleryEditor
+              section={section}
+              onChange={onGalleryChange}
+              uploadingFor={uploadingFor}
+              onUpload={onUpload}
+              onRemoveImage={onRemoveImage}
+              onUpdateCaption={onUpdateCaption}
+            />
+            <div className="px-3 pb-3"><DesignControls section={section} isPaid={isPaid} themeSupported={themeSupported} onChange={onDesignChange} /></div>
+          </>
         ) : (
           <div className="border-t border-slate-100 px-3 py-3">
             {section.type === 'hero' && (
@@ -320,6 +429,7 @@ function SectionRow({
             {!['hero', 'about', 'contact', 'testimonials', 'faq'].includes(section.type) && (
               <p className="text-xs text-slate-400">This section pulls live data from your products, services, or staff.</p>
             )}
+            <DesignControls section={section} isPaid={isPaid} themeSupported={themeSupported} onChange={onDesignChange} />
           </div>
         )
       )}
@@ -729,6 +839,19 @@ export default function PageBuilder() {
   useEffect(() => () => { if (pointerDrag.current) window.clearInterval(pointerDrag.current.timer); }, []);
 
   // Toggle section visibility — auto-save so preview reflects the change immediately
+  const isPaidPlan = !!tenantQ.data?.tenant && tenantQ.data.tenant.plan !== 'starter';
+  const designSupported = supportsSectionDesign(tenantQ.data?.tenant?.theme_id);
+
+  function updateDesign(id: string, patch: Partial<SectionDesign>) {
+    mutateSections((prev) => prev.map((sec) => {
+      if (sec.id !== id) return sec;
+      const next: SectionDesign = { ...sec.design, ...patch };
+      for (const k of Object.keys(next) as (keyof SectionDesign)[]) if (next[k] === '' || next[k] === undefined) delete next[k];
+      const { design: _old, ...rest } = sec;
+      return Object.keys(next).length ? { ...rest, design: next } : rest;
+    }));
+  }
+
   function toggleSection(id: string) {
     const next = sections.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s));
     setSections(next);
@@ -955,6 +1078,9 @@ export default function PageBuilder() {
                       onToggle={() => toggleSection(section.id)}
                       onExpand={() => toggleExpand(section.id)}
                       uploadingFor={uploadingFor}
+                      isPaid={isPaidPlan}
+                      themeSupported={designSupported}
+                      onDesignChange={(patch) => updateDesign(section.id, patch)}
                       onGalleryChange={(patch) => updateGallery(section.id, patch)}
                       onUpload={uploadGalleryImages}
                       onRemoveImage={removeGalleryImage}

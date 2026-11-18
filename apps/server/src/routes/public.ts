@@ -9,6 +9,7 @@ import { getCustomerBaseUrl } from '../lib/baseUrl';
 import { addDays, format, parse } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { attachOptions, resolveBookable } from '../services/serviceOptions';
+import { applyDesignPlan } from '../services/sectionDesign';
 import { slotsForService, holdsTime, pickStaffForSlot } from '../services/slots';
 import { newManageToken, manageUrlFor } from '../services/bookingManage';
 import { verifyUnsubscribeToken } from '../lib/announcementText';
@@ -64,7 +65,7 @@ app.get('/:slug/og-image', async (c) => {
 app.get('/:slug/page-sections/:page', async (c) => {
   const slug = c.req.param('slug');
   const page = c.req.param('page');
-  const tenants = await db`SELECT id FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
+  const tenants = await db`SELECT id, plan FROM tenants WHERE slug = ${slug} AND is_active = TRUE LIMIT 1`;
   if (!tenants[0]) return c.json({ error: 'Store not found' }, 404);
 
   const rows = await db`
@@ -76,7 +77,8 @@ app.get('/:slug/page-sections/:page', async (c) => {
   const sections = rows[0]?.sections ?? [];
   await refreshGalleryUrls(sections);
 
-  return c.json({ sections });
+  // Per-section design choices only apply on Pro and Business
+  return c.json({ sections: Array.isArray(sections) ? applyDesignPlan(sections, tenants[0].plan as string) : sections });
 });
 
 // GET /api/public/:slug/products
