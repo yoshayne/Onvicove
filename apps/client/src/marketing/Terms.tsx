@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Bullets, ContactLine, LegalPage, Section } from './legal';
 
 export default function Terms() {
@@ -37,7 +38,7 @@ export default function Terms() {
         <p>Payments from your customers are processed by Stripe. To accept payments you must connect a Stripe account and agree to Stripe's own terms. We are not a bank and do not hold your funds.</p>
         <Bullets items={[
           'Fees: Stripe charges its card processing fee on each payment. We also charge a platform fee, shown on our pricing page and in your dashboard, which may differ by plan. Fees may change with notice.',
-          'Refunds and disputes: you are responsible for refunds, chargebacks and disputes on your sales. Stripe\'s processing fee is not returned on a refund.',
+          <>Refunds and disputes: you are responsible for refunds, chargebacks and disputes on your sales. Stripe's processing fee is not returned on a refund. See our <Link className="font-medium underline" to="/refunds">Refund Policy</Link>.</>,
           'You are responsible for collecting and paying any taxes that apply to your sales.',
         ]} />
       </Section>

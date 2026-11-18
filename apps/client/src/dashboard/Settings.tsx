@@ -9,6 +9,7 @@ import CalendarConnections from './CalendarConnections';
 import Button from '../components/shared/Button';
 import { Input } from '../components/shared/Input';
 import CustomDomainPanel from './CustomDomainPanel';
+import RefundPolicyCard from './RefundPolicyCard';
 import { FONT_PAIRS } from '../themes/shared/fontPairs';
 import ColorPicker from '../components/shared/ColorPicker';
 
@@ -445,6 +446,8 @@ export default function Settings() {
       {tenant && (tenant.mode === 'book' || tenant.mode === 'both') && <BookingHoursCard tenant={tenant} />}
 
       {tenant && (tenant.mode === 'book' || tenant.mode === 'both') && <CalendarConnections />}
+
+      {tenant && <RefundPolicyCard key={tenant.updated_at} tenant={tenant} />}
 
       {tenant && <CustomDomainPanel tenant={tenant} />}
     </div>

@@ -4,6 +4,7 @@ import { apiPost } from '../../lib/api';
 import { formatPrice, type ThemeData } from '../types';
 import StripePaymentForm from './StripePaymentForm';
 import RecurringTerms from './RecurringTerms';
+import { storeRefundPath } from '../../storefront/storePaths';
 import { useRecurringCheckout } from './recurringCheckout';
 
 const MAX_ATTEMPTS = 3;
@@ -125,7 +126,7 @@ export default function RecurringCheckoutHost({ theme }: { theme: ThemeData }) {
             <button type="button" onClick={() => setShowTerms((v) => !v)} className="-mt-2 self-start text-xs font-medium text-gray-500 underline">
               {showTerms ? 'Hide' : 'View'} recurring billing terms
             </button>
-            {showTerms && <div className="max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3"><RecurringTerms legalName={legal} /></div>}
+            {showTerms && <div className="max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3"><RecurringTerms legalName={legal} refundUrl={theme.hasRefundPolicy ? storeRefundPath(theme.slug) : undefined} /></div>}
 
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
             <button

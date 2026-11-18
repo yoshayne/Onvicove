@@ -69,6 +69,7 @@ function mapTenant(tenant: Tenant, mode: Tenant['mode']): ThemeData {
       ctaLabel: pc['about.cta_label'] || undefined,
       ctaHref: mode === 'store' ? '#products' : '#services',
     },
+    hasRefundPolicy: !!pc['refund.policy']?.trim(),
     contactEmail: pc['contact.email'] || undefined,
     contactPhone: pc['contact.phone'] || undefined,
     contactAddress: pc['contact.address'] || undefined,

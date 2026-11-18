@@ -5,6 +5,8 @@ import { AboutContext } from './shared/AboutBlock';
 import RecurringCheckoutHost from './shared/RecurringCheckoutHost';
 import ServiceOptionHost from './shared/ServiceOptionHost';
 import { SectionDesignContext } from './shared/DesignHeading';
+import { storeRefundPath } from '../storefront/storePaths';
+import { Link } from 'react-router-dom';
 
 const themeMap: Record<ThemeId, () => Promise<{ default: ComponentType<ThemeProps> }>> = {
   editorial: () => import('./editorial/Storefront'),
@@ -45,6 +47,11 @@ export default function ThemeRenderer({ themeId, ...props }: ThemeRendererProps)
         <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
           <Storefront {...props} />
         </Suspense>
+        {props.theme.hasRefundPolicy && (
+          <p className="py-3 text-center text-xs" style={{ background: '#0f0f10', color: 'rgba(255,255,255,0.55)' }}>
+            <Link to={storeRefundPath(props.theme.slug)} className="underline underline-offset-2 hover:text-white">Refund policy</Link>
+          </p>
+        )}
         <RecurringCheckoutHost theme={props.theme} />
         <ServiceOptionHost currency={props.theme.currency} />
       </AboutContext.Provider>

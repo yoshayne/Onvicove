@@ -1,5 +1,5 @@
 /** The recurring-billing authorization the customer agrees to (the store's legal name is filled in) */
-export default function RecurringTerms({ legalName }: { legalName: string }) {
+export default function RecurringTerms({ legalName, refundUrl }: { legalName: string; refundUrl?: string }) {
   const m = legalName;
   return (
     <div className="flex flex-col gap-3 text-xs leading-relaxed text-gray-600">
@@ -15,7 +15,7 @@ export default function RecurringTerms({ legalName }: { legalName: string }) {
 
       <p><strong>5. Failed Payments.</strong> If a payment cannot be processed, {m} may notify you and request updated payment information. Any additional payment attempts, late fees, or other charges will be subject to the terms disclosed to you and applicable law.</p>
 
-      <p><strong>6. Refunds and Disputes.</strong> Refunds, credits, and disputes are handled in accordance with the Merchant’s published refund policy and applicable law. Nothing in these terms limits any rights you may have under applicable consumer protection laws or payment network rules.</p>
+      <p><strong>6. Refunds and Disputes.</strong> Refunds, credits, and disputes are handled in accordance with the Merchant’s{refundUrl ? <> <a href={refundUrl} target="_blank" rel="noopener noreferrer" className="underline">refund policy</a></> : ' refund policy, which you can request from the Merchant,'} and applicable law. Nothing in these terms limits any rights you may have under applicable consumer protection laws or payment network rules.</p>
 
       <p><strong>7. Payment Processing.</strong> Payments may be processed by a third-party payment service provider on behalf of {m}. Your payment information will be handled in accordance with the applicable payment processor’s terms and privacy practices, as well as the Merchant’s privacy policy.</p>
 

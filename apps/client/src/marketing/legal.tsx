@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Store } from 'lucide-react';
 
 const BRAND = '#7C3AED';
-export const LEGAL_UPDATED = 'October 18, 2026';
+export const LEGAL_UPDATED = 'November 18, 2026';
 /** Set VITE_SUPPORT_EMAIL to show a contact address on the legal pages */
 export const SUPPORT_EMAIL = (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined)?.trim() || '';
 
@@ -25,7 +25,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
         <div className="mt-8 flex flex-col gap-8 text-[15px] leading-relaxed">{children}</div>
       </main>
       <footer className="border-t border-slate-100 px-6 py-6 text-center text-sm text-slate-500">
-        <Link to="/privacy" className="hover:text-slate-800">Privacy Policy</Link> · <Link to="/terms" className="hover:text-slate-800">Terms of Service</Link>
+        <Link to="/privacy" className="hover:text-slate-800">Privacy Policy</Link> · <Link to="/terms" className="hover:text-slate-800">Terms of Service</Link> · <Link to="/refunds" className="hover:text-slate-800">Refund Policy</Link>
       </footer>
     </div>
   );

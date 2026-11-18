@@ -38,6 +38,8 @@ export interface ThemeData {
   about?: AboutConfig;
   /** Name used in the recurring-billing authorization */
   legalName?: string;
+  /** The store has written a refund policy (Settings), so a link to it is shown under the page */
+  hasRefundPolicy?: boolean;
   contactEmail?: string;
   contactPhone?: string;
   contactAddress?: string;

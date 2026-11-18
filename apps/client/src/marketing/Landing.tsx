@@ -357,6 +357,7 @@ export default function Landing() {
           <div className="flex gap-5">
             <Link to="/privacy" className="transition-colors hover:text-slate-800">Privacy</Link>
             <Link to="/terms" className="transition-colors hover:text-slate-800">Terms</Link>
+            <Link to="/refunds" className="transition-colors hover:text-slate-800">Refunds</Link>
             <Link to="/guide" className="transition-colors hover:text-slate-800">Get prepared</Link>
             <Link to="/sign-in" className="transition-colors hover:text-slate-800">Sign in</Link>
           </div>

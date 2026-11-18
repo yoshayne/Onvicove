@@ -56,6 +56,7 @@ import UnsubscribeUpdates from './marketing/UnsubscribeUpdates';
 import AdminAnnouncements from './admin/Announcements';
 import AdminBackups from './admin/Backups';
 import Terms from './marketing/Terms';
+import Refunds from './marketing/Refunds';
 import AdminLayout from './admin/Layout';
 import AdminOverview from './admin/Overview';
 import AdminTenants from './admin/Tenants';
@@ -71,6 +72,7 @@ import AdminCreateTenant from './admin/CreateTenant';
 
 const Wizard = lazy(() => import('./wizard/Wizard'));
 const StorefrontRouter = lazy(() => import('./storefront/StorefrontRouter'));
+const RefundPolicy = lazy(() => import('./storefront/RefundPolicy'));
 const PayBalance = lazy(() => import('./storefront/PayBalance'));
 const ManageBooking = lazy(() => import('./storefront/ManageBooking'));
 const ManagePlan = lazy(() => import('./storefront/ManagePlan'));
@@ -143,6 +145,7 @@ function StoreHostApp({ slug }: { slug: string }) {
               <Route path="/pay/booking/:id" element={<PayBalance />} />
               <Route path="/manage/booking/:token" element={<ManageBooking />} />
               <Route path="/manage/plan/:token" element={<ManagePlan />} />
+              <Route path="/refund-policy" element={<RefundPolicy slug={slug} />} />
               <Route path="*" element={<StorefrontRouter slug={slug} />} />
             </Routes>
           </Suspense>
@@ -168,6 +171,7 @@ export default function App() {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/unsubscribe/updates/:token" element={<UnsubscribeUpdates />} />
               <Route path="/terms" element={<Terms />} />
+              <Route path="/refunds" element={<Refunds />} />
 
               <Route path="/sign-in/*" element={<AuthPage mode="sign-in" />} />
               <Route path="/sign-up/*" element={<AuthPage mode="sign-up" />} />
@@ -255,6 +259,7 @@ export default function App() {
 
               <Route path="/claim/:token" element={<ClaimPage />} />
 
+              <Route path="/:slug/refund-policy" element={<RefundPolicy />} />
               <Route path="/:slug/*" element={<StorefrontRouter />} />
             </Routes>
           </Suspense>
