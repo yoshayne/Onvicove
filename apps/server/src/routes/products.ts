@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
+import { orderSchema, reorderRows, nextSortOrder } from '../services/ordering';
+
 import { enrichWithUrls } from '../services/storage';
 import { checkItemLimit } from '../services/settings';
 import { ensureStorefrontSection } from '../services/storefrontSections';
@@ -67,6 +69,15 @@ async function attachVariants(products: Record<string, unknown>[]) {
 }
 
 // GET /api/products
+// PUT /api/products/order — save the owner's order of the list
+app.put('/order', async (c) => {
+  const tenant = c.get('tenant') as { id: string };
+  const parsed = orderSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Invalid request body' }, 400);
+  await reorderRows('products', tenant.id, parsed.data.ids);
+  return c.json({ success: true });
+});
+
 app.get('/', async (c) => {
   const tenant = c.get('tenant') as { id: string };
   const rows = await db`
@@ -111,7 +122,7 @@ app.post('/', async (c) => {
       ${d.track_inventory ?? false}, ${db.json(d.image_keys ?? [])},
       ${d.category ?? null}, ${db.json(d.tags ?? [])}, ${d.is_active ?? true},
       ${d.is_featured ?? false}, ${d.digital_file_key ?? null}, ${d.subscription_interval ?? null},
-      ${d.weight_grams ?? null}, ${d.requires_shipping ?? false}, ${d.sort_order ?? 0}
+      ${d.weight_grams ?? null}, ${d.requires_shipping ?? false}, ${d.sort_order ?? nextSortOrder('products', tenant.id)}
     ) RETURNING *
   `;
 

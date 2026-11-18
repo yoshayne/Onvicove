@@ -7,6 +7,8 @@ import Badge from '../components/shared/Badge';
 import Button from '../components/shared/Button';
 import Modal from '../components/shared/Modal';
 import { Input, Textarea } from '../components/shared/Input';
+import MoveButtons from '../components/shared/MoveButtons';
+import { useReorder } from '../lib/reorder';
 import WeeklyHoursEditor from '../components/shared/WeeklyHoursEditor';
 
 const DEFAULT_AVAILABILITY: WeeklyAvailability = {
@@ -58,6 +60,7 @@ export default function StaffPage() {
     queryFn: () => api.get<{ services: { id: string; name: string; category: string | null }[] }>('/services'),
   });
 
+  const move = useReorder<Staff>('staff', '/staff', (d) => (d as { staff: Staff[] }).staff, (d, items) => ({ ...(d as object), staff: items }));
   const { data, isLoading, isError } = useQuery({
     queryKey: ['staff'],
     queryFn: () => api.get<{ staff: Staff[] }>('/staff'),
@@ -167,6 +170,7 @@ export default function StaffPage() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-slate-500">
               <tr>
+                <th className="w-8 px-2 py-3" aria-label="Order" />
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
@@ -175,8 +179,9 @@ export default function StaffPage() {
               </tr>
             </thead>
             <tbody>
-              {data.staff.map((s) => (
+              {data.staff.map((s, i) => (
                 <tr key={s.id} className="border-t border-slate-100">
+                  <td className="px-2"><MoveButtons index={i} count={data.staff.length} label={s.name} onMove={(delta) => move(data.staff, i, delta)} /></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {s.avatar_url ? (

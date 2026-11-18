@@ -21,6 +21,7 @@ import { Link } from 'react-router-dom';
 import type { GalleryLayout, GalleryImageData } from '../themes/shared/Gallery';
 import { getLayoutVariants } from '../themes/shared/layoutVariants';
 import ColorPicker from '../components/shared/ColorPicker';
+import MoveButtons from '../components/shared/MoveButtons';
 import { supportsSectionDesign, type SectionDesign } from '../themes/shared/sectionDesign';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -1349,6 +1350,7 @@ export default function PageBuilder() {
                     {testimonials.map((t, i) => (
                       <div key={t.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2">
                         <div className="flex items-start justify-between gap-2">
+                          <MoveButtons index={i} count={testimonials.length} label="testimonial" onMove={(delta) => { const next = [...testimonials]; [next[i], next[i + delta]] = [next[i + delta], next[i]]; setTestimonials(next); setContentDirty(true); }} />
                           <input
                             className="flex-1 rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
                             placeholder="Client name"
@@ -1409,6 +1411,7 @@ export default function PageBuilder() {
                     {faqs.map((f, i) => (
                       <div key={f.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2">
                         <div className="flex items-start gap-2">
+                          <MoveButtons index={i} count={faqs.length} label="question" onMove={(delta) => { const next = [...faqs]; [next[i], next[i + delta]] = [next[i + delta], next[i]]; setFaqs(next); setContentDirty(true); }} />
                           <input
                             className="flex-1 rounded border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
                             placeholder="Question"

@@ -765,3 +765,6 @@ CREATE INDEX IF NOT EXISTS idx_service_options_service ON service_options(servic
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS service_option_id UUID;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS option_name TEXT;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS duration_minutes INTEGER;
+
+-- Owners can put their team in the order they want shown on the site
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0;

@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
+import { orderSchema, reorderRows, nextSortOrder } from '../services/ordering';
+
 import { enrichWithUrls } from '../services/storage';
 
 const app = new Hono();
@@ -53,11 +55,20 @@ async function setServiceIds(staffId: string, serviceIds: string[]): Promise<voi
   }
 }
 
+// PUT /api/staff/order — save the owner's order of the list
+app.put('/order', async (c) => {
+  const tenant = c.get('tenant') as { id: string };
+  const parsed = orderSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Invalid request body' }, 400);
+  await reorderRows('staff', tenant.id, parsed.data.ids);
+  return c.json({ success: true });
+});
+
 // GET /api/staff
 app.get('/', async (c) => {
   const tenant = c.get('tenant') as { id: string };
   const rows = await db`
-    SELECT * FROM staff WHERE tenant_id = ${tenant.id} ORDER BY created_at ASC
+    SELECT * FROM staff WHERE tenant_id = ${tenant.id} ORDER BY sort_order ASC, created_at ASC
   `;
   const enriched = await Promise.all(
     rows.map(async (r) => ({
@@ -94,10 +105,10 @@ app.post('/', async (c) => {
   // Insert scalar fields, then set JSONB availability in a separate statement
   // so db.json() is used directly in a template literal (not inside db(obj,keys)).
   const rows = await db`
-    INSERT INTO staff (tenant_id, name, email, phone, bio, avatar_key, is_active)
+    INSERT INTO staff (tenant_id, name, email, phone, bio, avatar_key, is_active, sort_order)
     VALUES (
       ${tenant.id}, ${d.name}, ${d.email ?? null}, ${d.phone ?? null},
-      ${d.bio ?? null}, ${d.avatar_key ?? null}, ${d.is_active ?? true}
+      ${d.bio ?? null}, ${d.avatar_key ?? null}, ${d.is_active ?? true}, ${nextSortOrder('staff', tenant.id)}
     )
     RETURNING *
   `;

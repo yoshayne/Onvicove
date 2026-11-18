@@ -144,7 +144,7 @@ app.get('/:slug/staff', async (c) => {
   const staff = await db`
     SELECT s.*,
       COALESCE((SELECT json_agg(ss.service_id) FROM staff_services ss WHERE ss.staff_id = s.id), '[]'::json) AS service_ids
-    FROM staff s WHERE s.tenant_id = ${tenants[0].id} AND s.is_active = TRUE ORDER BY s.created_at ASC
+    FROM staff s WHERE s.tenant_id = ${tenants[0].id} AND s.is_active = TRUE ORDER BY s.sort_order ASC, s.created_at ASC
   `;
   return c.json({ staff: await Promise.all(staff.map(enrichWithUrls)) });
 });

@@ -8,6 +8,9 @@ import Badge from '../components/shared/Badge';
 import Button from '../components/shared/Button';
 import Modal from '../components/shared/Modal';
 import { Input, Textarea } from '../components/shared/Input';
+import MoveButtons from '../components/shared/MoveButtons';
+import { useReorder } from '../lib/reorder';
+
 
 // ── Color presets ─────────────────────────────────────────────────────────────
 
@@ -443,6 +446,7 @@ export default function Products() {
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [showMediaLib, setShowMediaLib] = useState(false);
 
+  const move = useReorder<Product>('products', '/products', (d) => (d as { products: Product[] }).products, (d, items) => ({ ...(d as object), products: items }));
   const { data, isLoading, isError } = useQuery({
     queryKey: ['products'],
     queryFn: () => api.get<{ products: Product[] }>('/products'),
@@ -613,6 +617,7 @@ export default function Products() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-slate-500">
               <tr>
+                <th className="w-8 px-2 py-3" aria-label="Order" />
                 <th className="px-4 py-3 font-medium">Product</th>
                 <th className="px-4 py-3 font-medium">Category</th>
                 <th className="px-4 py-3 font-medium">Price</th>
@@ -622,8 +627,9 @@ export default function Products() {
               </tr>
             </thead>
             <tbody>
-              {data.products.map((p) => (
+              {data.products.map((p, i) => (
                 <tr key={p.id} className="border-t border-slate-100">
+                  <td className="px-2"><MoveButtons index={i} count={data.products.length} label={p.name} onMove={(delta) => move(data.products, i, delta)} /></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {p.image_urls?.[0] ? (

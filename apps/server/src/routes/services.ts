@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth } from '../middleware/clerk';
 import { requireTenant } from '../middleware/tenant';
+import { orderSchema, reorderRows, nextSortOrder } from '../services/ordering';
+
 import { enrichWithUrls } from '../services/storage';
 import { checkItemLimit } from '../services/settings';
 import { ensureStorefrontSection } from '../services/storefrontSections';
@@ -50,6 +52,15 @@ function normalizeRecurring<T extends { billing_type?: string; recurring_kind?: 
 const updateServiceSchema = serviceSchema.partial();
 
 app.use('*', requireAuth, requireTenant);
+
+// PUT /api/services/order — save the owner's order of the list
+app.put('/order', async (c) => {
+  const tenant = c.get('tenant') as { id: string };
+  const parsed = orderSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: 'Invalid request body' }, 400);
+  await reorderRows('services', tenant.id, parsed.data.ids);
+  return c.json({ success: true });
+});
 
 // GET /api/services
 app.get('/', async (c) => {
@@ -105,7 +116,7 @@ app.post('/', async (c) => {
       ${tenant.id}, ${d.name}, ${d.description ?? null}, ${d.price_cents}, ${d.duration_minutes},
       ${d.buffer_minutes ?? 0}, ${d.max_bookings_per_slot ?? 1}, ${db.json((d.image_keys ?? []) as never)},
       ${d.category ?? null}, ${d.is_active ?? true}, ${d.is_featured ?? false},
-      ${d.requires_deposit ?? false}, ${d.deposit_cents ?? null}, ${d.sort_order ?? 0},
+      ${d.requires_deposit ?? false}, ${d.deposit_cents ?? null}, ${d.sort_order ?? nextSortOrder('services', tenant.id)},
       ${d.billing_type ?? 'one_time'}, ${d.recurring_kind ?? null}, ${d.appointment_frequency ?? null}
     )
     RETURNING *

@@ -10,6 +10,9 @@ import Badge from '../components/shared/Badge';
 import Button from '../components/shared/Button';
 import Modal from '../components/shared/Modal';
 import { Input, Textarea } from '../components/shared/Input';
+import MoveButtons from '../components/shared/MoveButtons';
+import { useReorder } from '../lib/reorder';
+
 
 function formatCents(cents: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
@@ -160,6 +163,7 @@ export default function Services() {
     }
   }
 
+  const move = useReorder<Service>('services', '/services', (d) => (d as { services: Service[] }).services, (d, items) => ({ ...(d as object), services: items }));
   const isSaving = createMutation.isPending || updateMutation.isPending;
   const serviceCount = data?.services.length ?? 0;
   const atLimit = isStarter && limits?.services != null && serviceCount >= limits.services;
@@ -195,6 +199,7 @@ export default function Services() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-slate-500">
               <tr>
+                <th className="w-8 px-2 py-3" aria-label="Order" />
                 <th className="px-4 py-3 font-medium">Service</th>
                 <th className="px-4 py-3 font-medium">Price</th>
                 <th className="px-4 py-3 font-medium">Duration</th>
@@ -205,8 +210,9 @@ export default function Services() {
               </tr>
             </thead>
             <tbody>
-              {data.services.map((s) => (
+              {data.services.map((s, i) => (
                 <tr key={s.id} className="border-t border-slate-100">
+                  <td className="px-2"><MoveButtons index={i} count={data.services.length} label={s.name} onMove={(delta) => move(data.services, i, delta)} /></td>
                   <td className="px-4 py-3 font-medium text-slate-900">
                     <div className="flex items-center gap-3">
                       {s.image_urls?.[0] ? <img src={s.image_urls[0]} alt="" className="h-10 w-10 shrink-0 rounded object-cover" /> : <span className="h-10 w-10 shrink-0 rounded bg-slate-100" />}
