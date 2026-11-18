@@ -10,6 +10,7 @@ import Modal from '../components/shared/Modal';
 import { Input, Textarea } from '../components/shared/Input';
 import MoveButtons from '../components/shared/MoveButtons';
 import { useReorder } from '../lib/reorder';
+import { useDragReorder } from '../lib/dragReorder';
 
 
 // ── Color presets ─────────────────────────────────────────────────────────────
@@ -447,6 +448,7 @@ export default function Products() {
   const [showMediaLib, setShowMediaLib] = useState(false);
 
   const move = useReorder<Product>('products', '/products', (d) => (d as { products: Product[] }).products, (d, items) => ({ ...(d as object), products: items }));
+  const drag = useDragReorder((from, to) => move(data?.products ?? [], from, to));
   const { data, isLoading, isError } = useQuery({
     queryKey: ['products'],
     queryFn: () => api.get<{ products: Product[] }>('/products'),
@@ -628,8 +630,8 @@ export default function Products() {
             </thead>
             <tbody>
               {data.products.map((p, i) => (
-                <tr key={p.id} className="border-t border-slate-100">
-                  <td className="px-2"><MoveButtons index={i} count={data.products.length} label={p.name} onMove={(delta) => move(data.products, i, delta)} /></td>
+                <tr key={p.id} {...drag.rowProps(i)} className={`border-t border-slate-100 ${drag.over === i ? 'bg-violet-50' : ''}`}>
+                  <td className="px-2"><MoveButtons index={i} count={data.products.length} label={p.name} onMove={(delta) => move(data.products, i, i + delta)} drag={drag.handleProps(i)} /></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {p.image_urls?.[0] ? (

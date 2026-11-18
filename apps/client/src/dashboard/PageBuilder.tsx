@@ -22,6 +22,7 @@ import type { GalleryLayout, GalleryImageData } from '../themes/shared/Gallery';
 import { getLayoutVariants } from '../themes/shared/layoutVariants';
 import ColorPicker from '../components/shared/ColorPicker';
 import MoveButtons from '../components/shared/MoveButtons';
+import { moveItem, useDragReorder } from '../lib/dragReorder';
 import { designLevel, type DesignLevel, type SectionDesign } from '../themes/shared/sectionDesign';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -566,6 +567,8 @@ export default function PageBuilder() {
   const [contentSaving, setContentSaving] = useState(false);
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
+  const faqDrag = useDragReorder((from, to) => { setFaqs((prev) => moveItem(prev, from, to)); setContentDirty(true); });
+  const testimonialDrag = useDragReorder((from, to) => { setTestimonials((prev) => moveItem(prev, from, to)); setContentDirty(true); });
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [heroImageOpacity, setHeroImageOpacity] = useState(100);
   const [heroUploading, setHeroUploading] = useState(false);
@@ -1357,9 +1360,9 @@ export default function PageBuilder() {
                       <p className="text-xs text-slate-400 text-center py-2">No testimonials yet. Click &ldquo;Add&rdquo; to create your first.</p>
                     )}
                     {testimonials.map((t, i) => (
-                      <div key={t.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2">
+                      <div key={t.id} {...testimonialDrag.rowProps(i)} className={`rounded-lg border bg-slate-50 p-3 flex flex-col gap-2 ${testimonialDrag.over === i ? 'border-violet-400' : 'border-slate-200'}`}>
                         <div className="flex items-start justify-between gap-2">
-                          <MoveButtons index={i} count={testimonials.length} label="testimonial" onMove={(delta) => { const next = [...testimonials]; [next[i], next[i + delta]] = [next[i + delta], next[i]]; setTestimonials(next); setContentDirty(true); }} />
+                          <MoveButtons drag={testimonialDrag.handleProps(i)} index={i} count={testimonials.length} label="testimonial" onMove={(delta) => { const next = [...testimonials]; [next[i], next[i + delta]] = [next[i + delta], next[i]]; setTestimonials(next); setContentDirty(true); }} />
                           <input
                             className="flex-1 rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
                             placeholder="Client name"
@@ -1418,9 +1421,9 @@ export default function PageBuilder() {
                       <p className="text-xs text-slate-400 text-center py-2">No FAQs yet. Click &ldquo;Add&rdquo; to create your first.</p>
                     )}
                     {faqs.map((f, i) => (
-                      <div key={f.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2">
+                      <div key={f.id} {...faqDrag.rowProps(i)} className={`rounded-lg border bg-slate-50 p-3 flex flex-col gap-2 ${faqDrag.over === i ? 'border-violet-400' : 'border-slate-200'}`}>
                         <div className="flex items-start gap-2">
-                          <MoveButtons index={i} count={faqs.length} label="question" onMove={(delta) => { const next = [...faqs]; [next[i], next[i + delta]] = [next[i + delta], next[i]]; setFaqs(next); setContentDirty(true); }} />
+                          <MoveButtons drag={faqDrag.handleProps(i)} index={i} count={faqs.length} label="question" onMove={(delta) => { const next = [...faqs]; [next[i], next[i + delta]] = [next[i + delta], next[i]]; setFaqs(next); setContentDirty(true); }} />
                           <input
                             className="flex-1 rounded border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
                             placeholder="Question"

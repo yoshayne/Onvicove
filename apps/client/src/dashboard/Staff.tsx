@@ -9,6 +9,7 @@ import Modal from '../components/shared/Modal';
 import { Input, Textarea } from '../components/shared/Input';
 import MoveButtons from '../components/shared/MoveButtons';
 import { useReorder } from '../lib/reorder';
+import { useDragReorder } from '../lib/dragReorder';
 import WeeklyHoursEditor from '../components/shared/WeeklyHoursEditor';
 
 const DEFAULT_AVAILABILITY: WeeklyAvailability = {
@@ -61,6 +62,7 @@ export default function StaffPage() {
   });
 
   const move = useReorder<Staff>('staff', '/staff', (d) => (d as { staff: Staff[] }).staff, (d, items) => ({ ...(d as object), staff: items }));
+  const drag = useDragReorder((from, to) => move(data?.staff ?? [], from, to));
   const { data, isLoading, isError } = useQuery({
     queryKey: ['staff'],
     queryFn: () => api.get<{ staff: Staff[] }>('/staff'),
@@ -180,8 +182,8 @@ export default function StaffPage() {
             </thead>
             <tbody>
               {data.staff.map((s, i) => (
-                <tr key={s.id} className="border-t border-slate-100">
-                  <td className="px-2"><MoveButtons index={i} count={data.staff.length} label={s.name} onMove={(delta) => move(data.staff, i, delta)} /></td>
+                <tr key={s.id} {...drag.rowProps(i)} className={`border-t border-slate-100 ${drag.over === i ? 'bg-violet-50' : ''}`}>
+                  <td className="px-2"><MoveButtons index={i} count={data.staff.length} label={s.name} onMove={(delta) => move(data.staff, i, i + delta)} drag={drag.handleProps(i)} /></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {s.avatar_url ? (
