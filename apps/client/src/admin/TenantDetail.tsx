@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../lib/api';
 import { useImpersonation } from '../contexts/ImpersonationContext';
@@ -7,6 +7,7 @@ import type { Tenant } from '../types';
 import Spinner from '../components/shared/Spinner';
 import Badge from '../components/shared/Badge';
 import Button from '../components/shared/Button';
+import Toast, { type ToastMessage } from '../components/shared/Toast';
 
 interface TenantDetailResponse {
   tenant: Tenant;
@@ -49,10 +50,18 @@ export default function TenantDetail() {
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteResult, setInviteResult] = useState<{ claim_url: string; invite_email: string } | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
+  // Popup: a message passed along when the site was just created, or the result of sending an invite
+  const location = useLocation();
+  const [toast, setToast] = useState<ToastMessage | null>((location.state as { toast?: ToastMessage } | null)?.toast ?? null);
 
   const inviteMutation = useMutation({
     mutationFn: () => api.post<{ claim_url: string; invite_email: string; expires_at: string }>(`/admin/tenants/${id}/invite`, { invite_email: inviteEmail }),
-    onSuccess: (data) => { setInviteResult(data); setShowInviteForm(false); },
+    onSuccess: (data) => {
+      setInviteResult(data);
+      setShowInviteForm(false);
+      setToast({ kind: 'success', text: `Invite sent to ${data.invite_email}` });
+    },
+    onError: (err) => setToast({ kind: 'error', text: err instanceof Error ? err.message : 'The invite could not be sent.' }),
   });
 
   const impersonateMutation = useMutation({
@@ -183,6 +192,8 @@ export default function TenantDetail() {
           </div>
         ))}
       </div>
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* Invite panel */}
       {(showInviteForm || inviteResult) && (

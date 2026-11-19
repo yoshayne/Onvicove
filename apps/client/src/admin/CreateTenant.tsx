@@ -293,13 +293,20 @@ export default function CreateTenant() {
       await impApi.put('/page-sections/home', { sections });
 
       // 8. Send invite if email provided
+      let inviteToast: { kind: 'success' | 'error'; text: string } | null = null;
       if (form.client_email) {
         setSubmitStep('Sending invite…');
-        await api.post(`/admin/tenants/${tenantId}/invite`, { invite_email: form.client_email });
+        try {
+          await api.post(`/admin/tenants/${tenantId}/invite`, { invite_email: form.client_email });
+          inviteToast = { kind: 'success', text: `Invite sent to ${form.client_email}` };
+        } catch (err) {
+          // The site is already built: go on to it and say plainly that the invite did not go out
+          inviteToast = { kind: 'error', text: `Site created, but the invite email was not sent. ${err instanceof Error ? err.message : ''}`.trim() };
+        }
       }
 
       setSubmitStep('Done!');
-      navigate(`/admin/tenants/${tenantId}`);
+      navigate(`/admin/tenants/${tenantId}`, { state: inviteToast ? { toast: inviteToast } : undefined });
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {

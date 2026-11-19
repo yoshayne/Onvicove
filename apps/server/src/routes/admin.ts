@@ -860,17 +860,31 @@ app.post('/tenants/:id/invite', async (c) => {
   const claimUrl = `${baseUrl}/claim/${token}`;
   const adminEmailAddr = (c as unknown as { get: (k: string) => unknown }).get('adminEmail') as string;
 
-  sendInvite({
-    toEmail: invite_email,
-    companyName: tenant.company_name as string,
-    inviteUrl: claimUrl,
-  }).catch((err: unknown) => console.error('Invite email error:', err));
+  // Wait for the email: the admin is told "sent" only when it really went out
+  try {
+    await sendInvite({
+      toEmail: invite_email,
+      companyName: tenant.company_name as string,
+      inviteUrl: claimUrl,
+    });
+  } catch (err) {
+    console.error('Invite email error:', err);
+    await logAdminAction(c, 'send_invite_failed', 'tenant', id, { invite_email, admin: adminEmailAddr }).catch(() => undefined);
+    // The invite itself exists, so the admin can still share the link by hand
+    return c.json({
+      error: `The invite email could not be sent to ${invite_email}. You can share this link yourself instead: ${claimUrl}`,
+      email_sent: false,
+      invite_email,
+      claim_url: claimUrl,
+      expires_at: expiresAt,
+    }, 502);
+  }
 
   await logAdminAction(c, 'send_invite', 'tenant', id, {
     invite_email, admin: adminEmailAddr,
   });
 
-  return c.json({ invite_email, claim_url: claimUrl, expires_at: expiresAt });
+  return c.json({ invite_email, claim_url: claimUrl, expires_at: expiresAt, email_sent: true });
 });
 
 // GET /api/admin/tenants/:id/invites — list invites for a tenant
