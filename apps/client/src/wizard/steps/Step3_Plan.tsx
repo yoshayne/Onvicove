@@ -29,6 +29,7 @@ const PLANS: PlanOption[] = [
     features: [
       'Unlimited products & services',
       'Service options (Kids, Adult, Long hair)',
+      'Section design and your own blocks',
       'All premium themes',
       'Remove Shop Suite Direct branding',
       'AI photo generation credits',

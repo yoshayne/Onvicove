@@ -57,6 +57,7 @@ import AdminAnnouncements from './admin/Announcements';
 import AdminBackups from './admin/Backups';
 import Terms from './marketing/Terms';
 import Refunds from './marketing/Refunds';
+import DesignGuide from './marketing/DesignGuide';
 import AdminLayout from './admin/Layout';
 import AdminOverview from './admin/Overview';
 import AdminTenants from './admin/Tenants';
@@ -172,6 +173,7 @@ export default function App() {
               <Route path="/unsubscribe/updates/:token" element={<UnsubscribeUpdates />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/refunds" element={<Refunds />} />
+              <Route path="/design" element={<DesignGuide />} />
 
               <Route path="/sign-in/*" element={<AuthPage mode="sign-in" />} />
               <Route path="/sign-up/*" element={<AuthPage mode="sign-up" />} />

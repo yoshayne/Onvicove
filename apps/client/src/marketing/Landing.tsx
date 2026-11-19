@@ -28,7 +28,7 @@ const FEATURES = [
 
 const STEPS = [
   { icon: '🏪', title: 'Tell us your business', desc: 'We tailor the look, starter services and wording to your industry.' },
-  { icon: '🎨', title: 'Pick a plan and try every theme', desc: 'Preview all 16 designs with your own name. Start free, upgrade anytime.' },
+  { icon: '🎨', title: 'Pick a plan and try every theme', desc: 'Preview all 17 designs with your own name. Start free, upgrade anytime.' },
   { icon: '✏️', title: 'Add your brand and what you offer', desc: 'Logo, photos, products or services, and your hours.' },
   { icon: '🚀', title: 'Launch, then connect payments', desc: 'Your site goes live first. Connecting Stripe takes about 5 minutes.' },
 ];
@@ -40,7 +40,7 @@ const PLANS = [
   },
   {
     name: 'Pro', price: '$29', desc: 'For growing businesses that want to look fully custom.', cta: 'Get Pro', highlight: true,
-    features: ['Unlimited products and services', 'Service options (Kids, Adult, Long hair)', 'All 17 themes', 'Your own branding, not ours', 'AI product photos (10 credits)', 'Discount codes and analytics', 'Priority support'],
+    features: ['Unlimited products and services', 'Service options (Kids, Adult, Long hair)', 'Section design and your own blocks', 'All 17 themes', 'Your own branding, not ours', 'AI product photos (10 credits)', 'Discount codes and analytics', 'Priority support'],
   },
   {
     name: 'Business', price: '$79', desc: 'Advanced tools for teams and high volume.', cta: 'Get Business', highlight: false,
@@ -358,6 +358,7 @@ export default function Landing() {
             <Link to="/privacy" className="transition-colors hover:text-slate-800">Privacy</Link>
             <Link to="/terms" className="transition-colors hover:text-slate-800">Terms</Link>
             <Link to="/refunds" className="transition-colors hover:text-slate-800">Refunds</Link>
+            <Link to="/design" className="transition-colors hover:text-slate-800">Design options</Link>
             <Link to="/guide" className="transition-colors hover:text-slate-800">Get prepared</Link>
             <Link to="/sign-in" className="transition-colors hover:text-slate-800">Sign in</Link>
           </div>

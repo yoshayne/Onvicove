@@ -23,7 +23,7 @@ const WIZARD_STEPS = [
   { n: 1, title: 'Business name', desc: 'Your store\'s name and public web address' },
   { n: 2, title: 'Store type', desc: 'Products only, bookings only, or both' },
   { n: 3, title: 'Plan', desc: 'Start free, or pick Pro ($29/mo) or Business ($79/mo)' },
-  { n: 4, title: 'Theme', desc: 'Preview all 16 designs with your own name' },
+  { n: 4, title: 'Theme', desc: 'Preview all 17 designs with your own name' },
   { n: 5, title: 'Brand', desc: 'Tagline, logo, favicon, brand color, city' },
   { n: 6, title: 'Hero photo', desc: 'The main image on your storefront' },
   { n: 7, title: 'Products', desc: 'Add items with name, price, and photo' },
@@ -358,7 +358,7 @@ export default function Guide() {
                 highlight: true,
                 badge: 'Most Popular',
                 desc: '2% platform fee + Stripe fees',
-                perks: ['Custom domain', 'Unlimited products & services', 'Service options (Kids, Adult, Long hair)', 'All 17 themes', 'Discount codes', 'AI product photos'],
+                perks: ['Custom domain', 'Unlimited products & services', 'Service options (Kids, Adult, Long hair)', 'Section design and your own blocks', 'All 17 themes', 'Discount codes', 'AI product photos'],
               },
               {
                 name: 'Business',
