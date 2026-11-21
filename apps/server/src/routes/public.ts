@@ -294,6 +294,7 @@ app.post('/:slug/orders', async (c) => {
   if (!tenant) return c.json({ error: 'Store not found' }, 404);
 
   let subtotal = 0;
+  let hasPhysical = false;
   const itemRows: { product_id: string; variant_id: string | null; name: string; quantity: number; price_cents: number; total_cents: number }[] = [];
 
   for (const item of d.items) {
@@ -301,6 +302,7 @@ app.post('/:slug/orders', async (c) => {
     const product = products[0];
     if (!product) return c.json({ error: `Product ${item.product_id} not found` }, 404);
 
+    if (product.type === 'physical') hasPhysical = true;
     let priceCents = product.price_cents as number;
     // What the customer chose (size, color, custom option, or several custom values) is written into the line's
     // name, so the owner's order list, receipts and emails all say "Mink Lash Combo (Pinky Minks + Glam Minks)"
@@ -337,6 +339,13 @@ app.post('/:slug/orders', async (c) => {
       price_cents: priceCents,
       total_cents: totalCents,
     });
+  }
+
+  if (hasPhysical) {
+    const a = (d.shipping_address ?? {}) as Record<string, unknown>;
+    if (!['line1', 'city', 'postal_code'].every((k) => typeof a[k] === 'string' && (a[k] as string).trim())) {
+      return c.json({ error: 'Please enter a shipping address for the physical items in your order.' }, 400);
+    }
   }
 
   let discountCents = 0;

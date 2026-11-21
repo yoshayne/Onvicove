@@ -91,7 +91,8 @@ function mapProduct(p: Product & { variants?: ProductVariantData[] }): ProductDa
     category: p.category ?? undefined,
     isFeatured: p.is_featured,
     stockQuantity: p.stock_quantity ?? undefined,
-    requiresShipping: p.requires_shipping ?? true,
+    // Physical products always ship. (The stored requires_shipping flag defaults to false and the dashboard never sets it.)
+    requiresShipping: p.type === 'physical',
     variants: p.variants ?? [],
     customPickCount: p.custom_pick_count ?? 1,
   };
