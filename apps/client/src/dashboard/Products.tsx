@@ -472,13 +472,18 @@ export default function Products() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
   });
 
+  // Set when the form was opened with Duplicate: the name of the product it was copied from
+  const [copyOf, setCopyOf] = useState<string | null>(null);
+
   function openCreate() {
+    setCopyOf(null);
     setEditing(null); setForm(emptyForm); setShowAiPanel(false);
     setMutationError(null); setUploadError(null); setModalOpen(true);
   }
 
   function openEdit(product: Product) {
     try {
+      setCopyOf(null);
       setEditing(product);
       const keys = product.image_keys ?? [];
       const urls = product.image_urls ?? [];
@@ -511,7 +516,16 @@ export default function Products() {
     }
   }
 
+  /** A new product that starts as a copy of this one: same price, photos, sizes and colors, so only what differs needs typing */
+  function openDuplicate(product: Product) {
+    openEdit(product);
+    setEditing(null);
+    setCopyOf(product.name);
+    setForm((f) => ({ ...f, name: `${product.name} (copy)` }));
+  }
+
   function closeModal() {
+    setCopyOf(null);
     setModalOpen(false); setEditing(null); setForm(emptyForm);
     setShowAiPanel(false); setShowMediaLib(false); setMutationError(null); setUploadError(null);
   }
@@ -651,6 +665,7 @@ export default function Products() {
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       <Button size="sm" variant="secondary" onClick={() => openEdit(p)}>Edit</Button>
+                      <Button size="sm" variant="secondary" onClick={() => openDuplicate(p)}>Duplicate</Button>
                       <Button size="sm" variant="danger" onClick={() => { if (confirm(`Delete ${p.name}?`)) deleteMutation.mutate(p.id); }}>Delete</Button>
                     </div>
                   </td>
@@ -661,8 +676,13 @@ export default function Products() {
         </div>
       )}
 
-      <Modal isOpen={modalOpen} onClose={closeModal} title={editing ? 'Edit product' : 'Add product'}>
+      <Modal isOpen={modalOpen} onClose={closeModal} title={editing ? 'Edit product' : copyOf ? 'Duplicate product' : 'Add product'}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          {copyOf && (
+            <p className="rounded-lg bg-violet-50 px-3 py-2 text-sm text-violet-900">
+              This is a copy of <strong>{copyOf}</strong>. Change what's different, then press Create product. Nothing is saved until you do.
+            </p>
+          )}
 
           {/* Name */}
           <Input label="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
