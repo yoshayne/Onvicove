@@ -234,13 +234,17 @@ export async function draftFromNotes(notes: string): Promise<Draft> {
   if (anthropic) providers.push({ name: 'Anthropic', run: () => draftWithAnthropic(notes, anthropic) });
   if (providers.length === 0) throw new Error('The drafting helper is not set up yet (add OPENAI_API_KEY, GEMINI_API_KEY or ANTHROPIC_API_KEY).');
 
+  const failures: string[] = [];
   for (let i = 0; i < providers.length; i++) {
     try {
       return await providers[i].run();
     } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      failures.push(`${providers[i].name}: ${reason.replace(/\s+/g, ' ').slice(0, 160)}`);
       const next = providers[i + 1];
-      console.error(`Announcement draft: ${providers[i].name} failed${next ? `, trying ${next.name}` : ''}:`, err instanceof Error ? err.message : err);
+      console.error(`Announcement draft: ${providers[i].name} failed${next ? `, trying ${next.name}` : ''}:`, reason);
     }
   }
-  throw new Error('The drafting helper had trouble. Please try again.');
+  // Only admins reach this screen, so say what went wrong instead of hiding it
+  throw new Error(`The drafting helper had trouble. ${failures.join(' | ')}`);
 }
