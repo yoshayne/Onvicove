@@ -262,6 +262,8 @@ app.get('/:slug/availability', async (c) => {
 const orderItemSchema = z.object({
   product_id: z.string().uuid(),
   variant_id: z.string().uuid().nullable().optional(),
+  /** A product that lets the customer pick several values of its custom option sends them all here */
+  variant_ids: z.array(z.string().uuid()).max(6).optional(),
   quantity: z.number().int().min(1),
 });
 
@@ -300,17 +302,37 @@ app.post('/:slug/orders', async (c) => {
     if (!product) return c.json({ error: `Product ${item.product_id} not found` }, 404);
 
     let priceCents = product.price_cents as number;
-    if (item.variant_id) {
+    // What the customer chose (size, color, custom option, or several custom values) is written into the line's
+    // name, so the owner's order list, receipts and emails all say "Mink Lash Combo (Pinky Minks + Glam Minks)"
+    let choiceLabel = '';
+    let variantId: string | null = item.variant_id ?? null;
+    const pick = Number(product.custom_pick_count ?? 1);
+    if (item.variant_ids?.length) {
+      const ids = [...new Set(item.variant_ids)];
+      const rows = await db`SELECT * FROM product_variants WHERE product_id = ${item.product_id} AND id IN ${db(ids)}`;
+      const byId = new Map(rows.map((r) => [r.id as string, r]));
+      if (rows.length !== ids.length || rows.some((r) => r.option_type !== 'custom')) return c.json({ error: `Those options are not available for ${product.name as string}. Please choose again.` }, 400);
+      if (ids.length !== pick) return c.json({ error: `Please choose ${pick} option${pick === 1 ? '' : 's'} for ${product.name as string}.` }, 400);
+      choiceLabel = ids.map((id) => byId.get(id)!.name as string).join(' + ');
+      variantId = ids[0];
+    } else if (item.variant_id) {
       const variants = await db`SELECT * FROM product_variants WHERE id = ${item.variant_id} AND product_id = ${item.product_id} LIMIT 1`;
-      if (variants[0]?.price_cents != null) priceCents = variants[0].price_cents as number;
+      const v = variants[0];
+      if (v) {
+        if (pick > 1 && v.option_type === 'custom') return c.json({ error: `Please choose ${pick} options for ${product.name as string}.` }, 400);
+        if (v.price_cents != null) priceCents = v.price_cents as number;
+        choiceLabel = v.name as string;
+      }
+    } else if (pick > 1) {
+      return c.json({ error: `Please choose ${pick} options for ${product.name as string}.` }, 400);
     }
 
     const totalCents = priceCents * item.quantity;
     subtotal += totalCents;
     itemRows.push({
       product_id: item.product_id,
-      variant_id: item.variant_id ?? null,
-      name: product.name as string,
+      variant_id: variantId,
+      name: choiceLabel ? `${product.name as string} (${choiceLabel})` : (product.name as string),
       quantity: item.quantity,
       price_cents: priceCents,
       total_cents: totalCents,

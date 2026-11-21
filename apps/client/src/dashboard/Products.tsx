@@ -135,6 +135,8 @@ interface ProductFormState {
   colorHexInput: string;
   customOptionName: string;
   customOptionValues: string[];
+  /** How many of the custom option's values the customer picks (1 = the usual single choice) */
+  customPickCount: number;
   customOptionInput: string;
 }
 
@@ -155,6 +157,7 @@ const emptyForm: ProductFormState = {
   colorHexInput: '#000000',
   customOptionName: '',
   customOptionValues: [],
+  customPickCount: 1,
   customOptionInput: '',
 };
 
@@ -504,6 +507,7 @@ export default function Products() {
         is_active: product.is_active,
         type: product.type,
         imageEntries,
+        customPickCount: product.custom_pick_count ?? 1,
         ...variantForm,
       });
       setMutationError(null); setUploadError(null); setShowAiPanel(false);
@@ -602,6 +606,8 @@ export default function Products() {
       is_active: form.is_active,
       type: form.type,
       image_keys: form.imageEntries.map((e) => e.key),
+      // Only meaningful with a custom option; never more than the values offered
+      custom_pick_count: form.customOptionName.trim() && form.customOptionValues.length > 0 ? Math.min(Math.max(1, form.customPickCount), form.customOptionValues.length) : 1,
       variants: formToVariants(form),
     };
     if (editing) {
@@ -937,6 +943,21 @@ export default function Products() {
                   </div>
                 )}
               </>
+            )}
+            {form.customOptionName.trim() && form.customOptionValues.length > 1 && (
+              <label className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                Customer picks
+                <select
+                  value={Math.min(form.customPickCount, form.customOptionValues.length)}
+                  onChange={(e) => setForm((f) => ({ ...f, customPickCount: Number(e.target.value) }))}
+                  className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                >
+                  {Array.from({ length: Math.min(6, form.customOptionValues.length) }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>{n === 1 ? '1 (one choice)' : `${n} different ${form.customOptionName.trim().toLowerCase()}s`}</option>
+                  ))}
+                </select>
+                {form.customPickCount > 1 && <span className="w-full text-xs text-slate-400">Customers must choose exactly {Math.min(form.customPickCount, form.customOptionValues.length)} before they can add it to their cart. Sizes and colors aren't offered on this product, and the price stays the same.</span>}
+              </label>
             )}
             {!form.customOptionName.trim() && (
               <p className="text-xs text-slate-400">Optional — leave blank if sizes and colors cover all your options.</p>

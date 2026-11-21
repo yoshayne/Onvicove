@@ -86,6 +86,7 @@ export interface Product {
   description: string | null;
   price_cents: number;
   compare_at_price_cents: number | null;
+  custom_pick_count?: number;
   sku: string | null;
   stock_quantity: number | null;
   track_inventory: boolean;

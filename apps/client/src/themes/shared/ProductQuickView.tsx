@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 import type { ProductData, ProductVariantData } from '../types';
 import { formatPrice } from '../types';
+import { multiVariant } from './variantPicks';
 
 interface ProductQuickViewProps {
   product: ProductData | null;
@@ -20,6 +21,15 @@ export default function ProductQuickView({
 }: ProductQuickViewProps) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariantData | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
+  // Products that let the customer pick several custom values (e.g. 2 lash styles)
+  const [picks, setPicks] = useState<ProductVariantData[]>([]);
+
+  // A fresh start for each product opened
+  useEffect(() => {
+    setSelectedVariant(null);
+    setPicks([]);
+    setImageIndex(0);
+  }, [product?.id]);
 
   if (!product) return null;
 
@@ -31,17 +41,30 @@ export default function ProductQuickView({
   const sizeVariants = variants.filter((v) => v.option_type === 'size');
   const customVariants = variants.filter((v) => v.option_type === 'custom');
   const hasVariants = variants.length > 0;
+  const pickCount = customVariants.length > 0 ? Math.max(1, product.customPickCount ?? 1) : 1;
+  const multi = pickCount > 1;
+  const groupName = customVariants[0]?.option_name?.trim() || 'Options';
 
   const displayPrice = selectedVariant?.price_cents ?? product.priceCents;
 
   function handleAddToCart() {
+    if (multi) {
+      if (picks.length !== pickCount) return;
+      onAddToCart(product!, multiVariant(picks));
+      onClose();
+      return;
+    }
     if (hasVariants && !selectedVariant) return;
     // product is guaranteed non-null here (early return above handles null)
     onAddToCart(product!, selectedVariant ?? undefined);
     onClose();
   }
 
-  const canAdd = paymentsEnabled && (!hasVariants || !!selectedVariant);
+  function togglePick(v: ProductVariantData) {
+    setPicks((prev) => (prev.some((p) => p.id === v.id) ? prev.filter((p) => p.id !== v.id) : prev.length < pickCount ? [...prev, v] : prev));
+  }
+
+  const canAdd = paymentsEnabled && (multi ? picks.length === pickCount : !hasVariants || !!selectedVariant);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
@@ -142,7 +165,7 @@ export default function ProductQuickView({
           )}
 
           {/* Color variants */}
-          {colorVariants.length > 0 && (
+          {!multi && colorVariants.length > 0 && (
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
                 Color
@@ -173,7 +196,7 @@ export default function ProductQuickView({
           )}
 
           {/* Size variants */}
-          {sizeVariants.length > 0 && (
+          {!multi && sizeVariants.length > 0 && (
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
                 Size
@@ -203,32 +226,41 @@ export default function ProductQuickView({
             </div>
           )}
 
-          {/* Custom variants */}
+          {/* Custom variants: the option's heading above, each choice by its own name */}
           {customVariants.length > 0 && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">Options</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
+                {groupName}
+                {multi && <span className="ml-2 normal-case tracking-normal font-normal text-gray-700">— choose {pickCount} ({picks.length} of {pickCount})</span>}
+              </p>
               <div className="flex flex-wrap gap-2">
-                {customVariants.map((v) => (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => setSelectedVariant(v.id === selectedVariant?.id ? null : v)}
-                    className={`px-3 py-1.5 text-xs font-semibold border transition-all ${
-                      selectedVariant?.id === v.id
-                        ? 'border-gray-900 bg-gray-900 text-white'
-                        : 'border-gray-300 text-gray-700 hover:border-gray-900'
-                    }`}
-                  >
-                    {v.option_name ?? v.name}
-                  </button>
-                ))}
+                {customVariants.map((v) => {
+                  const on = multi ? picks.some((p) => p.id === v.id) : selectedVariant?.id === v.id;
+                  const full = multi && !on && picks.length >= pickCount;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => (multi ? togglePick(v) : setSelectedVariant(v.id === selectedVariant?.id ? null : v))}
+                      className={`px-3 py-1.5 text-xs font-semibold border transition-all ${
+                        on ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700 hover:border-gray-900'
+                      } ${full ? 'opacity-40' : ''}`}
+                    >
+                      {v.name}
+                    </button>
+                  );
+                })}
               </div>
+              {multi && picks.length === pickCount && <p className="mt-2 text-[11px] text-gray-400">Tap a choice you picked to swap it for another.</p>}
             </div>
           )}
 
           {/* Variant prompt */}
-          {hasVariants && !selectedVariant && (
-            <p className="text-xs text-amber-600 font-medium">Please select an option above</p>
+          {multi ? (
+            picks.length < pickCount && <p className="text-xs text-amber-600 font-medium">Please choose {pickCount - picks.length} more {pickCount - picks.length === 1 ? 'option' : 'options'} above</p>
+          ) : (
+            hasVariants && !selectedVariant && <p className="text-xs text-amber-600 font-medium">Please select an option above</p>
           )}
 
           {/* Stock */}
@@ -258,7 +290,7 @@ export default function ProductQuickView({
                   border: canAdd ? 'none' : '1px solid #d1d5db',
                 }}
               >
-                {canAdd ? 'Add to Cart' : hasVariants ? 'Select an Option' : 'Add to Cart'}
+                {canAdd ? 'Add to Cart' : multi ? `Choose ${pickCount} options` : hasVariants ? 'Select an Option' : 'Add to Cart'}
               </button>
             )}
           </div>

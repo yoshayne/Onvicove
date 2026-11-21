@@ -93,6 +93,7 @@ function mapProduct(p: Product & { variants?: ProductVariantData[] }): ProductDa
     stockQuantity: p.stock_quantity ?? undefined,
     requiresShipping: p.requires_shipping ?? true,
     variants: p.variants ?? [],
+    customPickCount: p.custom_pick_count ?? 1,
   };
 }
 

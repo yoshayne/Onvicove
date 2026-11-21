@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../lib/api';
 import type { AvailableSlot, CartItem, ProductData, ProductVariantData, ServiceData } from '../types';
 import { useServiceOptionPicker } from './serviceOptions';
+import { multiVariantIds } from './variantPicks';
 
 interface OrderResponse {
   order: { id: string; order_number: string };
@@ -64,9 +65,8 @@ export function useStorefrontCommerce(slug: string | undefined) {
   function addToCart(product: ProductData, variant?: ProductVariantData) {
     const cartKey = `${product.id}:${variant?.id ?? ''}`;
     const priceCents = variant?.price_cents ?? product.priceCents;
-    const variantName = variant
-      ? (variant.option_name ?? variant.name)
-      : undefined;
+    // The value the customer chose ("Pinky Minks", "Large", "Red"), never the option's heading ("Lash Style")
+    const variantName = variant?.name;
 
     setCart((prev) => {
       const existing = prev.find((i) => i.cartKey === cartKey);
@@ -125,7 +125,9 @@ export function useStorefrontCommerce(slug: string | undefined) {
         customer_phone: info.phone || null,
         items: cart.map((i) => ({
           product_id: i.productId,
-          variant_id: i.variantId ?? null,
+          // A combination (several custom values) sends all of them; anything else sends its one variant
+          variant_id: multiVariantIds(i.variantId) ? null : i.variantId ?? null,
+          ...(multiVariantIds(i.variantId) ? { variant_ids: multiVariantIds(i.variantId) } : {}),
           quantity: i.quantity,
         })),
         shipping_address: info.shippingAddress ?? null,

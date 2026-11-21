@@ -108,6 +108,8 @@ export interface ProductData {
   stockQuantity?: number;
   requiresShipping?: boolean;
   variants?: ProductVariantData[];
+  /** How many values of the custom option the customer picks (default 1) */
+  customPickCount?: number;
 }
 
 export interface ServiceOptionData {

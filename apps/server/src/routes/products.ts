@@ -29,6 +29,8 @@ const productSchema = z.object({
   stock_quantity: z.number().int().nullable().optional(),
   track_inventory: z.boolean().optional(),
   image_keys: z.array(z.string()).optional(),
+  /** How many values of the custom option the customer picks (e.g. 2 lash styles) */
+  custom_pick_count: z.number().int().min(1).max(6).optional(),
   category: z.string().nullable().optional(),
   tags: z.array(z.string()).optional(),
   is_active: z.boolean().optional(),
@@ -113,13 +115,13 @@ app.post('/', async (c) => {
   const rows = await db`
     INSERT INTO products (
       tenant_id, type, name, description, price_cents, compare_at_price_cents,
-      sku, stock_quantity, track_inventory, image_keys, category, tags,
+      sku, stock_quantity, track_inventory, image_keys, custom_pick_count, category, tags,
       is_active, is_featured, digital_file_key, subscription_interval,
       weight_grams, requires_shipping, sort_order
     ) VALUES (
       ${tenant.id}, ${d.type}, ${d.name}, ${d.description ?? null}, ${d.price_cents},
       ${d.compare_at_price_cents ?? null}, ${d.sku ?? null}, ${d.stock_quantity ?? null},
-      ${d.track_inventory ?? false}, ${db.json(d.image_keys ?? [])},
+      ${d.track_inventory ?? false}, ${db.json(d.image_keys ?? [])}, ${d.custom_pick_count ?? 1},
       ${d.category ?? null}, ${db.json(d.tags ?? [])}, ${d.is_active ?? true},
       ${d.is_featured ?? false}, ${d.digital_file_key ?? null}, ${d.subscription_interval ?? null},
       ${d.weight_grams ?? null}, ${d.requires_shipping ?? false}, ${d.sort_order ?? nextSortOrder('products', tenant.id)}

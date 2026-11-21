@@ -768,3 +768,6 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS duration_minutes INTEGER;
 
 -- Owners can put their team in the order they want shown on the site
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0;
+
+-- Products with a custom option (e.g. Lash Style) can let the customer pick more than one (e.g. 2 styles)
+ALTER TABLE products ADD COLUMN IF NOT EXISTS custom_pick_count INTEGER NOT NULL DEFAULT 1;
