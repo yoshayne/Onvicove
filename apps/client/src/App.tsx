@@ -74,6 +74,7 @@ import AdminCreateTenant from './admin/CreateTenant';
 const Wizard = lazy(() => import('./wizard/Wizard'));
 const StorefrontRouter = lazy(() => import('./storefront/StorefrontRouter'));
 const RefundPolicy = lazy(() => import('./storefront/RefundPolicy'));
+const ThemePreviewPage = lazy(() => import('./marketing/ThemePreviewPage'));
 const PayBalance = lazy(() => import('./storefront/PayBalance'));
 const ManageBooking = lazy(() => import('./storefront/ManageBooking'));
 const ManagePlan = lazy(() => import('./storefront/ManagePlan'));
@@ -174,6 +175,7 @@ export default function App() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/refunds" element={<Refunds />} />
               <Route path="/design" element={<DesignGuide />} />
+              <Route path="/preview/theme/:id" element={<ThemePreviewPage />} />
 
               <Route path="/sign-in/*" element={<AuthPage mode="sign-in" />} />
               <Route path="/sign-up/*" element={<AuthPage mode="sign-up" />} />

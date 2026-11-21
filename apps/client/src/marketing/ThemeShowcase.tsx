@@ -1,4 +1,5 @@
 import { SAMPLE_TESTIMONIALS } from '../themes/shared/TestimonialsBlock';
+import { demoContentFor } from '../themes/shared/demoContent';
 import { SAMPLE_FAQS } from '../themes/shared/FaqBlock';
 import { useState, Suspense, lazy, type ComponentType } from 'react';
 import type { ThemeId, ThemeProps, ProductData, ServiceData } from '../themes/types';
@@ -670,10 +671,35 @@ function showBoth(id: ThemeId) {
   return ['editorial', 'warm', 'classic', 'bright', 'aurora', 'magazine', 'craft', 'lens'].includes(id);
 }
 
-function FullPreview({ themeId }: { themeId: ThemeId }) {
+/** A widescreen crop of a sample photo, like the landscape hero photo a store would upload */
+function widescreen(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname !== 'images.unsplash.com') return url;
+    u.searchParams.set('w', '1600');
+    u.searchParams.set('h', '900');
+    u.searchParams.set('fit', 'crop');
+    u.searchParams.set('q', '80');
+    return u.toString();
+  } catch { return url; }
+}
+
+export const SHOWCASE_THEME_IDS = Object.keys(THEME_MOCK_DATA) as ThemeId[];
+
+/**
+ * The whole theme with sample content. It is drawn on its own page (/preview/theme/<id>) and shown in a frame, so
+ * the theme sizes itself to the frame the way it would to a visitor's screen, not to the whole home page.
+ * Sample items without a photo borrow one from the theme's example set, and the hero and team come from it too.
+ */
+export function FullPreview({ themeId }: { themeId: ThemeId }) {
   const loader = themeLoaders[themeId];
   const Storefront = lazy(loader);
   const mock = THEME_MOCK_DATA[themeId];
+  const demo = demoContentFor(themeId);
+  const borrow = <T extends { imageUrls?: string[] }>(items: T[], from: { imageUrls?: string[] }[]): T[] =>
+    items.map((it, i) => ({ ...it, imageUrls: it.imageUrls?.length ? it.imageUrls : from.length ? from[i % from.length].imageUrls ?? [] : [] }));
+  const products = borrow(mock.products, demo.products);
+  const services = borrow(mock.services, demo.services);
 
   return (
     <div style={{ ['--brand-color' as string]: MINI_STYLES[themeId].accent }}>
@@ -691,6 +717,7 @@ function FullPreview({ themeId }: { themeId: ThemeId }) {
             brandColor: MINI_STYLES[themeId].accent,
             industry: mock.industry,
             themeId,
+            heroImageUrl: widescreen(demo.heroImageUrl),
             aboutText: `${mock.companyName} is a small team that cares about doing great work. This is sample text — you'll write your own story in the Page Builder.`,
             contactEmail: 'hello@yourbusiness.com',
             contactPhone: '(555) 123-4567',
@@ -699,9 +726,9 @@ function FullPreview({ themeId }: { themeId: ThemeId }) {
             testimonials: SAMPLE_TESTIMONIALS,
             faqs: SAMPLE_FAQS,
           }}
-          products={mock.products}
-          services={mock.services}
-          staff={[]}
+          products={products}
+          services={services}
+          staff={demo.staff}
         />
       </Suspense>
     </div>
@@ -714,9 +741,9 @@ export default function ThemeShowcase() {
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
-      <h2 className="text-center text-3xl font-bold tracking-tight">Sixteen themes, built for how you work</h2>
+      <h2 className="text-center text-3xl font-bold tracking-tight">Seventeen themes, built for how you work</h2>
       <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
-        Nine free themes, including three new booking-first looks for barbers, salons and tattoo artists. Seven premium themes for Pro & Business plans.
+        Eleven free themes, including four booking-first looks for barbers, salons, tattoo artists and teams. Six premium themes for Pro & Business plans.
       </p>
 
       {/* Tab switcher */}
@@ -852,9 +879,13 @@ export default function ThemeShowcase() {
                 {THEME_MOCK_DATA[activeTheme].companyName.toLowerCase().replace(/\s+/g, '')}.shopsuitedirect.com
               </div>
             </div>
-            <div className="h-[640px] overflow-y-auto">
-              <FullPreview key={activeTheme} themeId={activeTheme} />
-            </div>
+            <iframe
+              key={activeTheme}
+              src={`/preview/theme/${activeTheme}`}
+              title={`${THEME_MOCK_DATA[activeTheme].companyName} theme preview`}
+              loading="lazy"
+              className="block h-[640px] w-full border-0 bg-white"
+            />
           </div>
 
           <p className="mt-3 text-center text-xs text-slate-400">
