@@ -128,7 +128,8 @@ export async function announcementTick(): Promise<void> {
 }
 
 // ── Drafting help ────────────────────────────────────────────────────────────
-// OpenAI writes the draft; if it is not set up or fails, Anthropic takes over. Either one alone also works.
+// Providers are tried in this order, skipping any that has no key: OpenAI, then Gemini (the key the photo features
+// already use), then Anthropic. A failure moves on to the next one; any single key on its own also works.
 interface Draft { title: string; body: string }
 
 const DRAFT_SYSTEM = [
@@ -173,6 +174,36 @@ async function draftWithOpenAI(notes: string, key: string): Promise<Draft> {
   return cleanDraft(JSON.parse(content) as { title?: unknown; body?: unknown });
 }
 
+async function draftWithGemini(notes: string, key: string): Promise<Draft> {
+  const model = process.env.GEMINI_TEXT_MODEL || 'gemini-2.5-flash';
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+    signal: AbortSignal.timeout(30_000),
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: DRAFT_SYSTEM }] },
+      contents: [{ role: 'user', parts: [{ text: notes.slice(0, 6000) }] }],
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: 1500,
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'OBJECT',
+          properties: { title: { type: 'STRING', description: 'Email subject, under 70 characters' }, body: { type: 'STRING' } },
+          required: ['title', 'body'],
+        },
+        // Short writing task: skip the extra "thinking" so the whole answer fits and comes back quickly
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    }),
+  });
+  if (!res.ok) throw new Error(`Gemini error ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+  const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('');
+  if (!text) throw new Error('Gemini returned no draft.');
+  return cleanDraft(JSON.parse(text) as { title?: unknown; body?: unknown });
+}
+
 async function draftWithAnthropic(notes: string, key: string): Promise<Draft> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -194,22 +225,21 @@ async function draftWithAnthropic(notes: string, key: string): Promise<Draft> {
 }
 
 export async function draftFromNotes(notes: string): Promise<Draft> {
+  const providers: { name: string; run: () => Promise<Draft> }[] = [];
   const openai = process.env.OPENAI_API_KEY;
+  const gemini = process.env.GEMINI_API_KEY;
   const anthropic = process.env.ANTHROPIC_API_KEY;
-  if (!openai && !anthropic) throw new Error('The drafting helper is not set up yet (add OPENAI_API_KEY, or ANTHROPIC_API_KEY as a backup).');
+  if (openai) providers.push({ name: 'OpenAI', run: () => draftWithOpenAI(notes, openai) });
+  if (gemini) providers.push({ name: 'Gemini', run: () => draftWithGemini(notes, gemini) });
+  if (anthropic) providers.push({ name: 'Anthropic', run: () => draftWithAnthropic(notes, anthropic) });
+  if (providers.length === 0) throw new Error('The drafting helper is not set up yet (add OPENAI_API_KEY, GEMINI_API_KEY or ANTHROPIC_API_KEY).');
 
-  if (openai) {
+  for (let i = 0; i < providers.length; i++) {
     try {
-      return await draftWithOpenAI(notes, openai);
+      return await providers[i].run();
     } catch (err) {
-      console.error('Announcement draft: OpenAI failed' + (anthropic ? ', falling back to Anthropic:' : ':'), err instanceof Error ? err.message : err);
-    }
-  }
-  if (anthropic) {
-    try {
-      return await draftWithAnthropic(notes, anthropic);
-    } catch (err) {
-      console.error('Announcement draft: Anthropic failed:', err instanceof Error ? err.message : err);
+      const next = providers[i + 1];
+      console.error(`Announcement draft: ${providers[i].name} failed${next ? `, trying ${next.name}` : ''}:`, err instanceof Error ? err.message : err);
     }
   }
   throw new Error('The drafting helper had trouble. Please try again.');
