@@ -261,7 +261,7 @@ function Slideshow({ images }: { images: GalleryImageData[] }) {
         <img
           key={current}
           src={images[current].url} alt={images[current].caption ?? ''}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
           style={{ opacity: fading ? 0 : 1, transition: 'opacity 0.32s ease' }}
         />
       </div>
