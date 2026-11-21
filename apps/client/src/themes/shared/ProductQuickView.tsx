@@ -79,7 +79,7 @@ export default function ProductQuickView({
               <img
                 src={images[imageIndex]}
                 alt={product.name}
-                className="w-full h-full object-contain md:object-cover"
+                className="w-full h-full object-contain"
               />
               {images.length > 1 && (
                 <>
