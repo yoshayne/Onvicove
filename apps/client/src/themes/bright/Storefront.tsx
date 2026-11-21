@@ -88,6 +88,13 @@ export default function Storefront({ theme, products, services, staff, galleries
       {/* Hero */}
       {sec('hero') && (
       <section className="relative min-h-[480px] flex items-center justify-center text-center overflow-hidden bg-gradient-to-br from-[#f0f0ff] to-[#ffe0f0] py-24" style={ord('hero')}>
+        {/* The owner's hero photo, under a light veil so the pink headline stays readable */}
+        {theme.heroImageUrl && (
+          <>
+            <img src={theme.heroImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" style={theme.heroImageOpacity != null ? { opacity: theme.heroImageOpacity / 100 } : undefined} />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/85 via-white/60 to-[#ffe0f0]/75" />
+          </>
+        )}
         <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full bg-[var(--brand-color,#ff3cac)]/10" />
         <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-[#f0f0ff]/60 translate-x-1/3 translate-y-1/3" />
         <div className="relative z-10 px-6 max-w-3xl" style={hero.style} data-hero-align={hero.align}>
