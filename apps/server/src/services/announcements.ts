@@ -128,9 +128,52 @@ export async function announcementTick(): Promise<void> {
 }
 
 // ── Drafting help ────────────────────────────────────────────────────────────
-export async function draftFromNotes(notes: string): Promise<{ title: string; body: string }> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error('The drafting helper is not set up yet (ANTHROPIC_API_KEY).');
+// OpenAI writes the draft; if it is not set up or fails, Anthropic takes over. Either one alone also works.
+interface Draft { title: string; body: string }
+
+const DRAFT_SYSTEM = [
+  'You write the weekly "what\'s new" update that Shop Suite Direct sends to its customers: owners of small businesses (barbers, salons, photographers, shops) who use it for their website, store, bookings and payments.',
+  'Turn the notes you are given into a friendly, clear update. Plain language, no jargon, no hype. Explain what each change means for THEM.',
+  'Only mention things that are in the notes. Never invent features, dates, numbers or promises.',
+  'Format: short paragraphs separated by a blank line; bullets start with "- "; **bold** for the feature names. Under 180 words. Start with a one-line friendly opener, end with a one-line sign-off from "The Shop Suite Direct team".',
+].join('\n');
+
+const DRAFT_SCHEMA = {
+  type: 'object',
+  properties: { title: { type: 'string', description: 'Email subject, under 70 characters' }, body: { type: 'string' } },
+  required: ['title', 'body'],
+  additionalProperties: false,
+};
+
+function cleanDraft(t: { title?: unknown; body?: unknown } | undefined): Draft {
+  if (typeof t?.title !== 'string' || typeof t.body !== 'string' || !t.title.trim() || !t.body.trim()) throw new Error('The helper did not return a draft.');
+  return { title: t.title.trim().slice(0, 150), body: t.body.trim() };
+}
+
+async function draftWithOpenAI(notes: string, key: string): Promise<Draft> {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+    signal: AbortSignal.timeout(30_000),
+    body: JSON.stringify({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      max_tokens: 1200,
+      temperature: 0.4,
+      messages: [
+        { role: 'system', content: DRAFT_SYSTEM },
+        { role: 'user', content: notes.slice(0, 6000) },
+      ],
+      response_format: { type: 'json_schema', json_schema: { name: 'write_update', strict: true, schema: DRAFT_SCHEMA } },
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenAI error ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const json = (await res.json()) as { choices?: { message?: { content?: string | null; refusal?: string | null } }[] };
+  const content = json.choices?.[0]?.message?.content;
+  if (!content) throw new Error('OpenAI returned no draft.');
+  return cleanDraft(JSON.parse(content) as { title?: unknown; body?: unknown });
+}
+
+async function draftWithAnthropic(notes: string, key: string): Promise<Draft> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
@@ -139,23 +182,35 @@ export async function draftFromNotes(notes: string): Promise<{ title: string; bo
       model: process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5',
       max_tokens: 1200,
       temperature: 0.4,
-      system: [
-        'You write the weekly "what\'s new" update that Shop Suite Direct sends to its customers: owners of small businesses (barbers, salons, photographers, shops) who use it for their website, store, bookings and payments.',
-        'Turn the notes you are given into a friendly, clear update. Plain language, no jargon, no hype. Explain what each change means for THEM.',
-        'Only mention things that are in the notes. Never invent features, dates, numbers or promises.',
-        'Format: short paragraphs separated by a blank line; bullets start with "- "; **bold** for the feature names. Under 180 words. Start with a one-line friendly opener, end with a one-line sign-off from "The Shop Suite Direct team".',
-      ].join('\n'),
-      tools: [{ name: 'write_update', description: 'The finished update', input_schema: { type: 'object', properties: { title: { type: 'string', description: 'Email subject, under 70 characters' }, body: { type: 'string' } }, required: ['title', 'body'] } }],
+      system: DRAFT_SYSTEM,
+      tools: [{ name: 'write_update', description: 'The finished update', input_schema: DRAFT_SCHEMA }],
       tool_choice: { type: 'tool', name: 'write_update' },
       messages: [{ role: 'user', content: notes.slice(0, 6000) }],
     }),
   });
-  if (!res.ok) {
-    console.error('Announcement draft error:', res.status, (await res.text()).slice(0, 300));
-    throw new Error('The drafting helper had trouble. Please try again.');
-  }
+  if (!res.ok) throw new Error(`Anthropic error ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const json = (await res.json()) as { content?: { type: string; input?: { title?: string; body?: string } }[] };
-  const t = json.content?.find((c) => c.type === 'tool_use')?.input;
-  if (!t?.title || !t.body) throw new Error('The helper did not return a draft. Please try again.');
-  return { title: t.title.slice(0, 150), body: t.body };
+  return cleanDraft(json.content?.find((c) => c.type === 'tool_use')?.input);
+}
+
+export async function draftFromNotes(notes: string): Promise<Draft> {
+  const openai = process.env.OPENAI_API_KEY;
+  const anthropic = process.env.ANTHROPIC_API_KEY;
+  if (!openai && !anthropic) throw new Error('The drafting helper is not set up yet (add OPENAI_API_KEY, or ANTHROPIC_API_KEY as a backup).');
+
+  if (openai) {
+    try {
+      return await draftWithOpenAI(notes, openai);
+    } catch (err) {
+      console.error('Announcement draft: OpenAI failed' + (anthropic ? ', falling back to Anthropic:' : ':'), err instanceof Error ? err.message : err);
+    }
+  }
+  if (anthropic) {
+    try {
+      return await draftWithAnthropic(notes, anthropic);
+    } catch (err) {
+      console.error('Announcement draft: Anthropic failed:', err instanceof Error ? err.message : err);
+    }
+  }
+  throw new Error('The drafting helper had trouble. Please try again.');
 }
