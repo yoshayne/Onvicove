@@ -128,8 +128,8 @@ export async function announcementTick(): Promise<void> {
 }
 
 // ── Drafting help ────────────────────────────────────────────────────────────
-// Providers are tried in this order, skipping any that has no key: OpenAI, then Gemini (the key the photo features
-// already use), then Anthropic. A failure moves on to the next one; any single key on its own also works.
+// Providers are tried in this order, skipping any that has no key: Gemini (the key the photo features already use),
+// then OpenAI, then Anthropic. A failure moves on to the next one; any single key on its own also works.
 interface Draft { title: string; body: string }
 
 const DRAFT_SYSTEM = [
@@ -229,10 +229,10 @@ export async function draftFromNotes(notes: string): Promise<Draft> {
   const openai = process.env.OPENAI_API_KEY;
   const gemini = process.env.GEMINI_API_KEY;
   const anthropic = process.env.ANTHROPIC_API_KEY;
-  if (openai) providers.push({ name: 'OpenAI', run: () => draftWithOpenAI(notes, openai) });
   if (gemini) providers.push({ name: 'Gemini', run: () => draftWithGemini(notes, gemini) });
+  if (openai) providers.push({ name: 'OpenAI', run: () => draftWithOpenAI(notes, openai) });
   if (anthropic) providers.push({ name: 'Anthropic', run: () => draftWithAnthropic(notes, anthropic) });
-  if (providers.length === 0) throw new Error('The drafting helper is not set up yet (add OPENAI_API_KEY, GEMINI_API_KEY or ANTHROPIC_API_KEY).');
+  if (providers.length === 0) throw new Error('The drafting helper is not set up yet (add GEMINI_API_KEY, OPENAI_API_KEY or ANTHROPIC_API_KEY).');
 
   const failures: string[] = [];
   for (let i = 0; i < providers.length; i++) {
