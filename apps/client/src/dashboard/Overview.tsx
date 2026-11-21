@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import { hasAnyHours } from '../lib/hours';
+import Toast, { type ToastMessage } from '../components/shared/Toast';
 import type { Tenant, Order, Booking, Product, Service } from '../types';
 import { isPaidOrder, isLiveBooking, isUnpaidBooking, isUnpaidOrder, moneyEvents, sumOnDay, dayKey, lastDayKeys, formatMoney } from '../lib/metrics';
 import Spinner from '../components/shared/Spinner';
@@ -165,6 +166,7 @@ export default function Overview() {
   // "Share your site" is ticked once the owner copies or opens their link (remembered on this device)
   const sharedKey = `setup-shared:${tenantQ.data?.tenant?.id ?? ''}`;
   const [shared, setShared] = useState(false);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
   useEffect(() => {
     try { setShared(localStorage.getItem(sharedKey) === '1'); } catch { /* ignore */ }
   }, [sharedKey]);
@@ -287,7 +289,7 @@ export default function Overview() {
     firstItem,
     secondItem,
     { done: !!tenant?.page_content?.['about.text']?.trim(), label: 'Write your About text', hint: 'Tell customers who you are', to: '/dashboard/page-builder' },
-    { done: shared || hasSale, label: 'Share your site', hint: 'Copy your link and send it to 3 people', onClick: () => { void copyLink(); markShared(); } },
+    { done: shared || hasSale, label: 'Share your site', hint: 'Copy your link and send it to 3 people', onClick: () => { void shareSite().then((ok) => { if (ok) markShared(); }); } },
   ];
   const setupDone = setupItems.filter((i) => i.done).length;
   const setupPct = Math.round((setupDone / setupItems.length) * 100);
@@ -309,14 +311,49 @@ export default function Overview() {
     ? `https://${tenant.custom_domain}`
     : tenant?.slug ? `/${tenant.slug}` : null;
 
-  async function copyLink() {
-    if (!siteHref) return;
+  /**
+   * Share the site's link. On a phone it opens the share sheet (Messages, Instagram...); everywhere else it copies the
+   * link. It always says what happened, and if the browser blocks copying it shows the link so it can be copied by hand.
+   * Returns true when the link was shared or copied.
+   */
+  async function shareSite(): Promise<boolean> {
+    if (!siteHref) return false;
     const url = siteHref.startsWith('http') ? siteHref : `${window.location.origin}${siteHref}`;
-    await navigator.clipboard.writeText(url).catch(() => {});
+    const name = tenant?.company_name ?? 'my site';
+
+    if (typeof navigator.share === 'function' && window.matchMedia('(pointer: coarse)').matches) {
+      try {
+        await navigator.share({ title: name, text: `Check out ${name}`, url });
+        return true;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return false; // they closed the share sheet
+        // anything else: fall back to copying
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Older browsers and some embedded views block the clipboard API: try the classic way, then show the link
+      const box = document.createElement('textarea');
+      box.value = url;
+      box.style.position = 'fixed';
+      box.style.opacity = '0';
+      document.body.appendChild(box);
+      box.select();
+      const ok = document.execCommand('copy');
+      box.remove();
+      if (!ok) {
+        window.prompt('Copy your site link:', url);
+        return true;
+      }
+    }
+    setToast({ kind: 'success', text: 'Link copied. Paste it anywhere to share your site.' });
+    return true;
   }
 
   return (
     <div className="flex flex-col gap-6">
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* ── Welcome ─────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -338,7 +375,7 @@ export default function Overview() {
               Preview Site
             </a>
             <button
-              type="button" onClick={copyLink}
+              type="button" onClick={() => { void shareSite().then((ok) => { if (ok) markShared(); }); }}
               className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
             >
               <Share2 size={14} />
