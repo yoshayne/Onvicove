@@ -257,7 +257,7 @@ function Slideshow({ images }: { images: GalleryImageData[] }) {
   return (
     <div className="relative mx-auto max-w-3xl"
       onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-black/5">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
         <img
           key={current}
           src={images[current].url} alt={images[current].caption ?? ''}
